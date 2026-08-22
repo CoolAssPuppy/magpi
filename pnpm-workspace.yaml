@@ -1,6 +1,19 @@
 packages:
   - web
+
+# Which packages may run a build script on install. pnpm refuses a frozen
+# install while any of these is undecided, which is what failed CI: the file
+# still held the placeholder text pnpm writes when it wants an answer.
 allowBuilds:
-  core-js: set this to true or false
-  sharp: set this to true or false
-  unrs-resolver: set this to true or false
+  # Native bindings. Next uses sharp for image optimisation, and the eslint
+  # import resolver needs its own.
+  sharp: true
+  unrs-resolver: true
+  # A funding notice, nothing to build.
+  core-js: false
+
+# Both reach us through next, and the audit job blocks the deploy on a high
+# advisory, so the patched line is forced rather than waited for.
+overrides:
+  sharp: ">=0.35.0"
+  postcss: ">=8.5.18"
