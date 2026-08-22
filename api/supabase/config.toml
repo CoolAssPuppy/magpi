@@ -110,3 +110,9 @@ verify_jwt = false
 
 [functions.connections-claim]
 verify_jwt = false
+
+# The gateway authenticates badge tokens, not sessions. The first act of the
+# handler resolves the bearer token by sha256 hash against badges.token_hash
+# and refuses a revoked badge, before any route is dispatched.
+[functions.gateway]
+verify_jwt = false
