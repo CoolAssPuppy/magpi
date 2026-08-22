@@ -14,7 +14,7 @@ import {
   type Reply,
   stubFetch,
   text,
-} from "./support_test.ts";
+} from "../testing/page_support.ts";
 
 // The first fragment that matches wins, so the single message read is listed
 // before the list call it follows.

@@ -15,7 +15,7 @@ import {
   noFetch,
   stubFetch,
   text,
-} from "./support_test.ts";
+} from "../testing/page_support.ts";
 
 const CALENDAR = "googleapis.com/calendar/v3";
 

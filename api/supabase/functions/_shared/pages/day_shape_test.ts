@@ -13,7 +13,7 @@ import {
   noFetch,
   stubFetch,
   text,
-} from "./support_test.ts";
+} from "../testing/page_support.ts";
 
 /** The window starts at DAY_START_HOUR on the wearer's clock, one day apart. */
 const TODAY = "timeMin=2026-01-15T07";

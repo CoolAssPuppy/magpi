@@ -2,8 +2,9 @@
 // provider_cache, a fetch that answers provider URLs from a small route table,
 // and factories for the connection rows and settings a builder reads.
 //
-// No Deno.test lives here. The name ends in _test so the coverage report
-// counts the builders rather than their scaffolding.
+// No Deno.test lives here. It sits under testing/ so the coverage report
+// counts the builders rather than their scaffolding, and so `deno test` does
+// not open it looking for a suite it does not have.
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
@@ -12,7 +13,7 @@ import { activeProviders, type ConnectionRow } from "../connections.ts";
 import { encryptProviderToken } from "../provider_tokens.ts";
 import type { PagePayload } from "../envelope.ts";
 
-import type { BuildContext } from "./mod.ts";
+import type { BuildContext } from "../pages/mod.ts";
 
 export const USER_ID = "8f1c2b7e-0000-4000-8000-000000000001";
 /**

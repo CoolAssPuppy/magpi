@@ -12,7 +12,7 @@ import {
   noFetch,
   type Reply,
   stubFetch,
-} from "./support_test.ts";
+} from "../testing/page_support.ts";
 
 const PROVIDERS = ["google", "vercel", "linear", "slack", "github", "notion", "posthog"];
 

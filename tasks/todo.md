@@ -1,7 +1,7 @@
 # Magpi build plan
 
 A desk companion for the Pimoroni Tufty 2350. Two badge apps, one gateway, one
-website. Built from the brief in `docs/BRIEF.md`.
+website.
 
 ## 1. Repo skeleton
 

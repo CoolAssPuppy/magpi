@@ -13,7 +13,7 @@ import {
   noFetch,
   stubFetch,
   text,
-} from "./support_test.ts";
+} from "../testing/page_support.ts";
 
 const POSTHOG = "posthog.com";
 
