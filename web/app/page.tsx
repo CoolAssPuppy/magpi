@@ -171,6 +171,18 @@ export default async function HomePage({
             </p>
             <ThemeToggle />
           </div>
+          <div className="gap-sm flex flex-col">
+            <span className="font-display text-2xs text-ink-faint tracking-wide">HARDWARE</span>
+            <a href="https://shop.pimoroni.com" className="text-base">
+              Tufty 2350
+            </a>
+            <a href="https://github.com/pimoroni/badgeware-docs" className="text-base">
+              Badgeware docs
+            </a>
+            <a href="https://github.com/pimoroni/tufty2350" className="text-base">
+              Firmware
+            </a>
+          </div>
         </div>
       </footer>
     </main>
