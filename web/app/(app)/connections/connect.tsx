@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 
 import { IDLE } from "@/lib/actions/state";
 
-import { beginOAuthAction, disconnectAction, saveApiKeyAction } from "./actions";
+import { beginOAuthAction, saveApiKeyAction } from "./actions";
 
 /** The extra values a provider needs that are not the secret. */
 const META_FIELDS: Record<string, { name: string; label: string; placeholder: string }[]> = {
@@ -19,33 +19,28 @@ const META_FIELDS: Record<string, { name: string; label: string; placeholder: st
 export interface ConnectProps {
   provider: string;
   kind: "oauth" | "api_key";
-  isConnected: boolean;
 }
 
 /** The action at the end of a provider's row, and the field it may open. */
-export function Connect({ provider, kind, isConnected }: ConnectProps) {
+export function Connect({ provider, kind }: ConnectProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   if (kind === "oauth") {
     return (
-      <div className="gap-md flex items-center">
-        <form action={beginOAuthAction}>
-          <input type="hidden" name="provider" value={provider} />
-          <button type="submit" className={isConnected ? SECONDARY : PRIMARY}>
-            {isConnected ? "Reconnect" : "Connect"}
-          </button>
-        </form>
-        {isConnected ? <Disconnect provider={provider} /> : null}
-      </div>
+      <form action={beginOAuthAction}>
+        <input type="hidden" name="provider" value={provider} />
+        <button type="submit" className={PRIMARY}>
+          Connect
+        </button>
+      </form>
     );
   }
 
   return (
-    <div className="gap-md flex items-center">
+    <div className="flex items-center">
       <button type="button" onClick={() => setIsOpen((open) => !open)} className={PRIMARY}>
-        {isConnected ? "Replace key" : "Add key"}
+        Add key
       </button>
-      {isConnected ? <Disconnect provider={provider} /> : null}
       {isOpen ? <ApiKeyFields provider={provider} onDone={() => setIsOpen(false)} /> : null}
     </div>
   );
@@ -117,23 +112,5 @@ function ApiKeyFields({ provider, onDone }: { provider: string; onDone: () => vo
   );
 }
 
-function Disconnect({ provider }: { provider: string }) {
-  const [, run, isRunning] = useActionState(disconnectAction, IDLE);
-
-  return (
-    <form action={run}>
-      <input type="hidden" name="provider" value={provider} />
-      <button
-        type="submit"
-        disabled={isRunning}
-        className="text-ink-muted hover:text-critical text-sm disabled:opacity-50"
-      >
-        {isRunning ? "Disconnecting" : "Disconnect"}
-      </button>
-    </form>
-  );
-}
-
 const PRIMARY =
   "rounded-panel bg-action px-lg py-sm font-display text-action-ink text-sm font-medium";
-const SECONDARY = "rounded-panel border-border-strong px-lg py-sm font-display border text-sm";

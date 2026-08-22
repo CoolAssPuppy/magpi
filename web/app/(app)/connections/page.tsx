@@ -83,7 +83,6 @@ export default async function ConnectionsPage({
                       <Connect
                         provider={provider.slug}
                         kind={provider.kind === "api_key" ? "api_key" : "oauth"}
-                        isConnected={rows.length > 0}
                       />
                     </div>
                   ) : (
@@ -94,7 +93,11 @@ export default async function ConnectionsPage({
                 {rows.length > 0 ? (
                   <ul className="pt-md pl-2xl flex flex-col">
                     {rows.map((row) => (
-                      <ConnectionItem key={row.id} connection={row} />
+                      <ConnectionItem
+                        key={row.id}
+                        connection={row}
+                        kind={provider.kind === "api_key" ? "api_key" : "oauth"}
+                      />
                     ))}
                   </ul>
                 ) : null}

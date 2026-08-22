@@ -112,6 +112,7 @@ Deno.serve(async (req: Request) => {
       ticket_hash: await sha256Hex(ticket),
       user_id: pending.user_id,
       provider: driver.slug,
+      connection_id: pending.connection_id ?? null,
       external_account: tokens.externalAccount,
       access_token_enc: accessEnc,
       refresh_token_enc: refreshEnc,

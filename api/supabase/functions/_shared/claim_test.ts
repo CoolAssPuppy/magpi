@@ -16,6 +16,7 @@ function pendingFor(userId: string, overrides: Partial<PendingConnection> = {}):
     scopes: ["read:user"],
     tokenExpiresAt: null,
     returnTo: null,
+    connectionId: null,
     ...overrides,
   };
 }

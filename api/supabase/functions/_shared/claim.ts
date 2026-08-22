@@ -22,6 +22,8 @@ export interface PendingConnection {
   scopes: string[];
   tokenExpiresAt: string | null;
   returnTo: string | null;
+  /** The connection being refreshed. Null when this is a new one. */
+  connectionId: string | null;
 }
 
 export interface ClaimPort {

@@ -10,7 +10,11 @@ import { createClient } from "@/lib/supabase/server";
 
 const REVALIDATE = "/connections";
 
-const beginSchema = z.object({ provider: z.string().regex(/^[a-z][a-z0-9_]*$/) });
+const beginSchema = z.object({
+  provider: z.string().regex(/^[a-z][a-z0-9_]*$/),
+  /** Present when reconnecting one account rather than adding another. */
+  connection_id: z.uuid().optional(),
+});
 
 const keySchema = z.object({
   provider: z.string().regex(/^[a-z][a-z0-9_]*$/),
@@ -41,7 +45,11 @@ export async function beginOAuthAction(form: FormData): Promise<void> {
       "content-type": "application/json",
       authorization: `Bearer ${context.accessToken}`,
     },
-    body: JSON.stringify({ provider: parsed.data.provider, return_to: "/connections" }),
+    body: JSON.stringify({
+      provider: parsed.data.provider,
+      connection_id: parsed.data.connection_id,
+      return_to: "/connections",
+    }),
   });
 
   if (!response.ok) redirect("/connections?error=begin");

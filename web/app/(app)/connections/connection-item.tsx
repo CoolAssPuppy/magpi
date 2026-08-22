@@ -2,35 +2,36 @@
 
 import { useActionState, useState } from "react";
 
+import { PencilIcon, RefreshIcon, TrashIcon } from "@/components/icons";
 import { IDLE } from "@/lib/actions/state";
 import type { ConnectionRow } from "@/lib/rows";
 
-import { disconnectAction, renameConnectionAction } from "./actions";
+import { beginOAuthAction, disconnectAction, renameConnectionAction } from "./actions";
 
 /**
  * One connected account under its provider.
  *
- * Two accounts of the same kind is the ordinary case, so each carries a name
- * the wearer chose. It is what the badge prints beside the counter, which is
- * why it is short and why renaming happens here rather than on a settings
- * screen somewhere else.
+ * Three things you can do to an account, and they are the same three for every
+ * provider, so they are icons rather than a row of words repeated seven times.
+ * Each still carries a name, because a screen reader gets nothing from a
+ * pencil.
  */
-export function ConnectionItem({ connection }: { connection: ConnectionRow }) {
+export function ConnectionItem({
+  connection,
+  kind,
+}: {
+  connection: ConnectionRow;
+  kind: "oauth" | "api_key";
+}) {
   const [isEditing, setIsEditing] = useState(false);
   const [state, rename, isRenaming] = useActionState(renameConnectionAction, IDLE);
   const [, remove, isRemoving] = useActionState(disconnectAction, IDLE);
 
   const name = connection.label ?? connection.external_account ?? "Unnamed";
 
-  return (
-    <li className="gap-md border-border py-sm flex items-center border-t">
-      <span
-        className={`size-sm rounded-pill shrink-0 ${
-          connection.status === "error" ? "bg-critical" : "bg-accent"
-        }`}
-      />
-
-      {isEditing ? (
+  if (isEditing) {
+    return (
+      <li className="gap-md border-border py-sm flex items-center border-t">
         <form action={rename} className="gap-sm flex flex-1 items-center">
           <input type="hidden" name="connection_id" value={connection.id} />
           <input
@@ -39,7 +40,8 @@ export function ConnectionItem({ connection }: { connection: ConnectionRow }) {
             placeholder="Work"
             maxLength={24}
             autoFocus
-            className="rounded-square border-border bg-background px-md py-2xs w-[160px] border text-sm"
+            aria-label="Connection name"
+            className="rounded-square border-border bg-background px-md py-2xs w-[180px] border text-sm"
           />
           <button type="submit" disabled={isRenaming} className="font-display text-accent text-sm">
             {isRenaming ? "Saving" : "Save"}
@@ -57,33 +59,59 @@ export function ConnectionItem({ connection }: { connection: ConnectionRow }) {
             </span>
           ) : null}
         </form>
-      ) : (
-        <>
-          <span className="font-display flex-1 text-sm">{name}</span>
-          {connection.status === "error" ? (
-            <span className="text-critical shrink-0 text-xs">{connection.error_message}</span>
-          ) : null}
-          <button
-            type="button"
-            onClick={() => setIsEditing(true)}
-            className="text-ink-muted hover:text-ink shrink-0 text-sm"
-          >
-            Rename
-          </button>
-        </>
-      )}
+      </li>
+    );
+  }
 
-      <form action={remove} className="shrink-0">
-        <input type="hidden" name="connection_id" value={connection.id} />
-        <input type="hidden" name="provider" value={connection.provider} />
+  return (
+    <li className="gap-md border-border py-sm flex items-center border-t">
+      <span
+        className={`size-sm rounded-pill shrink-0 ${
+          connection.status === "error" ? "bg-critical" : "bg-accent"
+        }`}
+      />
+      <span className="font-display flex-1 text-sm">{name}</span>
+
+      {connection.status === "error" ? (
+        <span className="text-critical shrink-0 text-xs">{connection.error_message}</span>
+      ) : null}
+
+      <div className="gap-xs text-ink-muted flex shrink-0 items-center">
         <button
-          type="submit"
-          disabled={isRemoving}
-          className="text-ink-muted hover:text-critical text-sm disabled:opacity-50"
+          type="button"
+          onClick={() => setIsEditing(true)}
+          aria-label="Rename"
+          className={ICON}
         >
-          {isRemoving ? "Removing" : "Remove"}
+          <PencilIcon />
         </button>
-      </form>
+
+        {/* Reconnect replaces this account's token rather than adding another,
+            which is why the connection travels with the flow. */}
+        {kind === "oauth" ? (
+          <form action={beginOAuthAction}>
+            <input type="hidden" name="provider" value={connection.provider} />
+            <input type="hidden" name="connection_id" value={connection.id} />
+            <button type="submit" aria-label="Reconnect" className={ICON}>
+              <RefreshIcon />
+            </button>
+          </form>
+        ) : null}
+
+        <form action={remove}>
+          <input type="hidden" name="connection_id" value={connection.id} />
+          <button
+            type="submit"
+            disabled={isRemoving}
+            aria-label="Remove"
+            className={`${ICON} hover:text-critical disabled:opacity-50`}
+          >
+            <TrashIcon />
+          </button>
+        </form>
+      </div>
     </li>
   );
 }
+
+const ICON = "rounded-hairline p-2xs hover:text-ink flex items-center";

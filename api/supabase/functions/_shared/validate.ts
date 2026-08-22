@@ -37,6 +37,8 @@ export const connectionsBeginSchema = z.strictObject({
   // safeReturnTo decides whether the value is a same-site path, and the web
   // route re-checks after the round trip.
   return_to: z.string().max(512).optional(),
+  /** The connection being refreshed. Absent when adding another account. */
+  connection_id: z.uuid().optional(),
 });
 
 // The ticket is a base64url randomToken(). Bounded rather than pattern-matched

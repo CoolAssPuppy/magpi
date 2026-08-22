@@ -25,6 +25,7 @@ interface PendingRow {
   user_id: string;
   provider: string;
   external_account: string | null;
+  connection_id: string | null;
   access_token_enc: string;
   refresh_token_enc: string | null;
   scopes: string[] | null;
@@ -63,15 +64,36 @@ serveFunction("connections-claim", async (core) => {
         scopes: row.scopes ?? [],
         tokenExpiresAt: row.token_expires_at,
         returnTo: row.return_to,
+        connectionId: row.connection_id,
       };
     },
 
     // userId is unchanged by a successful claim, so the AAD the callback
     // encrypted under still holds and the ciphertext moves without decryption.
     async storeConnection(pending: PendingConnection) {
-      // Insert, not upsert. A second account of the same kind is a second
-      // connection: upserting on (user_id, provider) is what used to make the
-      // work Notion overwrite the personal one.
+      // Refreshing one account replaces its token; anything else is a new
+      // account. Insert was what made a reconnect create a duplicate.
+      if (pending.connectionId) {
+        const { error: updateError } = await db
+          .from("connections")
+          .update({
+            external_account: pending.externalAccount,
+            access_token_enc: pending.accessTokenEnc,
+            refresh_token_enc: pending.refreshTokenEnc,
+            scopes: pending.scopes,
+            expires_at: pending.tokenExpiresAt,
+            status: "active",
+            // Cleared on a successful reconnect, so a stale failure does not
+            // sit on a working connection.
+            error_message: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", pending.connectionId)
+          .eq("user_id", pending.userId);
+        if (updateError) throw new Error(`connection refresh failed: ${updateError.message}`);
+        return;
+      }
+
       const { error } = await db.from("connections").insert({
         user_id: pending.userId,
         provider: pending.provider,

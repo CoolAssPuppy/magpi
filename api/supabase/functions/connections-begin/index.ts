@@ -41,6 +41,8 @@ serveFunction("connections-begin", async (core) => {
   const returnTo = safeReturnTo(input.return_to ?? null);
 
   const { error: insertError } = await db.from("oauth_states").insert({
+    // Null when adding another account; set when refreshing one.
+    connection_id: input.connection_id ?? null,
     state,
     user_id: user.id,
     provider: driver.slug,
