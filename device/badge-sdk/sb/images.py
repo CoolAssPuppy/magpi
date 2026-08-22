@@ -29,16 +29,16 @@ CACHE_DIR = "/badge/images"
 # fails somewhere inside the firmware rather than here.
 #
 # 128 KB, down from 512. The badge holds the whole file before it decodes it,
-# over a conference radio, on a battery, and half a megabyte was tens of
+# over badge WiFi, on a battery, and half a megabyte was tens of
 # seconds of "Connecting" before anything appeared. Everything the server
 # stores for a badge is converted to a palette PNG at the size it will be
 # drawn, which lands in single-digit kilobytes, so this is a backstop rather
 # than a limit anything should approach.
 MAX_IMAGE_BYTES = 128 * 1024
 
-# How many pictures to keep. The deck is capped at twelve questions and a badge
-# shows one profile, so this holds a whole round with room to spare, and the
-# flash is small enough that unbounded would eventually fill it.
+# How many pictures to keep. A desk shows a handful of pages, so this holds a
+# whole refresh with room to spare, and the flash is small enough that
+# unbounded would eventually fill it.
 MAX_CACHED = 16
 
 
@@ -129,7 +129,7 @@ def _verify_host(cfg, url):
     gateway = (cfg or {}).get("gateway") or ""
     origin = _origin(gateway)
     # Compared whole, not as a prefix. `startswith` would accept
-    # project.supabase.co.evil.test, which is a different host that happens to
+    # gateway.example.com.evil.test, which is a different host that happens to
     # begin with the right letters.
     if not origin or _origin(url) != origin:
         raise ImageError("off-host image url")

@@ -1,29 +1,27 @@
-# The Supabase mark, drawn with the badge's shape primitives.
+# The Magpi mark, drawn with the badge's shape primitives.
 #
-# The badge exposes circle, arc, rectangle, rounded_rectangle and line
-# (spec 18.1). There is no polygon, and the mark is two triangles, so each is
-# filled by scanline: one thin rectangle per row of pixels. At the sizes this
-# is used, tens of pixels tall, that is a few dozen rectangles a frame and
-# costs nothing measurable next to the QR.
+# The badge exposes circle, arc, rectangle, rounded_rectangle and line. There
+# is no polygon, and the mark is three triangles, so each is filled by
+# scanline: one thin rectangle per row of pixels. At the sizes this is used,
+# tens of pixels tall, that is a few dozen rectangles a frame and costs
+# nothing measurable next to the QR.
 #
-# Geometry is taken from the official 109 by 113 viewBox so the proportions
-# match the mark everywhere else it appears, rather than being redrawn by
-# eye. The two curves in the real path are straight at this scale; a 40 pixel
-# tall bolt cannot express a 2 pixel bezier.
+# Geometry is taken from the 26 by 20 viewBox the mark is drawn in everywhere
+# else, so the proportions match rather than being redrawn by eye.
 
-# Upper triangle: apex at the top, vertical right edge, hypotenuse down-left.
-_UPPER = ((54.5, 2.0), (54.5, 72.3), (9.8, 72.3))
-# Lower triangle: flat top edge, apex at the bottom.
-_LOWER = ((54.0, 40.0), (99.2, 40.0), (62.0, 110.3))
+# Origami magpie: a folded body, the far wing behind it, the long tail.
+_BODY = ((0.0, 10.0), (11.0, 3.0), (11.0, 12.0))
+_WING = ((11.0, 3.0), (26.0, 0.0), (11.0, 12.0))
+_TAIL = ((11.0, 12.0), (26.0, 0.0), (22.0, 17.0))
 
-_VIEW_W = 109.0
-_VIEW_H = 113.0
+_VIEW_W = 26.0
+_VIEW_H = 20.0
 
-# Brand green, and the darker tone that stands in for the lower triangle's
-# gradient. Two flat fills read as the two-tone mark; a gradient would need
-# per-pixel work the badge has no primitive for.
-BRAND = (62, 207, 142)
-BRAND_DARK = (36, 147, 97)
+# Three flat fills, one per fold. A gradient would need per-pixel work the
+# badge has no primitive for.
+CHALK = (247, 246, 242)
+SHADE = (154, 160, 168)
+SHEEN = (15, 191, 168)
 
 
 def _fill_triangle(screen, shape, tri, ox, oy, scale):
@@ -55,19 +53,21 @@ def _fill_triangle(screen, shape, tri, ox, oy, scale):
         y += 1
 
 
-def bolt_size(height):
+def mark_size(height):
     """Width of the mark at a given height, so callers can lay it out."""
     return int(height * (_VIEW_W / _VIEW_H) + 0.5)
 
 
-def draw_bolt(screen, shape, color, x, y, height):
+def draw_mark(screen, shape, color, x, y, height):
     """Draws the mark with its top-left at (x, y), `height` pixels tall.
 
-    Leaves screen.pen set to the darker tone; callers set their own pen
+    Leaves screen.pen set to the tail's tone; callers set their own pen
     afterwards, as they do after any drawing helper here.
     """
     scale = height / _VIEW_H
-    screen.pen = color.rgb(*BRAND)
-    _fill_triangle(screen, shape, _UPPER, x, y, scale)
-    screen.pen = color.rgb(*BRAND_DARK)
-    _fill_triangle(screen, shape, _LOWER, x, y, scale)
+    screen.pen = color.rgb(*CHALK)
+    _fill_triangle(screen, shape, _BODY, x, y, scale)
+    screen.pen = color.rgb(*SHADE)
+    _fill_triangle(screen, shape, _WING, x, y, scale)
+    screen.pen = color.rgb(*SHEEN)
+    _fill_triangle(screen, shape, _TAIL, x, y, scale)

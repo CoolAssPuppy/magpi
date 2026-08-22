@@ -2,9 +2,9 @@
 # refetches every frame. The fetch itself still blocks for its duration;
 # keep intervals generous (10 to 30 seconds) and payloads small.
 #
-# Consecutive failures back off exponentially (spec 8.7). A gateway that is
-# down, rate limiting, or unreachable on venue WiFi must not be retried at
-# the healthy interval by every badge in the room.
+# Consecutive failures back off exponentially. A gateway that is down,
+# rate limiting, or unreachable must not be retried at the healthy interval
+# by every badge at once.
 _DEFAULT_MAX_BACKOFF_MS = 300000
 _MAX_DOUBLINGS = 16
 

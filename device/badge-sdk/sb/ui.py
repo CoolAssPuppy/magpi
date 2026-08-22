@@ -28,8 +28,8 @@ MARGIN = 8
 # Two centered lines at the top: who this is, then what to do. The prompt used
 # to explain what the scan was for, which is the app describing itself to
 # someone already holding it.
-WELCOME = "Welcome to Supabase Select 2026"
-PROMPT = "Scan to set up your badge."
+WELCOME = "Magpi"
+PROMPT = "Scan to set up at magpi.app"
 
 # Mark and welcome on one centered line, prompt centered under it.
 LOGO_H = 22
@@ -192,10 +192,9 @@ class Palette:
             color.rgb(38, 166, 65),
             color.rgb(57, 211, 83),
         )
-        # The Supabase Select 2026 artwork inks, which are what every animated
-        # thing on the conference site is drawn in. Five colours, here ordered
-        # by luminance so an index is a brightness ladder: a badge cell has one
-        # channel where the site has a whole character grid to play with.
+        # The artwork inks, ordered by luminance so an index is a brightness
+        # ladder: a badge cell has one channel where a screen has a whole
+        # character grid to play with.
         #
         # Index 0 is the ground, so a level of 0 can be drawn as "clear" or
         # skipped, and the ramp and its background never disagree. Separate
@@ -213,8 +212,7 @@ class Palette:
         # The console chrome: a raised surface, the hairline that bounds it,
         # and the scanline that sits between. Three steps between the ground
         # and the surface rather than a gradient, because nothing in this
-        # design system lands between two states (DESIGN.md, "Motion
-        # vocabulary", rule 3).
+        # design system lands between two states.
         self.panel = color.rgb(20, 26, 24)
         self.line = color.rgb(34, 46, 42)
         self.scanline = color.rgb(15, 20, 19)
@@ -276,11 +274,11 @@ class PairingScreen:
         pal = self.palette
 
         self._use_font(FONT_WELCOME)
-        bolt_w = brand.bolt_size(LOGO_H)
+        mark_w = brand.mark_size(LOGO_H)
         size = fit_size(
             screen.measure_text,
             WELCOME,
-            WIDTH - MARGIN * 2 - bolt_w - LOGO_GAP,
+            WIDTH - MARGIN * 2 - mark_w - LOGO_GAP,
             LOGO_H,
             max_size=PROMPT_MAX_SIZE,
             min_size=PROMPT_MIN_SIZE,
@@ -288,10 +286,10 @@ class PairingScreen:
         text_w, _ = screen.measure_text(WELCOME, size)
         # Mark and words are centered as one group, so the pair reads as a
         # lockup rather than a logo with a caption drifting beside it.
-        group_x = max(MARGIN, (WIDTH - (bolt_w + LOGO_GAP + text_w)) // 2)
-        brand.draw_bolt(screen, self.shape, self._color, group_x, MARGIN, LOGO_H)
+        group_x = max(MARGIN, (WIDTH - (mark_w + LOGO_GAP + text_w)) // 2)
+        brand.draw_mark(screen, self.shape, self._color, group_x, MARGIN, LOGO_H)
         screen.pen = pal.fg
-        screen.text(WELCOME, group_x + bolt_w + LOGO_GAP, MARGIN + LOGO_H - 4, size)
+        screen.text(WELCOME, group_x + mark_w + LOGO_GAP, MARGIN + LOGO_H - 4, size)
 
         self._use_font(FONT_PROMPT)
         psize = fit_size(
@@ -518,10 +516,10 @@ def draw_hold(screen, shape, palette, progress, label=None, width=WIDTH, height=
 
 # -- console chrome ----------------------------------------------------------
 #
-# The badge's screens are 320x240 of a conference design system built on a
-# character grid: hard edges, few levels, nothing interpolated. These are the
-# pieces every app draws over and over, in one place, so five apps cannot each
-# invent their own idea of what a panel looks like.
+# The badge's screens are 320x240 of a design system built on a character
+# grid: hard edges, few levels, nothing interpolated. These are the pieces
+# every app draws over and over, in one place, so no two apps invent their own
+# idea of what a panel looks like.
 #
 # All of it is drawn with `shape` rectangles, because that is the vector
 # primitive the Badgeware docs give and the one the rest of the SDK uses.
@@ -567,7 +565,7 @@ def panel(screen, shape, palette, x, y, w, h, border=None):
 def scanlines(screen, shape, palette, x, y, w, h, step=SCANLINE_STEP):
     """Darken every nth row of a box.
 
-    A flat fill on a 320x240 panel reads as a slide. The site's whole visual
+    A flat fill on a 320x240 panel reads as printed paper. The visual
     language is a character grid being written to, and this is the cheapest
     honest echo of it: hard rows, no falloff, drawn once per frame.
     """
@@ -770,6 +768,6 @@ def blink(ticks, period=500):
     """Whether a blinking thing is lit this frame.
 
     Integer ticks, not a fade: nothing in this design system lands between two
-    states (DESIGN.md, "Motion vocabulary").
+    states.
     """
     return (ticks // period) % 2 == 0

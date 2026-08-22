@@ -3,10 +3,10 @@
 # only moves bytes.
 #
 # Why this applet imports network and requests directly, when no other
-# applet may (spec 11): the SDK reads /state/token.json on every
+# applet may: the SDK reads /state/token.json on every
 # call and raises NotPaired when it is missing, which is exactly the state
 # this app exists to leave. /device/start and /device/poll are also the
-# only two endpoints that take no badge token (spec 7.1). So this applet
+# only two endpoints that take no badge token. So this applet
 # brings up its own radio and makes its own two calls. Every other applet,
 # and every call after pairing, goes through sb.
 
@@ -182,7 +182,7 @@ def _system_secrets():
 def wifi_credentials():
     """Read the SSID and password out of secrets.py.
 
-    secrets.py is edited over USB before the conference (spec 3.5)."""
+    secrets.py is edited over USB before the badge leaves the desk."""
     ssid = None
     password = ""
 
@@ -249,7 +249,7 @@ def _peer_cert(response):
 
 
 def verify_peer(cfg, response):
-    """Certificate pinning for the two pairing calls (spec 8.6).
+    """Certificate pinning for the two pairing calls.
 
     A deliberate copy of the SDK's check rather than an import: pairing
     must work on a badge that has no token, and sb's networking is built
@@ -366,16 +366,16 @@ class DevicePort:
         raise PairingError(
             payload.get("error") or ("http_%d" % status),
             payload.get("message"),
-            # Top level, not under detail: that is where the gateway puts it
-            # (_shared/errors.ts) and reading it from detail means every
-            # backoff the server asks for is silently ignored.
+            # Top level, not under detail: that is where the gateway puts
+            # it, and reading it from detail means every backoff the server
+            # asks for is silently ignored.
             payload.get("retry_after"),
         )
 
     # -- persistence and handoff ------------------------------------------
 
     def save_token(self, token, path=TOKEN_PATH):
-        """Write the token file the SDK reads (spec 11.2).
+        """Write the token file the SDK reads.
 
         Written to a sibling temp path and renamed, so a reset mid-write
         leaves either the old file or the new one and never a truncated

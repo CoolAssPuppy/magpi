@@ -3,8 +3,8 @@
 MicroPython on device, CPython under test and in the emulator. Applets never
 import requests or network directly; all networking goes through here.
 
-Certificate pinning (spec 8.6) and its residual gap
----------------------------------------------------
+Certificate pinning and its residual gap
+----------------------------------------
 config.json carries "cert_sha256", the sha256 of the gateway's DER-encoded
 leaf certificate. Where the port exposes the peer certificate (a socket with
 getpeercert on the response object), every request fingerprints it and
@@ -26,7 +26,7 @@ gap is real and has two parts:
    handshake and sends the request (including the Authorization header)
    before this module can inspect anything. A pin mismatch therefore means
    the badge token has already been shown to the peer. The token is scoped
-   and revocable by design (spec 8.1), which is the backstop; treat any
+   and revocable by design, which is the backstop; treat any
    CertificateError as a reason to re-pair the badge.
 """
 
@@ -97,7 +97,7 @@ class NotFound(SdkError):
 class Conflict(SdkError):
     """The server has already recorded a different answer from this badge.
 
-    Its own type because a badge on conference WiFi retries constantly and the
+    Its own type because a badge on flaky WiFi retries constantly and the
     apps that write have to tell three failures apart: a request that never
     arrived, one the server refused, and one it had already applied. Only the
     first is worth resending, and before this a 409 arrived as a bare SdkError
@@ -185,7 +185,7 @@ def _peer_cert(response):
 
 
 def _verify_peer(cfg, response):
-    """Enforce spec 8.6 pinning as far as the port allows. Raises
+    """Enforce certificate pinning as far as the port allows. Raises
     CertificateError on mismatch, and on an unverifiable peer when
     cfg["require_pin"] is set.
 
@@ -320,112 +320,10 @@ def _power_params(power):
     return {k: v for k, v in power.items() if v is not None}
 
 
-def deck(power=None):
-    """The slides this badge should show (docs/supabase-app.md).
-
-    Needs no granted scope: the Supabase app ships with the firmware rather
-    than being installed, and the consent for this data is the wearer choosing
-    connections and slides on the website.
+def desk(power=None):
+    """GET /gateway/desk. The only route either app calls.
 
     `power` is an optional dict of battery readings sent as query parameters.
-    It is how the polling experiment gets its data, and it is the only thing
-    the badge tells the server about itself."""
-    return _request("GET", "/gateway/deck", _power_params(power))
-
-
-def identity():
-    """The name, title, company and handle this badge shows (Badge ID app).
-
-    A separate call from deck() rather than a slide in it, because it is a
-    different question with a different lifetime: a deck is live numbers from
-    other people's APIs, and this changes only when someone edits a form. An
-    identity card that could not draw because a provider was down would be the
-    wrong failure.
-
-    Fields the wearer left blank are absent from the answer rather than
-    present and empty, so an app can draw what it is given without deciding
-    what counts as missing."""
-    return _request("GET", "/gateway/identity", None)
-
-
-def sparkle(power=None):
-    """The Sparkle this badge should be playing right now, or null.
-
-    Between Sparkles the answer carries a null sparkle rather than a 404: a
-    badge waiting for the keynote to light up is in a normal state, not an
-    error. The badge plays each one once, keyed on its id, so asking again
-    while it is still on screen returns the same id and changes nothing."""
-    return _request("GET", "/gateway/sparkle", _power_params(power))
-
-
-# -- writes ------------------------------------------------------------------
-#
-# The four functions below are the badge's only way of sending anything upward.
-# Everything above asks a question; these answer one. See docs/how-to-write-for-supabase-pimoroni.md
-# for why a write is retried through sb.poller rather than a timer of its own:
-# four hundred badges answer a question within seconds of it going live, and the
-# per-badge bucket is the only thing between that and a thundering herd. Honour
-# RateLimited.retry_after; do not invent an interval.
-
-
-def poll(power=None):
-    """The active poll question, and the tally once this badge has answered.
-
-    A badge with nothing armed gets a 200 carrying a null question rather than
-    a 404. Sitting in a pocket between polls is a normal state and should not
-    draw as an error."""
-    return _request("GET", "/gateway/poll", _power_params(power))
-
-
-def poll_answer(question_id, choice):
-    """Answer the active poll question.
-
-    Answering twice with the same choice is a no-op, because a badge cannot
-    tell a request that never arrived from a response that never came back and
-    retrying has to be safe. Answering differently raises Conflict: a poll that
-    lets you change your mind after seeing the tally is measuring the tally."""
-    return _request(
-        "POST", "/gateway/poll/answer", None, {"question_id": question_id, "choice": choice}
-    )
-
-
-def trivia(power=None):
-    """The active trivia question, and the verdict once this badge has answered.
-
-    The correct option is absent from the answer until this badge has committed
-    to one. That is enforced on the server, by the select list the question is
-    read with, and not by this function choosing not to look."""
-    return _request("GET", "/gateway/trivia", _power_params(power))
-
-
-def trivia_answer(question_id, choice):
-    """Answer the active trivia question, and learn whether it was right.
-
-    The verdict comes back in the response to the write rather than on the next
-    read. That is what makes the feedback instant: a wearer on bad WiFi who gets
-    one round trip through gets the whole answer out of it."""
-    return _request(
-        "POST", "/gateway/trivia/answer", None, {"question_id": question_id, "choice": choice}
-    )
-
-
-def trivia_leaderboard():
-    """The top ten, plus this badge's own row wherever it sits.
-
-    Its own call rather than a field on trivia(), because the standings change
-    while nothing about the question does and the two screens refresh at
-    different rates."""
-    return _request("GET", "/gateway/trivia/leaderboard", None)
-
-
-def mad_score(down_ms):
-    """Record one MAD run and return its leaderboard position.
-
-    The gateway derives the player from the paired badge token. The body names
-    no user or badge, and an identical retry is safe."""
-    return _request("POST", "/gateway/mad/score", None, {"down_ms": down_ms})
-
-
-def mad_leaderboard():
-    """The MAD top ten, plus this account's best run wherever it sits."""
-    return _request("GET", "/gateway/mad/leaderboard", None)
+    It is the only thing the badge tells the server about itself.
+    """
+    return _request("GET", "/gateway/desk", _power_params(power))

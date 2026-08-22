@@ -1,0 +1,94 @@
+@import "tailwindcss";
+@import "./tokens.css";
+
+/*
+ * Layer three: components. Semantic tokens only. No raw value appears below,
+ * and tests/tokens.test.ts fails the build if one does.
+ */
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    color-scheme: light dark;
+  }
+
+  /* The viewer paints its own ground behind the page, so this is explicit. */
+  body {
+    background-color: var(--color-background);
+    color: var(--color-ink);
+    font-family: var(--font-text);
+    font-size: var(--text-base);
+    line-height: var(--leading-prose);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Tabular figures everywhere a number can change. */
+  :where(h1, h2, h3, h4, .font-display, [data-numeric]) {
+    font-family: var(--font-display);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: var(--tracking-display);
+  }
+
+  :focus-visible {
+    outline: var(--border-edge) solid var(--color-focus);
+    outline-offset: var(--border-edge);
+  }
+
+  ::selection {
+    background-color: var(--color-accent);
+    color: var(--color-accent-ink);
+  }
+}
+
+@layer components {
+  /*
+   * The fold. Paper opens by unfolding along a crease and closes by folding
+   * back, fast, with a hard stop. Everything that opens on this site uses one
+   * of these two.
+   */
+  @keyframes unfold {
+    from {
+      transform: scaleY(0.6) translateY(calc(var(--spacing-2xs) * -1));
+      opacity: 0;
+    }
+    to {
+      transform: scaleY(1) translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes fold {
+    from {
+      transform: scaleY(1);
+      opacity: 1;
+    }
+    to {
+      transform: scaleY(0.6);
+      opacity: 0;
+    }
+  }
+
+  .unfold {
+    transform-origin: top;
+    animation: unfold var(--duration-unfold) var(--ease-fold);
+  }
+
+  .fold {
+    transform-origin: top;
+    animation: fold var(--duration-fold) var(--ease-fold);
+  }
+}
+
+/* Nothing in the product depends on an animation having played. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: var(--duration-none) !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: var(--duration-none) !important;
+  }
+}

@@ -4,7 +4,7 @@
 # own: the badge may not be paired, the radio is off when the app opens and a
 # cold join takes 17 to 21 seconds on this hardware, and pairing has to be able
 # to take over the screen when a token turns out to be dead. None of that is
-# specific to slides or to identity cards.
+# specific to any one page.
 #
 # So this holds the lifecycle and an app supplies two things: a machine that
 # knows how to fetch and hold its own data, and a view that knows how to draw
@@ -46,7 +46,7 @@ class RunSpec:
 
     `make_view(screen, shape, color)` returns something with draw(machine).
 
-    `fetch(power)` is the app's own call into the SDK, sb.deck or sb.identity.
+    `fetch(power)` is the app's own call into the SDK, sb.desk.
     It is passed in rather than chosen here so the runtime stays ignorant of
     which endpoint an app speaks to.
 

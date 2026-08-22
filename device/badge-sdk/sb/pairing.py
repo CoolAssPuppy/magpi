@@ -1,13 +1,12 @@
-# The pairing state machine (spec 4.2). Pure and testable: it owns every
-# transition and every timing rule, and reaches the world only through a
-# port. Drawing lives in ui.py and the port implementation lives in net.py,
-# the same split the server uses between _shared/pairing.ts and
-# _shared/pairing_port.ts.
+# The pairing state machine. Pure and testable: it owns every transition and
+# every timing rule, and reaches the world only through a port. Drawing lives
+# in ui.py and the port implementation lives in net.py, the same split the
+# server uses.
 #
 # Nothing here blocks on its own. tick() performs at most one port call per
 # frame and only when its own clock says the interval has elapsed, because
 # update() runs every frame on the badge and a blocking call inside it
-# stalls the UI (spec 3.3).
+# stalls the UI.
 
 # Port contract. An implementation must provide:
 #
@@ -48,19 +47,19 @@ WIFI_POLL_MS = 500
 WIFI_TIMEOUT_MS = 45000
 # Two quiet retries before the screen starts blaming the network. A badge
 # powered on outside radio range should not flash an error in the first
-# second, and an attendee at a table should not be told to find a helper
-# for something that fixes itself.
+# second, and nobody should be told to go find help for something that
+# fixes itself.
 WIFI_ATTEMPTS_BEFORE_WARNING = 2
 
 # Transient-failure backoff, shared by the start call and by unexpected
 # poll errors. Doubling from 3 seconds, capped, so a room full of badges
-# that lost the gateway does not hammer it back down (spec 8.7).
+# that lost the gateway does not hammer it back down.
 BACKOFF_BASE_MS = 3000
 BACKOFF_MAX_MS = 60000
 _MAX_DOUBLINGS = 8
 
 # RFC 8628 says a slow_down widens the interval; the server widens its own
-# copy by the same amount (_shared/pairing.ts SLOW_DOWN_INCREMENT_SECONDS).
+# copy by the same amount.
 SLOW_DOWN_INCREMENT_MS = 5000
 DEFAULT_INTERVAL_MS = 5000
 # The server can hand back an interval; refuse to poll faster than this
@@ -71,7 +70,7 @@ MIN_INTERVAL_MS = 1000
 # enough to read, short enough that nobody wonders whether it worked.
 APPROVED_DWELL_MS = 2000
 
-# Codes the server sends in the error envelope (spec 7.1).
+# Codes the server sends in the error envelope.
 PENDING = "authorization_pending"
 SLOW_DOWN = "slow_down"
 EXPIRED_TOKEN = "expired_token"
@@ -96,8 +95,8 @@ class PairingError(Exception):
         self.code = code
         self.message = message or code
         # Seconds, from the TOP LEVEL of the error body. The gateway puts it
-        # there rather than under detail (_shared/errors.ts), and a verifier
-        # that reads it from detail silently falls back to its own default.
+        # there rather than under detail, and a verifier that reads it from
+        # detail silently falls back to its own default.
         self.retry_after = retry_after
 
 
@@ -124,7 +123,7 @@ class PairingMachine:
 
         self.state = STATE_CONNECTING
         # What the screen says. Held here rather than in ui.py so the state
-        # machine tests cover the words an attendee actually reads.
+        # machine tests cover the words someone actually reads.
         self.message = "Joining WiFi"
         self.detail = None
         self.user_code = None
@@ -227,7 +226,7 @@ class PairingMachine:
                     STATE_NO_NETWORK,
                     "Cannot reach WiFi",
                     now_ms,
-                    detail="Retrying. Ask a helper if this persists.",
+                    detail="Retrying. Check your WiFi if this persists.",
                     delay_ms=_backoff_ms(self._failures),
                 )
             else:
@@ -264,7 +263,7 @@ class PairingMachine:
         expires_in = body.get("expires_in")
         self._deadline = None if not expires_in else now_ms + int(expires_in) * 1000
         self._failures = 0
-        # First poll waits a full interval: the attendee has not had time to
+        # First poll waits a full interval: nobody has had time to
         # scan anything, and an immediate poll only earns a slow_down.
         self._enter(STATE_WAITING, "Scan to pair", now_ms, delay_ms=self._interval)
 
@@ -287,7 +286,7 @@ class PairingMachine:
             return
 
         user = body.get("user") or {}
-        # Only these three keys reach the filesystem (spec 11.2). The poll
+        # Only these three keys reach the filesystem. The poll
         # body also carries display_name and avatar_url; the SDK does not
         # read them and the badge has no reason to keep them.
         self.token = {
@@ -359,7 +358,7 @@ class PairingMachine:
             )
             return
         # Network blip or an unexpected status. Keep the code on screen: it
-        # is still valid, and the attendee should not have to start over
+        # is still valid, and nobody should have to start over
         # because one request timed out.
         self._failures += 1
         self.detail = "Reconnecting"

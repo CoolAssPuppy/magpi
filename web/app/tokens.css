@@ -1,0 +1,211 @@
+/*
+ * Layer one: primitives, and layer two: semantics.
+ *
+ * Every raw value in the repository lives in this file. A hex colour, a pixel
+ * radius, or a duration anywhere else under web/ fails tests/tokens.test.ts.
+ *
+ * The four colour primitives come from a real magpie: glossy black on the head
+ * and back, a white belly and shoulder, blue-green iridescence across the wing,
+ * turning violet on the tail. Neutrals derive from ink and chalk. Nothing here
+ * was picked for brand reasons.
+ *
+ * docs/DESIGN.md is the prose version, including which tokens a theme may
+ * remap and which it may not.
+ */
+
+@theme {
+  /* Primitive: ink, the glossy black of the head and back. */
+  --color-ink-950: #08090b;
+  --color-ink-900: #0f1114;
+  --color-ink-800: #15181c;
+  --color-ink-700: #22262b;
+  --color-ink-600: #33383f;
+  --color-ink-500: #4a5058;
+  --color-ink-400: #6e757e;
+  --color-ink-300: #9aa0a8;
+  --color-ink-200: #c6c9ce;
+  --color-ink-100: #e2e4e7;
+
+  /* Primitive: chalk, the white belly and shoulder patch. Warm paper. */
+  --color-chalk-400: #e4e1d9;
+  --color-chalk-300: #efede7;
+  --color-chalk-200: #f7f6f2;
+  --color-chalk-100: #fbfaf7;
+  --color-chalk-50: #ffffff;
+
+  /* Primitive: sheen, the blue-green iridescence of the wing. The accent. */
+  --color-sheen-800: #0a6157;
+  --color-sheen-700: #0a7c6e;
+  --color-sheen-600: #0c9b89;
+  --color-sheen-500: #0fbfa8;
+  --color-sheen-400: #2ed3bc;
+  --color-sheen-300: #6fe3d3;
+
+  /* Primitive: violet, where that iridescence turns on the tail. */
+  --color-violet-700: #4e33b4;
+  --color-violet-600: #6242e0;
+  --color-violet-500: #7a5cff;
+  --color-violet-400: #8e78ff;
+  --color-violet-300: #a896ff;
+
+  /* Primitive: the two states the bird cannot supply. */
+  --color-amber-500: #c8871a;
+  --color-rust-500: #c2402f;
+
+  /* Primitive: the badge palette. Not a theme, a device fact. */
+  --color-screen: #000000;
+  --color-screen-ink: #ffffff;
+  --color-screen-dim: #8a8a8a;
+  --color-screen-accent: #0fbfa8;
+  --color-screen-warn: #e0a020;
+  --color-screen-bad: #e04a32;
+  --color-screen-panel: #171717;
+  --color-screen-rule: #2a2a2a;
+  --color-led-on: #ffffff;
+  --color-led-off: #2a2a2a;
+
+  /* Primitive: type. */
+  --font-display: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-text: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-screen: "Silkscreen", "JetBrains Mono", ui-monospace, monospace;
+
+  --text-2xs: 11px;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-md: 16px;
+  --text-lg: 18px;
+  --text-xl: 21px;
+  --text-2xl: 28px;
+  --text-3xl: 38px;
+  --text-4xl: 52px;
+  --text-5xl: 72px;
+
+  --leading-flat: 1;
+  --leading-tight: 1.15;
+  --leading-snug: 1.35;
+  --leading-prose: 1.6;
+
+  --tracking-display: -0.03em;
+  --tracking-normal: 0em;
+  --tracking-label: 0.08em;
+  --tracking-wide: 0.12em;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+  --font-weight-black: 800;
+
+  /* Primitive: spacing. */
+  --spacing-3xs: 2px;
+  --spacing-2xs: 4px;
+  --spacing-xs: 6px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+  --spacing-2xl: 32px;
+  --spacing-3xl: 48px;
+  --spacing-4xl: 64px;
+  --spacing-5xl: 96px;
+
+  /* Primitive: radius. Not uniform, on purpose. */
+  --radius-square: 0px;
+  --radius-hairline: 2px;
+  --radius-panel: 4px;
+  --radius-round: 10px;
+  --radius-pill: 999px;
+
+  /* Primitive: border widths. */
+  --border-hair: 1px;
+  --border-edge: 2px;
+  --border-slab: 3px;
+
+  /* Primitive: motion. Paper folds fast and stops hard. */
+  /* The reduced-motion floor. Zero is skipped by some engines. */
+  --duration-none: 0.01ms;
+  --duration-tick: 90ms;
+  --duration-fold: 140ms;
+  --duration-unfold: 180ms;
+  --ease-fold: cubic-bezier(0.32, 0, 0.12, 1);
+  --ease-crease: cubic-bezier(0.9, 0, 0.9, 1);
+
+  /* Primitive: the badge screen, at true size. */
+  --size-screen-w: 320px;
+  --size-screen-h: 240px;
+
+  /* Primitive: containers. */
+  --container-prose: 640px;
+  --container-panel: 960px;
+  --container-page: 1200px;
+}
+
+/*
+ * Layer two: semantics. The complete light palette, on bare :root.
+ *
+ * Every semantic token is defined here and nowhere else first. The dark blocks
+ * below redefine only what changes, so no colour has its only definition
+ * inside a media query or an attribute selector.
+ */
+:root {
+  --color-background: var(--color-chalk-200);
+  --color-surface: var(--color-chalk-100);
+  --color-raised: var(--color-chalk-50);
+  --color-ink: var(--color-ink-900);
+  --color-ink-muted: var(--color-ink-500);
+  --color-ink-faint: var(--color-ink-400);
+  --color-border: var(--color-chalk-400);
+  --color-border-strong: var(--color-ink-900);
+  --color-accent: var(--color-sheen-600);
+  --color-accent-ink: var(--color-chalk-50);
+  --color-accent-quiet: var(--color-sheen-700);
+  --color-live: var(--color-violet-600);
+  --color-positive: var(--color-sheen-700);
+  --color-caution: var(--color-amber-500);
+  --color-critical: var(--color-rust-500);
+  --color-focus: var(--color-violet-500);
+  --color-invert-ground: var(--color-ink-900);
+  --color-invert-ink: var(--color-chalk-200);
+}
+
+/* System dark, unless an explicit light choice says otherwise. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-background: var(--color-ink-950);
+    --color-surface: var(--color-ink-900);
+    --color-raised: var(--color-ink-800);
+    --color-ink: var(--color-chalk-200);
+    --color-ink-muted: var(--color-ink-300);
+    --color-ink-faint: var(--color-ink-400);
+    --color-border: var(--color-ink-800);
+    --color-border-strong: var(--color-ink-600);
+    --color-accent: var(--color-sheen-500);
+    --color-accent-ink: var(--color-ink-950);
+    --color-accent-quiet: var(--color-sheen-400);
+    --color-live: var(--color-violet-400);
+    --color-positive: var(--color-sheen-400);
+    --color-focus: var(--color-violet-400);
+    --color-invert-ground: var(--color-chalk-200);
+    --color-invert-ink: var(--color-ink-950);
+  }
+}
+
+/* An explicit dark choice, which wins in both directions. */
+:root[data-theme="dark"] {
+  --color-background: var(--color-ink-950);
+  --color-surface: var(--color-ink-900);
+  --color-raised: var(--color-ink-800);
+  --color-ink: var(--color-chalk-200);
+  --color-ink-muted: var(--color-ink-300);
+  --color-ink-faint: var(--color-ink-400);
+  --color-border: var(--color-ink-800);
+  --color-border-strong: var(--color-ink-600);
+  --color-accent: var(--color-sheen-500);
+  --color-accent-ink: var(--color-ink-950);
+  --color-accent-quiet: var(--color-sheen-400);
+  --color-live: var(--color-violet-400);
+  --color-positive: var(--color-sheen-400);
+  --color-focus: var(--color-violet-400);
+  --color-invert-ground: var(--color-chalk-200);
+  --color-invert-ink: var(--color-ink-950);
+}
