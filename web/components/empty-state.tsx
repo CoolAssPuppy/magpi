@@ -7,6 +7,8 @@ export interface EmptyStateProps {
   kicker?: string;
   body?: string;
   action?: { href: string; label: string };
+  /** Sits on the right, for an action that is not a link. */
+  aside?: ReactNode;
   children?: ReactNode;
 }
 
@@ -16,23 +18,26 @@ export interface EmptyStateProps {
  * The dashed border says the panel is waiting rather than broken, and the
  * action names the next step. An empty state with no action is a dead end.
  */
-export function EmptyState({ kicker, heading, body, action, children }: EmptyStateProps) {
+export function EmptyState({ kicker, heading, body, action, aside, children }: EmptyStateProps) {
   return (
-    <div className="gap-md rounded-panel border-border-strong bg-surface px-xl py-2xl flex flex-col items-start border border-dashed">
-      {kicker ? (
-        <span className="font-display text-2xs text-ink-faint tracking-wide">{kicker}</span>
-      ) : null}
-      <h2 className="font-display text-xl">{heading}</h2>
-      {body ? <p className="text-ink-muted max-w-prose text-base">{body}</p> : null}
-      {action ? (
-        <Link
-          href={action.href}
-          className="rounded-panel bg-accent px-lg py-sm font-display text-accent-ink text-sm font-medium"
-        >
-          {action.label}
-        </Link>
-      ) : null}
-      {children}
+    <div className="gap-xl rounded-panel border-border-strong bg-surface px-xl py-2xl flex items-center border border-dashed">
+      <div className="gap-md flex flex-1 flex-col items-start">
+        {kicker ? (
+          <span className="font-display text-2xs text-ink-faint tracking-wide">{kicker}</span>
+        ) : null}
+        <h2 className="font-display text-xl">{heading}</h2>
+        {body ? <p className="text-ink-muted max-w-prose text-base">{body}</p> : null}
+        {action ? (
+          <Link
+            href={action.href}
+            className="rounded-panel bg-accent px-lg py-sm font-display text-accent-ink text-sm font-medium"
+          >
+            {action.label}
+          </Link>
+        ) : null}
+        {children}
+      </div>
+      {aside ? <div className="shrink-0">{aside}</div> : null}
     </div>
   );
 }

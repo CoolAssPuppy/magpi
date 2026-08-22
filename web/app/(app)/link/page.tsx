@@ -3,8 +3,8 @@ import { redirect } from "next/navigation";
 /**
  * Kept because the badge's QR points here.
  *
- * Pairing is a dialog on the dashboard now, so this forwards and asks for it
- * to be open, carrying the scanned code through.
+ * Pairing is a dialog on the badges screen now, so this forwards and asks
+ * for it to be open, carrying the scanned code through.
  */
 export default async function LinkPage({
   searchParams,
@@ -13,5 +13,5 @@ export default async function LinkPage({
 }) {
   const params = await searchParams;
   const code = typeof params.code === "string" ? params.code : null;
-  redirect(code ? `/dashboard?pair=1&code=${encodeURIComponent(code)}` : "/dashboard?pair=1");
+  redirect(code ? `/badges?pair=1&code=${encodeURIComponent(code)}` : "/badges?pair=1");
 }

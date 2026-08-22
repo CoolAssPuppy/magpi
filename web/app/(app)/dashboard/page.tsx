@@ -19,13 +19,7 @@ export const metadata: Metadata = { title: "Dashboard" };
 
 const LIVE_TABLES = ["badges", "connections", "page_configs"];
 
-export default async function DashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  // A scanned QR lands here asking for the dialog.
-  const wantsPairing = (await searchParams).pair === "1";
+export default async function DashboardPage() {
   const [badges, connections, pages] = await Promise.all([
     listBadges(),
     listConnections(),
@@ -46,11 +40,7 @@ export default async function DashboardPage({
   }));
 
   return (
-    <AppShell
-      current="/dashboard"
-      title="Dashboard"
-      status={<PairBadgeDialog badges={badges} defaultOpen={wantsPairing} />}
-    >
+    <AppShell current="/dashboard" title="Dashboard">
       <LiveRegion
         supabaseUrl={getSupabaseUrl()}
         supabasePublishableKey={getSupabasePublishableKey()}
@@ -61,7 +51,7 @@ export default async function DashboardPage({
         {badge ? (
           <BadgeStatus badge={badge} pollLabel={`${enabled.length} of ${pages.length} pages on`} />
         ) : (
-          <EmptyState heading="Pair a badge" />
+          <EmptyState heading="Pair a badge" aside={<PairBadgeDialog badges={badges} />} />
         )}
 
         <div className="gap-xl flex flex-col lg:flex-row lg:items-start">

@@ -477,7 +477,25 @@ rotated without a data-loss event: to rotate, move the old key into
 the id to `2`. Old rows still decrypt under the old key while new writes use
 the new one.
 
-### 8.4 Edge function secrets
+### 8.4 Edge function secrets, locally
+
+Local edge functions do not read Doppler and do not inherit the shell that
+started the stack. They read `api/supabase/functions/.env`, and without it
+every Connect button answers "that provider is not configured" while the
+credentials sit in Doppler looking correct.
+
+```
+pnpm functions:start
+```
+
+That writes the file from Doppler and serves the functions with it. To write
+the file without serving, `pnpm secrets:local`. The file is gitignored; it
+holds secrets.
+
+You will know this worked when a Connect button sends you to the provider
+instead of returning to the connections list with an error.
+
+### 8.5 Edge function secrets, deployed
 
 The edge functions do not read Doppler. They read secrets set on the Supabase
 project, so push them across:
