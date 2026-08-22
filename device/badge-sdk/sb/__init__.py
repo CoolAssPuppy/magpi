@@ -37,7 +37,14 @@ __version__ = "1.0.0"
 try:
     import requests  # MicroPython 'requests' (aka urequests)
 except ImportError:
-    import urequests as requests
+    try:
+        import urequests as requests
+    except ImportError:
+        # Neither name exists off a badge. Importing sb.constants must not
+        # need an HTTP client, so this is deferred to the call rather than
+        # refused here: an app that only draws has no reason to fail to start,
+        # and a test that only wants the constants has no reason to fake one.
+        requests = None
 
 try:
     import hashlib
@@ -278,6 +285,9 @@ def _request(method, path, params=None, body=None):
         "X-App-Slug": _APP_SLUG or "unknown",
         "Content-Type": "application/json",
     }
+    if requests is None:
+        raise NetworkError("this system has no HTTP client")
+
     try:
         r = requests.request(
             method, url, headers=headers, data=json.dumps(body) if body is not None else None

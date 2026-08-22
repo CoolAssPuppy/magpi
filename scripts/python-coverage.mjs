@@ -16,7 +16,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { DEVICE_SUITES, DISCOVER } from "./device-suites.mjs";
+import { DEVICE_SUITES, DISCOVER, MEASURED_SUITES, OMIT } from "./device-suites.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const python = join(root, ".venv/bin/python");
@@ -38,13 +38,13 @@ if (spawnSync(python, ["-c", "import coverage"], { stdio: "ignore" }).status !==
 }
 
 let hasFailure = false;
-for (const suite of DEVICE_SUITES) {
+for (const suite of MEASURED_SUITES) {
   process.stdout.write(`\n   ${suite}\n`);
   const cwd = join(root, suite);
   const env = { ...process.env, COVERAGE_FILE: join(mkdtempSync(join(tmpdir(), "cov-")), "d") };
   const run = spawnSync(
     python,
-    ["-m", "coverage", "run", "--source=.", "--omit=tests/*", ...DISCOVER],
+    ["-m", "coverage", "run", "--source=.", `--omit=${OMIT.join(",")}`, ...DISCOVER],
     { cwd, env, stdio: "inherit" },
   );
   if (run.status !== 0) hasFailure = true;

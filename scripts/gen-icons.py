@@ -91,10 +91,10 @@ def colour_at(x, y):
     return INK_950
 
 
-def to_bird_space(px, py, size):
+def to_bird_space(px, py, size, fraction=CONTENT_FRACTION):
     """A pixel of the square icon, in the hero's coordinates."""
     left, top, width, height = BIRD
-    content = size * CONTENT_FRACTION
+    content = size * fraction
     scale = content / width
     drawn_height = height * scale
     offset_x = (size - content) / 2
@@ -102,13 +102,13 @@ def to_bird_space(px, py, size):
     return (px - offset_x) / scale + left, (py - offset_y) / scale + top
 
 
-def sample(px, py, size):
+def sample(px, py, size, fraction=CONTENT_FRACTION):
     """Average the samples in one pixel, so an edge lands between values."""
     total = [0, 0, 0]
     step = 1.0 / SUPERSAMPLE
     for sy in range(SUPERSAMPLE):
         for sx in range(SUPERSAMPLE):
-            x, y = to_bird_space(px + (sx + 0.5) * step, py + (sy + 0.5) * step, size)
+            x, y = to_bird_space(px + (sx + 0.5) * step, py + (sy + 0.5) * step, size, fraction)
             colour = colour_at(x, y)
             for channel in range(3):
                 total[channel] += colour[channel]
@@ -116,8 +116,11 @@ def sample(px, py, size):
     return bytes(value // count for value in total)
 
 
-def render(size):
-    return [b"".join(sample(px, py, size) for px in range(size)) for py in range(size)]
+def render(size, fraction=CONTENT_FRACTION):
+    return [
+        b"".join(sample(px, py, size, fraction) for px in range(size))
+        for py in range(size)
+    ]
 
 
 def chunk(tag, payload):
@@ -136,13 +139,35 @@ def encode_png(rows, size):
     )
 
 
-def main():
+def write(path, size, fraction=CONTENT_FRACTION):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(encode_png(render(size, fraction), size))
+    print("wrote %s at %dpx" % (path, size))
+
+
+def main(argv):
+    """No arguments writes every icon the repo needs.
+
+    --size and --out render one somewhere else, which is how the square a
+    third party asks for gets made without adding it to the repo. Slack, for
+    one, wants a square between 512 and 2000 pixels.
+
+    --fill is how much of that square the bird spans. The mark is wide, so a
+    square always leaves room above and below; somewhere small like a Slack
+    sidebar wants that room kept to a minimum.
+    """
+    args = dict(zip(argv[::2], argv[1::2]))
+    if "--out" in args:
+        size = int(args.get("--size", 1024))
+        fraction = float(args.get("--fill", CONTENT_FRACTION))
+        write(pathlib.Path(args["--out"]).expanduser(), size, fraction)
+        return
+
     for relative, size in TARGETS.items():
-        path = ROOT / relative
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(encode_png(render(size), size))
-        print("wrote %s at %dpx" % (relative, size))
+        write(ROOT / relative, size)
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+
+    main(sys.argv[1:])

@@ -11,9 +11,14 @@ rectangles is among the ones drawn. Exact, no glyph table duplicated here, and
 it fails if the font, the tracking or the run-packing changes underneath it.
 """
 
-from sb import ui
-
+# fakes first, and not only for tidiness: importing it registers the firmware
+# stand-ins in sys.modules, including the one sb resolves as `requests`. Import
+# sb before that and it falls through to `urequests`, which exists only on a
+# badge, so the suite passes or fails on whether the host happens to have
+# requests installed.
 from . import fakes
+
+from sb import ui
 
 
 def _rects(screen):
