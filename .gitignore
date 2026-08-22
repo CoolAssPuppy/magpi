@@ -50,3 +50,6 @@ Thumbs.db
 
 # External docs, cloned locally and pulled, never committed
 /vendor/
+
+# Python bytecode caches under device/
+device/**/__pycache__/
