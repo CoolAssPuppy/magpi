@@ -5,28 +5,28 @@ website. Built from the brief in `docs/BRIEF.md`.
 
 ## 1. Repo skeleton
 
-- [ ] pnpm workspace, root package.json, .nvmrc, .gitignore
-- [ ] prettier and prettier ignore
-- [ ] husky pre-push hook
-- [ ] `scripts/pre-push-gate.mjs` with `--strict`
-- [ ] `.github/workflows/ci.yml`
-- [ ] Prove `pnpm gate` runs and fails loudly on a deliberate error
+- [x] pnpm workspace, root package.json, .nvmrc, .gitignore
+- [x] prettier and prettier ignore
+- [x] husky pre-push hook
+- [x] `scripts/pre-push-gate.mjs` with `--strict`
+- [x] `.github/workflows/ci.yml`
+- [x] Prove `pnpm gate` runs and fails loudly on a deliberate error
 
 ## 2. Shared constants
 
-- [ ] `device-constants.json` at the repo root
-- [ ] `scripts/gen-device-constants.mjs` writes three files
-- [ ] `pnpm constants:check` in the gate and CI
+- [x] `device-constants.json` at the repo root
+- [x] `scripts/gen-device-constants.mjs` writes three files
+- [x] `pnpm constants:check` in the gate and CI
 
 ## 3. Design in Paper
 
-- [ ] Badge artboards: five Notifier pages
-- [ ] Badge artboards: five Notifier lifecycle states
-- [ ] Badge artboards: six Pomodoro states
-- [ ] Homepage artboards, both themes, origami magpies
-- [ ] Website artboards with empty, loading, and error states
-- [ ] Export a PNG per artboard to `design/`
-- [ ] Write `docs/DESIGN.md`
+- [x] Badge artboards: five Notifier pages
+- [x] Badge artboards: five Notifier lifecycle states
+- [x] Badge artboards: six Pomodoro states
+- [x] Homepage artboards, both themes, origami magpies
+- [x] Website artboards with empty, loading, and error states
+- [x] Export a PNG per artboard to `design/`
+- [x] Write `docs/DESIGN.md`
 
 ## 4. Database
 
