@@ -40,24 +40,24 @@ website. Built from the brief in `docs/BRIEF.md`.
 - [x] Next.js 16 app, Tailwind 4, shadcn
 - [x] Token layer: primitives, semantics, components
 - [x] Token test: no raw colour, radius, or duration outside primitives
-- [ ] GitHub sign in, session, layout, both themes, theme toggle
+- [x] GitHub sign in, session, layout, both themes, theme toggle
 
 ## 6. Pairing end to end
 
-- [ ] device-start, device-poll, device-approve
-- [ ] SDK copied and stripped of conference branding
+- [x] device-start, device-poll, device-approve
+- [x] SDK copied and stripped of conference branding
 - [ ] `/link` page with QR and code
 - [ ] Pair a real badge
 
 ## 7. Gateway skeleton
 
-- [ ] `GET /gateway/desk` returning a hardcoded envelope
+- [x] `GET /gateway/desk` returning a hardcoded envelope
 - [ ] Notifier renders it on hardware
 
 ## 8. Connections
 
-- [ ] providers table with `kind`
-- [ ] OAuth begin, callback, claim
+- [x] providers table with `kind`
+- [x] OAuth begin, callback, claim
 - [ ] API key form, encryption
 - [ ] Connect Google and Vercel for real
 
