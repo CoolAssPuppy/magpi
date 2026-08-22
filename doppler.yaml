@@ -1,0 +1,8 @@
+# Which Doppler config this repo uses by default.
+#
+# `doppler run` in the repo root picks this up, so nobody has to remember the
+# project name. Override for a personal set with `doppler setup --config
+# dev_personal`.
+setup:
+  project: magpi
+  config: dev
