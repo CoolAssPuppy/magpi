@@ -12,9 +12,11 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 export interface StubRequest {
-  /** The table, taken from the PostgREST path. */
+  /** The table, taken from the PostgREST path. An rpc reads as `rpc/<name>`. */
   table: string;
   method: string;
+  /** The whole path, for the auth endpoints, which are not under /rest/v1. */
+  path: string;
   /** Decoded query string, so `user_id=eq.abc` reads as written. */
   query: string;
   body: unknown;
@@ -28,6 +30,8 @@ export interface StubReply {
 
 export interface StubDb {
   db: SupabaseClient;
+  /** Origin of the stub, for code that builds its own client from the env. */
+  url: string;
   /** Every request the client made, in order. */
   requests: StubRequest[];
   close(): Promise<void>;
@@ -49,6 +53,7 @@ export function stubDb(reply: (request: StubRequest) => StubReply | undefined): 
       // /rest/v1/<table>
       table: url.pathname.replace(/^\/rest\/v1\//, ""),
       method: request.method,
+      path: url.pathname,
       query: decodeURIComponent(url.search.replace(/^\?/, "")),
       body: raw ? JSON.parse(raw) : null,
     };
@@ -62,12 +67,14 @@ export function stubDb(reply: (request: StubRequest) => StubReply | undefined): 
   });
 
   const { port } = server.addr as Deno.NetAddr;
-  const db = createClient(`http://127.0.0.1:${port}`, "stub-key", {
+  const url = `http://127.0.0.1:${port}`;
+  const db = createClient(url, "stub-key", {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
   return {
     db,
+    url,
     requests,
     close: () => server.shutdown(),
   };
