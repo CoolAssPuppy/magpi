@@ -60,7 +60,9 @@ export async function authenticateBadge(db: SupabaseClient, token: string): Prom
 export function readDeviceReport(url: URL): DeviceReport {
   const number = (name: string): number | null => {
     const raw = url.searchParams.get(name);
-    if (raw === null) return null;
+    // Blank is not reported, and Number("") is 0. Without this an empty
+    // battery_v records the badge as flat rather than as silent.
+    if (raw === null || raw.trim() === "") return null;
     const value = Number(raw);
     return Number.isFinite(value) ? value : null;
   };
