@@ -1,4 +1,3 @@
-import type { User } from "@supabase/supabase-js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));

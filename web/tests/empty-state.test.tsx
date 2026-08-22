@@ -37,7 +37,9 @@ describe("a panel with nothing in it", () => {
   });
 
   it("names the next step as a link the reader can follow", () => {
-    render(<EmptyState {...emptyStateProps({ action: { href: "/pages/new", label: "Add a page" } })} />);
+    render(
+      <EmptyState {...emptyStateProps({ action: { href: "/pages/new", label: "Add a page" } })} />,
+    );
 
     expect(screen.getByRole("link", { name: "Add a page" })).toHaveAttribute("href", "/pages/new");
   });

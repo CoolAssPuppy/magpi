@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Instrument_Sans, JetBrains_Mono, Silkscreen } from "next/font/google";
+import { headers } from "next/headers";
 
 import { AnalyticsProvider } from "@/lib/analytics/provider";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
@@ -32,12 +33,21 @@ export const metadata: Metadata = {
   description: "A desk companion for the Pimoroni Tufty 2350.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+/**
+ * Reading the nonce makes every page dynamic, which the policy already
+ * requires: a nonce is minted per request, so an HTML page cached from an
+ * earlier one carries a nonce the new response header does not name, and every
+ * script on it is refused.
+ */
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Set by middleware on the forwarded request headers.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         {/* Runs before first paint, so a chosen theme never flashes the other one. */}
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className={`${display.variable} ${text.variable} ${screen.variable}`}>
         <AnalyticsProvider>{children}</AnalyticsProvider>

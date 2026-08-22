@@ -2,6 +2,15 @@ import { describe, expect, it, vi } from "vitest";
 
 import { PAGE_SLUGS } from "@/lib/badge-constants";
 import {
+  getPollIntervalMs,
+  getPomodoroSettings,
+  getProvider,
+  listBadges,
+  listConnections,
+  listPageConfigs,
+  listProviders,
+} from "@/lib/queries";
+import {
   badgeRowSchema,
   connectionRowSchema,
   pageConfigRowSchema,
@@ -99,16 +108,6 @@ vi.mock("@/lib/supabase/server", () => ({
     },
   }),
 }));
-
-const {
-  getPollIntervalMs,
-  getPomodoroSettings,
-  getProvider,
-  listBadges,
-  listConnections,
-  listPageConfigs,
-  listProviders,
-} = await import("@/lib/queries");
 
 /** Point the fake database at a set of rows, and forget the previous test. */
 function given(tables: Record<string, unknown>): void {

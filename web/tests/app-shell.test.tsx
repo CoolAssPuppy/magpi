@@ -59,7 +59,9 @@ describe("the page frame around every signed-in screen", () => {
   it("shows the page content in the main landmark", () => {
     render(<AppShell {...appShellProps()} />);
 
-    expect(within(screen.getByRole("main")).getByText("Six pages, all polling.")).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("main")).getByText("Six pages, all polling."),
+    ).toBeInTheDocument();
   });
 
   it("shows a status beside the title when the page reports one", () => {

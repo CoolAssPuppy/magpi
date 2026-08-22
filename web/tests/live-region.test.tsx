@@ -1,5 +1,5 @@
 import { act, render } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { LiveRegion, type LiveRegionProps } from "@/components/live-region";
 
@@ -79,7 +79,10 @@ vi.mock("@/lib/supabase/browser", () => ({
   },
 }));
 
-afterEach(() => realtime.reset());
+// Reset before, not after: the shared `afterEach(cleanup)` unmounts the previous
+// tree after this file's hooks, so a trailing removeChannel would land in the
+// next test's recording.
+beforeEach(() => realtime.reset());
 
 function liveRegionProps(overrides?: Partial<LiveRegionProps>): LiveRegionProps {
   return {

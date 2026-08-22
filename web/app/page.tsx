@@ -15,11 +15,15 @@ const PAGES = [
   { number: "05", name: "One number", source: "PostHog" },
 ];
 
+// The providers table, in its own position order. Some ship disabled until an
+// app is registered for them; the homepage still names them, because this is
+// the list of what Magpi reads, not the list of what is switched on today.
 const PROVIDERS = [
   { slug: "google", name: "Google", kind: "OAUTH" },
   { slug: "linear", name: "Linear", kind: "OAUTH" },
   { slug: "slack", name: "Slack", kind: "OAUTH" },
   { slug: "notion", name: "Notion", kind: "OAUTH" },
+  { slug: "github", name: "GitHub", kind: "OAUTH" },
   { slug: "vercel", name: "Vercel", kind: "API KEY" },
   { slug: "posthog", name: "PostHog", kind: "API KEY" },
 ];
@@ -27,12 +31,12 @@ const PROVIDERS = [
 export default function HomePage() {
   return (
     <main>
-      <header className="border-border px-2xl py-xl flex items-center justify-between border-b">
+      <header className="gap-lg border-border px-2xl py-xl flex flex-wrap items-center justify-between border-b">
         <div className="gap-md flex items-center">
           <MagpieMark />
           <span className="font-display text-md font-bold">Magpi</span>
         </div>
-        <nav className="gap-xl flex items-center">
+        <nav className="gap-lg sm:gap-xl flex flex-wrap items-center">
           <Link href="/login" className="font-display text-ink-muted hover:text-ink text-sm">
             Pages
           </Link>
@@ -89,7 +93,7 @@ export default function HomePage() {
       </section>
 
       <section className="gap-4xl border-border bg-surface px-2xl py-5xl flex flex-col items-start border-t lg:flex-row lg:items-center">
-        <div className="rounded-round border-border bg-raised p-xl shrink-0 border">
+        <div className="rounded-round border-border bg-raised p-lg sm:p-xl max-w-full shrink-0 overflow-x-auto border">
           <BadgePreview ops={opsFor("next_thing")} label="Next thing, on the badge" />
         </div>
         <div className="gap-xl flex flex-col items-start">

@@ -1,6 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import type { AnalyticsPort } from "@/lib/analytics/types";
+
 const mocked = vi.hoisted(() => ({
   pathname: "/dashboard",
   posthog: {
@@ -32,7 +34,6 @@ const { AnalyticsProvider } = await import("@/lib/analytics/provider");
 const { useAnalytics } = await import("@/lib/analytics/use-analytics");
 const { setAnalyticsForTesting } = await import("@/lib/analytics/client");
 const { createNoopAnalytics } = await import("@/lib/analytics/noop");
-const type = await import("@/lib/analytics/types");
 
 afterEach(() => {
   mocked.pathname = "/dashboard";
@@ -47,19 +48,27 @@ function makePostHog() {
   return createPostHogAnalytics({ key: "phc_test", host: "https://ph.example.com" });
 }
 
+/** The one init call, or a failure that names what was recorded instead. */
+function onlyInit() {
+  const [first, ...rest] = mocked.posthog.init;
+  if (!first || rest.length > 0) {
+    throw new Error(`expected exactly one init, got ${mocked.posthog.init.length}`);
+  }
+  return first;
+}
+
 describe("the PostHog backend", () => {
   it("initialises once with the key and host it was handed", () => {
     makePostHog();
 
-    expect(mocked.posthog.init).toHaveLength(1);
-    expect(mocked.posthog.init[0].key).toBe("phc_test");
-    expect(mocked.posthog.init[0].options.api_host).toBe("https://ph.example.com");
+    expect(onlyInit().key).toBe("phc_test");
+    expect(onlyInit().options.api_host).toBe("https://ph.example.com");
   });
 
   it("turns off autocapture, so a control panel is not turned into a heatmap", () => {
     makePostHog();
 
-    expect(mocked.posthog.init[0].options).toMatchObject({
+    expect(onlyInit().options).toMatchObject({
       autocapture: false,
       capture_pageview: false,
     });
@@ -94,9 +103,9 @@ describe("the PostHog backend", () => {
 describe("the provider on the tree", () => {
   function recorder() {
     const views: string[] = [];
-    const port: type.AnalyticsPort = {
+    const port: AnalyticsPort = {
       ...createNoopAnalytics(),
-      pageView: (path) => views.push(path),
+      pageView: (path: string) => views.push(path),
     };
     return { port, views };
   }

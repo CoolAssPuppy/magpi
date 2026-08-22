@@ -1,7 +1,30 @@
 import { describe, expect, it } from "vitest";
 
 import { PAGE_SLUGS } from "@/lib/badge-constants";
-import { FIXTURES, knownSlugs, ledsFor, opsFor, pageNames, stateOpsFor } from "@/lib/preview/fixtures";
+import {
+  FIXTURES,
+  knownSlugs,
+  ledsFor,
+  opsFor,
+  pageNames,
+  stateOpsFor,
+} from "@/lib/preview/fixtures";
+
+/**
+ * One recorded page, or a failure naming the slug. The fixtures are generated,
+ * so a missing page is a recorder that has drifted, not a case to tolerate.
+ */
+function pageFixture(slug: string) {
+  const page = FIXTURES.pages[slug];
+  if (!page) throw new Error(`no recording for ${slug}`);
+  return page;
+}
+
+function caseFixture(slug: string, caseName: string) {
+  const recorded = pageFixture(slug).cases[caseName];
+  if (!recorded) throw new Error(`no ${caseName} case recorded for ${slug}`);
+  return recorded;
+}
 
 describe("the recorded layouts", () => {
   it("holds a recording for every page the device can draw", () => {
@@ -22,13 +45,15 @@ describe("the operations for a page", () => {
   });
 
   it("replays a named case when one is asked for", () => {
-    const cases = Object.keys(FIXTURES.pages.next_thing.cases);
-    expect(opsFor("next_thing", cases[0])).toEqual(FIXTURES.pages.next_thing.cases[cases[0]].draw);
+    const [name] = Object.keys(pageFixture("next_thing").cases);
+    if (!name) throw new Error("next_thing has no recorded cases");
+
+    expect(opsFor("next_thing", name)).toEqual(caseFixture("next_thing", name).draw);
   });
 
   it("falls back to the empty state when the case was never recorded", () => {
     expect(opsFor("next_thing", "a case nobody recorded")).toEqual(
-      FIXTURES.pages.next_thing.states.empty,
+      pageFixture("next_thing").states.empty,
     );
   });
 
@@ -42,13 +67,13 @@ describe("the operations for a page", () => {
   });
 
   it("replays a recorded state", () => {
-    expect(stateOpsFor("next_thing", "empty")).toEqual(FIXTURES.pages.next_thing.states.empty);
+    expect(stateOpsFor("next_thing", "empty")).toEqual(pageFixture("next_thing").states.empty);
   });
 });
 
 describe("the LED levels a page asks for", () => {
   it("uses the levels the recording captured", () => {
-    expect(ledsFor("next_thing")).toEqual(FIXTURES.pages.next_thing.cases.typical.leds);
+    expect(ledsFor("next_thing")).toEqual(caseFixture("next_thing", "typical").leds);
   });
 
   it("leaves all four dark for a page or case with no recording", () => {

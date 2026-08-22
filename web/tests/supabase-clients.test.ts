@@ -1,3 +1,4 @@
+import type * as ReactModule from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
@@ -6,7 +7,7 @@ vi.mock("server-only", () => ({}));
 // it is replaced with the identity: otherwise the first test's answer would be
 // handed to every test after it.
 vi.mock("react", async () => {
-  const react = await vi.importActual<typeof import("react")>("react");
+  const react = await vi.importActual<typeof ReactModule>("react");
   return { ...react, cache: <T>(fn: T): T => fn };
 });
 

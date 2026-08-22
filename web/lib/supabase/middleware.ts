@@ -14,7 +14,18 @@ function originOf(url: string): string | null {
   }
 }
 
-function buildCsp(nonce: string): string {
+/**
+ * Loopback is not a network anyone can watch, and a production build has to be
+ * runnable over plain http to be checked before it ships. Safari honours
+ * upgrade-insecure-requests on localhost where Chrome exempts it, so leaving
+ * the directive on turns every asset into a failed TLS handshake and the page
+ * never becomes interactive.
+ */
+function isLoopback(hostname: string): boolean {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+}
+
+function buildCsp(nonce: string, hostname: string): string {
   const connectSrc = new Set(["'self'"]);
   for (const url of [getSupabaseUrl(), getBadgeApiUrl()]) {
     const origin = originOf(url);
@@ -44,9 +55,12 @@ function buildCsp(nonce: string): string {
     `base-uri 'self'`,
     `form-action 'self'`,
   ];
-  // A phone reaches the development server over plain HTTP on the badge's
-  // WiFi. Upgrading that form action to HTTPS makes every button inert.
-  if (process.env.NODE_ENV === "production") directives.push("upgrade-insecure-requests");
+  // Not in development either: a phone reaches the dev server over plain HTTP
+  // on the badge's WiFi, and upgrading that form action makes every button
+  // inert.
+  if (process.env.NODE_ENV === "production" && !isLoopback(hostname)) {
+    directives.push("upgrade-insecure-requests");
+  }
   return directives.join("; ");
 }
 
@@ -66,7 +80,7 @@ function applySecurityHeaders(response: NextResponse, csp: string, nonce: string
 /** Session refresh, security headers, and route gating. */
 export async function updateSession(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
-  const csp = buildCsp(nonce);
+  const csp = buildCsp(nonce, request.nextUrl.hostname);
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("Content-Security-Policy", csp);

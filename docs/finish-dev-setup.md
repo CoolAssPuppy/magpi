@@ -216,8 +216,12 @@ Separate from the above, and optional. This is Magpi reporting its own usage.
 2. Store it:
 
 ```
-doppler secrets set NEXT_PUBLIC_POSTHOG_KEY="phc_..." --project magpi --config dev
+doppler secrets set NEXT_PUBLIC_POSTHOG_KEY="phc_AdcGAnSFxb7GiV5CM8a2faX25SJgSv9MrZrkFK7rtMzZ" --project magpi --config dev
 doppler secrets set NEXT_PUBLIC_POSTHOG_HOST="https://us.i.posthog.com" --project magpi --config dev
+doppler secrets set NEXT_PUBLIC_POSTHOG_KEY="phc_AdcGAnSFxb7GiV5CM8a2faX25SJgSv9MrZrkFK7rtMzZ" --project magpi --config stg
+doppler secrets set NEXT_PUBLIC_POSTHOG_HOST="https://us.i.posthog.com" --project magpi --config stg
+doppler secrets set NEXT_PUBLIC_POSTHOG_KEY="phc_AdcGAnSFxb7GiV5CM8a2faX25SJgSv9MrZrkFK7rtMzZ" --project magpi --config prd
+doppler secrets set NEXT_PUBLIC_POSTHOG_HOST="https://us.i.posthog.com" --project magpi --config prd
 ```
 
 Leave `NEXT_PUBLIC_POSTHOG_KEY` empty to run with analytics off. The app

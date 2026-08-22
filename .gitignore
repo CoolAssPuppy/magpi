@@ -56,3 +56,6 @@ device/**/__pycache__/
 
 # Badge bundles, written by scripts/package-badge.mjs for a dry run.
 dist/
+
+# TypeScript incremental build cache
+*.tsbuildinfo

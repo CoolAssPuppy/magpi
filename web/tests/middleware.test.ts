@@ -134,9 +134,28 @@ describe("what the page is allowed to connect to", () => {
     vi.stubEnv("BADGE_API_URL", "https://proj.supabase.co/functions/v1");
     auth({});
 
-    const csp = (await updateSession(request("/"))).headers.get("Content-Security-Policy") ?? "";
+    const response = await updateSession(
+      new NextRequest("https://magpi.example/", { headers: new Headers() }),
+    );
+    const csp = response.headers.get("Content-Security-Policy") ?? "";
+
     expect(csp).not.toContain("'unsafe-eval'");
     expect(csp).toContain("upgrade-insecure-requests");
+  });
+
+  it("leaves loopback alone, so a production build stays runnable over plain http", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://proj.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_test");
+    vi.stubEnv("BADGE_API_URL", "https://proj.supabase.co/functions/v1");
+    auth({});
+
+    for (const host of ["localhost", "127.0.0.1"]) {
+      const response = await updateSession(new NextRequest(`http://${host}:3000/`));
+      const csp = response.headers.get("Content-Security-Policy") ?? "";
+
+      expect(csp, `${host} should not be upgraded`).not.toContain("upgrade-insecure-requests");
+    }
   });
 });
 

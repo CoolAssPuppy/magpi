@@ -363,3 +363,45 @@ describe("disconnect", () => {
     expect(writes).toHaveLength(0);
   });
 });
+
+/**
+ * Every action ends the same way: the write is attempted, and if the database
+ * refuses it the caller is told so rather than shown a success. Row-level
+ * security is what usually refuses, so this is the path a user hits when they
+ * aim an action at somebody else's row.
+ */
+describe("when the database refuses the write", () => {
+  const ATTEMPTS: [string, (client: DbClient) => Promise<{ status: string }>][] = [
+    ["togglePage", (c) => togglePage(c, USER, form({ page_slug: "deploys", enabled: "true" }))],
+    ["reorderPages", (c) => reorderPages(c, USER, form({ order: "deploys,next_thing" }))],
+    ["configurePage", (c) => configurePage(c, USER, form({ page_slug: "counters", config: "{}" }))],
+    ["savePolling", (c) => savePolling(c, USER, form({ poll_interval_ms: "30000" }))],
+    [
+      "savePomodoro",
+      (c) =>
+        savePomodoro(
+          c,
+          USER,
+          form({ work_min: "25", short_break_min: "5", long_break_min: "15", sessions: "4" }),
+        ),
+    ],
+    ["renameBadge", (c) => renameBadge(c, USER, form({ badge_id: BADGE, label: "Desk" }))],
+    ["revoke", (c) => revoke(c, USER, form({ badge_id: BADGE }))],
+    ["disconnect", (c) => disconnect(c, USER, form({ provider: "posthog" }))],
+  ];
+
+  for (const [name, attempt] of ATTEMPTS) {
+    it(`reports the failure from ${name} instead of claiming success`, async () => {
+      const { client } = fakeDb("new row violates row-level security policy");
+      expect((await attempt(client)).status).toBe("error");
+    });
+
+    it(`keeps the upstream message away from the user in ${name}`, async () => {
+      const { client } = fakeDb("new row violates row-level security policy for table badges");
+      const result = await attempt(client);
+
+      expect(result.status).toBe("error");
+      expect("message" in result && result.message).not.toContain("row-level security");
+    });
+  }
+});
