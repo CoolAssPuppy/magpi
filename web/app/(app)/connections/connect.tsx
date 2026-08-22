@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 
-import { IDLE } from "@/lib/actions/state";
+import { IDLE, type ActionState } from "@/lib/actions/state";
 
 import { beginOAuthAction, saveApiKeyAction } from "./actions";
 
@@ -24,6 +24,15 @@ export interface ConnectProps {
 /** The action at the end of a provider's row, and the field it may open. */
 export function Connect({ provider, kind }: ConnectProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [state, save, isSaving] = useActionState(saveApiKeyAction, IDLE);
+
+  // Close the panel once the key saves. Adjusted while rendering rather than
+  // in an effect, which is what the lint rule is about.
+  const [seen, setSeen] = useState(state);
+  if (seen !== state) {
+    setSeen(state);
+    if (state.status === "success") setIsOpen(false);
+  }
 
   if (kind === "oauth") {
     return (
@@ -41,7 +50,15 @@ export function Connect({ provider, kind }: ConnectProps) {
       <button type="button" onClick={() => setIsOpen((open) => !open)} className={PRIMARY}>
         Add key
       </button>
-      {isOpen ? <ApiKeyFields provider={provider} onDone={() => setIsOpen(false)} /> : null}
+      {isOpen ? (
+        <ApiKeyFields
+          provider={provider}
+          state={state}
+          save={save}
+          isSaving={isSaving}
+          onCancel={() => setIsOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -52,11 +69,20 @@ export function Connect({ provider, kind }: ConnectProps) {
  * Pasting a key is one field and a button, and a whole screen to hold them is
  * a screen you have to come back from.
  */
-function ApiKeyFields({ provider, onDone }: { provider: string; onDone: () => void }) {
-  const [state, save, isSaving] = useActionState(saveApiKeyAction, IDLE);
+function ApiKeyFields({
+  provider,
+  state,
+  save,
+  isSaving,
+  onCancel,
+}: {
+  provider: string;
+  state: ActionState;
+  save: (form: FormData) => void;
+  isSaving: boolean;
+  onCancel: () => void;
+}) {
   const meta = META_FIELDS[provider] ?? [];
-
-  if (state.status === "success") onDone();
 
   return (
     <form
@@ -99,7 +125,7 @@ function ApiKeyFields({ provider, onDone }: { provider: string; onDone: () => vo
         <button type="submit" disabled={isSaving} className={PRIMARY}>
           {isSaving ? "Testing" : "Save and test"}
         </button>
-        <button type="button" onClick={onDone} className="text-ink-muted hover:text-ink text-sm">
+        <button type="button" onClick={onCancel} className="text-ink-muted hover:text-ink text-sm">
           Cancel
         </button>
         {state.status === "error" ? (

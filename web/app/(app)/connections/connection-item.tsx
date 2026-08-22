@@ -27,6 +27,19 @@ export function ConnectionItem({
   const [state, rename, isRenaming] = useActionState(renameConnectionAction, IDLE);
   const [, remove, isRemoving] = useActionState(disconnectAction, IDLE);
 
+  // Leave edit mode once the rename lands, so the row comes back showing the
+  // new name. The action revalidates, so what it comes back with is the saved
+  // name rather than what was typed.
+  //
+  // Adjusted while rendering rather than in an effect: React re-runs this
+  // component before touching the DOM, so there is no second paint and no
+  // cascade. An effect here is what the lint rule is about.
+  const [seen, setSeen] = useState(state);
+  if (seen !== state) {
+    setSeen(state);
+    if (state.status === "success") setIsEditing(false);
+  }
+
   const name = connection.label ?? connection.external_account ?? "Unnamed";
 
   if (isEditing) {
