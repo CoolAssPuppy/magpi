@@ -46,7 +46,7 @@ website. Built from the brief in `docs/BRIEF.md`.
 
 - [x] device-start, device-poll, device-approve
 - [x] SDK copied and stripped of conference branding
-- [ ] `/link` page with QR and code
+- [x] `/link` page with QR and code
 - [ ] Pair a real badge
 
 ## 7. Gateway skeleton
@@ -58,7 +58,7 @@ website. Built from the brief in `docs/BRIEF.md`.
 
 - [x] providers table with `kind`
 - [x] OAuth begin, callback, claim
-- [ ] API key form, encryption
+- [x] API key form, encryption
 - [ ] Connect Google and Vercel for real
 
 ## 9. The five pages
@@ -71,14 +71,14 @@ website. Built from the brief in `docs/BRIEF.md`.
 
 ## 10. The pages screen
 
-- [ ] Enable, drag to reorder, per-page settings
+- [x] Enable, drag to reorder, per-page settings
 - [x] Live previews at true size
 - [x] `preview-fixtures.json` generated from the Python page modules
 
 ## 11. Pomodoro and settings
 
 - [x] Pomodoro machine, view, firmware boundary
-- [ ] `/settings` writes intervals through Notifier
+- [x] `/settings` writes intervals through Notifier
 
 ## 12. Tests and coverage
 
