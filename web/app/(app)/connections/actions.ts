@@ -78,7 +78,9 @@ export async function saveApiKeyAction(
       body: JSON.stringify({
         provider,
         api_key: apiKey,
-        meta: Object.fromEntries(Object.entries(meta).filter(([, value]) => value)),
+        meta: Object.fromEntries(
+          Object.entries(meta).filter(([, value]) => typeof value === "string" && value !== ""),
+        ),
       }),
     });
 

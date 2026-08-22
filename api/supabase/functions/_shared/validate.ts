@@ -46,6 +46,26 @@ export const connectionsClaimSchema = z.strictObject({
   ticket: z.string().min(1).max(256),
 });
 
+/**
+ * Establishing a connection from a pasted key rather than a ticket.
+ *
+ * `meta` is the non-secret settings a provider needs, such as a PostHog
+ * project and insight, or a Vercel team. Values are bounded so a caller cannot
+ * park arbitrary bulk in the row.
+ */
+export const connectionsKeySchema = z.strictObject({
+  provider: z
+    .string()
+    .regex(/^[a-z][a-z0-9_]*$/)
+    .max(40),
+  api_key: z.string().min(8).max(512),
+  label: z.string().trim().min(1).max(24).optional(),
+  meta: z.record(z.string().max(40), z.string().max(200)).optional(),
+});
+
+/** Either way of establishing one. */
+export const connectionsClaimOrKeySchema = z.union([connectionsClaimSchema, connectionsKeySchema]);
+
 /** Throws a 400 ApiError carrying the issue list. */
 export function parseBody<T>(schema: z.ZodType<T>, data: unknown): T {
   const result = schema.safeParse(data);

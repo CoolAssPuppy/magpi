@@ -17,7 +17,9 @@ import { audit, enforceRateLimits, serviceClient } from "../_shared/db.ts";
 import { requireUser } from "../_shared/auth.ts";
 import { sha256Hex } from "../_shared/crypto.ts";
 import { claimConnection, type ClaimPort, type PendingConnection } from "../_shared/claim.ts";
-import { connectionsClaimSchema, parseBody } from "../_shared/validate.ts";
+import { connectionsClaimOrKeySchema, parseBody } from "../_shared/validate.ts";
+import { encryptProviderToken } from "../_shared/provider_tokens.ts";
+import { ApiError } from "../_shared/errors.ts";
 
 interface PendingRow {
   user_id: string;
@@ -31,7 +33,7 @@ interface PendingRow {
 }
 
 serveFunction("connections-claim", async (core) => {
-  const input = parseBody(connectionsClaimSchema, core.body);
+  const input = parseBody(connectionsClaimOrKeySchema, core.body);
   const user = await requireUser(core.headers);
   const db = serviceClient();
 
@@ -87,6 +89,57 @@ serveFunction("connections-claim", async (core) => {
     audit: (entry) => audit({ ...entry, ip: core.ip }),
   };
 
+  if ("api_key" in input) {
+    return jsonResponse(await storeKey(db, user.id, input, core.ip));
+  }
+
   const result = await claimConnection(port, user.id, input.ticket);
   return jsonResponse(result);
 });
+
+/**
+ * Stores a pasted key as a connection.
+ *
+ * The key is encrypted here rather than in the website, because the encryption
+ * key reaches the edge functions and nothing else. The same AAD binds it to
+ * the account and provider as an OAuth token.
+ */
+async function storeKey(
+  db: ReturnType<typeof serviceClient>,
+  userId: string,
+  input: { provider: string; api_key: string; label?: string; meta?: Record<string, string> },
+  ip: string,
+) {
+  const { data: provider } = await db
+    .from("providers")
+    .select("slug, kind, enabled")
+    .eq("slug", input.provider)
+    .maybeSingle<{ slug: string; kind: string; enabled: boolean }>();
+
+  if (!provider || !provider.enabled) {
+    throw new ApiError(404, "unknown_provider", "no such provider");
+  }
+  if (provider.kind !== "api_key") {
+    throw new ApiError(400, "wrong_kind", "that provider connects with OAuth");
+  }
+
+  const accessTokenEnc = await encryptProviderToken(input.api_key, {
+    userId,
+    provider: input.provider,
+  });
+
+  const { error } = await db.from("connections").insert({
+    user_id: userId,
+    provider: input.provider,
+    label: input.label ?? null,
+    access_token_enc: accessTokenEnc,
+    meta: input.meta ?? {},
+    status: "active",
+    updated_at: new Date().toISOString(),
+  });
+  if (error) throw new ApiError(500, "internal", "could not save that key");
+
+  // The key itself never appears here, only that one was stored.
+  audit({ action: "connection.key.stored", actor: userId, target: input.provider, ip });
+  return { connected: true, provider: input.provider };
+}
