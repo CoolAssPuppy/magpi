@@ -13,6 +13,8 @@ export const metadata: Metadata = { title: "Connections" };
 const BEGIN_ERRORS: Record<string, string> = {
   begin: "That provider is not configured on this deployment yet.",
   unknown_provider: "There is no such provider.",
+  no_ticket: "That link is incomplete. Start the connection again.",
+  claim: "That connection could not be completed. Start it again.",
 };
 
 export default async function ConnectionsPage({
@@ -23,6 +25,7 @@ export default async function ConnectionsPage({
   const params = await searchParams;
   const errorKey = typeof params.error === "string" ? params.error : null;
   const errorMessage = errorKey ? BEGIN_ERRORS[errorKey] : null;
+  const justConnected = params.connected === "1";
 
   const [providers, connections] = await Promise.all([listProviders(), listConnections()]);
   // Many per provider now, in the order they were connected.
@@ -34,6 +37,14 @@ export default async function ConnectionsPage({
   return (
     <AppShell current="/connections" title="Connections">
       <div className="max-w-panel flex flex-col">
+        {justConnected ? (
+          <p
+            role="status"
+            className="border-l-edge border-accent bg-surface px-lg py-md mb-md text-sm"
+          >
+            Connected. Name it below if you have more than one.
+          </p>
+        ) : null}
         {errorMessage ? (
           <p
             role="alert"
