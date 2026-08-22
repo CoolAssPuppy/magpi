@@ -72,12 +72,12 @@ website. Built from the brief in `docs/BRIEF.md`.
 ## 10. The pages screen
 
 - [ ] Enable, drag to reorder, per-page settings
-- [ ] Live previews at true size
-- [ ] `preview-fixtures.json` generated from the Python page modules
+- [x] Live previews at true size
+- [x] `preview-fixtures.json` generated from the Python page modules
 
 ## 11. Pomodoro and settings
 
-- [ ] Pomodoro machine, view, firmware boundary
+- [x] Pomodoro machine, view, firmware boundary
 - [ ] `/settings` writes intervals through Notifier
 
 ## 12. Tests and coverage

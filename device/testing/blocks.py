@@ -17,7 +17,14 @@ from . import fakes
 
 
 def _rects(screen):
-    return [call[1] for call in screen.calls if call[0] == "shape"]
+    """Only the rectangles. A screen that also drew a circle is not a screen
+    with no headline on it, and reading a circle as a rectangle indexes past
+    the end of its tuple."""
+    return [
+        call[1]
+        for call in screen.calls
+        if call[0] == "shape" and isinstance(call[1], tuple) and call[1][0] == "rect"
+    ]
 
 
 def _render(text, x, y, cell):
