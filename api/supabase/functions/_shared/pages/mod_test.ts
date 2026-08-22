@@ -18,9 +18,13 @@ const PROVIDERS = ["google", "vercel", "linear", "slack", "github", "notion", "p
 
 const HEALTHY: Record<string, Reply> = {
   "format=metadata": {
-    body: { payload: { headers: [{ name: "Subject", value: "deploy failed" }] } },
+    body: {
+      payload: { headers: [{ name: "Subject", value: "deploy failed" }] },
+    },
   },
-  "gmail.googleapis.com": { body: { resultSizeEstimate: 5, messages: [{ id: "m1" }] } },
+  "gmail.googleapis.com": {
+    body: { resultSizeEstimate: 5, messages: [{ id: "m1" }] },
+  },
   "calendar/v3": {
     body: {
       items: [
@@ -34,25 +38,42 @@ const HEALTHY: Record<string, Reply> = {
   },
   "api.vercel.com": {
     body: {
-      deployments: [{ name: "web", state: "READY", created: Date.parse("2026-01-15T08:59:00Z") }],
+      deployments: [
+        {
+          name: "web",
+          state: "READY",
+          created: Date.parse("2026-01-15T08:59:00Z"),
+        },
+      ],
     },
   },
   "api.linear.app": {
-    body: { data: { viewer: { assignedIssues: { nodes: [{ title: "fix login" }] } } } },
+    body: {
+      data: { viewer: { assignedIssues: { nodes: [{ title: "fix login" }] } } },
+    },
   },
   "slack.com/api/auth.test": { body: { ok: true, user_id: "U123" } },
-  "slack.com/api/search.messages": { body: { ok: true, messages: { total: 1, matches: [] } } },
+  "slack.com/api/search.messages": {
+    body: { ok: true, messages: { total: 1, matches: [] } },
+  },
   "api.github.com": { body: { total_count: 3, items: [] } },
   "api.notion.com": { body: { results: [] } },
   "posthog.com": { body: { name: "signups", result: [{ data: [1, 2, 3] }] } },
 };
 
-const POSTHOG_META = { host: "us.posthog.com", project_id: "64213", insight_id: "aX9k2Lp" };
+const POSTHOG_META = {
+  host: "us.posthog.com",
+  project_id: "64213",
+  insight_id: "aX9k2Lp",
+};
 
 async function everyConnection() {
   return await Promise.all(
     PROVIDERS.map((provider) =>
-      connectionRow({ provider, meta: provider === "posthog" ? POSTHOG_META : null }),
+      connectionRow({
+        provider,
+        meta: provider === "posthog" ? POSTHOG_META : null,
+      }),
     ),
   );
 }
@@ -93,7 +114,10 @@ Deno.test("a builder that throws becomes that page's error state", async () => {
   const stub = stubFetch({ "calendar/v3": { status: 401 } });
   const page = await buildPage(
     "next_thing",
-    contextFor({ rows: [await connectionRow({ provider: "google" })], fetch: stub.fetch }),
+    contextFor({
+      rows: [await connectionRow({ provider: "google" })],
+      fetch: stub.fetch,
+    }),
   );
 
   assertEquals(page?.slug, "next_thing");
@@ -103,7 +127,10 @@ Deno.test("a builder that throws becomes that page's error state", async () => {
 
 Deno.test("one failing page never keeps the others from being built", async () => {
   const stub = stubFetch({ ...HEALTHY, "calendar/v3": { status: 500 } });
-  const pages = await buildAll({ rows: await everyConnection(), fetch: stub.fetch });
+  const pages = await buildAll({
+    rows: await everyConnection(),
+    fetch: stub.fetch,
+  });
 
   const byState = new Map(pages.map((page) => [page.slug, page.state]));
   assertEquals(byState.get("next_thing"), "error");
@@ -132,6 +159,8 @@ Deno.test("no built page carries the credential it was built with", async () => 
     fetch: stubFetch({}).fetch,
   });
 
-  for (const page of [...healthy, ...refused]) assertNoCredential(page, PROVIDERS);
+  for (const page of [...healthy, ...refused]) {
+    assertNoCredential(page, PROVIDERS);
+  }
   assert(refused.some((page) => page.state === "error"));
 });

@@ -11,6 +11,7 @@ import { clampPollInterval, MAX_POLL_MS, type DbClient } from "@/lib/db";
 // that the action validates strictly.
 const USER = "11111111-1111-4111-a111-111111111111";
 const BADGE = "22222222-2222-4222-a222-222222222222";
+const CONNECTION = "44444444-4444-4444-a444-444444444444";
 
 interface Write {
   table: string;
@@ -347,20 +348,35 @@ describe("revoke", () => {
 describe("disconnect", () => {
   it("deletes the row, scoped to the caller", async () => {
     const { client, writes } = fakeDb();
-    const result = await disconnect(client, USER, form({ provider: "posthog" }));
+    const result = await disconnect(client, USER, form({ connection_id: CONNECTION }));
 
     expect(result.status).toBe("success");
     expect(writeAt(writes, 0)).toMatchObject({ table: "connections", op: "delete" });
+    // By id, not by provider: two Notions means deleting by provider would
+    // remove the one nobody asked about.
     expect(writeAt(writes, 0).filters).toEqual([
       ["user_id", USER],
-      ["provider", "posthog"],
+      ["id", CONNECTION],
     ]);
   });
 
-  it("refuses a provider slug that could escape a path", async () => {
+  it("refuses anything that is not a connection id, before writing", async () => {
     const { client, writes } = fakeDb();
-    expect((await disconnect(client, USER, form({ provider: "../admin" }))).status).toBe("error");
+
+    for (const value of ["../admin", "posthog", ""]) {
+      expect((await disconnect(client, USER, form({ connection_id: value }))).status).toBe("error");
+    }
     expect(writes).toHaveLength(0);
+  });
+
+  it("removes one account without touching the other of the same kind", async () => {
+    // The whole point of the change: two Notions, and removing one leaves the
+    // other connected.
+    const { client, writes } = fakeDb();
+    await disconnect(client, USER, form({ connection_id: CONNECTION }));
+
+    expect(writes).toHaveLength(1);
+    expect(writeAt(writes, 0).filters).not.toContainEqual(["provider", "notion"]);
   });
 });
 
@@ -387,7 +403,7 @@ describe("when the database refuses the write", () => {
     ],
     ["renameBadge", (c) => renameBadge(c, USER, form({ badge_id: BADGE, label: "Desk" }))],
     ["revoke", (c) => revoke(c, USER, form({ badge_id: BADGE }))],
-    ["disconnect", (c) => disconnect(c, USER, form({ provider: "posthog" }))],
+    ["disconnect", (c) => disconnect(c, USER, form({ connection_id: CONNECTION }))],
   ];
 
   for (const [name, attempt] of ATTEMPTS) {

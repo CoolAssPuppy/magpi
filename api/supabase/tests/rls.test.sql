@@ -5,7 +5,7 @@
 -- role, and that the deny-by-default tables really deny.
 
 begin;
-select plan(48);
+select plan(53);
 
 create extension if not exists pgtap with schema extensions;
 
@@ -267,5 +267,44 @@ select throws_ok('select * from public.rate_limits', '42501', null,
 select throws_ok('select * from public.pending_connections', '42501', null,
   'anon reads nothing from pending_connections');
 
+-- Multiple connections per provider ------------------------------------------
+
+set local role postgres;
+insert into public.connections (user_id, provider, label, access_token_enc, status)
+values
+  ('11111111-1111-1111-1111-111111111111', 'notion', 'Work', '\\xdead'::bytea, 'active'),
+  ('11111111-1111-1111-1111-111111111111', 'notion', 'Personal', '\\xbeef'::bytea, 'active');
+
+select is((select count(*)::int from public.connections
+            where provider = 'notion'
+              and user_id = '11111111-1111-1111-1111-111111111111'), 2,
+  'one provider holds more than one connection');
+
+select throws_ok($$
+  insert into public.connections (user_id, provider, label, status)
+  values ('11111111-1111-1111-1111-111111111111', 'notion', 'Work', 'active')
+$$, '23505', null,
+  'two connections of one provider cannot share a label');
+
+select lives_ok($$
+  insert into public.connections (user_id, provider, label, status)
+  values ('11111111-1111-1111-1111-111111111111', 'notion', null, 'active')
+$$, 'an unnamed connection is allowed alongside named ones');
+
+set local role authenticated;
+select set_config('request.jwt.claims',
+  '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}', true);
+
+select throws_ok($$
+  update public.connections set access_token_enc = '\\xfeed'::bytea
+$$, '42501', null,
+  'a client cannot write a token through the rename grant');
+
+select lives_ok($$
+  update public.connections set label = 'Renamed'
+   where provider = 'notion' and label = 'Personal'
+$$, 'a client may rename their own connection');
+
 select * from finish();
+
 rollback;

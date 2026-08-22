@@ -1,6 +1,6 @@
 import { cached, ttlFor } from "../cache.ts";
 import { COUNTER_MAX } from "../badge-constants.ts";
-import { credentialsFor } from "../connections.ts";
+import { credentialsForConnection, usableFor } from "../connections.ts";
 import { errorPage, type PagePayload } from "../envelope.ts";
 import {
   assignedIssues,
@@ -42,9 +42,21 @@ const SOURCES: Source[] = [
             : "is:unread in:inbox",
       }),
   },
-  { provider: "linear", label: "Linear", read: (c, ctx) => assignedIssues(c, ctx.deps) },
-  { provider: "slack", label: "Slack", read: (c, ctx) => mentions(c, ctx.deps) },
-  { provider: "github", label: "Reviews", read: (c, ctx) => reviewRequests(c, ctx.deps) },
+  {
+    provider: "linear",
+    label: "Linear",
+    read: (c, ctx) => assignedIssues(c, ctx.deps),
+  },
+  {
+    provider: "slack",
+    label: "Slack",
+    read: (c, ctx) => mentions(c, ctx.deps),
+  },
+  {
+    provider: "github",
+    label: "Reviews",
+    read: (c, ctx) => reviewRequests(c, ctx.deps),
+  },
   {
     provider: "notion",
     label: "Notion",
@@ -59,10 +71,7 @@ function readDatabaseId(ctx: BuildContext): string | null {
 }
 
 export async function build(ctx: BuildContext): Promise<PagePayload> {
-  const chosen = SOURCES.filter((source) => ctx.connected.has(source.provider)).slice(
-    0,
-    COUNTER_MAX,
-  );
+  const chosen = SOURCES.filter((source) => ctx.connected.has(source.provider));
   if (chosen.length === 0) return { slug, state: "not_connected" };
 
   const previous = await readPrevious(ctx);
@@ -70,29 +79,43 @@ export async function build(ctx: BuildContext): Promise<PagePayload> {
   let refused = 0;
 
   for (const source of chosen) {
-    const credentials = await credentialsFor(ctx.rows, ctx.userId, source.provider);
-    if (!credentials) continue;
-    // One source that refused must not take the other three with it. A page
-    // built from four providers where one is down is still three numbers.
-    try {
-      const reading = await cached(
-        ctx.db,
-        { userId: ctx.userId, provider: source.provider, cacheKey: "counter" },
-        ttlFor(slug),
-        async () => (await source.read(credentials, ctx)) as unknown as Record<string, unknown>,
-      );
-      const value = typeof reading.count === "number" ? reading.count : 0;
-      counters.push({
-        label: source.label,
-        value,
-        delta: value - (previous[source.label] ?? value),
-        recent: typeof reading.recent === "string" ? reading.recent : null,
-      });
-    } catch {
-      // Left out rather than shown as zero. A zero is a claim that there is
-      // nothing waiting, which is the opposite of what happened, and the
-      // wearer would read it as being caught up.
-      refused += 1;
+    for (const row of usableFor(ctx.rows, source.provider)) {
+      if (counters.length >= COUNTER_MAX) break;
+
+      const credentials = await credentialsForConnection(row, ctx.userId);
+      if (!credentials) continue;
+
+      // Two accounts of one kind have to be told apart on a 320px screen, so
+      // the connection's own label rides on the counter when it has one.
+      const label = row.label ? `${source.label} ${row.label}` : source.label;
+
+      // One account that refused must not take the others with it. A page
+      // built from four where one is down is still three numbers.
+      try {
+        const reading = await cached(
+          ctx.db,
+          {
+            userId: ctx.userId,
+            provider: source.provider,
+            cacheKey: "counter",
+            connectionId: row.id,
+          },
+          ttlFor(slug),
+          async () => (await source.read(credentials, ctx)) as unknown as Record<string, unknown>,
+        );
+        const value = typeof reading.count === "number" ? reading.count : 0;
+        counters.push({
+          label,
+          value,
+          delta: value - (previous[label] ?? value),
+          recent: typeof reading.recent === "string" ? reading.recent : null,
+        });
+      } catch {
+        // Left out rather than shown as zero. A zero is a claim that there is
+        // nothing waiting, which is the opposite of what happened, and the
+        // wearer would read it as being caught up.
+        refused += 1;
+      }
     }
   }
 

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { disconnectProvider, relabelBadge, revokeBadge, type DbClient } from "@/lib/db";
+import { disconnectConnection, relabelBadge, revokeBadge, type DbClient } from "@/lib/db";
 
 import { errorState, successState, type ActionState } from "./state";
 
@@ -13,7 +13,7 @@ const relabelSchema = z.object({
 const revokeSchema = z.object({ badge_id: z.uuid() });
 
 const disconnectSchema = z.object({
-  provider: z.string().regex(/^[a-z][a-z0-9_]*$/),
+  connection_id: z.uuid(),
 });
 
 const SAVE_FAILED = "That did not save. Try again.";
@@ -63,9 +63,9 @@ export async function disconnect(
   form: FormData,
 ): Promise<ActionState> {
   const parsed = disconnectSchema.safeParse(Object.fromEntries(form));
-  if (!parsed.success) return errorState("That is not a provider.");
+  if (!parsed.success) return errorState("That is not a connection.");
 
-  const result = await disconnectProvider(client, userId, parsed.data.provider);
+  const result = await disconnectConnection(client, userId, parsed.data.connection_id);
   if (!result.ok) return errorState(SAVE_FAILED);
-  return successState("Disconnected. Pages using it will say so.");
+  return successState("Removed.");
 }

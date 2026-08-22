@@ -11,8 +11,8 @@ import {
   FakeCache,
   fields,
   list,
-  NOW_MS,
   noFetch,
+  NOW_MS,
   stubFetch,
   text,
 } from "../testing/page_support.ts";
@@ -38,7 +38,10 @@ function calendarEvent(overrides: EventOverrides = {}): Record<string, unknown> 
 }
 
 const DAY = [
-  calendarEvent({ location: "Room 2", hangoutLink: "https://meet.google.com/abc-defg" }),
+  calendarEvent({
+    location: "Room 2",
+    hangoutLink: "https://meet.google.com/abc-defg",
+  }),
   calendarEvent({
     summary: "design review",
     start: { dateTime: "2026-01-15T10:00:00Z" },
@@ -155,7 +158,9 @@ Deno.test("next_thing becomes its own error page when google refuses the credent
 
 Deno.test("next_thing cuts a title longer than the badge can draw", async () => {
   const stub = stubFetch({
-    [CALENDAR]: { body: { items: [calendarEvent({ summary: "m".repeat(200) })] } },
+    [CALENDAR]: {
+      body: { items: [calendarEvent({ summary: "m".repeat(200) })] },
+    },
   });
   const page = trimPage(await build(contextFor({ rows: await googleRows(), fetch: stub.fetch })));
 

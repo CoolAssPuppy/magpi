@@ -11,8 +11,8 @@ import { assert } from "@std/assert";
 
 import type { ConnectionRow } from "../connections.ts";
 import { encryptProviderToken } from "../provider_tokens.ts";
-import { buildPage, REGISTRY, type BuildContext } from "./mod.ts";
-import { stubDb, type StubDb } from "../testing/stub_db.ts";
+import { type BuildContext, buildPage, REGISTRY } from "./mod.ts";
+import { type StubDb, stubDb } from "../testing/stub_db.ts";
 
 const USER = "11111111-1111-4111-a111-111111111111";
 
@@ -28,8 +28,13 @@ async function connectionRows(): Promise<ConnectionRow[]> {
   const rows: ConnectionRow[] = [];
   for (const provider of PROVIDERS) {
     rows.push({
+      id: `conn-${provider}`,
       provider,
-      access_token_enc: await encryptProviderToken(SECRET, { userId: USER, provider }),
+      label: null,
+      access_token_enc: await encryptProviderToken(SECRET, {
+        userId: USER,
+        provider,
+      }),
       refresh_token_enc: null,
       expires_at: null,
       status: "active",
@@ -126,7 +131,11 @@ Deno.test("no page puts a provider secret on the badge, however the call fails",
             settings: {},
             rows,
             connected: new Set(PROVIDERS),
-            deps: { fetch: failure as typeof fetch, now: new Date(), timeZone: "UTC" },
+            deps: {
+              fetch: failure as typeof fetch,
+              now: new Date(),
+              timeZone: "UTC",
+            },
             now: new Date(),
           };
 

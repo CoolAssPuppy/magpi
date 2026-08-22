@@ -11,8 +11,8 @@ import {
   FakeCache,
   fields,
   list,
-  NOW_MS,
   noFetch,
+  NOW_MS,
   stubFetch,
   text,
 } from "../testing/page_support.ts";
@@ -39,7 +39,13 @@ function upstreamDeployment(overrides: DeploymentOverrides = {}): Record<string,
 
 /** One row as the page holds it in cache, which is the contract shape. */
 function cachedDeployment(overrides: Partial<Record<string, unknown>> = {}) {
-  return { name: "web", state: "READY", commit: "fix the nav", ageMs: 60_000, ...overrides };
+  return {
+    name: "web",
+    state: "READY",
+    commit: "fix the nav",
+    ageMs: 60_000,
+    ...overrides,
+  };
 }
 
 const LIST = {
@@ -156,7 +162,11 @@ Deno.test("deploys scopes to the team the connection names", async () => {
   const cache = new FakeCache();
   const stub = stubFetch({ [VERCEL]: { body: LIST } });
   await build(
-    contextFor({ cache, rows: await vercelRows({ team_id: "team_abc" }), fetch: stub.fetch }),
+    contextFor({
+      cache,
+      rows: await vercelRows({ team_id: "team_abc" }),
+      fetch: stub.fetch,
+    }),
   );
 
   assertEquals(new URL(stub.urls[0]).searchParams.get("teamId"), "team_abc");

@@ -24,6 +24,8 @@ export type ProviderRow = z.infer<typeof providerRowSchema>;
 export const connectionRowSchema = z.object({
   id: z.string(),
   provider: z.string(),
+  /** What the wearer called this account. Null until they name one. */
+  label: z.string().nullable().catch(null),
   external_account: z.string().nullable(),
   scopes: z.array(z.string()),
   status: z.enum(["active", "revoked", "error"]),

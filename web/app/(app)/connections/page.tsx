@@ -4,6 +4,7 @@ import { AppShell } from "@/components/app-shell";
 import { ProviderMark } from "@/components/provider-mark";
 
 import { Connect } from "./connect";
+import { ConnectionItem } from "./connection-item";
 import { listConnections, listProviders } from "@/lib/queries";
 import type { ConnectionRow } from "@/lib/rows";
 
@@ -11,7 +12,11 @@ export const metadata: Metadata = { title: "Connections" };
 
 export default async function ConnectionsPage() {
   const [providers, connections] = await Promise.all([listProviders(), listConnections()]);
-  const byProvider = new Map(connections.map((row) => [row.provider, row]));
+  // Many per provider now, in the order they were connected.
+  const byProvider = new Map<string, typeof connections>();
+  for (const row of connections) {
+    byProvider.set(row.provider, [...(byProvider.get(row.provider) ?? []), row]);
+  }
 
   return (
     <AppShell current="/connections" title="Connections">
@@ -24,42 +29,43 @@ export default async function ConnectionsPage() {
 
         <ul className="border-border border">
           {providers.map((provider) => {
-            const connection = byProvider.get(provider.slug);
+            const rows = byProvider.get(provider.slug) ?? [];
             return (
               <li
                 key={provider.slug}
-                className={`gap-lg border-border bg-surface px-lg py-lg flex items-center border-b last:border-b-0 ${
+                className={`border-border bg-surface px-lg py-lg flex flex-col border-b last:border-b-0 ${
                   provider.enabled ? "" : "opacity-60"
                 }`}
               >
-                <span className={`size-sm rounded-pill shrink-0 ${dotFor(connection)}`} />
-                <span className="text-ink-muted flex shrink-0 items-center">
-                  <ProviderMark slug={provider.slug} />
-                </span>
-                <div className="gap-3xs flex w-[220px] shrink-0 flex-col">
-                  <span className="font-display text-md">{provider.display_name}</span>
-                  <span
-                    className={
-                      connection?.status === "error"
-                        ? "text-critical text-xs"
-                        : "text-ink-faint text-xs"
-                    }
-                  >
-                    {connection?.error_message ?? provider.description}
+                <div className="gap-lg flex items-center">
+                  <span className={`size-sm rounded-pill shrink-0 ${dotFor(rows)}`} />
+                  <span className="text-ink-muted flex shrink-0 items-center">
+                    <ProviderMark slug={provider.slug} />
                   </span>
-                </div>
-                <span className="flex-1" />
-                {provider.enabled ? (
-                  <div className="relative shrink-0">
-                    <Connect
-                      provider={provider.slug}
-                      kind={provider.kind === "api_key" ? "api_key" : "oauth"}
-                      isConnected={Boolean(connection)}
-                    />
+                  <div className="gap-3xs flex flex-1 flex-col">
+                    <span className="font-display text-md">{provider.display_name}</span>
+                    <span className="text-ink-faint text-xs">{provider.description}</span>
                   </div>
-                ) : (
-                  <span className="text-ink-faint shrink-0 text-right text-sm">Not set up</span>
-                )}
+                  {provider.enabled ? (
+                    <div className="relative shrink-0">
+                      <Connect
+                        provider={provider.slug}
+                        kind={provider.kind === "api_key" ? "api_key" : "oauth"}
+                        isConnected={rows.length > 0}
+                      />
+                    </div>
+                  ) : (
+                    <span className="text-ink-faint shrink-0 text-right text-sm">Not set up</span>
+                  )}
+                </div>
+
+                {rows.length > 0 ? (
+                  <ul className="pt-md pl-2xl flex flex-col">
+                    {rows.map((row) => (
+                      <ConnectionItem key={row.id} connection={row} />
+                    ))}
+                  </ul>
+                ) : null}
               </li>
             );
           })}
@@ -69,8 +75,8 @@ export default async function ConnectionsPage() {
   );
 }
 
-function dotFor(connection: ConnectionRow | undefined): string {
-  if (!connection) return "bg-border-strong";
-  if (connection.status === "error") return "bg-critical";
+function dotFor(rows: ConnectionRow[]): string {
+  if (rows.length === 0) return "bg-border-strong";
+  if (rows.some((row) => row.status === "error")) return "bg-critical";
   return "bg-accent";
 }

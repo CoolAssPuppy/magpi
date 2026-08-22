@@ -21,7 +21,9 @@ const KEY_ENV = "TOKEN_ENCRYPTION_KEY";
 
 function row(overrides: Partial<ConnectionRow> = {}): ConnectionRow {
   return {
+    id: "conn-google",
     provider: "google",
+    label: null,
     access_token_enc: "ciphertext",
     refresh_token_enc: null,
     expires_at: null,

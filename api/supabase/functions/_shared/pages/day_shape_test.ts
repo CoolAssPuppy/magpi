@@ -37,11 +37,16 @@ const TOMORROW_EVENTS = {
 /** A strip of DAY_BLOCKS free hours, with the booked ones filled in by index. */
 function strip(booked: Record<number, number> = {}): number[] {
   const blocks = new Array<number>(DAY_BLOCKS).fill(0);
-  for (const [index, level] of Object.entries(booked)) blocks[Number(index)] = level;
+  for (const [index, level] of Object.entries(booked)) {
+    blocks[Number(index)] = level;
+  }
   return blocks;
 }
 
-const BOTH_DAYS = { [TODAY]: { body: TODAY_EVENTS }, [TOMORROW]: { body: TOMORROW_EVENTS } };
+const BOTH_DAYS = {
+  [TODAY]: { body: TODAY_EVENTS },
+  [TOMORROW]: { body: TOMORROW_EVENTS },
+};
 
 async function googleRows() {
   return [await connectionRow({ provider: "google" })];
@@ -76,7 +81,10 @@ Deno.test(
 );
 
 Deno.test("day_shape draws a free day when the calendar is empty", async () => {
-  const stub = stubFetch({ [TODAY]: { body: { items: [] } }, [TOMORROW]: { body: { items: [] } } });
+  const stub = stubFetch({
+    [TODAY]: { body: { items: [] } },
+    [TOMORROW]: { body: { items: [] } },
+  });
   const page = await build(contextFor({ rows: await googleRows(), fetch: stub.fetch }));
 
   const data = fields(page.data);

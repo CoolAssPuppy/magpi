@@ -5,12 +5,14 @@ import { insight } from "../sources/index.ts";
 import type { NumberReading } from "../sources/contract.ts";
 
 import type { BuildContext } from "./mod.ts";
+import { chosenConnection } from "./settings.ts";
 
 export const slug = "one_number";
 export const requires = ["posthog"];
 
 export async function build(ctx: BuildContext): Promise<PagePayload> {
-  const credentials = await credentialsFor(ctx.rows, ctx.userId, "posthog");
+  const connectionId = chosenConnection(ctx.settings);
+  const credentials = await credentialsFor(ctx.rows, ctx.userId, "posthog", connectionId);
   if (!credentials) return { slug, state: "not_connected" };
 
   const insightId =
@@ -19,7 +21,12 @@ export async function build(ctx: BuildContext): Promise<PagePayload> {
 
   const payload = await cached(
     ctx.db,
-    { userId: ctx.userId, provider: "posthog", cacheKey: `insight:${insightId}` },
+    {
+      userId: ctx.userId,
+      provider: "posthog",
+      cacheKey: `insight:${insightId}`,
+      connectionId,
+    },
     ttlFor(slug),
     async () => {
       const reading = await insight(credentials, ctx.deps);
@@ -28,7 +35,9 @@ export async function build(ctx: BuildContext): Promise<PagePayload> {
   );
 
   const reading = payload as unknown as NumberReading;
-  if (reading.value === undefined || reading.value === null) return { slug, state: "empty" };
+  if (reading.value === undefined || reading.value === null) {
+    return { slug, state: "empty" };
+  }
 
   return {
     slug,

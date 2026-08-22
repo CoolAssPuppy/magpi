@@ -27,6 +27,8 @@ export interface CacheKey {
   userId: string;
   provider: string;
   cacheKey: string;
+  /** Which connection this was read through. Null for anything not per-account. */
+  connectionId?: string | null;
 }
 
 /**
@@ -39,13 +41,19 @@ export async function readCache(
   db: SupabaseClient,
   key: CacheKey,
 ): Promise<Record<string, unknown> | null> {
-  const { data, error } = await db
+  const scoped = db
     .from("provider_cache")
     .select("payload, expires_at")
     .eq("user_id", key.userId)
     .eq("provider", key.provider)
-    .eq("cache_key", key.cacheKey)
-    .maybeSingle<{ payload: Record<string, unknown>; expires_at: string }>();
+    .eq("cache_key", key.cacheKey);
+
+  // `is` matches null and nothing else; a real id needs `eq`.
+  const { data, error } = await (
+    key.connectionId
+      ? scoped.eq("connection_id", key.connectionId)
+      : scoped.is("connection_id", null)
+  ).maybeSingle<{ payload: Record<string, unknown>; expires_at: string }>();
 
   if (error || !data) return null;
   if (Date.parse(data.expires_at) <= Date.now()) return null;
@@ -66,10 +74,11 @@ export async function writeCache(
       user_id: key.userId,
       provider: key.provider,
       cache_key: key.cacheKey,
+      connection_id: key.connectionId ?? null,
       payload,
       expires_at: expiresAt,
     },
-    { onConflict: "user_id,provider,cache_key" },
+    { onConflict: "user_id,provider,cache_key,connection_id" },
   );
 }
 

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { disconnect } from "@/lib/actions/badges";
-import { errorState, type ActionState } from "@/lib/actions/state";
+import { errorState, successState, type ActionState } from "@/lib/actions/state";
 import { withSession } from "@/lib/actions/with-session";
 import { createClient } from "@/lib/supabase/server";
 
@@ -116,4 +116,39 @@ async function readMessage(response: Response): Promise<string | null> {
 async function withSessionContext() {
   const { getSessionContext } = await import("@/lib/supabase/context");
   return getSessionContext();
+}
+
+const renameSchema = z.object({
+  connection_id: z.uuid(),
+  // Long enough to tell Work from Personal, short enough for a badge counter.
+  label: z.string().trim().min(1).max(24),
+});
+
+/**
+ * Names one connection.
+ *
+ * The only column a client may write on this table, enforced by a
+ * column-level grant rather than a policy, because a policy governs which
+ * rows and this governs which columns of a row.
+ */
+export async function renameConnectionAction(
+  _previous: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  return withSession(async ({ user }) => {
+    const parsed = renameSchema.safeParse(Object.fromEntries(form));
+    if (!parsed.success) return errorState("Give it a name between 1 and 24 characters.");
+
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from("connections")
+      .update({ label: parsed.data.label })
+      .eq("id", parsed.data.connection_id)
+      .eq("user_id", user.id);
+
+    // A duplicate is the only failure worth naming: the unique index exists so
+    // a list never shows two rows nobody can tell apart.
+    if (error) return errorState("You already have one called that.");
+    return successState("Renamed.");
+  }, REVALIDATE);
 }

@@ -5,6 +5,7 @@ import { nextEvents } from "../sources/index.ts";
 import type { CalendarEvent } from "../sources/contract.ts";
 
 import type { BuildContext } from "./mod.ts";
+import { chosenConnection } from "./settings.ts";
 
 export const slug = "next_thing";
 export const requires = ["google"];
@@ -14,7 +15,8 @@ const DEFAULT_LOOK_AHEAD_HOURS = 12;
 const LIMIT = 3;
 
 export async function build(ctx: BuildContext): Promise<PagePayload> {
-  const credentials = await credentialsFor(ctx.rows, ctx.userId, "google");
+  const connectionId = chosenConnection(ctx.settings);
+  const credentials = await credentialsFor(ctx.rows, ctx.userId, "google", connectionId);
   if (!credentials) return { slug, state: "not_connected" };
 
   const calendarId = readString(ctx.settings.calendar_id) ?? "primary";
@@ -23,7 +25,12 @@ export async function build(ctx: BuildContext): Promise<PagePayload> {
 
   const payload = await cached(
     ctx.db,
-    { userId: ctx.userId, provider: "google", cacheKey: `next:${calendarId}:${lookAheadHours}` },
+    {
+      userId: ctx.userId,
+      provider: "google",
+      cacheKey: `next:${calendarId}:${lookAheadHours}`,
+      connectionId,
+    },
     ttlFor(slug),
     async () => {
       const events = await nextEvents(credentials, ctx.deps, {

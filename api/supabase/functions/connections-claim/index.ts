@@ -67,24 +67,21 @@ serveFunction("connections-claim", async (core) => {
     // userId is unchanged by a successful claim, so the AAD the callback
     // encrypted under still holds and the ciphertext moves without decryption.
     async storeConnection(pending: PendingConnection) {
-      const { error } = await db.from("connections").upsert(
-        {
-          user_id: pending.userId,
-          provider: pending.provider,
-          external_account: pending.externalAccount,
-          access_token_enc: pending.accessTokenEnc,
-          refresh_token_enc: pending.refreshTokenEnc,
-          scopes: pending.scopes,
-          expires_at: pending.tokenExpiresAt,
-          status: "active",
-          // Cleared on a successful reconnect, so a stale failure does not sit
-          // on a working connection.
-          error_message: null,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id,provider" },
-      );
-      if (error) throw new Error(`connection upsert failed: ${error.message}`);
+      // Insert, not upsert. A second account of the same kind is a second
+      // connection: upserting on (user_id, provider) is what used to make the
+      // work Notion overwrite the personal one.
+      const { error } = await db.from("connections").insert({
+        user_id: pending.userId,
+        provider: pending.provider,
+        external_account: pending.externalAccount,
+        access_token_enc: pending.accessTokenEnc,
+        refresh_token_enc: pending.refreshTokenEnc,
+        scopes: pending.scopes,
+        expires_at: pending.tokenExpiresAt,
+        status: "active",
+        updated_at: new Date().toISOString(),
+      });
+      if (error) throw new Error(`connection insert failed: ${error.message}`);
     },
 
     audit: (entry) => audit({ ...entry, ip: core.ip }),

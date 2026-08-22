@@ -151,15 +151,15 @@ export async function revokeBadge(
   return toResult(error);
 }
 
-export async function disconnectProvider(
+export async function disconnectConnection(
   client: DbClient,
   userId: string,
-  provider: string,
+  connectionId: string,
 ): Promise<DbResult> {
   const { error } = await client
     .from("connections")
     .delete()
     .eq("user_id", userId)
-    .eq("provider", provider);
+    .eq("id", connectionId);
   return toResult(error);
 }

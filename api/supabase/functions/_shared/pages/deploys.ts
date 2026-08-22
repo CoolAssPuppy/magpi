@@ -5,6 +5,7 @@ import { deployments } from "../sources/index.ts";
 import type { Deployment } from "../sources/contract.ts";
 
 import type { BuildContext } from "./mod.ts";
+import { chosenConnection } from "./settings.ts";
 
 export const slug = "deploys";
 export const requires = ["vercel"];
@@ -13,16 +14,25 @@ export const requires = ["vercel"];
 const LIMIT = 4;
 
 export async function build(ctx: BuildContext): Promise<PagePayload> {
-  const credentials = await credentialsFor(ctx.rows, ctx.userId, "vercel");
+  const connectionId = chosenConnection(ctx.settings);
+  const credentials = await credentialsFor(ctx.rows, ctx.userId, "vercel", connectionId);
   if (!credentials) return { slug, state: "not_connected" };
 
   const teamId = typeof credentials.meta.team_id === "string" ? credentials.meta.team_id : null;
   const payload = await cached(
     ctx.db,
-    { userId: ctx.userId, provider: "vercel", cacheKey: `deploys:${teamId ?? "personal"}` },
+    {
+      userId: ctx.userId,
+      provider: "vercel",
+      cacheKey: `deploys:${teamId ?? "personal"}`,
+      connectionId,
+    },
     ttlFor(slug),
     async () => {
-      const found = await deployments(credentials, ctx.deps, { teamId, limit: LIMIT });
+      const found = await deployments(credentials, ctx.deps, {
+        teamId,
+        limit: LIMIT,
+      });
       return { projects: found as unknown as Record<string, unknown>[] };
     },
   );

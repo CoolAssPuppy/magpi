@@ -28,8 +28,12 @@ const NOTION = "api.notion.com";
 
 function gmailRoutes(count = 5, subject = "deploy failed"): Record<string, Reply> {
   return {
-    [GMAIL_MESSAGE]: { body: { payload: { headers: [{ name: "Subject", value: subject }] } } },
-    [GMAIL_LIST]: { body: { resultSizeEstimate: count, messages: [{ id: "m1" }] } },
+    [GMAIL_MESSAGE]: {
+      body: { payload: { headers: [{ name: "Subject", value: subject }] } },
+    },
+    [GMAIL_LIST]: {
+      body: { resultSizeEstimate: count, messages: [{ id: "m1" }] },
+    },
   };
 }
 
@@ -52,7 +56,9 @@ const LINEAR_ROUTES: Record<string, Reply> = {
 
 const SLACK_ROUTES: Record<string, Reply> = {
   [SLACK_IDENTITY]: { body: { ok: true, user_id: "U123" } },
-  [SLACK_SEARCH]: { body: { ok: true, messages: { total: 2, matches: [{ text: "ping" }] } } },
+  [SLACK_SEARCH]: {
+    body: { ok: true, messages: { total: 2, matches: [{ text: "ping" }] } },
+  },
 };
 
 const GITHUB_ROUTES: Record<string, Reply> = {
@@ -65,7 +71,9 @@ const NOTION_ROUTES: Record<string, Reply> = {
       results: [
         {
           last_edited_time: "2026-01-14T10:00:00Z",
-          properties: { Name: { type: "title", title: [{ plain_text: "spec" }] } },
+          properties: {
+            Name: { type: "title", title: [{ plain_text: "spec" }] },
+          },
         },
       ],
     },
@@ -79,7 +87,10 @@ async function rowsFor(providers: string[]) {
 Deno.test("counters shows one number per provider the wearer connected", async () => {
   const stub = stubFetch({ ...gmailRoutes(), ...LINEAR_ROUTES });
   const page = await build(
-    contextFor({ rows: await rowsFor(["google", "linear"]), fetch: stub.fetch }),
+    contextFor({
+      rows: await rowsFor(["google", "linear"]),
+      fetch: stub.fetch,
+    }),
   );
 
   assertEquals(page.state, "ok");
@@ -91,7 +102,11 @@ Deno.test("counters shows one number per provider the wearer connected", async (
 
 Deno.test("counters reports the change since the last read, not the total", async () => {
   const cache = new FakeCache();
-  cache.put({ provider: "google", cache_key: "counter_previous", payload: { Gmail: 2 } });
+  cache.put({
+    provider: "google",
+    cache_key: "counter_previous",
+    payload: { Gmail: 2 },
+  });
   const stub = stubFetch(gmailRoutes());
 
   const page = await build(
@@ -115,7 +130,11 @@ Deno.test("counters records this read as the comparison point for the next one",
 
 Deno.test("counters does not blink when nothing went up", async () => {
   const cache = new FakeCache();
-  cache.put({ provider: "google", cache_key: "counter_previous", payload: { Gmail: 9 } });
+  cache.put({
+    provider: "google",
+    cache_key: "counter_previous",
+    payload: { Gmail: 9 },
+  });
   const stub = stubFetch(gmailRoutes());
 
   const page = await build(
@@ -141,7 +160,10 @@ Deno.test("counters is empty when a connected provider holds no usable credentia
 Deno.test("counters keeps the numbers it has when one provider refuses", async () => {
   const stub = stubFetch({ ...gmailRoutes(), [LINEAR]: { status: 401 } });
   const page = await build(
-    contextFor({ rows: await rowsFor(["google", "linear"]), fetch: stub.fetch }),
+    contextFor({
+      rows: await rowsFor(["google", "linear"]),
+      fetch: stub.fetch,
+    }),
   );
 
   assertEquals(page.state, "ok");
@@ -156,7 +178,10 @@ Deno.test("counters says the accounts could not be reached when none of them ans
   // Nothing routed, so every provider refuses at once.
   const stub = stubFetch({});
   const page = await build(
-    contextFor({ rows: await rowsFor(["google", "linear"]), fetch: stub.fetch }),
+    contextFor({
+      rows: await rowsFor(["google", "linear"]),
+      fetch: stub.fetch,
+    }),
   );
 
   assertEquals(page.state, "error");
@@ -172,7 +197,14 @@ Deno.test("counters keeps a real zero, which is not the same as a failure", asyn
   const page = await build(contextFor({ rows: await rowsFor(["google"]), fetch: stub.fetch }));
 
   assertEquals(page.state, "ok");
-  assertEquals(fields(page.data).counters, [{ label: "Gmail", value: 0, delta: 0, recent: null }]);
+  assertEquals(fields(page.data).counters, [
+    {
+      label: "Gmail",
+      value: 0,
+      delta: 0,
+      recent: null,
+    },
+  ]);
 });
 
 Deno.test("counters draws no more numbers than the badge has room for", async () => {

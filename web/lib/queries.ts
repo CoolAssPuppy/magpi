@@ -64,8 +64,9 @@ export async function listConnections(): Promise<ConnectionRow[]> {
   const { data } = await supabase
     .from("connections_public")
     .select(
-      "id, provider, external_account, scopes, status, error_message, meta, expires_at, created_at",
-    );
+      "id, provider, label, external_account, scopes, status, error_message, meta, expires_at, created_at",
+    )
+    .order("created_at", { ascending: true });
   return parseRows(connectionRowSchema, data);
 }
 

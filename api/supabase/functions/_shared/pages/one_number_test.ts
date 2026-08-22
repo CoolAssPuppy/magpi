@@ -17,7 +17,11 @@ import {
 
 const POSTHOG = "posthog.com";
 
-const META = { host: "us.posthog.com", project_id: "64213", insight_id: "aX9k2Lp" };
+const META = {
+  host: "us.posthog.com",
+  project_id: "64213",
+  insight_id: "aX9k2Lp",
+};
 
 function insightBody(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
@@ -82,7 +86,10 @@ Deno.test("one_number becomes its own error page when posthog refuses the creden
 Deno.test("one_number says what is missing when the connection is half configured", async () => {
   const page = await buildPage(
     slug,
-    contextFor({ rows: await posthogRows({ insight_id: "aX9k2Lp" }), fetch: noFetch }),
+    contextFor({
+      rows: await posthogRows({ insight_id: "aX9k2Lp" }),
+      fetch: noFetch,
+    }),
   );
 
   assertEquals(page?.state, "error");
@@ -102,7 +109,9 @@ Deno.test("one_number reports no change over a window that started at zero", asy
 });
 
 Deno.test("one_number cuts a label longer than the badge can draw", async () => {
-  const stub = stubFetch({ [POSTHOG]: { body: insightBody({ name: "n".repeat(200) }) } });
+  const stub = stubFetch({
+    [POSTHOG]: { body: insightBody({ name: "n".repeat(200) }) },
+  });
   const page = trimPage(await build(contextFor({ rows: await posthogRows(), fetch: stub.fetch })));
 
   assertEquals(text(fields(page.data).label).length, TITLE_MAX);

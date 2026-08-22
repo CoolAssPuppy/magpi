@@ -5,12 +5,14 @@ import { dayShape } from "../sources/index.ts";
 import type { DayShape } from "../sources/contract.ts";
 
 import type { BuildContext } from "./mod.ts";
+import { chosenConnection } from "./settings.ts";
 
 export const slug = "day_shape";
 export const requires = ["google"];
 
 export async function build(ctx: BuildContext): Promise<PagePayload> {
-  const credentials = await credentialsFor(ctx.rows, ctx.userId, "google");
+  const connectionId = chosenConnection(ctx.settings);
+  const credentials = await credentialsFor(ctx.rows, ctx.userId, "google", connectionId);
   if (!credentials) return { slug, state: "not_connected" };
 
   const calendarId =
@@ -18,8 +20,8 @@ export async function build(ctx: BuildContext): Promise<PagePayload> {
   // A is the badge's toggle, so both days are sent and the device picks. One
   // extra upstream call at a sixty second TTL beats a round trip on a press.
   const [today, tomorrow] = await Promise.all([
-    load(ctx, credentials, calendarId, false),
-    load(ctx, credentials, calendarId, true),
+    load(ctx, credentials, calendarId, false, connectionId),
+    load(ctx, credentials, calendarId, true, connectionId),
   ]);
 
   return {
@@ -44,6 +46,7 @@ async function load(
   credentials: Awaited<ReturnType<typeof credentialsFor>>,
   calendarId: string,
   forTomorrow: boolean,
+  connectionId: string | null,
 ): Promise<DayShape> {
   const payload = await cached(
     ctx.db,
@@ -51,10 +54,14 @@ async function load(
       userId: ctx.userId,
       provider: "google",
       cacheKey: `shape:${calendarId}:${forTomorrow ? "tomorrow" : "today"}`,
+      connectionId,
     },
     ttlFor(slug),
     async () => {
-      const shape = await dayShape(credentials!, ctx.deps, { calendarId, forTomorrow });
+      const shape = await dayShape(credentials!, ctx.deps, {
+        calendarId,
+        forTomorrow,
+      });
       return shape as unknown as Record<string, unknown>;
     },
   );

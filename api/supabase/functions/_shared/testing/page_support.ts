@@ -84,6 +84,7 @@ const cacheRowSchema = z.object({
   user_id: z.string(),
   provider: z.string(),
   cache_key: z.string(),
+  connection_id: z.string().nullable().default(null),
   payload: z.record(z.string(), z.unknown()),
   expires_at: z.string(),
 });
@@ -121,6 +122,7 @@ export class FakeCache {
       user_id: USER_ID,
       provider: "google",
       cache_key: "cache",
+      connection_id: null,
       payload: {},
       expires_at: new Date(Date.now() + SEED_TTL_MS).toISOString(),
       ...overrides,
@@ -143,7 +145,8 @@ export class FakeCache {
       (candidate) =>
         candidate.user_id === row.user_id &&
         candidate.provider === row.provider &&
-        candidate.cache_key === row.cache_key,
+        candidate.cache_key === row.cache_key &&
+        (candidate.connection_id ?? null) === (row.connection_id ?? null),
     );
     if (index === -1) this.rows.push(row);
     else this.rows[index] = row;
@@ -151,7 +154,9 @@ export class FakeCache {
 
   private handle(input: URL | RequestInfo, init?: RequestInit): Promise<Response> {
     const request = new Request(input, init);
-    if (this.broken) return Promise.resolve(reply({ message: "cache is down" }, 500));
+    if (this.broken) {
+      return Promise.resolve(reply({ message: "cache is down" }, 500));
+    }
 
     const url = new URL(request.url);
     if (request.method === "GET") {
@@ -180,6 +185,7 @@ function column(row: CacheRow, name: string): string | null {
   if (name === "user_id") return row.user_id;
   if (name === "provider") return row.provider;
   if (name === "cache_key") return row.cache_key;
+  if (name === "connection_id") return row.connection_id;
   return null;
 }
 
@@ -188,6 +194,10 @@ const NON_FILTERS = new Set(["select", "on_conflict", "order", "limit", "offset"
 function matches(row: CacheRow, url: URL): boolean {
   for (const [name, value] of url.searchParams) {
     if (NON_FILTERS.has(name)) continue;
+    if (value === "is.null") {
+      if (column(row, name) !== null) return false;
+      continue;
+    }
     if (column(row, name) !== (value.startsWith("eq.") ? value.slice(3) : value)) return false;
   }
   return true;
@@ -221,6 +231,8 @@ export async function connectionRow(
     provider,
   });
   return {
+    id: overrides.id ?? `conn-${overrides.provider ?? "google"}`,
+    label: overrides.label ?? null,
     provider,
     access_token_enc: encrypted,
     refresh_token_enc: null,
@@ -267,12 +279,16 @@ export function contextFor(overrides: ContextOverrides = {}): BuildContext {
 // in, which is what a cast would have hidden.
 
 export function text(value: unknown): string {
-  if (typeof value !== "string") throw new Error(`expected a string, got ${typeof value}`);
+  if (typeof value !== "string") {
+    throw new Error(`expected a string, got ${typeof value}`);
+  }
   return value;
 }
 
 export function list(value: unknown): unknown[] {
-  if (!Array.isArray(value)) throw new Error(`expected a list, got ${typeof value}`);
+  if (!Array.isArray(value)) {
+    throw new Error(`expected a list, got ${typeof value}`);
+  }
   return value;
 }
 
