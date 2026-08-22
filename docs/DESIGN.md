@@ -320,3 +320,24 @@ Twenty-seven, all in `design/`.
 | `app-link-a-badge.png`              | `/link`                            |
 | `app-settings.png`                  | `/settings`                        |
 | `app-states.png`                    | Empty, loading, and error patterns |
+
+## Homepage copy, as edited
+
+The copy below is the shipped wording. It was edited on the canvas after the
+first pass and is the version the React homepage renders. Contractions are
+deliberate here and nowhere else in the product.
+
+| Slot            | Text                                                                                                              |
+| --------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Hero kicker     | PIMORONI TUFTY 2350                                                                                               |
+| Hero heading    | A bird that watches your whole day.                                                                               |
+| Hero body       | Magpi puts your calendar, your deploys, your unread counts, and all your glanceable data on a badge that sits on your desk. |
+| Hero actions    | Sign in with GitHub / Read the build                                                                              |
+| Device heading  | Every page at a glance                                                                                            |
+| Device body     | What's next. What's today. What's deployed. Pick what you want to see every day.                                  |
+| Gateway heading | Your data, on your device.                                                                                        |
+| Footer          | A desk companion for the Pimoroni Tufty 2350.                                                                     |
+
+The section kickers were dropped in that pass. The heading carries the section
+on its own, and a small caps label above every one of them was a rhythm the
+page did not need.

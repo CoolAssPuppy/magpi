@@ -1,0 +1,431 @@
+"""badge-sdk: the client surface applets use.
+
+MicroPython on device, CPython under test and in the emulator. Applets never
+import requests or network directly; all networking goes through here.
+
+Certificate pinning (spec 8.6) and its residual gap
+---------------------------------------------------
+config.json carries "cert_sha256", the sha256 of the gateway's DER-encoded
+leaf certificate. Where the port exposes the peer certificate (a socket with
+getpeercert on the response object), every request fingerprints it and
+compares against the pin in constant time, raising CertificateError on
+mismatch.
+
+Stock MicroPython urequests does not expose the peer certificate and does not
+verify anything, so on such a port there is no protection at all. The residual
+gap is real and has two parts:
+
+1. When the peer certificate cannot be reached, this module falls back to
+   whatever verification the port itself performs, which on an unmodified
+   urequests build is none. Set "require_pin": true in config.json to fail
+   closed instead: unverifiable becomes CertificateError rather than a silent
+   plaintext-equivalent request. A build that bundles an issuing CA and
+   verifies is the intended non-pinned fallback, and it does not exist yet.
+
+2. Even on a port that does expose the certificate, urequests completes the
+   handshake and sends the request (including the Authorization header)
+   before this module can inspect anything. A pin mismatch therefore means
+   the badge token has already been shown to the peer. The token is scoped
+   and revocable by design (spec 8.1), which is the backstop; treat any
+   CertificateError as a reason to re-pair the badge.
+"""
+
+import json
+
+__version__ = "1.0.0"
+
+try:
+    import requests  # MicroPython 'requests' (aka urequests)
+except ImportError:
+    import urequests as requests
+
+try:
+    import hashlib
+except ImportError:  # some ports only ship the micro variant
+    try:
+        import uhashlib as hashlib
+    except ImportError:
+        hashlib = None
+
+_CFG = None
+_TOKEN = None
+_APP_SLUG = None
+# config.json ships on the read-only /system drive; the token is written at
+# pairing time to /state. This MUST equal net.TOKEN_PATH: net/pairing write the
+# token, this reads it, and if they disagree the badge pairs and instantly reads
+# "not paired". A test pins them equal.
+_CONFIG_PATH = "/system/badge/config.json"
+_TOKEN_PATH = "/state/token.json"
+
+
+class SdkError(Exception):
+    pass
+
+
+class NotPaired(SdkError):
+    pass
+
+
+class NotConnected(SdkError):
+    pass
+
+
+class RateLimited(SdkError):
+    def __init__(self, retry_after):
+        super().__init__("rate limited, retry after %ss" % retry_after)
+        self.retry_after = retry_after
+
+
+class NetworkError(SdkError):
+    pass
+
+
+class CertificateError(SdkError):
+    """The gateway certificate did not match the pin, or could not be
+    checked while config.json required pinning."""
+
+    pass
+
+
+class NotFound(SdkError):
+    """The addressed resource has no value. Distinct from NotPaired and
+    NotConnected so an applet can tell 'nothing stored' from 'revoked'."""
+
+    pass
+
+
+class Conflict(SdkError):
+    """The server has already recorded a different answer from this badge.
+
+    Its own type because a badge on conference WiFi retries constantly and the
+    apps that write have to tell three failures apart: a request that never
+    arrived, one the server refused, and one it had already applied. Only the
+    first is worth resending, and before this a 409 arrived as a bare SdkError
+    that read exactly like the other two."""
+
+    pass
+
+
+_UNRESERVED = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
+_SLUG_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789-"
+# Same ceiling the server applies alongside the character rule.
+_SLUG_MAX = 64
+
+
+def _quote(value):
+    """Percent-encode a query component. MicroPython has no dependable
+    urllib.parse.quote, and an unencoded &, =, # or space lets a value
+    reshape the URL the gateway sees."""
+    if not isinstance(value, str):
+        value = str(value)
+    out = []
+    for ch in value:
+        if ch in _UNRESERVED:
+            out.append(ch)
+        else:
+            for byte in ch.encode("utf-8"):
+                out.append("%%%02X" % byte)
+    return "".join(out)
+
+
+
+def _retry_after(payload, default=5):
+    """Read the top-level retry_after of a 429 body. A list, a string or a
+    junk value must still yield a usable RateLimited, never AttributeError."""
+    if not isinstance(payload, dict):
+        return default
+    try:
+        return int(payload.get("retry_after", default))
+    except (TypeError, ValueError):
+        return default
+
+
+def _hexdigest(data):
+    if hashlib is None:
+        return None
+    try:
+        digest = hashlib.sha256(data).digest()
+    except Exception:
+        return None
+    return "".join("%02x" % b for b in digest)
+
+
+def _consteq(a, b):
+    """Compare fingerprints without leaking a match prefix through timing."""
+    if len(a) != len(b):
+        return False
+    diff = 0
+    for i in range(len(a)):
+        diff |= ord(a[i]) ^ ord(b[i])
+    return diff == 0
+
+
+def _peer_cert(response):
+    """Return the peer certificate in DER form, or None where the port
+    cannot expose it. Stock urequests cannot; ports that keep the SSLSocket
+    on the response can."""
+    sock = getattr(response, "raw", None)
+    if sock is None:
+        sock = getattr(response, "sock", None)
+    if sock is None:
+        return None
+    getter = getattr(sock, "getpeercert", None)
+    if getter is None:
+        return None
+    try:
+        cert = getter(True)
+    except TypeError:
+        try:
+            cert = getter()
+        except Exception:
+            return None
+    except Exception:
+        return None
+    return cert if cert else None
+
+
+def _verify_peer(cfg, response):
+    """Enforce spec 8.6 pinning as far as the port allows. Raises
+    CertificateError on mismatch, and on an unverifiable peer when
+    cfg["require_pin"] is set.
+
+    Took a pin_key argument while the catalog CDN was a second host with its
+    own certificate. The gateway is now the only host a badge talks to, so
+    there is one pin."""
+    expected = cfg.get("cert_sha256")
+    required = bool(cfg.get("require_pin"))
+    cert = _peer_cert(response)
+    if cert is None:
+        if required:
+            raise CertificateError("peer certificate unavailable and pinning is required")
+        return
+    if not expected:
+        if required:
+            raise CertificateError("pinning is required but cert_sha256 is not configured")
+        return
+    actual = _hexdigest(cert)
+    if actual is None:
+        if required:
+            raise CertificateError("sha256 unavailable on this port and pinning is required")
+        return
+    if not _consteq(actual, expected.lower()):
+        raise CertificateError("gateway certificate does not match the pin")
+
+
+def _load_config():
+    """config.json only. Separate from _load because the pin check needs the
+    gateway config but no badge token."""
+    global _CFG
+    if _CFG is None:
+        with open(_CONFIG_PATH) as f:
+            _CFG = json.load(f)
+    return _CFG
+
+
+def _load():
+    global _TOKEN
+    _load_config()
+    if _TOKEN is None:
+        _migrate_legacy_token()
+        try:
+            with open(_TOKEN_PATH) as f:
+                _TOKEN = json.load(f)
+        except OSError:
+            raise NotPaired("badge is not paired")
+    return _CFG, _TOKEN
+
+
+def _migrate_legacy_token():
+    # A badge paired by an older build kept its token at /badge. net owns the
+    # move to /state; call it so a sync after an SDK update still finds it.
+    try:
+        from sb import net
+
+        net._migrate_token(_TOKEN_PATH)
+    except Exception:
+        pass
+
+
+
+def _set_app_slug(slug):
+    global _APP_SLUG
+    _APP_SLUG = slug
+
+
+def _set_paths(config_path, token_path):
+    global _CONFIG_PATH, _TOKEN_PATH, _CFG, _TOKEN
+    _CONFIG_PATH = config_path
+    _TOKEN_PATH = token_path
+    _CFG = None
+    _TOKEN = None
+
+
+def _reset():
+    global _CFG, _TOKEN, _APP_SLUG
+    _CFG = None
+    _TOKEN = None
+    _APP_SLUG = None
+
+
+def _request(method, path, params=None, body=None):
+    cfg, tok = _load()
+    url = cfg["gateway"].rstrip("/") + path
+    if params:
+        q = "&".join("%s=%s" % (_quote(k), _quote(v)) for k, v in params.items())
+        url += "?" + q
+    headers = {
+        "Authorization": "Bearer " + tok["badge_token"],
+        "X-App-Slug": _APP_SLUG or "unknown",
+        "Content-Type": "application/json",
+    }
+    try:
+        r = requests.request(
+            method, url, headers=headers, data=json.dumps(body) if body is not None else None
+        )
+    except Exception as e:
+        raise NetworkError(str(e))
+    try:
+        # Pin check runs before the body is read so a mismatched peer never
+        # gets to feed an applet data. See the module docstring for what this
+        # cannot cover.
+        _verify_peer(cfg, r)
+        status = r.status_code
+        payload = r.json() if r.content else {}
+    finally:
+        r.close()
+    if status == 200:
+        return payload
+    err = payload.get("error") if isinstance(payload, dict) else None
+    if status == 401:
+        raise NotPaired(err or "unauthorized")
+    if status == 404 and err == "not_connected":
+        raise NotConnected(err)
+    if status == 404 and err in (None, "not_found"):
+        raise NotFound(err or "not_found")
+    if status == 409:
+        raise Conflict(err or "already answered")
+    if status == 429:
+        raise RateLimited(_retry_after(payload))
+    raise SdkError(err or ("http_%d" % status))
+
+
+def _power_params(power):
+    """Battery readings as query parameters, or None.
+
+    A reading the badge could not take is dropped rather than sent as null: the
+    gateway records what it is given, and a column full of nulls from a badge
+    with no battery sensor is worse than no rows."""
+    if not power:
+        return None
+    return {k: v for k, v in power.items() if v is not None}
+
+
+def deck(power=None):
+    """The slides this badge should show (docs/supabase-app.md).
+
+    Needs no granted scope: the Supabase app ships with the firmware rather
+    than being installed, and the consent for this data is the wearer choosing
+    connections and slides on the website.
+
+    `power` is an optional dict of battery readings sent as query parameters.
+    It is how the polling experiment gets its data, and it is the only thing
+    the badge tells the server about itself."""
+    return _request("GET", "/gateway/deck", _power_params(power))
+
+
+def identity():
+    """The name, title, company and handle this badge shows (Badge ID app).
+
+    A separate call from deck() rather than a slide in it, because it is a
+    different question with a different lifetime: a deck is live numbers from
+    other people's APIs, and this changes only when someone edits a form. An
+    identity card that could not draw because a provider was down would be the
+    wrong failure.
+
+    Fields the wearer left blank are absent from the answer rather than
+    present and empty, so an app can draw what it is given without deciding
+    what counts as missing."""
+    return _request("GET", "/gateway/identity", None)
+
+
+def sparkle(power=None):
+    """The Sparkle this badge should be playing right now, or null.
+
+    Between Sparkles the answer carries a null sparkle rather than a 404: a
+    badge waiting for the keynote to light up is in a normal state, not an
+    error. The badge plays each one once, keyed on its id, so asking again
+    while it is still on screen returns the same id and changes nothing."""
+    return _request("GET", "/gateway/sparkle", _power_params(power))
+
+
+# -- writes ------------------------------------------------------------------
+#
+# The four functions below are the badge's only way of sending anything upward.
+# Everything above asks a question; these answer one. See docs/how-to-write-for-supabase-pimoroni.md
+# for why a write is retried through sb.poller rather than a timer of its own:
+# four hundred badges answer a question within seconds of it going live, and the
+# per-badge bucket is the only thing between that and a thundering herd. Honour
+# RateLimited.retry_after; do not invent an interval.
+
+
+def poll(power=None):
+    """The active poll question, and the tally once this badge has answered.
+
+    A badge with nothing armed gets a 200 carrying a null question rather than
+    a 404. Sitting in a pocket between polls is a normal state and should not
+    draw as an error."""
+    return _request("GET", "/gateway/poll", _power_params(power))
+
+
+def poll_answer(question_id, choice):
+    """Answer the active poll question.
+
+    Answering twice with the same choice is a no-op, because a badge cannot
+    tell a request that never arrived from a response that never came back and
+    retrying has to be safe. Answering differently raises Conflict: a poll that
+    lets you change your mind after seeing the tally is measuring the tally."""
+    return _request(
+        "POST", "/gateway/poll/answer", None, {"question_id": question_id, "choice": choice}
+    )
+
+
+def trivia(power=None):
+    """The active trivia question, and the verdict once this badge has answered.
+
+    The correct option is absent from the answer until this badge has committed
+    to one. That is enforced on the server, by the select list the question is
+    read with, and not by this function choosing not to look."""
+    return _request("GET", "/gateway/trivia", _power_params(power))
+
+
+def trivia_answer(question_id, choice):
+    """Answer the active trivia question, and learn whether it was right.
+
+    The verdict comes back in the response to the write rather than on the next
+    read. That is what makes the feedback instant: a wearer on bad WiFi who gets
+    one round trip through gets the whole answer out of it."""
+    return _request(
+        "POST", "/gateway/trivia/answer", None, {"question_id": question_id, "choice": choice}
+    )
+
+
+def trivia_leaderboard():
+    """The top ten, plus this badge's own row wherever it sits.
+
+    Its own call rather than a field on trivia(), because the standings change
+    while nothing about the question does and the two screens refresh at
+    different rates."""
+    return _request("GET", "/gateway/trivia/leaderboard", None)
+
+
+def mad_score(down_ms):
+    """Record one MAD run and return its leaderboard position.
+
+    The gateway derives the player from the paired badge token. The body names
+    no user or badge, and an identical retry is safe."""
+    return _request("POST", "/gateway/mad/score", None, {"down_ms": down_ms})
+
+
+def mad_leaderboard():
+    """The MAD top ten, plus this account's best run wherever it sits."""
+    return _request("GET", "/gateway/mad/leaderboard", None)
