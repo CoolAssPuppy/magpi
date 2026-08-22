@@ -67,9 +67,7 @@ export function Configure({ rows }: { rows: PageRow[] }) {
           <form action={save} className="gap-lg flex flex-1 flex-col">
             <input type="hidden" name="page_slug" value={selected} />
             {fields.length === 0 ? (
-              <p className="text-ink-faint text-sm">
-                This page has nothing to configure. It draws whatever the provider reports.
-              </p>
+              <p className="text-ink-faint text-sm">Nothing to configure.</p>
             ) : (
               fields.map((field) => <Field key={field.name} {...field} />)
             )}

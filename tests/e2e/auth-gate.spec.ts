@@ -25,10 +25,13 @@ test.describe("pages that need an account", () => {
   });
 
   test("never shows a stranger anything from an account", async ({ page }) => {
-    const response = await page.goto("/dashboard");
+    await page.goto("/dashboard");
 
-    expect(await page.locator("body").innerText()).not.toContain("Badge");
-    expect(response?.status()).toBe(200);
+    // The word "badge" is all over the homepage, so the tell is the account
+    // chrome: the section nav and the way out of an account nobody is in.
+    await expect(page.getByRole("navigation", { name: "Sections" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Sign out" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /sign in with github/i })).toBeVisible();
   });
 });
 

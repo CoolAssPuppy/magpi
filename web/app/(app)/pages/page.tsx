@@ -58,9 +58,7 @@ export default async function PagesPage() {
       ) : (
         <div className="gap-xl flex flex-col">
           <EmptyState
-            kicker="PAGES, NOTHING CONNECTED"
-            heading="Nothing to draw yet"
-            body="Google covers three of the five pages. Connect it and these fill in."
+            heading="Connect an account"
             action={{ href: "/connections/google", label: "Connect Google" }}
           />
           <Configure rows={rows} />

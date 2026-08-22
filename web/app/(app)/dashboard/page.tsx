@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
+import { PairBadgeDialog } from "@/app/(app)/link/pair-dialog";
 import { LiveRegion } from "@/components/live-region";
 import { BadgePreview } from "@/components/screen/badge-preview";
 import { getSupabasePublishableKey, getSupabaseUrl } from "@/lib/env";
@@ -13,7 +14,13 @@ export const metadata: Metadata = { title: "Dashboard" };
 
 const LIVE_TABLES = ["badges", "connections", "page_configs"];
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  // A scanned QR lands here asking for the dialog.
+  const wantsPairing = (await searchParams).pair === "1";
   const [badges, providers, connections, pages] = await Promise.all([
     listBadges(),
     listProviders(),
@@ -25,7 +32,11 @@ export default async function DashboardPage() {
   const badge = badges[0];
 
   return (
-    <AppShell current="/dashboard" title="Dashboard">
+    <AppShell
+      current="/dashboard"
+      title="Dashboard"
+      status={<PairBadgeDialog badges={badges} defaultOpen={wantsPairing} />}
+    >
       <LiveRegion
         supabaseUrl={getSupabaseUrl()}
         supabasePublishableKey={getSupabasePublishableKey()}
@@ -36,12 +47,7 @@ export default async function DashboardPage() {
         {badge ? (
           <BadgeStatus badge={badge} pollLabel={`${enabled.length} of ${pages.length} pages on`} />
         ) : (
-          <EmptyState
-            kicker="DASHBOARD, NO BADGE"
-            heading="No badge yet"
-            body="Pair one and this fills in."
-            action={{ href: "/link", label: "Link a badge" }}
-          />
+          <EmptyState heading="Pair a badge" />
         )}
 
         <div className="gap-xl flex flex-col lg:flex-row lg:items-start">

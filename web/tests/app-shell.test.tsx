@@ -91,11 +91,26 @@ describe("the page frame around every signed-in screen", () => {
   });
 
   it("keeps the sidebar in step with the page being framed", () => {
-    render(<AppShell {...appShellProps({ current: "/link", title: "Link a badge" })} />);
+    render(<AppShell {...appShellProps({ current: "/settings", title: "Settings" })} />);
 
-    expect(screen.getByRole("link", { name: "Link a badge" })).toHaveAttribute(
-      "aria-current",
-      "page",
+    expect(screen.getByRole("link", { name: "Settings" })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("puts the theme choice and signing out at the foot of the sidebar", () => {
+    render(
+      <AppShell current="/dashboard" title="Dashboard">
+        <p>content</p>
+      </AppShell>,
     );
+
+    // Not in the header: they are account controls, not page controls, so they
+    // belong with the sections rather than beside the page title.
+    const sidebar = within(screen.getByRole("navigation", { name: "Sections" }));
+    expect(sidebar.getByRole("radiogroup", { name: "Theme" })).toBeInTheDocument();
+    expect(sidebar.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
+
+    const header = screen.getByRole("banner");
+    expect(within(header).queryByRole("button", { name: "Sign out" })).toBeNull();
+    expect(within(header).queryByRole("radiogroup", { name: "Theme" })).toBeNull();
   });
 });

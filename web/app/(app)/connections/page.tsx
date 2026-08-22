@@ -18,9 +18,6 @@ export default async function ConnectionsPage() {
           <h2 className="font-display text-2xs text-ink-faint tracking-wide">
             {providers.length} PROVIDERS, ALL READ ONLY
           </h2>
-          <span className="text-ink-faint text-sm">
-            Adding one is a migration, not a code change
-          </span>
         </header>
 
         <ul className="border-border border">

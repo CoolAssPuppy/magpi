@@ -2,10 +2,10 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 export interface EmptyStateProps {
-  /** Small caps context, such as PAGES, NONE ENABLED. */
-  kicker: string;
   heading: string;
-  body: string;
+  /** Only when there is something to say that the heading and action do not. */
+  kicker?: string;
+  body?: string;
   action?: { href: string; label: string };
   children?: ReactNode;
 }
@@ -19,9 +19,11 @@ export interface EmptyStateProps {
 export function EmptyState({ kicker, heading, body, action, children }: EmptyStateProps) {
   return (
     <div className="gap-md rounded-panel border-border-strong bg-surface px-xl py-2xl flex flex-col items-start border border-dashed">
-      <span className="font-display text-2xs text-ink-faint tracking-wide">{kicker}</span>
+      {kicker ? (
+        <span className="font-display text-2xs text-ink-faint tracking-wide">{kicker}</span>
+      ) : null}
       <h2 className="font-display text-xl">{heading}</h2>
-      <p className="text-ink-muted max-w-prose text-base">{body}</p>
+      {body ? <p className="text-ink-muted max-w-prose text-base">{body}</p> : null}
       {action ? (
         <Link
           href={action.href}

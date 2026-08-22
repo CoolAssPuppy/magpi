@@ -8,7 +8,6 @@ export const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/pages", label: "Pages" },
   { href: "/connections", label: "Connections" },
-  { href: "/link", label: "Link a badge" },
   { href: "/settings", label: "Settings" },
 ] as const;
 
@@ -65,6 +64,17 @@ export function Sidebar({ current }: { current: NavHref }) {
           );
         })}
       </ul>
+
+      {/* mt-auto, so these sit on the floor of the sidebar however few
+          sections there are above them. */}
+      <div className="gap-md px-sm mt-auto flex flex-col items-start">
+        <ThemeToggle />
+        <form action="/auth/sign-out" method="post">
+          <button type="submit" className="font-display text-ink-muted hover:text-ink text-sm">
+            Sign out
+          </button>
+        </form>
+      </div>
     </nav>
   );
 }
@@ -84,15 +94,7 @@ export function AppShell({ current, title, status, children }: AppShellProps) {
       <div className="flex flex-1 flex-col">
         <header className="border-border px-2xl py-lg flex items-center justify-between border-b">
           <h1 className="font-display text-md font-medium">{title}</h1>
-          <div className="gap-lg flex items-center">
-            {status}
-            <ThemeToggle />
-            <form action="/auth/sign-out" method="post">
-              <button type="submit" className="font-display text-ink-muted hover:text-ink text-sm">
-                Sign out
-              </button>
-            </form>
-          </div>
+          <div className="gap-lg flex items-center">{status}</div>
         </header>
         <main className="p-2xl flex-1">{children}</main>
       </div>

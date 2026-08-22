@@ -26,9 +26,6 @@ export function PomodoroForm({ settings }: { settings: PomodoroSettingsRow }) {
     >
       <div className="gap-xs flex flex-col">
         <h2 className="font-display text-md font-medium">Pomodoro</h2>
-        <p className="text-ink-faint text-sm">
-          Notifier carries these to the badge on its next poll.
-        </p>
       </div>
 
       <div className="gap-md flex flex-wrap">
@@ -58,7 +55,9 @@ export function PomodoroForm({ settings }: { settings: PomodoroSettingsRow }) {
       <label className="gap-md border-border pt-lg flex items-center justify-between border-t">
         <span className="gap-3xs flex flex-col">
           <span className="text-base">Use the case LEDs</span>
-          <span className="text-ink-faint text-xs">They ramp over the last minute of work.</span>
+          <span className="text-ink-faint text-xs">
+            The badge will light up closer to the last minute.
+          </span>
         </span>
         <input
           type="checkbox"
@@ -85,12 +84,12 @@ export function PollingForm({ pollIntervalMs }: { pollIntervalMs: number }) {
     >
       <h2 className="font-display text-md font-medium">Polling</h2>
 
-      <label className="gap-xs flex flex-col">
-        <span className="flex items-baseline justify-between">
-          <span className="font-display text-2xs text-ink-faint tracking-wide">
-            HOW OFTEN THE BADGE ASKS
+      <label className="gap-sm flex flex-col">
+        <span className="gap-lg flex items-baseline justify-between">
+          <span className="text-ink-muted text-sm">
+            The badge checks in with the server to get the latest data.
           </span>
-          <span className="font-display text-xl" data-numeric>
+          <span className="font-display shrink-0 text-xl" data-numeric>
             {formatInterval(value)}
           </span>
         </span>
