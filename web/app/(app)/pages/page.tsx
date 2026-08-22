@@ -23,7 +23,7 @@ const SOURCES: Record<string, string> = {
   next_thing: "Google Calendar",
   day_shape: "Google Calendar",
   deploys: "Vercel",
-  counters: "Gmail, Linear, Slack, GitHub",
+  counters: "Gmail, Linear, Slack, GitHub, Notion",
   one_number: "PostHog",
 };
 

@@ -12,11 +12,17 @@ import { describe, expect, it } from "vitest";
 const WEB_ROOT = join(import.meta.dirname, "..");
 const PRIMITIVES = join(WEB_ROOT, "app", "tokens.css");
 
-const SCANNED_EXTENSIONS = new Set([".ts", ".tsx", ".css"]);
+const SCANNED_EXTENSIONS = new Set([".ts", ".tsx", ".css", ".svg"]);
 const SKIPPED_DIRECTORIES = new Set(["node_modules", ".next", "coverage", "tests"]);
 
-/** Generated from device-constants.json, and pixel values are the point of it. */
-const GENERATED_FILES = new Set([join(WEB_ROOT, "lib", "badge-constants.ts")]);
+const GENERATED_FILES = new Set([
+  // Generated from device-constants.json, and pixel values are the point of it.
+  join(WEB_ROOT, "lib", "badge-constants.ts"),
+  // The favicon is fetched without the stylesheet, so a var() here would
+  // render nothing. Its values are checked against the primitives below
+  // instead, which is what stops it drifting.
+  join(WEB_ROOT, "app", "icon.svg"),
+]);
 
 const RAW_HEX = /#[0-9a-fA-F]{3,8}\b/;
 const RAW_FUNCTION_COLOUR = /\b(rgb|rgba|hsl|hsla|oklch|oklab)\s*\(/;
@@ -114,6 +120,18 @@ describe("the token system", () => {
 
     for (const token of remapped) {
       expect(declared.has(token), `${token} has its only definition in a theme block`).toBe(true);
+    }
+  });
+
+  it("draws the favicon in colours the primitives file actually declares", () => {
+    // It cannot use a var(), so this is what keeps it the same bird.
+    const primitives = readFileSync(PRIMITIVES, "utf8").toLowerCase();
+    const favicon = readFileSync(join(WEB_ROOT, "app", "icon.svg"), "utf8").toLowerCase();
+
+    const used = new Set(favicon.match(/#[0-9a-f]{6}/g) ?? []);
+    expect(used.size).toBeGreaterThan(0);
+    for (const colour of used) {
+      expect(primitives, `${colour} is in the favicon but not a primitive`).toContain(colour);
     }
   });
 

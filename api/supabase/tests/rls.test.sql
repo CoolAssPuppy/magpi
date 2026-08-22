@@ -62,8 +62,8 @@ select throws_ok(
 );
 
 -- The registry ships six providers and every scope is read only.
-select is((select count(*)::int from public.providers), 6,
-  'six providers are seeded');
+select is((select count(*)::int from public.providers), 7,
+  'seven providers are seeded');
 select ok(
   not exists (
     select 1 from public.providers, unnest(scopes) as scope
@@ -128,7 +128,7 @@ select is((select page_slug from public.page_configs), 'next_thing',
   'and the one they see is theirs');
 select is((select count(*)::int from public.pomodoro_settings), 1,
   'a user sees only their own pomodoro settings');
-select is((select count(*)::int from public.providers), 6,
+select is((select count(*)::int from public.providers), 7,
   'a signed-in user reads the whole provider registry');
 
 -- Secrets are absent from the grant, not merely filtered by a policy.

@@ -2,7 +2,13 @@ import { cached, ttlFor } from "../cache.ts";
 import { COUNTER_MAX } from "../badge-constants.ts";
 import { credentialsFor } from "../connections.ts";
 import type { PagePayload } from "../envelope.ts";
-import { assignedIssues, mentions, reviewRequests, unreadCount } from "../sources/index.ts";
+import {
+  assignedIssues,
+  mentions,
+  openPages,
+  reviewRequests,
+  unreadCount,
+} from "../sources/index.ts";
 import type { Counter, ProviderCredentials } from "../sources/contract.ts";
 
 import type { BuildContext } from "./mod.ts";
@@ -39,7 +45,18 @@ const SOURCES: Source[] = [
   { provider: "linear", label: "Linear", read: (c, ctx) => assignedIssues(c, ctx.deps) },
   { provider: "slack", label: "Slack", read: (c, ctx) => mentions(c, ctx.deps) },
   { provider: "github", label: "Reviews", read: (c, ctx) => reviewRequests(c, ctx.deps) },
+  {
+    provider: "notion",
+    label: "Notion",
+    read: (c, ctx) => openPages(c, ctx.deps, { databaseId: readDatabaseId(ctx) }),
+  },
 ];
+
+/** Which Notion database to count, when the wearer chose one. */
+function readDatabaseId(ctx: BuildContext): string | null {
+  const value = ctx.settings.notion_database_id;
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
 
 export async function build(ctx: BuildContext): Promise<PagePayload> {
   const chosen = SOURCES.filter((source) => ctx.connected.has(source.provider)).slice(

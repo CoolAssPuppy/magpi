@@ -26,6 +26,7 @@ const USED_BY: Record<string, string[]> = {
   linear: ["Counters"],
   slack: ["Counters"],
   github: ["Counters"],
+  notion: ["Counters"],
 };
 
 export default async function ConnectionDetailPage({

@@ -1,6 +1,8 @@
 import Link from "next/link";
 
+import { DataFlow } from "@/components/data-flow";
 import { FoldedMagpie, MagpieMark } from "@/components/magpie-mark";
+import { ProviderMark } from "@/components/provider-mark";
 import { BadgePreview } from "@/components/screen/badge-preview";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { opsFor } from "@/lib/preview/fixtures";
@@ -9,16 +11,17 @@ const PAGES = [
   { number: "01", name: "Next thing", source: "Google Calendar" },
   { number: "02", name: "Day shape", source: "Google Calendar" },
   { number: "03", name: "Deploy state", source: "Vercel" },
-  { number: "04", name: "Counters", source: "Gmail, Linear, Slack" },
+  { number: "04", name: "Counters", source: "Gmail, Linear, Slack, Notion" },
   { number: "05", name: "One number", source: "PostHog" },
 ];
 
 const PROVIDERS = [
-  { name: "Google", kind: "OAUTH" },
-  { name: "Linear", kind: "OAUTH" },
-  { name: "Slack", kind: "OAUTH" },
-  { name: "Vercel", kind: "API KEY" },
-  { name: "PostHog", kind: "API KEY" },
+  { slug: "google", name: "Google", kind: "OAUTH" },
+  { slug: "linear", name: "Linear", kind: "OAUTH" },
+  { slug: "slack", name: "Slack", kind: "OAUTH" },
+  { slug: "notion", name: "Notion", kind: "OAUTH" },
+  { slug: "vercel", name: "Vercel", kind: "API KEY" },
+  { slug: "posthog", name: "PostHog", kind: "API KEY" },
 ];
 
 export default function HomePage() {
@@ -122,9 +125,12 @@ export default function HomePage() {
           <ul className="w-full shrink-0 lg:w-[300px]">
             {PROVIDERS.map((provider) => (
               <li
-                key={provider.name}
-                className="gap-md border-l-edge border-accent bg-surface px-lg py-md flex items-center"
+                key={provider.slug}
+                className="gap-md bg-surface px-lg py-md border-border flex items-center border-b last:border-b-0"
               >
+                <span className="text-ink-muted flex shrink-0 items-center">
+                  <ProviderMark slug={provider.slug} />
+                </span>
                 <span className="font-display flex-1 text-base">{provider.name}</span>
                 <span className="w-4xl font-display text-2xs text-ink-faint shrink-0 text-right">
                   {provider.kind}
@@ -132,15 +138,16 @@ export default function HomePage() {
               </li>
             ))}
           </ul>
-          <div className="gap-lg px-3xl flex flex-1 flex-col justify-center">
-            <div className="gap-xs rounded-panel border-accent bg-surface px-lg py-xl flex flex-col items-center border">
-              <span className="font-display text-base font-medium">GET /gateway/desk</span>
-              <span className="text-ink-muted text-sm">
-                Encrypted at rest. Cached per provider. One route.
-              </span>
+
+          {/* Absolute inside a stretched box, so the row's height comes from
+              the provider list and every lane leaves level with its row. */}
+          <div className="relative min-h-[180px] flex-1 self-stretch">
+            <div className="absolute inset-0">
+              <DataFlow lanes={PROVIDERS.length} />
             </div>
           </div>
-          <div className="gap-sm border-l-edge border-accent bg-surface px-lg py-xl flex w-full shrink-0 flex-col justify-center lg:w-[220px]">
+
+          <div className="gap-sm bg-surface px-lg py-lg border-border flex w-full shrink-0 flex-col justify-center self-center border lg:w-[220px]">
             <span className="font-display text-base">Your badge</span>
             <span className="text-ink-faint text-sm leading-snug">
               One pairing token. Nothing else on the device.

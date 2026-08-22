@@ -24,7 +24,10 @@ const FIELDS: Record<
   ],
   day_shape: [{ name: "calendar_id", label: "Calendar", type: "text" }],
   deploys: [],
-  counters: [{ name: "gmail_query", label: "Gmail search", type: "text" }],
+  counters: [
+    { name: "gmail_query", label: "Gmail search", type: "text" },
+    { name: "notion_database_id", label: "Notion database id", type: "text" },
+  ],
   one_number: [],
 };
 

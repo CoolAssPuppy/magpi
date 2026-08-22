@@ -80,6 +80,37 @@
     transform-origin: top;
     animation: fold var(--duration-fold) var(--ease-fold);
   }
+
+  /*
+   * A packet travelling a wire.
+   *
+   * One short dash on a very long gap, pulled along by the offset, so what
+   * moves is a discrete thing arriving rather than a glow. Linear on purpose:
+   * a packet does not accelerate.
+   *
+   * pathLength is normalised to 100 in the markup, so one dash pattern works
+   * for wires of different lengths and the five lanes stay in step.
+   */
+  @keyframes wire-packet {
+    from {
+      stroke-dashoffset: 100;
+    }
+    to {
+      stroke-dashoffset: -14;
+    }
+  }
+
+  .wire-packet {
+    stroke-dasharray: 14 100;
+    animation: wire-packet var(--duration-wire) linear infinite;
+  }
+
+  /* The trunk carries what the five lanes delivered, so it runs unstaggered
+     and a little quicker. */
+  .wire-packet-trunk {
+    stroke-dasharray: 10 40;
+    animation-duration: calc(var(--duration-wire) / 2);
+  }
 }
 
 /* Nothing in the product depends on an animation having played. */
