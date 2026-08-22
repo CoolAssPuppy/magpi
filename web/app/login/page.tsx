@@ -33,7 +33,7 @@ export default async function LoginPage({
         </div>
         <h1 className="font-display text-3xl font-bold leading-tight">Sign in</h1>
         <p className="text-md leading-prose text-ink-muted max-w-prose">
-          GitHub is the fastest way in. A magic link works too.
+          One click, and your badge is yours.
         </p>
         {errorMessage ? (
           <p role="alert" className="border-l-edge border-critical bg-surface px-lg py-md text-sm">

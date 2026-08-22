@@ -111,6 +111,76 @@
     stroke-dasharray: 10 40;
     animation-duration: calc(var(--duration-wire) / 2);
   }
+
+  /*
+   * A page arriving on the badge.
+   *
+   * The screen turns like a sheet rather than crossfading: the incoming page
+   * pivots up on its bottom edge, so the swap reads as the same piece of paper
+   * turning over rather than two pictures dissolving.
+   */
+  @keyframes page-fold-in {
+    from {
+      transform: perspective(600px) rotateX(-38deg);
+      opacity: 0;
+    }
+    to {
+      transform: perspective(600px) rotateX(0deg);
+      opacity: 1;
+    }
+  }
+
+  .fold-in {
+    transform-origin: bottom center;
+    animation: page-fold-in var(--duration-unfold) var(--ease-fold) both;
+  }
+
+  /*
+   * The hero bird folding itself.
+   *
+   * Each plane drops onto its crease in turn, tail last, the way the sheet is
+   * actually folded. The rotation is small and the origin is the crease the
+   * plane hinges on, so nothing swings; it settles.
+   *
+   * Runs once on load. A bird that folds forever is a bird nobody can read the
+   * headline next to.
+   */
+  @keyframes crease {
+    from {
+      transform: rotate3d(1, 0.4, 0, 62deg);
+      opacity: 0;
+    }
+    to {
+      transform: rotate3d(1, 0.4, 0, 0deg);
+      opacity: 1;
+    }
+  }
+
+  .origami g {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: crease var(--duration-crease) var(--ease-fold) both;
+  }
+
+  /* Belly, tail, body, wing, head: the order a sheet takes them. The first
+     needs no delay, so it declares none. */
+  .origami g:nth-child(2) {
+    animation-delay: calc(var(--duration-crease-step) * 1);
+  }
+  .origami g:nth-child(3) {
+    animation-delay: calc(var(--duration-crease-step) * 2);
+  }
+  .origami g:nth-child(4) {
+    animation-delay: calc(var(--duration-crease-step) * 3);
+  }
+  .origami g:nth-child(5) {
+    animation-delay: calc(var(--duration-crease-step) * 4);
+  }
+  /* The crease lines are drawn last, once every plane is down. */
+  .origami g:nth-child(6) {
+    animation: none;
+    opacity: 1;
+  }
 }
 
 /* Nothing in the product depends on an animation having played. */

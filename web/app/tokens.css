@@ -130,6 +130,13 @@
   /* One packet's trip along a wire on the homepage. Slow enough to follow,
      short enough that five staggered lanes never read as a queue. */
   --duration-wire: 2600ms;
+  /* One plane of the hero bird settling onto its crease. Longer than a menu
+     opening, because a plane travelling that far at menu speed reads as a
+     glitch rather than a fold. */
+  --duration-crease: 620ms;
+  /* The gap between one plane landing and the next starting. Short enough to
+     read as one fold rather than five. */
+  --duration-crease-step: 90ms;
   --ease-fold: cubic-bezier(0.32, 0, 0.12, 1);
   --ease-crease: cubic-bezier(0.9, 0, 0.9, 1);
 
@@ -140,7 +147,9 @@
   /* Primitive: containers. */
   --container-prose: 640px;
   --container-panel: 960px;
-  --container-page: 1200px;
+  /* The design file's page: 1440 wide holding 1312 of content, so the same
+     64px gutter that sets the margin also sets where content stops. */
+  --container-page: 1440px;
 
   /*
    * Layer two: semantics.

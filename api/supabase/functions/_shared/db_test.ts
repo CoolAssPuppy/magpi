@@ -1,8 +1,17 @@
 import { assert, assertEquals, assertRejects } from "@std/assert";
 
-import { audit, enforceRateLimits, serviceClient, type RateLimitRule } from "./db.ts";
+import { audit, enforceRateLimits, type RateLimitRule, serviceClient } from "./db.ts";
 import { ApiError } from "./errors.ts";
-import { stubDb, type StubDb, type StubReply, type StubRequest } from "./testing/stub_db.ts";
+import { type StubDb, stubDb, type StubReply, type StubRequest } from "./testing/stub_db.ts";
+
+/*
+ * enforceRateLimits samples a housekeeping prune at one call in two hundred
+ * and deliberately does not await it, which is right in production and a
+ * dangling request in a test: it outlives the stub server perhaps one run in a
+ * hundred. Pinned off for the file, and turned on by the one case about it.
+ */
+const real_random = Math.random;
+Math.random = () => 0.5;
 
 const RULES: RateLimitRule[] = [
   { bucket: "ip:203.0.113.1", limit: 60, windowSeconds: 60 },
@@ -11,7 +20,9 @@ const RULES: RateLimitRule[] = [
 
 /** What consume_rate_limit returns. */
 function allowance(allowed: boolean, retryAfter = 0): StubReply {
-  return { body: { allowed, remaining: allowed ? 5 : 0, retry_after_s: retryAfter } };
+  return {
+    body: { allowed, remaining: allowed ? 5 : 0, retry_after_s: retryAfter },
+  };
 }
 
 async function withStub(
@@ -71,10 +82,16 @@ Deno.test("serviceClient refuses to run unconfigured rather than falling back", 
 });
 
 Deno.test("serviceClient builds a client when it is configured", async () => {
-  await withEnv({ SUPABASE_URL: "http://127.0.0.1:1", SB_SECRET_KEY: "sb_secret_test" }, () => {
-    assert(typeof serviceClient().from === "function");
-    return Promise.resolve();
-  });
+  await withEnv(
+    {
+      SUPABASE_URL: "http://127.0.0.1:1",
+      SB_SECRET_KEY: "sb_secret_test",
+    },
+    () => {
+      assert(typeof serviceClient().from === "function");
+      return Promise.resolve();
+    },
+  );
 });
 
 Deno.test("enforceRateLimits lets a caller through when every rule has room", async () => {
@@ -163,7 +180,12 @@ Deno.test("the limiter never fails open, so a database blip cannot lift every li
 
 Deno.test("audit writes one structured line naming what happened", () => {
   const lines = captureLog(() => {
-    audit({ action: "badge.token.minted", actor: "user-1", target: "badge-1", ip: "203.0.113.1" });
+    audit({
+      action: "badge.token.minted",
+      actor: "user-1",
+      target: "badge-1",
+      ip: "203.0.113.1",
+    });
   });
 
   assertEquals(lines.length, 1);
@@ -229,3 +251,29 @@ function assertThrowsApi(body: () => unknown): ApiError {
   }
   throw new Error("expected a throw, and nothing was thrown");
 }
+
+Deno.test({
+  name: "the sampled prune is housekeeping, and never in the caller's way",
+  // The prune is deliberately not awaited, so an in-flight request outliving
+  // the test is the behaviour under test rather than a mistake in it. That is
+  // the whole point: housekeeping must never hold up the request it rode in on.
+  sanitizeOps: false,
+  sanitizeResources: false,
+  fn: async () => {
+    // Forced to fire. It is deliberately not awaited, so what matters is that
+    // the request it decorates still succeeds.
+    Math.random = () => 0;
+    const stub = stubDb(() => allowance(true));
+    try {
+      await enforceRateLimits(stub.db, [RULES[0]]);
+    } finally {
+      Math.random = () => 0.5;
+      await stub.close();
+    }
+  },
+});
+
+Deno.test("restores the real source of randomness", () => {
+  Math.random = real_random;
+  assert(typeof Math.random() === "number");
+});
