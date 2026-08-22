@@ -53,6 +53,9 @@ export function getPostHogKey(): string | undefined {
   return process.env.NEXT_PUBLIC_POSTHOG_KEY;
 }
 
+// `||` rather than `??`: a variable present but empty is the common shape of a
+// half-filled env file, and an empty api_host sends every event to the page it
+// was fired from.
 export function getPostHogHost(): string {
-  return process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com";
+  return process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com";
 }
