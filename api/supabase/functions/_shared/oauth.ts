@@ -77,12 +77,20 @@ function splitScopes(scope: unknown): string[] {
 // Providers signal failure with a 200 and an `error` field as often as with a
 // non-2xx status, so both count. The message is not forwarded: it can echo the
 // code back.
-async function postForToken(url: string, body: URLSearchParams): Promise<Record<string, unknown>> {
+async function postForToken(
+  url: string,
+  body: URLSearchParams,
+  extraHeaders: Record<string, string> = {},
+): Promise<Record<string, unknown>> {
   let response: Response;
   try {
     response = await fetch(url, {
       method: "POST",
-      headers: { accept: "application/json", "content-type": "application/x-www-form-urlencoded" },
+      headers: {
+        accept: "application/json",
+        "content-type": "application/x-www-form-urlencoded",
+        ...extraHeaders,
+      },
       body,
     });
   } catch {
@@ -128,6 +136,12 @@ interface DriverQuirks {
   extraAuthParams?: Record<string, string>;
   /** Sent on code exchange. GitHub is the one provider that takes none. */
   exchangeGrantType?: string | null;
+  /**
+   * Credentials in an Authorization header rather than the body. Notion
+   * answers 401 to a request that puts them in the form, which is why its
+   * connect never came back.
+   */
+  basicAuthForToken?: boolean;
   /** Lifts the token out of a non-standard envelope before the shared path. */
   normalizePayload?(payload: Record<string, unknown>): Record<string, unknown>;
   /** The account label after a code exchange. Must not throw. */
@@ -178,6 +192,28 @@ const QUIRKS: Record<string, DriverQuirks> = {
 
   linear: {
     scopeSeparator: ",",
+  },
+
+  notion: {
+    // Notion wants the client id and secret as HTTP Basic, and rejects them in
+    // the body.
+    basicAuthForToken: true,
+    accountFromExchange(payload) {
+      // The workspace is what a person recognises; the bot id is the fallback
+      // so the row is never nameless.
+      const owner = payload.owner;
+      const person =
+        typeof owner === "object" && owner !== null
+          ? (owner as Record<string, unknown>).user
+          : null;
+      const email =
+        typeof person === "object" && person !== null
+          ? readString((person as Record<string, unknown>).person, "email")
+          : null;
+      return Promise.resolve(
+        email ?? readString(payload, "workspace_name") ?? readString(payload, "bot_id"),
+      );
+    },
   },
 
   slack: {
@@ -234,17 +270,21 @@ export function oauthDriverFor(record: ProviderRecord): OAuthDriver {
     async exchangeCode({ clientId, clientSecret, redirectUri, code, codeVerifier }) {
       const grantType =
         quirks.exchangeGrantType === undefined ? "authorization_code" : quirks.exchangeGrantType;
+      // Basic-auth providers still need the redirect and code in the body;
+      // only the credentials move to the header.
+      const basic = quirks.basicAuthForToken === true;
+      const form = new URLSearchParams({
+        ...(basic ? {} : { client_id: clientId, client_secret: clientSecret }),
+        redirect_uri: redirectUri,
+        ...(grantType ? { grant_type: grantType } : {}),
+        code,
+        code_verifier: codeVerifier,
+      });
       const payload = normalize(
         await postForToken(
           provider.token_url,
-          new URLSearchParams({
-            client_id: clientId,
-            client_secret: clientSecret,
-            redirect_uri: redirectUri,
-            ...(grantType ? { grant_type: grantType } : {}),
-            code,
-            code_verifier: codeVerifier,
-          }),
+          form,
+          basic ? { authorization: `Basic ${btoa(`${clientId}:${clientSecret}`)}` } : {},
         ),
       );
 

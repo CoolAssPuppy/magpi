@@ -40,7 +40,11 @@ export function ConnectionItem({
     if (state.status === "success") setIsEditing(false);
   }
 
+  // The label is what the wearer called it; the account is which one it is.
+  // Both, when both exist, because two rows called Work say nothing on their
+  // own about which login each is.
   const name = connection.label ?? connection.external_account ?? "Unnamed";
+  const account = connection.label ? connection.external_account : null;
 
   if (isEditing) {
     return (
@@ -83,7 +87,10 @@ export function ConnectionItem({
           connection.status === "error" ? "bg-critical" : "bg-accent"
         }`}
       />
-      <span className="font-display flex-1 text-sm">{name}</span>
+      <span className="gap-xs flex flex-1 items-baseline">
+        <span className="font-display text-sm">{name}</span>
+        {account ? <span className="text-ink-faint text-xs">({account})</span> : null}
+      </span>
 
       {connection.status === "error" ? (
         <span className="text-critical shrink-0 text-xs">{connection.error_message}</span>
