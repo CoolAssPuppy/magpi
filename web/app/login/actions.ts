@@ -2,13 +2,9 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { z } from "zod";
 
-import { errorState, successState, type ActionState } from "@/lib/actions/state";
 import { safeNextPath } from "@/lib/redirects";
 import { createClient } from "@/lib/supabase/server";
-
-const emailSchema = z.email();
 
 async function callbackUrl(next: string): Promise<string> {
   // The origin comes from the request rather than an env var, so the same
@@ -31,26 +27,4 @@ export async function signInWithGitHub(formData: FormData): Promise<void> {
 
   if (error || !data.url) redirect("/login?error=github");
   redirect(data.url);
-}
-
-/** The magic link, for anyone without a GitHub account. */
-export async function sendMagicLink(
-  _previous: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  const parsed = emailSchema.safeParse(formData.get("email"));
-  if (!parsed.success) return errorState("That does not look like an email address.");
-
-  const next = safeNextPath(formData.get("next"));
-  const supabase = await createClient();
-
-  const { error } = await supabase.auth.signInWithOtp({
-    email: parsed.data,
-    options: { emailRedirectTo: await callbackUrl(next) },
-  });
-
-  // The same answer either way. Saying an address is unknown tells a stranger
-  // which addresses have accounts.
-  if (error) return errorState("The link could not be sent. Try again in a moment.");
-  return successState(`Check ${parsed.data} for a link.`);
 }

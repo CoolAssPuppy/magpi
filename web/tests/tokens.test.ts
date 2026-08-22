@@ -83,10 +83,14 @@ describe("the token system", () => {
     });
   }
 
-  it("defines the complete light palette on bare :root", () => {
+  it("defines the complete light palette before any theme block", () => {
+    // In the theme block, not a bare :root. Tailwind generates a utility only
+    // for what the theme block declares, so a semantic sitting in :root is a
+    // custom property no class can reach. The guarantee is unchanged: every
+    // colour is defined once up front, and a theme only ever redefines.
     const primitives = readFileSync(PRIMITIVES, "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
     const bareRoot = primitives.slice(
-      primitives.indexOf(":root {"),
+      primitives.indexOf("@theme {"),
       primitives.indexOf("@media (prefers-color-scheme: dark)"),
     );
     for (const token of [
@@ -111,9 +115,9 @@ describe("the token system", () => {
   it("redefines nothing in a theme block that bare :root did not define first", () => {
     // Comments mention :root by name, so they are stripped before splitting.
     const primitives = readFileSync(PRIMITIVES, "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
-    const [, ...themeBlocks] = primitives.split(":root");
-    const bareRoot = themeBlocks[0] ?? "";
-    const themed = themeBlocks.slice(1).join("\n");
+    const dark = primitives.indexOf("@media (prefers-color-scheme: dark)");
+    const bareRoot = primitives.slice(primitives.indexOf("@theme {"), dark);
+    const themed = primitives.slice(dark);
 
     const declared = new Set(bareRoot.match(/--color-[a-z-]+(?=:)/g) ?? []);
     const remapped = themed.match(/--color-[a-z-]+(?=:)/g) ?? [];

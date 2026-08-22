@@ -141,16 +141,19 @@
   --container-prose: 640px;
   --container-panel: 960px;
   --container-page: 1200px;
-}
 
-/*
- * Layer two: semantics. The complete light palette, on bare :root.
- *
- * Every semantic token is defined here and nowhere else first. The dark blocks
- * below redefine only what changes, so no colour has its only definition
- * inside a media query or an attribute selector.
- */
-:root {
+  /*
+   * Layer two: semantics.
+   *
+   * Declared in this block rather than in a plain :root, because Tailwind
+   * generates a utility only for what this block declares. Sitting in :root
+   * they were valid custom properties that no class referenced, so every
+   * bg-surface, text-accent and border-border in the app resolved to nothing.
+   *
+   * Each name is still emitted into :root, and the dark blocks below redefine
+   * the same names at higher specificity, so a theme swaps only this layer,
+   * exactly as before.
+   */
   --color-background: var(--color-chalk-200);
   --color-surface: var(--color-chalk-100);
   --color-raised: var(--color-chalk-50);
@@ -162,6 +165,12 @@
   --color-accent: var(--color-sheen-600);
   --color-accent-ink: var(--color-chalk-50);
   --color-accent-quiet: var(--color-sheen-700);
+
+  /* The primary action. Unlike the accent, this pair does not flip with the
+     theme: the design file draws the same teal fill and the same near-black
+     label in light and in dark, so a button reads identically either way. */
+  --color-action: var(--color-sheen-500);
+  --color-action-ink: var(--color-ink-950);
   --color-live: var(--color-violet-600);
   --color-positive: var(--color-sheen-700);
   --color-caution: var(--color-amber-500);
@@ -188,6 +197,11 @@
   --color-paper-head-shade: var(--color-chalk-400);
   --color-paper-crease: var(--color-chalk-200);
 }
+
+/*
+ * The dark palette. Only what changes from layer two above, so no colour has
+ * its only definition inside a media query or an attribute selector.
+ */
 
 /* System dark, unless an explicit light choice says otherwise. */
 @media (prefers-color-scheme: dark) {

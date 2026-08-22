@@ -31,38 +31,22 @@ const PROVIDERS = [
 export default function HomePage() {
   return (
     <main>
-      <header className="gap-lg border-border px-2xl py-xl flex flex-wrap items-center justify-between border-b">
+      <header className="gap-lg border-border px-xl lg:px-4xl py-xl flex flex-wrap items-center justify-between border-b">
         <div className="gap-md flex items-center">
           <MagpieMark />
           <span className="font-display text-md font-bold">Magpi</span>
         </div>
-        <nav className="gap-lg sm:gap-xl flex flex-wrap items-center">
-          <Link href="/login" className="font-display text-ink-muted hover:text-ink text-sm">
-            Pages
-          </Link>
-          <a
-            href="https://shop.pimoroni.com"
-            className="font-display text-ink-muted hover:text-ink text-sm"
-          >
-            Hardware
-          </a>
-          <a
-            href="https://github.com/CoolAssPuppy/magpi"
-            className="font-display text-ink-muted hover:text-ink text-sm"
-          >
-            Source
-          </a>
-          <ThemeToggle />
+        <nav className="gap-lg flex items-center">
           <Link
             href="/login"
-            className="rounded-panel bg-accent px-lg py-sm font-display text-accent-ink text-sm font-medium"
+            className="rounded-panel bg-action px-lg py-sm font-display text-action-ink text-sm font-medium"
           >
             Sign in
           </Link>
         </nav>
       </header>
 
-      <section className="gap-4xl px-2xl py-5xl flex flex-col items-center lg:flex-row lg:items-center lg:justify-between">
+      <section className="gap-4xl px-xl lg:px-4xl py-5xl flex flex-col items-center lg:flex-row lg:items-center lg:justify-between">
         <div className="gap-xl flex max-w-prose flex-col items-start">
           <span className="font-display text-accent text-xs tracking-wide">
             PIMORONI TUFTY 2350
@@ -77,13 +61,13 @@ export default function HomePage() {
           <div className="gap-md flex flex-wrap items-center">
             <Link
               href="/login"
-              className="rounded-panel bg-accent px-xl py-md font-display text-accent-ink text-base font-medium"
+              className="rounded-panel bg-action px-xl py-lg font-display text-action-ink text-base font-medium"
             >
               Sign in with GitHub
             </Link>
             <a
               href="https://github.com/CoolAssPuppy/magpi"
-              className="rounded-panel border-border-strong px-xl py-md font-display border text-base"
+              className="rounded-panel border-border-strong px-xl py-lg font-display border text-base"
             >
               Read the build
             </a>
@@ -92,7 +76,7 @@ export default function HomePage() {
         <FoldedMagpie className="w-full max-w-[660px] shrink-0" />
       </section>
 
-      <section className="gap-4xl border-border bg-surface px-2xl py-5xl flex flex-col items-start border-t lg:flex-row lg:items-center">
+      <section className="gap-4xl border-border bg-surface px-xl lg:px-4xl py-5xl flex flex-col items-start border-t lg:flex-row lg:items-center">
         <div className="rounded-round border-border bg-raised p-lg sm:p-xl max-w-full shrink-0 overflow-x-auto border">
           <BadgePreview ops={opsFor("next_thing")} label="Next thing, on the badge" />
         </div>
@@ -121,7 +105,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="gap-3xl border-border px-2xl py-5xl flex flex-col border-t">
+      <section className="gap-3xl border-border px-xl lg:px-4xl py-5xl flex flex-col border-t">
         <h2 className="font-display text-2xl font-bold leading-tight lg:text-3xl">
           Your data, on your device.
         </h2>
@@ -160,8 +144,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      <footer className="gap-3xl border-border bg-surface px-2xl py-4xl flex flex-col justify-between border-t sm:flex-row">
-        <div className="gap-md flex max-w-prose flex-col">
+      <footer className="gap-3xl border-border bg-surface px-xl lg:px-4xl py-4xl flex flex-col justify-between border-t sm:flex-row">
+        <div className="gap-lg flex max-w-prose flex-col items-start">
           <div className="gap-md flex items-center">
             <MagpieMark />
             <span className="font-display text-md font-bold">Magpi</span>
@@ -169,6 +153,7 @@ export default function HomePage() {
           <p className="text-ink-faint text-sm leading-snug">
             A desk companion for the Pimoroni Tufty 2350.
           </p>
+          <ThemeToggle />
         </div>
         <div className="gap-4xl flex">
           <div className="gap-sm flex flex-col">

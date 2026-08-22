@@ -33,11 +33,15 @@ test.describe("pages that need an account", () => {
 });
 
 test.describe("the sign-in page", () => {
-  test("offers GitHub and a magic link", async ({ page }) => {
+  test("offers GitHub, and nothing else", async ({ page }) => {
     await page.goto("/login");
 
     await expect(page.getByRole("button", { name: /github/i })).toBeVisible();
-    await expect(page.getByLabel(/email/i)).toBeVisible();
+
+    // No second way in. A magic link is a second account for the same person
+    // and a mailbox to babysit.
+    await expect(page.locator('input[type="email"]')).toHaveCount(0);
+    await expect(page.getByText(/magic link/i)).toHaveCount(0);
   });
 
   test("refuses to bounce the caller off to another site", async ({ page }) => {
