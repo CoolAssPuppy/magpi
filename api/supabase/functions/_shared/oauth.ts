@@ -302,9 +302,21 @@ export function providerCredentials(slug: string): { clientId: string; clientSec
   return { clientId, clientSecret };
 }
 
-// From configuration, never from the request, so a crafted `redirect_uri`
-// cannot redirect the authorization code elsewhere.
+/**
+ * Where a provider sends the browser back.
+ *
+ * From configuration, never from the request, so a crafted `redirect_uri`
+ * cannot redirect the authorization code elsewhere.
+ *
+ * SUPABASE_URL is not that address. Inside the edge runtime it is the internal
+ * gateway, http://kong:8000, and a redirect_uri naming a container hostname is
+ * one no provider can send a browser to. FUNCTIONS_BASE_URL is the public
+ * origin; deployed they are the same host, locally they are not.
+ */
 export function callbackUrl(): string {
+  const explicit = Deno.env.get("FUNCTIONS_BASE_URL");
+  if (explicit) return `${explicit.replace(/\/+$/, "")}/connections-callback`;
+
   const base = Deno.env.get("SUPABASE_URL");
   if (!base) throw new ApiError(500, "misconfigured", "server is not configured");
   return `${base.replace(/\/+$/, "")}/functions/v1/connections-callback`;

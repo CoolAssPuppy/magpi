@@ -26,6 +26,10 @@ const NAMES = [
   "TOKEN_ENCRYPTION_KEY_ID",
   "TOKEN_ENCRYPTION_KEYS_PREVIOUS",
   "WEB_BASE_URL",
+  // The public origin of the functions. Not SUPABASE_URL: inside the edge
+  // runtime that is the internal gateway, and a provider cannot redirect a
+  // browser to a container hostname.
+  "FUNCTIONS_BASE_URL",
   "WEB_ORIGINS",
   "PAIRING_URL",
 ];

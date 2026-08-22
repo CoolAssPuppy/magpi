@@ -602,3 +602,33 @@ Deno.test("the callback url refuses to guess when SUPABASE_URL is unset", async 
     assertEquals(err.code, "misconfigured");
   });
 });
+
+Deno.test("the callback url is the public origin, not the internal gateway", async () => {
+  // Inside the edge runtime SUPABASE_URL is http://kong:8000. A redirect_uri
+  // naming a container hostname is one no provider can send a browser to,
+  // which is exactly what Google and Linear rejected.
+  await withEnv(
+    {
+      SUPABASE_URL: "http://kong:8000",
+      FUNCTIONS_BASE_URL: "http://127.0.0.1:56521/functions/v1",
+    },
+    () => {
+      assertEquals(callbackUrl(), "http://127.0.0.1:56521/functions/v1/connections-callback");
+      return Promise.resolve();
+    },
+  );
+});
+
+Deno.test("the callback url falls back to SUPABASE_URL where they are the same host", async () => {
+  await withEnv({ SUPABASE_URL: "https://proj.supabase.co", FUNCTIONS_BASE_URL: null }, () => {
+    assertEquals(callbackUrl(), "https://proj.supabase.co/functions/v1/connections-callback");
+    return Promise.resolve();
+  });
+});
+
+Deno.test("a trailing slash on the public origin does not double up", async () => {
+  await withEnv({ FUNCTIONS_BASE_URL: "https://proj.supabase.co/functions/v1/" }, () => {
+    assertEquals(callbackUrl(), "https://proj.supabase.co/functions/v1/connections-callback");
+    return Promise.resolve();
+  });
+});
