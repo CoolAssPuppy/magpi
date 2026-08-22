@@ -46,7 +46,7 @@ export function Dialog({
         onClick={(event) => {
           if (event.target === ref.current) close();
         }}
-        className="rounded-round border-border bg-background text-ink backdrop:bg-invert-ground/50 max-w-[92vw] border p-0"
+        className="rounded-round border-border bg-background text-ink backdrop:bg-invert-ground/50 m-auto max-w-[92vw] border p-0"
       >
         {isOpen ? (
           <div className="gap-xl p-2xl flex flex-col">

@@ -9,15 +9,13 @@ import { renameBadgeAction, revokeBadgeAction } from "./actions";
 
 export function BadgeList({ badges }: { badges: BadgeRow[] }) {
   return (
-    <section className="rounded-panel border-border bg-surface flex flex-1 flex-col overflow-hidden border">
-      <header className="border-border px-lg py-md flex items-center justify-between border-b">
+    <section className="border-border flex flex-col border-t">
+      <header className="py-md flex items-center justify-between">
         <h2 className="font-display text-2xs text-ink-faint tracking-wide">YOUR BADGES</h2>
         <span className="font-display text-2xs text-ink-faint">{badges.length}</span>
       </header>
       {badges.length === 0 ? (
-        <p className="px-lg py-xl text-ink-faint text-sm">
-          None yet. Type the code on a badge and it appears here.
-        </p>
+        <p className="pb-md text-ink-faint text-sm">Nothing paired yet.</p>
       ) : (
         <ul>
           {badges.map((badge) => (

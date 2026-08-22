@@ -18,10 +18,8 @@ export function PairingCard() {
   const [state, approve, isApproving] = useActionState(approveCodeAction, IDLE);
 
   return (
-    <section className="gap-xl rounded-panel border-border bg-surface p-2xl flex w-full shrink-0 flex-col items-center border lg:w-[420px]">
-      <h2 className="font-display text-2xs text-ink-faint tracking-wide">
-        TYPE THE CODE FROM THE BADGE
-      </h2>
+    <section className="gap-lg flex w-full flex-col items-center">
+      <p className="text-ink-muted text-sm">Open Notifier on the badge. It shows a code.</p>
 
       <form action={approve} className="gap-lg flex w-full flex-col items-center">
         <input
@@ -47,9 +45,7 @@ export function PairingCard() {
       </form>
 
       {state.status === "idle" ? (
-        <p className="text-ink-faint text-center text-sm">
-          Open Notifier on the badge. It shows a code while it waits.
-        </p>
+        <p className="text-ink-faint text-center text-sm"></p>
       ) : (
         <p
           role="status"
