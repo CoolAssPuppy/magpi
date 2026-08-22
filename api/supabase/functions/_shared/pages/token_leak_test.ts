@@ -114,9 +114,12 @@ Deno.test("no page puts a provider secret on the badge, however the call fails",
   await withKey(async () => {
     const rows = await connectionRows();
 
-    for (const [description, failure] of Object.entries(FAILURES)) {
-      for (const slug of REGISTRY.keys()) {
-        await withStub(async (stub) => {
+    // One stub for every combination. Standing up twenty-five servers and
+    // twenty-five clients to make the same assertion is slower and leaves more
+    // to go wrong than the thing under test.
+    await withStub(async (stub) => {
+      for (const [description, failure] of Object.entries(FAILURES)) {
+        for (const slug of REGISTRY.keys()) {
           const context: BuildContext = {
             db: stub.db,
             userId: USER,
@@ -132,9 +135,9 @@ Deno.test("no page puts a provider secret on the badge, however the call fails",
           const found = leaks(rendered);
 
           assert(found === null, `${slug} leaked "${found}" with ${description}: ${rendered}`);
-        });
+        }
       }
-    }
+    });
   });
 });
 
