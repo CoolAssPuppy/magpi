@@ -341,3 +341,47 @@ deliberate here and nowhere else in the product.
 The section kickers were dropped in that pass. The heading carries the section
 on its own, and a small caps label above every one of them was a rhythm the
 page did not need.
+
+## The app icon
+
+`design/app-icon-dark.png` and `design/app-icon-light.png`, 1024 square. The
+same folded magpie as the hero, in the same orientation, with about 14 percent
+padding. Not a new mark: the icon on a browser tab, the one on an OAuth consent
+screen, and the bird on the homepage are one bird.
+
+`web/app/icon.svg` is the favicon. It inlines its hex values rather than reading
+tokens, because a favicon is fetched without the stylesheet and a `var()` there
+renders nothing. `tests/tokens.test.ts` asserts every colour in it is a value
+the primitives file declares, which is what stops it drifting.
+
+`scripts/gen-icons.py` renders the rasters from the same geometry:
+
+| File                              | Size | For                       |
+| --------------------------------- | ---- | ------------------------- |
+| `web/public/icon-32.png`          | 32   | Browser tab fallback      |
+| `web/public/apple-touch-icon.png` | 180  | iOS home screen           |
+| `web/public/icon-192.png`         | 192  | Android home screen       |
+| `web/public/icon-512.png`         | 512  | Install prompt            |
+| `design/oauth-logo-120.png`       | 120  | The OAuth consent screens |
+
+## Motion on the homepage
+
+The gateway section carries a packet along each provider's wire.
+
+A dash rather than a glow or a pulse, because a poll is a discrete thing
+arriving somewhere rather than a signal humming. Timing is linear, since a
+packet does not accelerate, and the lanes are staggered across one full trip so
+the six never beat together and turn into a metronome. `--duration-wire` is
+2600ms.
+
+Each lane leaves level with its provider row, so a wire looks attached to the
+thing it carries. The packet stroke is 4px against a 1px wire because
+`preserveAspectRatio` is off and a near-horizontal stroke is squashed by the
+vertical scale.
+
+`prefers-reduced-motion` stops all of it and the wires stay drawn, so the
+diagram still says what connects to what.
+
+This is the one animated thing in the product. The rule that a number from real
+data never animates is unchanged: the badge previews and every panel in the app
+are still.
