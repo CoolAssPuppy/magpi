@@ -59,3 +59,7 @@ dist/
 
 # TypeScript incremental build cache
 *.tsbuildinfo
+
+# Next rewrites this on every dev and build, pointing at whichever it ran
+# last, so tracking it means the gate dirties the tree. Next regenerates it.
+web/next-env.d.ts
