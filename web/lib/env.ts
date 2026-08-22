@@ -40,12 +40,18 @@ export function getBadgeApiUrl(): string {
   return required("BADGE_API_URL", process.env.BADGE_API_URL, `${LOCAL_SUPABASE_URL}/functions/v1`);
 }
 
-/** Server only. Bypasses RLS, so this guard turns a client import into a failure. */
+/**
+ * Server only. Bypasses RLS, so this guard turns a client import into a failure.
+ *
+ * SB_, not SUPABASE_: the platform reserves that prefix for the variables it
+ * injects itself and refuses to store a secret under it, so a secrets manager
+ * syncing into a project cannot write one.
+ */
 export function getSecretKey(): string {
   if (typeof window !== "undefined") {
     throw new Error("The secret key is server only and must not be read in the browser.");
   }
-  return required("SUPABASE_SECRET_KEY", process.env.SUPABASE_SECRET_KEY, "placeholder-secret-key");
+  return required("SB_SECRET_KEY", process.env.SB_SECRET_KEY, "placeholder-secret-key");
 }
 
 /** Optional. Analytics stays disabled when this is absent. */

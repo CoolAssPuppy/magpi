@@ -407,7 +407,7 @@ prints a value and `supabase start` no longer warns about a missing variable.
 3. Under **Redirect URLs**, click **Add URL** for each of these:
 
    ```
-   https://magpi.app/**
+   https://magpi.to/**
    https://magpi-*.vercel.app/**
    http://localhost:3001/**
    http://127.0.0.1:3001/**
@@ -477,8 +477,28 @@ supabase secrets set \
   OAUTH_LINEAR_CLIENT_SECRET="$(doppler secrets get OAUTH_LINEAR_CLIENT_SECRET --project magpi --config dev --plain)"
 ```
 
-`SUPABASE_URL`, `SUPABASE_SECRET_KEYS`, and `SUPABASE_PUBLISHABLE_KEYS` are
-injected by the edge runtime. Do not set them yourself.
+### Why everything here is named `SB_`, not `SUPABASE_`
+
+Supabase reserves the `SUPABASE_` prefix for the variables it injects itself,
+and refuses to store a secret under it. A secrets manager syncing into a
+project therefore cannot write one, and the sync fails on the name alone.
+Everything this project owns is named `SB_`.
+
+`SUPABASE_URL`, `SB_SECRET_KEY`, and `SB_PUBLISHABLE_KEY` are injected by the
+edge runtime. Do not set them yourself.
+
+The CLI is the exception. `supabase link` and `supabase db push` read
+`SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`, and `SUPABASE_DB_PASSWORD`
+from their own environment, and those names are not negotiable. They are stored
+as `SB_*` and mapped at the point of use, which is what the CI file does and
+what the command below does:
+
+```bash
+SUPABASE_ACCESS_TOKEN="$(doppler secrets get SB_ACCESS_TOKEN --project magpi --config dev --plain)" \
+SUPABASE_PROJECT_REF="$(doppler secrets get SB_PROJECT_REF --project magpi --config dev --plain)" \
+SUPABASE_DB_PASSWORD="$(doppler secrets get SB_DB_PASSWORD --project magpi --config dev --plain)" \
+  supabase link --project-ref "$SUPABASE_PROJECT_REF"
+```
 
 You will know this worked when `supabase secrets list` shows every name above
 with a digest beside it.
@@ -497,7 +517,7 @@ these must never reach Vercel.
 | `BADGE_API_URL`                        | `http://127.0.0.1:56521/functions/v1` | Yes             |
 | `NEXT_PUBLIC_POSTHOG_KEY`              | `phc_...` or empty                    | Yes             |
 | `NEXT_PUBLIC_POSTHOG_HOST`             | `https://us.i.posthog.com`            | Yes             |
-| `SUPABASE_SECRET_KEY`                  | local secret key                      | **No**          |
+| `SB_SECRET_KEY`                        | local secret key                      | **No**          |
 | `TOKEN_ENCRYPTION_KEY`                 | generated                             | **No**          |
 | `TOKEN_ENCRYPTION_KEY_ID`              | `1`                                   | **No**          |
 | `TOKEN_ENCRYPTION_KEYS_PREVIOUS`       | empty until you rotate                | **No**          |
@@ -509,9 +529,9 @@ these must never reach Vercel.
 | `OAUTH_LINEAR_CLIENT_ID` / `_SECRET`   | section 4                             | **No**          |
 | `OAUTH_SLACK_CLIENT_ID` / `_SECRET`    | section 5                             | **No**          |
 | `OAUTH_NOTION_CLIENT_ID` / `_SECRET`   | section 6                             | **No**          |
-| `SUPABASE_ACCESS_TOKEN`                | for CI                                | **No**          |
-| `SUPABASE_PROJECT_REF`                 | `bxsgodfrrllijpmimsgs`                | No              |
-| `SUPABASE_DB_PASSWORD`                 | for CI                                | **No**          |
+| `SB_ACCESS_TOKEN`                      | for CI                                | **No**          |
+| `SB_PROJECT_REF`                       | `bxsgodfrrllijpmimsgs`                | No              |
+| `SB_DB_PASSWORD`                       | for CI                                | **No**          |
 
 **The encryption key and the secret key never reach Vercel.** The web app never
 decrypts anything: it reads `connections_public`, a view with the token columns
@@ -540,11 +560,11 @@ edge functions.
 1. Open `https://github.com/CoolAssPuppy/magpi/settings/secrets/actions`.
 2. Click **New repository secret** three times:
 
-| Name                    | Where it comes from                                                                                               |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `SUPABASE_ACCESS_TOKEN` | <https://supabase.com/dashboard/account/tokens> → **Generate new token**                                          |
-| `SUPABASE_PROJECT_REF`  | `bxsgodfrrllijpmimsgs`                                                                                            |
-| `SUPABASE_DB_PASSWORD`  | Project settings → Database → the password you set at project creation. Reset it there if you never wrote it down |
+| Name              | Where it comes from                                                                                               |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `SB_ACCESS_TOKEN` | <https://supabase.com/dashboard/account/tokens> → **Generate new token**                                          |
+| `SB_PROJECT_REF`  | `bxsgodfrrllijpmimsgs`                                                                                            |
+| `SB_DB_PASSWORD`  | Project settings → Database → the password you set at project creation. Reset it there if you never wrote it down |
 
 **Confirming the deploy actually ran, rather than assuming.** A green build is
 not a deploy. The CI file has a `supabase` job that is skipped entirely when

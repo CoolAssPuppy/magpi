@@ -73,10 +73,7 @@ Deno.test("authenticateBadge refuses a revoked badge", async () => {
   await withStub(
     () => ({ body: [{ id: BADGE, user_id: USER, revoked_at: new Date().toISOString() }] }),
     async (stub) => {
-      const error = await assertRejects(
-        () => authenticateBadge(stub.db, "badge-token"),
-        ApiError,
-      );
+      const error = await assertRejects(() => authenticateBadge(stub.db, "badge-token"), ApiError);
       assertEquals(error.status, 401);
     },
   );
@@ -86,10 +83,7 @@ Deno.test("a revoked badge and an unknown token get the same answer", async () =
   // Telling them apart would say whether a token was ever real.
   const answers: string[] = [];
 
-  for (const body of [
-    [{ id: BADGE, user_id: USER, revoked_at: new Date().toISOString() }],
-    [],
-  ]) {
+  for (const body of [[{ id: BADGE, user_id: USER, revoked_at: new Date().toISOString() }], []]) {
     await withStub(
       () => ({ body }),
       async (stub) => {
@@ -105,18 +99,21 @@ Deno.test("a revoked badge and an unknown token get the same answer", async () =
   assertEquals(answers[0], answers[1]);
 });
 
-Deno.test("authenticateBadge reports a lookup failure as a server error, not as unpaired", async () => {
-  await withStub(
-    () => ({ body: { message: "boom" }, status: 500 }),
-    async (stub) => {
-      const error = await assertRejects(
-        () => authenticateBadge(stub.db, "badge-token"),
-        ApiError,
-      );
-      assertEquals(error.status, 500);
-    },
-  );
-});
+Deno.test(
+  "authenticateBadge reports a lookup failure as a server error, not as unpaired",
+  async () => {
+    await withStub(
+      () => ({ body: { message: "boom" }, status: 500 }),
+      async (stub) => {
+        const error = await assertRejects(
+          () => authenticateBadge(stub.db, "badge-token"),
+          ApiError,
+        );
+        assertEquals(error.status, 500);
+      },
+    );
+  },
+);
 
 Deno.test("readDeviceReport reads what the SDK already sends", () => {
   const report = readDeviceReport(
@@ -259,55 +256,55 @@ Deno.test("buildDesk drops a page slug this badge cannot draw", async () => {
 });
 
 Deno.test("buildDesk asks only for the pages the wearer enabled", async () => {
-  await withStub(
-    deskTables({}),
-    async (stub) => {
-      await buildDesk({
-        db: stub.db,
-        badge: { id: BADGE, userId: USER },
-        fetch: noFetch,
-        now: new Date(),
-        timeZone: "UTC",
-      });
+  await withStub(deskTables({}), async (stub) => {
+    await buildDesk({
+      db: stub.db,
+      badge: { id: BADGE, userId: USER },
+      fetch: noFetch,
+      now: new Date(),
+      timeZone: "UTC",
+    });
 
-      const [request] = requestsFor(stub, "page_configs");
-      assert(request);
-      assert(request.query.includes(`user_id=eq.${USER}`), request.query);
-      assert(request.query.includes("enabled=eq.true"), request.query);
-    },
-  );
+    const [request] = requestsFor(stub, "page_configs");
+    assert(request);
+    assert(request.query.includes(`user_id=eq.${USER}`), request.query);
+    assert(request.query.includes("enabled=eq.true"), request.query);
+  });
 });
 
-Deno.test("a page whose provider is not connected says so, and the others still build", async () => {
-  await withStub(
-    deskTables({
-      page_configs: [
-        { page_slug: "deploys", enabled: true, position: 1, settings: {} },
-        { page_slug: "one_number", enabled: true, position: 2, settings: {} },
-      ],
-      connections: [],
-    }),
-    async (stub) => {
-      const envelope = await buildDesk({
-        db: stub.db,
-        badge: { id: BADGE, userId: USER },
-        fetch: noFetch,
-        now: new Date(),
-        timeZone: "UTC",
-      });
+Deno.test(
+  "a page whose provider is not connected says so, and the others still build",
+  async () => {
+    await withStub(
+      deskTables({
+        page_configs: [
+          { page_slug: "deploys", enabled: true, position: 1, settings: {} },
+          { page_slug: "one_number", enabled: true, position: 2, settings: {} },
+        ],
+        connections: [],
+      }),
+      async (stub) => {
+        const envelope = await buildDesk({
+          db: stub.db,
+          badge: { id: BADGE, userId: USER },
+          fetch: noFetch,
+          now: new Date(),
+          timeZone: "UTC",
+        });
 
-      assertEquals(envelope.pages.length, 2);
-      for (const page of envelope.pages) {
-        assertEquals(page.state, "not_connected");
-      }
-    },
-  );
-});
+        assertEquals(envelope.pages.length, 2);
+        for (const page of envelope.pages) {
+          assertEquals(page.state, "not_connected");
+        }
+      },
+    );
+  },
+);
 
-Deno.test("buildDesk carries the pomodoro defaults for an account that never opened settings", async () => {
-  await withStub(
-    deskTables({}),
-    async (stub) => {
+Deno.test(
+  "buildDesk carries the pomodoro defaults for an account that never opened settings",
+  async () => {
+    await withStub(deskTables({}), async (stub) => {
       const envelope = await buildDesk({
         db: stub.db,
         badge: { id: BADGE, userId: USER },
@@ -318,16 +315,14 @@ Deno.test("buildDesk carries the pomodoro defaults for an account that never ope
 
       assertEquals(envelope.pomodoro.work_min, 25);
       assertEquals(envelope.pomodoro.sessions, 4);
-    },
-  );
-});
+    });
+  },
+);
 
 Deno.test("buildDesk carries the wearer's own pomodoro settings when they have some", async () => {
   await withStub(
     deskTables({
-      pomodoro_settings: [
-        { work_min: 50, short_min: 10, long_min: 30, sessions: 2, leds: false },
-      ],
+      pomodoro_settings: [{ work_min: 50, short_min: 10, long_min: 30, sessions: 2, leds: false }],
     }),
     async (stub) => {
       const envelope = await buildDesk({
@@ -344,10 +339,10 @@ Deno.test("buildDesk carries the wearer's own pomodoro settings when they have s
   );
 });
 
-Deno.test("buildDesk falls back to the default poll interval when no profile row says otherwise", async () => {
-  await withStub(
-    deskTables({}),
-    async (stub) => {
+Deno.test(
+  "buildDesk falls back to the default poll interval when no profile row says otherwise",
+  async () => {
+    await withStub(deskTables({}), async (stub) => {
       const envelope = await buildDesk({
         db: stub.db,
         badge: { id: BADGE, userId: USER },
@@ -357,23 +352,20 @@ Deno.test("buildDesk falls back to the default poll interval when no profile row
       });
 
       assertEquals(envelope.poll_interval_ms, DEFAULT_POLL_MS);
-    },
-  );
-});
+    });
+  },
+);
 
 Deno.test("buildDesk refuses a poll interval below the floor, whatever the row says", async () => {
-  await withStub(
-    deskTables({ profiles: [{ poll_interval_ms: 1000 }] }),
-    async (stub) => {
-      const envelope = await buildDesk({
-        db: stub.db,
-        badge: { id: BADGE, userId: USER },
-        fetch: noFetch,
-        now: new Date(),
-        timeZone: "UTC",
-      });
+  await withStub(deskTables({ profiles: [{ poll_interval_ms: 1000 }] }), async (stub) => {
+    const envelope = await buildDesk({
+      db: stub.db,
+      badge: { id: BADGE, userId: USER },
+      fetch: noFetch,
+      now: new Date(),
+      timeZone: "UTC",
+    });
 
-      assertEquals(envelope.poll_interval_ms, MIN_POLL_MS);
-    },
-  );
+    assertEquals(envelope.poll_interval_ms, MIN_POLL_MS);
+  });
 });

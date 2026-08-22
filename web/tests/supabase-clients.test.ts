@@ -146,7 +146,7 @@ describe("the service client", () => {
   it("uses the secret key, which is the only reason it exists", () => {
     vi.stubGlobal("window", undefined);
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://proj.supabase.co");
-    vi.stubEnv("SUPABASE_SECRET_KEY", "sb_secret_test");
+    vi.stubEnv("SB_SECRET_KEY", "sb_secret_test");
 
     createServiceClient();
 

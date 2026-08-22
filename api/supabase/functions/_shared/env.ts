@@ -5,10 +5,15 @@
 // anon and service-role JWTs are not read here: this project was built after
 // the rename and never issued one.
 //
-// The runtime injects each as a JSON map of named keys under the plural name,
-// so a project can hold more than one key of a kind. The singular name is the
-// fallback, which is what `supabase secrets set` writes and what a local
-// `.env` holds.
+// The prefix is SB_, not SUPABASE_. Supabase reserves SUPABASE_ for the
+// variables it injects itself and refuses to store a secret under that prefix,
+// so a secrets manager syncing into a project cannot write one. Everything
+// this project owns is therefore named SB_, and the SUPABASE_ spellings are
+// read only as a fallback, for a local .env written before that was understood.
+//
+// The runtime injects each key as a JSON map of named keys under the plural
+// name, so a project can hold more than one key of a kind. The singular name is
+// the fallback, which is what `supabase secrets set` writes.
 
 /** Reads the "default" entry of a JSON key map, treating anything malformed as absent. */
 function defaultKey(name: string): string | undefined {
@@ -31,12 +36,31 @@ function plainKey(name: string): string | undefined {
   return Deno.env.get(name) || undefined;
 }
 
+/** The first of these names that holds a value. */
+function firstOf(names: string[]): string | undefined {
+  for (const name of names) {
+    const value = name.endsWith("_KEYS") ? defaultKey(name) : plainKey(name);
+    if (value) return value;
+  }
+  return undefined;
+}
+
 /** Server-side key that bypasses RLS. Never leaves an edge function. */
 export function secretKey(): string | undefined {
-  return defaultKey("SUPABASE_SECRET_KEYS") ?? plainKey("SUPABASE_SECRET_KEY");
+  return firstOf([
+    "SB_SECRET_KEYS",
+    "SB_SECRET_KEY",
+    "SUPABASE_SECRET_KEYS",
+    "SUPABASE_SECRET_KEY",
+  ]);
 }
 
 /** Client-safe key. RLS applies. */
 export function publishableKey(): string | undefined {
-  return defaultKey("SUPABASE_PUBLISHABLE_KEYS") ?? plainKey("SUPABASE_PUBLISHABLE_KEY");
+  return firstOf([
+    "SB_PUBLISHABLE_KEYS",
+    "SB_PUBLISHABLE_KEY",
+    "SUPABASE_PUBLISHABLE_KEYS",
+    "SUPABASE_PUBLISHABLE_KEY",
+  ]);
 }

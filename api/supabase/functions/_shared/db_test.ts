@@ -48,14 +48,20 @@ async function withEnv(
 }
 
 Deno.test("serviceClient refuses to run unconfigured rather than falling back", async () => {
-  await withEnv({ SUPABASE_URL: null, SUPABASE_SECRET_KEY: "sb_secret_test" }, () => {
+  await withEnv({ SUPABASE_URL: null, SB_SECRET_KEY: "sb_secret_test" }, () => {
     const error = assertThrowsApi(() => serviceClient());
     assertEquals(error.status, 500);
     return Promise.resolve();
   });
 
   await withEnv(
-    { SUPABASE_URL: "http://127.0.0.1:1", SUPABASE_SECRET_KEY: null, SUPABASE_SECRET_KEYS: null },
+    {
+      SUPABASE_URL: "http://127.0.0.1:1",
+      SB_SECRET_KEY: null,
+      SB_SECRET_KEYS: null,
+      SUPABASE_SECRET_KEY: null,
+      SUPABASE_SECRET_KEYS: null,
+    },
     () => {
       const error = assertThrowsApi(() => serviceClient());
       assertEquals(error.status, 500);
@@ -65,13 +71,10 @@ Deno.test("serviceClient refuses to run unconfigured rather than falling back", 
 });
 
 Deno.test("serviceClient builds a client when it is configured", async () => {
-  await withEnv(
-    { SUPABASE_URL: "http://127.0.0.1:1", SUPABASE_SECRET_KEY: "sb_secret_test" },
-    () => {
-      assert(typeof serviceClient().from === "function");
-      return Promise.resolve();
-    },
-  );
+  await withEnv({ SUPABASE_URL: "http://127.0.0.1:1", SB_SECRET_KEY: "sb_secret_test" }, () => {
+    assert(typeof serviceClient().from === "function");
+    return Promise.resolve();
+  });
 });
 
 Deno.test("enforceRateLimits lets a caller through when every rule has room", async () => {
@@ -83,21 +86,24 @@ Deno.test("enforceRateLimits lets a caller through when every rule has room", as
   );
 });
 
-Deno.test("enforceRateLimits consumes every rule, so one cannot be dodged by tripping another", async () => {
-  // A caller who trips the per-IP budget must still be charged their per-badge
-  // one, or the cheaper limit becomes a way to protect the dearer one.
-  await withStub(
-    () => allowance(false, 30),
-    async (stub) => {
-      await assertRejects(() => enforceRateLimits(stub.db, RULES), ApiError);
+Deno.test(
+  "enforceRateLimits consumes every rule, so one cannot be dodged by tripping another",
+  async () => {
+    // A caller who trips the per-IP budget must still be charged their per-badge
+    // one, or the cheaper limit becomes a way to protect the dearer one.
+    await withStub(
+      () => allowance(false, 30),
+      async (stub) => {
+        await assertRejects(() => enforceRateLimits(stub.db, RULES), ApiError);
 
-      const consumed = stub.requests.filter((request) =>
-        request.table.includes("consume_rate_limit"),
-      );
-      assertEquals(consumed.length, RULES.length);
-    },
-  );
-});
+        const consumed = stub.requests.filter((request) =>
+          request.table.includes("consume_rate_limit"),
+        );
+        assertEquals(consumed.length, RULES.length);
+      },
+    );
+  },
+);
 
 Deno.test("enforceRateLimits asks for the bucket, limit, and window it was given", async () => {
   await withStub(

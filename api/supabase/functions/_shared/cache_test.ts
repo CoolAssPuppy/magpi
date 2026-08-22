@@ -171,9 +171,7 @@ Deno.test("a cache write that fails costs a cached read, never the request", asy
     ({ method }) =>
       method === "GET" ? { body: [] } : { body: { message: "read only" }, status: 500 },
     async (stub) => {
-      const payload = await cached(stub.db, KEY, 60, () =>
-        Promise.resolve({ title: "Standup" }),
-      );
+      const payload = await cached(stub.db, KEY, 60, () => Promise.resolve({ title: "Standup" }));
 
       assertEquals(payload.title, "Standup");
     },

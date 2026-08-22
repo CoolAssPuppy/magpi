@@ -18,7 +18,9 @@ async function withAuthServer(
   const stub = stubDb(reply);
   const vars: Record<string, string | null> = {
     SUPABASE_URL: stub.url,
-    SUPABASE_PUBLISHABLE_KEY: "sb_publishable_test",
+    SB_PUBLISHABLE_KEY: "sb_publishable_test",
+    SB_PUBLISHABLE_KEYS: null,
+    SUPABASE_PUBLISHABLE_KEY: null,
     SUPABASE_PUBLISHABLE_KEYS: null,
     ...env,
   };
@@ -59,22 +61,25 @@ Deno.test("requireUser resolves the caller from a valid session", async () => {
   );
 });
 
-Deno.test("requireUser validates against the auth server rather than decoding the token", async () => {
-  await withAuthServer(
-    () => SIGNED_IN,
-    async (stub) => {
-      await requireUser(headers("Bearer good-token"));
+Deno.test(
+  "requireUser validates against the auth server rather than decoding the token",
+  async () => {
+    await withAuthServer(
+      () => SIGNED_IN,
+      async (stub) => {
+        await requireUser(headers("Bearer good-token"));
 
-      // A locally decoded token would reach no server at all, and would accept
-      // one that had since been revoked or signed with a rotated key.
-      assert(stub.requests.length > 0, "nothing was asked of the auth server");
-      assert(
-        stub.requests.some((request) => request.path.includes("/auth/v1/user")),
-        stub.requests.map((request) => request.path).join(", "),
-      );
-    },
-  );
-});
+        // A locally decoded token would reach no server at all, and would accept
+        // one that had since been revoked or signed with a rotated key.
+        assert(stub.requests.length > 0, "nothing was asked of the auth server");
+        assert(
+          stub.requests.some((request) => request.path.includes("/auth/v1/user")),
+          stub.requests.map((request) => request.path).join(", "),
+        );
+      },
+    );
+  },
+);
 
 Deno.test("requireUser reports an account with no email address as having none", async () => {
   await withAuthServer(
@@ -111,10 +116,7 @@ Deno.test("requireUser refuses a token the auth server rejects", async () => {
   await withAuthServer(
     () => ({ body: { message: "invalid claim" }, status: 401 }),
     async () => {
-      const error = await assertRejects(
-        () => requireUser(headers("Bearer stale-token")),
-        ApiError,
-      );
+      const error = await assertRejects(() => requireUser(headers("Bearer stale-token")), ApiError);
       assertEquals(error.status, 401);
     },
   );
@@ -139,10 +141,7 @@ Deno.test("requireUser fails closed when the server is not configured", async ()
   await withAuthServer(
     () => SIGNED_IN,
     async () => {
-      const error = await assertRejects(
-        () => requireUser(headers("Bearer good-token")),
-        ApiError,
-      );
+      const error = await assertRejects(() => requireUser(headers("Bearer good-token")), ApiError);
       assertEquals(error.status, 500);
     },
     { SUPABASE_URL: null },
@@ -151,12 +150,9 @@ Deno.test("requireUser fails closed when the server is not configured", async ()
   await withAuthServer(
     () => SIGNED_IN,
     async () => {
-      const error = await assertRejects(
-        () => requireUser(headers("Bearer good-token")),
-        ApiError,
-      );
+      const error = await assertRejects(() => requireUser(headers("Bearer good-token")), ApiError);
       assertEquals(error.status, 500);
     },
-    { SUPABASE_PUBLISHABLE_KEY: null },
+    { SB_PUBLISHABLE_KEY: null },
   );
 });

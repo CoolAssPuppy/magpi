@@ -66,18 +66,18 @@ describe("the secret key", () => {
 
   it("reads on a server", () => {
     vi.stubGlobal("window", undefined);
-    vi.stubEnv("SUPABASE_SECRET_KEY", "sb_secret_test");
+    vi.stubEnv("SB_SECRET_KEY", "sb_secret_test");
 
     expect(getSecretKey()).toBe("sb_secret_test");
   });
 
   it("falls back outside production, and throws inside it", () => {
     vi.stubGlobal("window", undefined);
-    vi.stubEnv("SUPABASE_SECRET_KEY", "");
+    vi.stubEnv("SB_SECRET_KEY", "");
     expect(getSecretKey()).toBe("placeholder-secret-key");
 
     vi.stubEnv("NODE_ENV", "production");
-    expect(() => getSecretKey()).toThrow(/SUPABASE_SECRET_KEY is not set/);
+    expect(() => getSecretKey()).toThrow(/SB_SECRET_KEY is not set/);
   });
 });
 

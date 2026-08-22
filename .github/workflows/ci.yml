@@ -174,10 +174,14 @@ jobs:
           version: 2.110.0
       - name: Push migrations and deploy changed functions
         working-directory: api
+        # The repository secrets are named SB_*, because Supabase reserves the
+        # SUPABASE_ prefix and a secrets manager syncing into a project cannot
+        # write one. The CLI still reads the reserved names from its own
+        # environment, so they are mapped here rather than renamed at the source.
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SB_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SB_PROJECT_REF }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SB_DB_PASSWORD }}
           AFTER_SHA: ${{ github.sha }}
         run: |
           set -eo pipefail

@@ -23,7 +23,7 @@ const isProd = process.env.E2E_PROD === "true";
 const localStack = {
   NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:56521",
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_e2e_placeholder",
-  SUPABASE_SECRET_KEY: "sb_secret_e2e_placeholder",
+  SB_SECRET_KEY: "sb_secret_e2e_placeholder",
   BADGE_API_URL: "http://127.0.0.1:56521/functions/v1",
   // Analytics off, so no test fires an event at a real project.
   NEXT_PUBLIC_POSTHOG_KEY: "",
