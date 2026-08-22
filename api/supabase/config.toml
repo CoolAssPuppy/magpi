@@ -1,0 +1,94 @@
+# Magpi Supabase project config.
+#
+# Secrets are never stored here. Edge function secrets are set with
+# `supabase secrets set` and read from the environment.
+project_id = "magpi"
+
+[api]
+enabled = true
+# Port block 565xx, so a local Magpi stack never collides with another
+# project on the default 543xx.
+port = 56521
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+
+[db]
+port = 56522
+shadow_port = 56520
+major_version = 15
+
+[db.pooler]
+enabled = false
+# Pinned into the block even though the pooler is off. Left unset it defaults
+# to 54329, which collides the moment anyone enables it.
+port = 56529
+
+[studio]
+enabled = true
+port = 56523
+
+[local_smtp]
+enabled = true
+port = 56524
+smtp_port = 56525
+pop3_port = 56526
+
+[storage]
+enabled = false
+
+[auth]
+enabled = true
+# The dev server takes the first free port in 3001 to 3004, so all four are
+# registered on both hosts. Playwright uses 127.0.0.1 rather than localhost,
+# and the two are distinct origins as far as the auth callback is concerned.
+site_url = "http://localhost:3001"
+additional_redirect_urls = [
+  "http://localhost:3001/**",
+  "http://127.0.0.1:3001/**",
+  "http://localhost:3002/**",
+  "http://127.0.0.1:3002/**",
+  "http://localhost:3003/**",
+  "http://127.0.0.1:3003/**",
+  "http://localhost:3004/**",
+  "http://127.0.0.1:3004/**",
+]
+jwt_expiry = 3600
+enable_signup = true
+enable_anonymous_sign_ins = false
+
+# Sign in with GitHub. Distinct from the GitHub connection, which reads your
+# review requests. Both flows can share one GitHub OAuth app.
+#
+# The catch is the callback. A GitHub OAuth app has one authorization callback
+# URL, and the two flows send different ones:
+#
+#   sign in     <supabase-url>/auth/v1/callback
+#   connection  <supabase-url>/functions/v1/connections-callback
+#
+# GitHub accepts a redirect_uri that is a subdirectory of the registered
+# callback, so registering the host root covers both. Registering either full
+# path covers that flow and breaks the other.
+[auth.external.github]
+enabled = true
+client_id = "env(OAUTH_GITHUB_CLIENT_ID)"
+secret = "env(OAUTH_GITHUB_CLIENT_SECRET)"
+
+[realtime]
+enabled = true
+
+[analytics]
+enabled = false
+
+[edge_runtime]
+enabled = true
+policy = "per_worker"
+
+# Functions are declared here as they are written. Declaring one that does not
+# exist stops `supabase start` from starting at all.
+#
+# Every entry sets verify_jwt = false and authenticates inside the handler
+# instead. The badge has no Supabase session and never gets one, so the
+# platform check cannot apply to the device or gateway routes; the connection
+# routes share a deployment with them and the check is per function. Any new
+# function must call requireUser or authenticate a badge token as its first
+# act.

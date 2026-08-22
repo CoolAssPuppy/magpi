@@ -30,10 +30,10 @@ website. Built from the brief in `docs/BRIEF.md`.
 
 ## 4. Database
 
-- [ ] Initial schema, RLS policies, rate limits, profile trigger, oauth states
-- [ ] page_configs, pomodoro_settings, provider_cache
-- [ ] Realtime publication: badges, page_configs, connections
-- [ ] `api/supabase/tests/rls.test.sql` pgTAP green
+- [x] Initial schema, RLS policies, rate limits, profile trigger, oauth states
+- [x] page_configs, pomodoro_settings, provider_cache
+- [x] Realtime publication: badges, page_configs, connections
+- [x] `api/supabase/tests/rls.test.sql` pgTAP green
 
 ## 5. Auth and shell
 
