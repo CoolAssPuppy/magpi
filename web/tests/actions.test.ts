@@ -39,8 +39,18 @@ function fakeDb(failWith?: string) {
             write.filters.push([column, value]);
             return builder;
           },
-          then(resolve: (value: { error: { message: string } | null }) => unknown) {
-            return Promise.resolve(resolve({ error: failWith ? { message: failWith } : null }));
+          // A thenable rather than a promise, so a builder keeps taking .eq()
+          // calls until something awaits it. That is how PostgREST's own
+          // builder behaves, and a fake that resolved eagerly would let a
+          // missing .eq() pass here and fail in production.
+          then<TResult1 = { error: { message: string } | null }, TResult2 = never>(
+            onfulfilled?:
+              | ((value: { error: { message: string } | null }) => TResult1 | PromiseLike<TResult1>)
+              | null,
+            onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
+          ): PromiseLike<TResult1 | TResult2> {
+            const settled = { error: failWith ? { message: failWith } : null };
+            return Promise.resolve(settled).then(onfulfilled, onrejected);
           },
         };
         return builder;
@@ -58,6 +68,13 @@ function fakeDb(failWith?: string) {
   return { client, writes };
 }
 
+/** The write at `index`, failing loudly when the action wrote nothing. */
+function writeAt(writes: Write[], index: number): Write {
+  const write = writes[index];
+  if (!write) throw new Error(`expected a write at ${index}, got ${writes.length}`);
+  return write;
+}
+
 function form(entries: Record<string, string>): FormData {
   const data = new FormData();
   for (const [key, value] of Object.entries(entries)) data.append(key, value);
@@ -70,7 +87,7 @@ describe("togglePage", () => {
     const result = await togglePage(client, USER, form({ page_slug: "deploys", enabled: "true" }));
 
     expect(result.status).toBe("success");
-    expect(writes[0]).toMatchObject({
+    expect(writeAt(writes, 0)).toMatchObject({
       table: "page_configs",
       op: "upsert",
       values: { user_id: USER, page_slug: "deploys", enabled: true },
@@ -80,7 +97,7 @@ describe("togglePage", () => {
   it("turns a page off", async () => {
     const { client, writes } = fakeDb();
     await togglePage(client, USER, form({ page_slug: "deploys", enabled: "false" }));
-    expect(writes[0].values).toMatchObject({ enabled: false });
+    expect(writeAt(writes, 0).values).toMatchObject({ enabled: false });
   });
 
   it("refuses a slug this badge cannot draw, before writing anything", async () => {
@@ -111,7 +128,7 @@ describe("reorderPages", () => {
 
     expect(result.status).toBe("success");
     expect(writes).toHaveLength(1);
-    expect(writes[0].values).toEqual([
+    expect(writeAt(writes, 0).values).toEqual([
       { user_id: USER, page_slug: "deploys", position: 0 },
       { user_id: USER, page_slug: "next_thing", position: 1 },
     ]);
@@ -121,7 +138,7 @@ describe("reorderPages", () => {
     const { client, writes } = fakeDb();
     const result = await reorderPages(client, USER, form({ order: PAGE_SLUGS.join(",") }));
     expect(result.status).toBe("success");
-    expect(writes[0].values).toHaveLength(PAGE_SLUGS.length);
+    expect(writeAt(writes, 0).values).toHaveLength(PAGE_SLUGS.length);
   });
 
   it("refuses an order carrying a slug the device cannot draw", async () => {
@@ -157,7 +174,7 @@ describe("configurePage", () => {
     );
 
     expect(result.status).toBe("success");
-    expect(writes[0].values).toMatchObject({
+    expect(writeAt(writes, 0).values).toMatchObject({
       page_slug: "next_thing",
       settings: { calendar_id: "work@example.com", look_ahead_hours: 12 },
     });
@@ -166,14 +183,14 @@ describe("configurePage", () => {
   it("turns a checkbox into a boolean the builder can read", async () => {
     const { client, writes } = fakeDb();
     await configurePage(client, USER, form({ page_slug: "next_thing", skip_all_day: "on" }));
-    const values = writes[0].values as { settings: Record<string, unknown> };
+    const values = writeAt(writes, 0).values as { settings: Record<string, unknown> };
     expect(values.settings.skip_all_day).toBe(true);
   });
 
   it("turns an empty field into null rather than an empty string", async () => {
     const { client, writes } = fakeDb();
     await configurePage(client, USER, form({ page_slug: "next_thing", calendar_id: "" }));
-    const values = writes[0].values as { settings: Record<string, unknown> };
+    const values = writeAt(writes, 0).values as { settings: Record<string, unknown> };
     expect(values.settings.calendar_id).toBeNull();
   });
 
@@ -200,7 +217,7 @@ describe("savePomodoro", () => {
     const result = await savePomodoro(client, USER, form(valid));
 
     expect(result.status).toBe("success");
-    expect(writes[0]).toMatchObject({
+    expect(writeAt(writes, 0)).toMatchObject({
       table: "pomodoro_settings",
       values: { user_id: USER, work_min: 25, short_min: 5, long_min: 20, sessions: 4, leds: true },
     });
@@ -227,9 +244,10 @@ describe("savePomodoro", () => {
 
   it("treats an absent checkbox as off", async () => {
     const { client, writes } = fakeDb();
-    const { leds: _leds, ...withoutLeds } = valid;
+    const withoutLeds = { ...valid };
+    delete (withoutLeds as Partial<typeof valid>).leds;
     await savePomodoro(client, USER, form(withoutLeds));
-    expect(writes[0].values).toMatchObject({ leds: false });
+    expect(writeAt(writes, 0).values).toMatchObject({ leds: false });
   });
 });
 
@@ -239,7 +257,7 @@ describe("savePolling", () => {
     const result = await savePolling(client, USER, form({ poll_interval_ms: "60000" }));
 
     expect(result.status).toBe("success");
-    expect(writes[0]).toMatchObject({
+    expect(writeAt(writes, 0)).toMatchObject({
       table: "profiles",
       op: "update",
       values: { poll_interval_ms: 60000 },
@@ -279,12 +297,12 @@ describe("renameBadge", () => {
     const result = await renameBadge(client, USER, form({ badge_id: BADGE, label: "Desk badge" }));
 
     expect(result.status).toBe("success");
-    expect(writes[0]).toMatchObject({
+    expect(writeAt(writes, 0)).toMatchObject({
       table: "badges",
       op: "update",
       values: { label: "Desk badge" },
     });
-    expect(writes[0].filters).toEqual([
+    expect(writeAt(writes, 0).filters).toEqual([
       ["id", BADGE],
       ["user_id", USER],
     ]);
@@ -312,8 +330,8 @@ describe("revoke", () => {
     const result = await revoke(client, USER, form({ badge_id: BADGE }));
 
     expect(result.status).toBe("success");
-    expect(Object.keys(writes[0].values as object)).toEqual(["revoked_at"]);
-    expect(writes[0].filters).toEqual([
+    expect(Object.keys(writeAt(writes, 0).values as object)).toEqual(["revoked_at"]);
+    expect(writeAt(writes, 0).filters).toEqual([
       ["id", BADGE],
       ["user_id", USER],
     ]);
@@ -332,8 +350,8 @@ describe("disconnect", () => {
     const result = await disconnect(client, USER, form({ provider: "posthog" }));
 
     expect(result.status).toBe("success");
-    expect(writes[0]).toMatchObject({ table: "connections", op: "delete" });
-    expect(writes[0].filters).toEqual([
+    expect(writeAt(writes, 0)).toMatchObject({ table: "connections", op: "delete" });
+    expect(writeAt(writes, 0).filters).toEqual([
       ["user_id", USER],
       ["provider", "posthog"],
     ]);
