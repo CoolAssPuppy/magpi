@@ -53,3 +53,6 @@ Thumbs.db
 
 # Python bytecode caches under device/
 device/**/__pycache__/
+
+# Badge bundles, written by scripts/package-badge.mjs for a dry run.
+dist/

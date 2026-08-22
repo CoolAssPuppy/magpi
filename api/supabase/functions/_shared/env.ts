@@ -1,11 +1,16 @@
-// API key lookup for the Edge Function runtime.
+// API key lookup for the edge function runtime.
 //
-// Current runtimes inject SUPABASE_PUBLISHABLE_KEYS and SUPABASE_SECRET_KEYS,
-// each a JSON object of named keys. Older ones inject only the legacy
-// SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY, and the runtime version is
-// the platform's choice rather than ours, so both paths stay live.
+// Supabase's current key names are the publishable key, which is client-safe
+// and leaves RLS in force, and the secret key, which bypasses it. The legacy
+// anon and service-role JWTs are not read here: this project was built after
+// the rename and never issued one.
+//
+// The runtime injects each as a JSON map of named keys under the plural name,
+// so a project can hold more than one key of a kind. The singular name is the
+// fallback, which is what `supabase secrets set` writes and what a local
+// `.env` holds.
 
-/** Reads the "default" entry of a JSON key map, treating any malformed value as absent. */
+/** Reads the "default" entry of a JSON key map, treating anything malformed as absent. */
 function defaultKey(name: string): string | undefined {
   const raw = Deno.env.get(name);
   if (!raw) return undefined;
@@ -22,16 +27,16 @@ function defaultKey(name: string): string | undefined {
   return typeof value === "string" && value ? value : undefined;
 }
 
-function legacyKey(name: string): string | undefined {
+function plainKey(name: string): string | undefined {
   return Deno.env.get(name) || undefined;
 }
 
-/** Server-side key that bypasses RLS. */
+/** Server-side key that bypasses RLS. Never leaves an edge function. */
 export function secretKey(): string | undefined {
-  return defaultKey("SUPABASE_SECRET_KEYS") ?? legacyKey("SUPABASE_SERVICE_ROLE_KEY");
+  return defaultKey("SUPABASE_SECRET_KEYS") ?? plainKey("SUPABASE_SECRET_KEY");
 }
 
-/** Client-safe key; RLS applies. */
+/** Client-safe key. RLS applies. */
 export function publishableKey(): string | undefined {
-  return defaultKey("SUPABASE_PUBLISHABLE_KEYS") ?? legacyKey("SUPABASE_ANON_KEY");
+  return defaultKey("SUPABASE_PUBLISHABLE_KEYS") ?? plainKey("SUPABASE_PUBLISHABLE_KEY");
 }

@@ -53,6 +53,10 @@ BIRD = (8, 6, 656, 408)
 CONTENT_FRACTION = 0.86
 
 TARGETS = {
+    # The launcher lists every folder holding an icon.png and names the tile
+    # from the folder, so these two are what put Magpi on the badge menu.
+    "device/notifier-app/icon.png": 96,
+    "device/pomodoro-app/icon.png": 96,
     "web/public/icon-32.png": 32,
     "web/public/icon-192.png": 192,
     "web/public/icon-512.png": 512,

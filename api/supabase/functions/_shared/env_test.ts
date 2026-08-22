@@ -3,9 +3,9 @@ import { publishableKey, secretKey } from "./env.ts";
 
 const NAMES = [
   "SUPABASE_SECRET_KEYS",
-  "SUPABASE_SERVICE_ROLE_KEY",
+  "SUPABASE_SECRET_KEY",
   "SUPABASE_PUBLISHABLE_KEYS",
-  "SUPABASE_ANON_KEY",
+  "SUPABASE_PUBLISHABLE_KEY",
 ] as const;
 
 /** Runs fn with exactly the given key variables set, restoring the rest afterwards. */
@@ -27,21 +27,19 @@ Deno.test("secretKey prefers the new key map", () => {
   withEnv(
     {
       SUPABASE_SECRET_KEYS: JSON.stringify({ default: "sb_secret_new" }),
-      SUPABASE_SERVICE_ROLE_KEY: "legacy-jwt",
+      SUPABASE_SECRET_KEY: "plain-key",
     },
     () => assertEquals(secretKey(), "sb_secret_new"),
   );
 });
 
-Deno.test("secretKey falls back to the legacy name when the key map is absent", () => {
-  withEnv({ SUPABASE_SERVICE_ROLE_KEY: "legacy-jwt" }, () =>
-    assertEquals(secretKey(), "legacy-jwt"),
-  );
+Deno.test("secretKey falls back to the plain name when the key map is absent", () => {
+  withEnv({ SUPABASE_SECRET_KEY: "plain-key" }, () => assertEquals(secretKey(), "plain-key"));
 });
 
 Deno.test("secretKey falls back rather than throwing on malformed JSON", () => {
-  withEnv({ SUPABASE_SECRET_KEYS: "{not json", SUPABASE_SERVICE_ROLE_KEY: "legacy-jwt" }, () =>
-    assertEquals(secretKey(), "legacy-jwt"),
+  withEnv({ SUPABASE_SECRET_KEYS: "{not json", SUPABASE_SECRET_KEY: "plain-key" }, () =>
+    assertEquals(secretKey(), "plain-key"),
   );
 });
 
@@ -49,9 +47,9 @@ Deno.test("secretKey falls back when the key map has no default entry", () => {
   withEnv(
     {
       SUPABASE_SECRET_KEYS: JSON.stringify({ other: "sb_secret_other" }),
-      SUPABASE_SERVICE_ROLE_KEY: "legacy-jwt",
+      SUPABASE_SECRET_KEY: "plain-key",
     },
-    () => assertEquals(secretKey(), "legacy-jwt"),
+    () => assertEquals(secretKey(), "plain-key"),
   );
 });
 
@@ -63,19 +61,21 @@ Deno.test("publishableKey prefers the new key map", () => {
   withEnv(
     {
       SUPABASE_PUBLISHABLE_KEYS: JSON.stringify({ default: "sb_publishable_new" }),
-      SUPABASE_ANON_KEY: "legacy-jwt",
+      SUPABASE_PUBLISHABLE_KEY: "plain-key",
     },
     () => assertEquals(publishableKey(), "sb_publishable_new"),
   );
 });
 
-Deno.test("publishableKey falls back to the legacy name when the key map is absent", () => {
-  withEnv({ SUPABASE_ANON_KEY: "legacy-jwt" }, () => assertEquals(publishableKey(), "legacy-jwt"));
+Deno.test("publishableKey falls back to the plain name when the key map is absent", () => {
+  withEnv({ SUPABASE_PUBLISHABLE_KEY: "plain-key" }, () =>
+    assertEquals(publishableKey(), "plain-key"),
+  );
 });
 
 Deno.test("publishableKey falls back rather than throwing on malformed JSON", () => {
-  withEnv({ SUPABASE_PUBLISHABLE_KEYS: "[]", SUPABASE_ANON_KEY: "legacy-jwt" }, () =>
-    assertEquals(publishableKey(), "legacy-jwt"),
+  withEnv({ SUPABASE_PUBLISHABLE_KEYS: "[]", SUPABASE_PUBLISHABLE_KEY: "plain-key" }, () =>
+    assertEquals(publishableKey(), "plain-key"),
   );
 });
 

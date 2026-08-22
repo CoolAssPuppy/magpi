@@ -45,7 +45,7 @@ export function getSecretKey(): string {
   if (typeof window !== "undefined") {
     throw new Error("The secret key is server only and must not be read in the browser.");
   }
-  return required("SB_SECRET_KEY", process.env.SB_SECRET_KEY, "placeholder-secret-key");
+  return required("SUPABASE_SECRET_KEY", process.env.SUPABASE_SECRET_KEY, "placeholder-secret-key");
 }
 
 /** Optional. Analytics stays disabled when this is absent. */
