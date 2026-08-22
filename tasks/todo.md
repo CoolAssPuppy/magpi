@@ -37,9 +37,9 @@ website. Built from the brief in `docs/BRIEF.md`.
 
 ## 5. Auth and shell
 
-- [ ] Next.js 16 app, Tailwind 4, shadcn
-- [ ] Token layer: primitives, semantics, components
-- [ ] Token test: no raw colour, radius, or duration outside primitives
+- [x] Next.js 16 app, Tailwind 4, shadcn
+- [x] Token layer: primitives, semantics, components
+- [x] Token test: no raw colour, radius, or duration outside primitives
 - [ ] GitHub sign in, session, layout, both themes, theme toggle
 
 ## 6. Pairing end to end
@@ -88,7 +88,7 @@ website. Built from the brief in `docs/BRIEF.md`.
 
 ## 13. Observability
 
-- [ ] Provider-agnostic analytics library with a PostHog provider
+- [x] Provider-agnostic analytics library with a PostHog provider
 
 ## 14. Docs
 
