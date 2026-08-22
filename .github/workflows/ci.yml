@@ -1,0 +1,230 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run format:check
+      # A device constant edited without regenerating its consumers is drift.
+      - run: pnpm run constants:check
+      # A device layout changed without regenerating the fixtures the web
+      # previews assert against is the same kind of drift.
+      - run: pnpm run previews:fixtures:check
+      - run: pnpm run scripts:test
+
+  web:
+    name: Web (lint, typecheck, unit, build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run web:lint
+      - run: pnpm run web:typecheck
+      - run: pnpm run web:test
+      - name: Build
+        run: pnpm run web:build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:56421
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: build-placeholder
+          BADGE_API_URL: http://127.0.0.1:56421/functions/v1
+
+  api:
+    name: API (Deno lint, check, test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno task lint
+      - run: deno task check
+      - run: deno task test
+
+  device:
+    name: Device (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # No dependencies to install. Device code is stdlib-only because it has
+      # to run on MicroPython.
+      - run: node scripts/python-tests.mjs
+
+  database:
+    name: Database (Supabase, pgTAP)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          # Pinned: `version: latest` resolves through the GitHub releases API,
+          # which is rate-limited unauthenticated.
+          version: 2.110.0
+      - name: Check for migrations
+        id: check
+        run: |
+          if compgen -G "api/supabase/migrations/*.sql" > /dev/null; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No migrations yet; skipping pgTAP and db lint."
+          fi
+      - name: Start Supabase
+        if: steps.check.outputs.present == 'true'
+        working-directory: api
+        run: supabase start
+      - name: Database tests (pgTAP)
+        if: steps.check.outputs.present == 'true'
+        working-directory: api
+        run: supabase test db
+      - name: Database lint
+        if: steps.check.outputs.present == 'true'
+        working-directory: api
+        run: supabase db lint --level error
+
+  # Playwright runs in the local pre-push gate, which has the Supabase stack
+  # and a browser available.
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pnpm install --frozen-lockfile
+      # coverage.py wraps the test invocation only. Nothing under device/
+      # imports it, so device code stays stdlib-only for MicroPython.
+      - name: Install Python coverage tooling
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install -r requirements-dev.txt
+      - run: pnpm run coverage:web
+      - run: pnpm run coverage:api
+      - run: pnpm run coverage:device
+
+  audit:
+    name: Dependency audit (blocks the deploy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm audit --audit-level high
+
+  supabase:
+    name: Migrate Supabase and deploy edge functions
+    runs-on: ubuntu-latest
+    needs: [format, web, api, device, database, audit]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # Write access is for the functions-deployed marker tag pushed at the end.
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history, so changed functions can be diffed
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.110.0
+      - name: Push migrations and deploy changed functions
+        working-directory: api
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          AFTER_SHA: ${{ github.sha }}
+        run: |
+          set -eo pipefail
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ] || [ -z "$SUPABASE_PROJECT_REF" ]; then
+            echo "Supabase secrets not set; skipping migrations and functions."
+            exit 0
+          fi
+          supabase link --project-ref "$SUPABASE_PROJECT_REF"
+
+          if compgen -G "supabase/migrations/*.sql" > /dev/null; then
+            echo "Applying migrations to the linked project..."
+            supabase db push
+          else
+            echo "No migrations to apply."
+          fi
+
+          # The diff base is the last commit whose functions actually deployed,
+          # recorded as the functions-deployed tag, not github.event.before. A
+          # cancelled run never advances the tag, so the next push still sees a
+          # _shared change it skipped and redeploys its importers.
+          plan="$GITHUB_WORKSPACE/scripts/functions-deploy-plan.mjs"
+          git fetch --no-tags origin '+refs/tags/functions-deployed:refs/tags/functions-deployed' 2>/dev/null || true
+          BASE=$(git rev-parse -q --verify 'refs/tags/functions-deployed^{commit}' || echo "")
+          if [ -z "$BASE" ]; then
+            echo "No functions-deployed marker; deploying every function."
+          fi
+
+          changed=$(node "$plan" plan --base "$BASE" --head "$AFTER_SHA")
+          if [ -z "$changed" ]; then
+            echo "No changed edge functions to deploy."
+          else
+            for fn in $changed; do
+              if [ -d "supabase/functions/$fn" ]; then
+                echo "Deploying edge function: $fn"
+                supabase functions deploy "$fn" --import-map ./deno.json
+              else
+                echo "Skipping deleted edge function: $fn"
+              fi
+            done
+          fi
+
+          # Fail before advancing the marker if a _shared change left an
+          # importer undeployed. A red job keeps the old marker, so the miss is
+          # retried rather than silently shipped.
+          node "$plan" guard --base "$BASE" --head "$AFTER_SHA" --deployed "$changed"
+
+          git tag -f functions-deployed "$AFTER_SHA"
+          git push -f origin 'refs/tags/functions-deployed'
+          # The web app deploys through Vercel's git integration, so there is
+          # no Vercel deploy job here.

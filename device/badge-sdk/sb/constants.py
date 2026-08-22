@@ -1,0 +1,21 @@
+# Generated from device-constants.json. Do not edit by hand: edit the JSON
+# and run `node scripts/gen-device-constants.mjs`.
+
+SCREEN_W = 320
+SCREEN_H = 240
+DEFAULT_POLL_MS = 30000
+MIN_POLL_MS = 5000
+PAGE_SLUGS = ("next_thing", "day_shape", "deploys", "counters", "one_number")
+TITLE_MAX = 48
+SUBJECT_MAX = 40
+COUNTER_MAX = 4
+SPARK_POINTS = 30
+DAY_BLOCKS = 24
+DAY_START_HOUR = 7
+PAYLOAD_MAX_BYTES = 8192
+LED_LEVELS = 4
+POMODORO_WORK_MIN = 25
+POMODORO_SHORT_MIN = 5
+POMODORO_LONG_MIN = 20
+POMODORO_SESSIONS = 4
+POMODORO_LEDS = True

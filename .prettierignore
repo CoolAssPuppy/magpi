@@ -1,0 +1,24 @@
+node_modules
+.next
+coverage
+playwright-report
+test-results
+pnpm-lock.yaml
+design
+
+# Python virtualenvs and caches
+.venv
+__pycache__
+
+# Supabase CLI scratch state
+api/supabase/.branches
+api/supabase/.temp
+supabase/.temp
+
+# Written by `vercel link`
+.vercel
+
+# Planning notes and the pasted brief. Prettier reflows the tables and then
+# fails its own --check on the result.
+tasks/
+docs/BRIEF.md

@@ -1,0 +1,44 @@
+{
+  "name": "magpi",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.1.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --dir web dev",
+    "gate": "node scripts/pre-push-gate.mjs",
+    "constants": "node scripts/gen-device-constants.mjs",
+    "constants:check": "node scripts/gen-device-constants.mjs --check",
+    "previews:fixtures": "node scripts/gen-preview-fixtures.mjs",
+    "previews:fixtures:check": "node scripts/gen-preview-fixtures.mjs --check",
+    "scripts:test": "node --test \"scripts/**/*.test.mjs\"",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "web:lint": "pnpm --dir web lint",
+    "web:typecheck": "pnpm --dir web typecheck",
+    "web:test": "pnpm --dir web test",
+    "web:build": "pnpm --dir web build",
+    "api:test": "cd api && deno task test",
+    "api:check": "cd api && deno task check",
+    "api:lint": "cd api && deno task lint",
+    "device:test": "node scripts/python-tests.mjs",
+    "coverage:web": "pnpm --dir web test:coverage",
+    "coverage:api": "cd api && deno task test:coverage",
+    "coverage:device": "node scripts/python-coverage.mjs",
+    "badge:package": "node scripts/package-badge.mjs",
+    "db:start": "cd api && supabase start",
+    "db:stop": "cd api && supabase stop",
+    "db:reset": "cd api && supabase db reset",
+    "db:test": "node scripts/db-test.mjs",
+    "test:e2e": "playwright test",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.50.0",
+    "husky": "^9.1.7",
+    "prettier": "^3.4.2",
+    "prettier-plugin-tailwindcss": "^0.6.11"
+  }
+}

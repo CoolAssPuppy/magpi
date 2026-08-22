@@ -1,0 +1,52 @@
+# Dependencies and build artifacts
+node_modules/
+dist/
+build/
+.next/
+out/
+coverage/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.coverage
+
+# Test output
+playwright-report/
+test-results/
+
+# Environment and secrets
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+*.key
+
+# Claude Code and MCP configuration
+.claude/settings.local.json
+CLAUDE.local.md
+mcp.json
+.mcp.json
+
+# Supabase CLI scratch state
+api/supabase/.branches/
+api/supabase/.temp/
+supabase/.temp
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Written by `vercel link`. Holds project and org ids, not secrets.
+.vercel
+
+# External docs, cloned locally and pulled, never committed
+/vendor/

@@ -1,0 +1,5 @@
+# Python tooling for development only. Nothing here reaches a badge: device
+# code is stdlib-only because it has to run on MicroPython.
+coverage>=7.6
+# Talks to a Tufty over USB serial, for loading and inspecting a badge.
+mpremote>=1.24
