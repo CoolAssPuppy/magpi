@@ -243,6 +243,24 @@ the tail tip, and the beak.
 
 `/` is public. Signed-in visitors are redirected to `/dashboard`.
 
+### What it names
+
+The provider list is the providers table, in its own position order, including
+the ones that ship disabled until an app is registered for them. It is the list
+of what Magpi reads, not the list of what is switched on today, so a provider
+missing from it would read as a provider Magpi cannot use.
+
+### At phone width
+
+The header wraps. Six controls on one line is 580 pixels, and a page that
+scrolls sideways on a phone is a page that feels broken however good it looks
+on a laptop.
+
+The badge preview is fixed at 320 by 240 and is never scaled, because a preview
+at eighty percent lies about whether a title fits. Below about 370 pixels the
+card that holds it scrolls inside itself instead. The page never scrolls
+sideways at any width from 320 up.
+
 ## Banned
 
 Purple-to-blue gradients. Any gradient as a page background. Glassmorphism,
@@ -286,6 +304,13 @@ what level, and it appears in the web preview for the same reason.
 
 **The four case LEDs are drawn as pills, everything else on those screens is
 square.** The LEDs are round on the hardware.
+
+**The content policy leaves loopback on plain HTTP.** Every other deployment
+gets `upgrade-insecure-requests`. Safari honours that directive on localhost
+where Chrome exempts it, so a production build served over http could not load
+its own scripts and the page rendered but never became interactive. Loopback is
+not a network anyone can watch, and a build that cannot be run before it ships
+is a build nobody checks.
 
 ## Artboards
 
