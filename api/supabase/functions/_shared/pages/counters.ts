@@ -1,7 +1,7 @@
 import { cached, ttlFor } from "../cache.ts";
 import { COUNTER_MAX } from "../badge-constants.ts";
 import { credentialsFor } from "../connections.ts";
-import type { PagePayload } from "../envelope.ts";
+import { errorPage, type PagePayload } from "../envelope.ts";
 import {
   assignedIssues,
   mentions,
@@ -67,6 +67,7 @@ export async function build(ctx: BuildContext): Promise<PagePayload> {
 
   const previous = await readPrevious(ctx);
   const counters: Counter[] = [];
+  let refused = 0;
 
   for (const source of chosen) {
     const credentials = await credentialsFor(ctx.rows, ctx.userId, source.provider);
@@ -88,11 +89,20 @@ export async function build(ctx: BuildContext): Promise<PagePayload> {
         recent: typeof reading.recent === "string" ? reading.recent : null,
       });
     } catch {
-      counters.push({ label: source.label, value: 0, delta: 0, recent: null });
+      // Left out rather than shown as zero. A zero is a claim that there is
+      // nothing waiting, which is the opposite of what happened, and the
+      // wearer would read it as being caught up.
+      refused += 1;
     }
   }
 
-  if (counters.length === 0) return { slug, state: "empty" };
+  // Nothing answered. Saying so beats an empty page, which also reads as
+  // being caught up.
+  if (counters.length === 0) {
+    return refused > 0
+      ? errorPage(slug, "Could not reach those accounts")
+      : { slug, state: "empty" };
+  }
   await writePrevious(ctx, counters);
 
   const rising = counters.some((counter) => counter.delta > 0);
