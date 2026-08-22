@@ -13,9 +13,9 @@ test.describe("pages that need an account", () => {
   }
 
   test("remembers where they were going", async ({ page }) => {
-    await page.goto("/connections/google");
+    await page.goto("/connections?provider=google");
 
-    expect(new URL(page.url()).searchParams.get("next")).toBe("/connections/google");
+    expect(new URL(page.url()).searchParams.get("next")).toBe("/connections?provider=google");
   });
 
   test("keeps the query string, so a scanned pairing code is not thrown away", async ({ page }) => {

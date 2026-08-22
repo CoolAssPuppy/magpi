@@ -170,10 +170,10 @@ describe("route gating", () => {
 
   it("remembers where they were going, query string and all", async () => {
     auth({});
-    const response = await updateSession(request("/connections/google?state=abc"));
+    const response = await updateSession(request("/connections?provider=google"));
 
     const location = new URL(response.headers.get("location") ?? "");
-    expect(location.searchParams.get("next")).toBe("/connections/google?state=abc");
+    expect(location.searchParams.get("next")).toBe("/connections?provider=google");
   });
 
   it("gates every private prefix and the paths beneath them", async () => {

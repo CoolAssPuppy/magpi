@@ -234,10 +234,13 @@ describe("listProviders", () => {
     expect(providers.map((row) => row.slug)).toEqual(["posthog", "google"]);
   });
 
-  it("leaves out a provider that is not open yet", async () => {
+  it("lists every provider, including ones with no app registered yet", async () => {
+    // Hiding them looked like the product did not support Slack or Notion at
+    // all. The row is shown and marked as not set up instead.
     given({ providers: [provider()] });
     await listProviders();
-    expect(queryFor("providers").filters).toContainEqual(["eq", "enabled", true]);
+
+    expect(queryFor("providers").filters).not.toContainEqual(["eq", "enabled", true]);
   });
 
   it("keeps the order the catalogue was arranged in", async () => {

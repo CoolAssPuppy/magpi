@@ -6,7 +6,6 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 export const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/pages", label: "Pages" },
   { href: "/connections", label: "Connections" },
   { href: "/settings", label: "Settings" },
 ] as const;
@@ -91,12 +90,12 @@ export function AppShell({ current, title, status, children }: AppShellProps) {
   return (
     <div className="flex min-h-screen">
       <Sidebar current={current} />
-      <div className="flex flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col">
         <header className="border-border px-2xl py-lg flex items-center justify-between border-b">
           <h1 className="font-display text-md font-medium">{title}</h1>
           <div className="gap-lg flex items-center">{status}</div>
         </header>
-        <main className="p-2xl flex-1">{children}</main>
+        <main className="p-2xl min-w-0 flex-1">{children}</main>
       </div>
     </div>
   );

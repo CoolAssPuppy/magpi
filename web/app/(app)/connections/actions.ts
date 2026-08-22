@@ -44,11 +44,11 @@ export async function beginOAuthAction(form: FormData): Promise<void> {
     body: JSON.stringify({ provider: parsed.data.provider, return_to: "/connections" }),
   });
 
-  if (!response.ok) redirect(`/connections/${parsed.data.provider}?error=begin`);
+  if (!response.ok) redirect("/connections?error=begin");
 
   const body: unknown = await response.json();
   const url = typeof body === "object" && body !== null ? (body as { url?: unknown }).url : null;
-  if (typeof url !== "string") redirect(`/connections/${parsed.data.provider}?error=begin`);
+  if (typeof url !== "string") redirect("/connections?error=begin");
 
   redirect(url);
 }

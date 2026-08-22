@@ -43,7 +43,7 @@ describe("the section sidebar", () => {
   });
 
   it("carries the wordmark and the product name", () => {
-    render(<Sidebar current="/pages" />);
+    render(<Sidebar current="/connections" />);
 
     expect(screen.getByText("Magpi")).toBeInTheDocument();
   });

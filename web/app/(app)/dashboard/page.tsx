@@ -7,8 +7,13 @@ import { LiveRegion } from "@/components/live-region";
 import { BadgePreview } from "@/components/screen/badge-preview";
 import { getSupabasePublishableKey, getSupabaseUrl } from "@/lib/env";
 import { opsFor } from "@/lib/preview/fixtures";
-import { listBadges, listConnections, listPageConfigs, listProviders } from "@/lib/queries";
-import type { BadgeRow, ConnectionRow, ProviderRow } from "@/lib/rows";
+import { pageNames } from "@/lib/preview/fixtures";
+import { listBadges, listConnections, listPageConfigs } from "@/lib/queries";
+
+import { Configure } from "@/app/(app)/pages/configure";
+import type { PageRow } from "@/app/(app)/pages/page-list";
+import { LABELS, REQUIRES, SOURCES, warningFor } from "@/app/(app)/pages/rows";
+import type { BadgeRow } from "@/lib/rows";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -21,15 +26,24 @@ export default async function DashboardPage({
 }) {
   // A scanned QR lands here asking for the dialog.
   const wantsPairing = (await searchParams).pair === "1";
-  const [badges, providers, connections, pages] = await Promise.all([
+  const [badges, connections, pages] = await Promise.all([
     listBadges(),
-    listProviders(),
     listConnections(),
     listPageConfigs(),
   ]);
 
   const enabled = pages.filter((page) => page.enabled);
   const badge = badges[0];
+
+  const byProvider = new Map(connections.map((row) => [row.provider, row]));
+  const names = pageNames();
+  const rows: PageRow[] = pages.map((config) => ({
+    slug: config.page_slug,
+    name: LABELS[config.page_slug] ?? names[config.page_slug] ?? config.page_slug,
+    source: SOURCES[config.page_slug] ?? "",
+    enabled: config.enabled,
+    warning: warningFor(config.page_slug, byProvider, REQUIRES),
+  }));
 
   return (
     <AppShell
@@ -51,7 +65,9 @@ export default async function DashboardPage({
         )}
 
         <div className="gap-xl flex flex-col lg:flex-row lg:items-start">
-          <ConnectionList providers={providers} connections={connections} />
+          <div className="min-w-0 flex-1">
+            <Configure rows={rows} />
+          </div>
           <OnScreenNow slug={enabled[0]?.page_slug ?? null} count={enabled.length} />
         </div>
       </div>
@@ -97,51 +113,6 @@ function Fact({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ConnectionList({
-  providers,
-  connections,
-}: {
-  providers: ProviderRow[];
-  connections: ConnectionRow[];
-}) {
-  const byProvider = new Map(connections.map((row) => [row.provider, row]));
-  const active = connections.filter((row) => row.status === "active").length;
-
-  return (
-    <section className="rounded-panel border-border bg-surface flex flex-1 flex-col overflow-hidden border">
-      <header className="border-border px-lg py-md flex items-center justify-between border-b">
-        <h2 className="font-display text-2xs text-ink-faint tracking-wide">CONNECTED</h2>
-        <span className="font-display text-2xs text-accent">
-          {active} OF {providers.length}
-        </span>
-      </header>
-      <ul>
-        {providers.map((provider) => {
-          const connection = byProvider.get(provider.slug);
-          return (
-            <li
-              key={provider.slug}
-              className="gap-md border-border px-lg py-md flex items-center border-b last:border-b-0"
-            >
-              <span className={`size-sm rounded-pill shrink-0 ${dotFor(connection)}`} />
-              <span className="font-display flex-1 text-base">{provider.display_name}</span>
-              <span
-                className={
-                  connection?.status === "error"
-                    ? "text-critical w-[130px] shrink-0 text-right text-sm"
-                    : "text-ink-faint w-[130px] shrink-0 text-right text-sm"
-                }
-              >
-                {statusLabel(connection)}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
-  );
-}
-
 function OnScreenNow({ slug, count }: { slug: string | null; count: number }) {
   return (
     <section className="rounded-panel border-border bg-surface flex w-full shrink-0 flex-col overflow-hidden border lg:w-[420px]">
@@ -161,18 +132,6 @@ function OnScreenNow({ slug, count }: { slug: string | null; count: number }) {
       </footer>
     </section>
   );
-}
-
-function dotFor(connection: ConnectionRow | undefined): string {
-  if (!connection) return "bg-border-strong";
-  if (connection.status === "error") return "bg-critical";
-  return "bg-accent";
-}
-
-function statusLabel(connection: ConnectionRow | undefined): string {
-  if (!connection) return "Not connected";
-  if (connection.status === "error") return "Reconnect";
-  return connection.external_account ?? "Connected";
 }
 
 /** Within two poll intervals at the slowest setting, so a live badge reads live. */

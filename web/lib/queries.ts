@@ -43,7 +43,6 @@ export async function listProviders(): Promise<ProviderRow[]> {
   const { data } = await supabase
     .from("providers")
     .select("slug, display_name, description, kind, scopes, docs_url, enabled, position")
-    .eq("enabled", true)
     .order("position", { ascending: true });
   return parseRows(providerRowSchema, data);
 }
