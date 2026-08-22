@@ -5,7 +5,7 @@
 -- role, and that the deny-by-default tables really deny.
 
 begin;
-select plan(53);
+select plan(54);
 
 create extension if not exists pgtap with schema extensions;
 
@@ -304,6 +304,11 @@ select lives_ok($$
   update public.connections set label = 'Renamed'
    where provider = 'notion' and label = 'Personal'
 $$, 'a client may rename their own connection');
+
+-- lives_ok alone would pass on zero rows changed, which is exactly how the
+-- missing update policy hid: Postgres reports a filtered update as success.
+select is((select count(*)::int from public.connections where label = 'Renamed'), 1,
+  'and the rename actually changed a row');
 
 select * from finish();
 

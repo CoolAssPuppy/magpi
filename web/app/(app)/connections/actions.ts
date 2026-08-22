@@ -142,15 +142,20 @@ export async function renameConnectionAction(
     if (!parsed.success) return errorState("Give it a name between 1 and 24 characters.");
 
     const supabase = await createClient();
-    const { error } = await supabase
+    // select() so the affected rows come back. Row-level security filters an
+    // update rather than refusing it, so without this a rename that matched
+    // nothing would report success.
+    const { data, error } = await supabase
       .from("connections")
       .update({ label: parsed.data.label })
       .eq("id", parsed.data.connection_id)
-      .eq("user_id", user.id);
+      .eq("user_id", user.id)
+      .select("id");
 
     // A duplicate is the only failure worth naming: the unique index exists so
     // a list never shows two rows nobody can tell apart.
     if (error) return errorState("You already have one called that.");
+    if (!data || data.length === 0) return errorState("That connection is no longer there.");
     return successState("Renamed.");
   }, REVALIDATE);
 }
