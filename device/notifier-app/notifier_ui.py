@@ -31,7 +31,7 @@ class NotifierScreen:
 
         page = machine.current_page
         if page is None:
-            self._lifecycle(machine, "No pages yet", "Open magpi.app to choose pages")
+            self._lifecycle(machine, "No pages yet", "Open magpi.to to choose pages")
             return
 
         module = pages.get(page.get("slug"))

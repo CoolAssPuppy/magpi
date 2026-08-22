@@ -24,7 +24,7 @@ _MAX_LEVEL = 3
 
 def draw(ctx):
     if ctx.state == "not_connected":
-        _message(ctx, "Not connected", "Connect Google at magpi.app")
+        _message(ctx, "Not connected", "Connect Google at magpi.to")
         return
     if ctx.state == "error":
         _message(ctx, "Calendar error", (ctx.data or {}).get("message"))

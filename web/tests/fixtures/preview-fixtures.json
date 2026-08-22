@@ -33,7 +33,7 @@
             {
               "op": "text",
               "size": 12,
-              "text": "Pick a counter at magpi.app",
+              "text": "Pick a counter at magpi.to",
               "x": 8,
               "y": 120
             }
@@ -423,7 +423,7 @@
           {
             "op": "text",
             "size": 12,
-            "text": "Pick a counter at magpi.app",
+            "text": "Pick a counter at magpi.to",
             "x": 8,
             "y": 120
           }
@@ -460,7 +460,7 @@
           {
             "op": "text",
             "size": 12,
-            "text": "Connect an account at magpi.app",
+            "text": "Connect an account at magpi.to",
             "x": 8,
             "y": 120
           }
@@ -484,7 +484,7 @@
           {
             "op": "text",
             "size": 12,
-            "text": "Pick a counter at magpi.app",
+            "text": "Pick a counter at magpi.to",
             "x": 8,
             "y": 120
           }
@@ -1945,7 +1945,7 @@
           {
             "op": "text",
             "size": 12,
-            "text": "Connect Google at magpi.app",
+            "text": "Connect Google at magpi.to",
             "x": 8,
             "y": 120
           }
@@ -2659,7 +2659,7 @@
           {
             "op": "text",
             "size": 12,
-            "text": "Add a Vercel token at magpi.app",
+            "text": "Add a Vercel token at magpi.to",
             "x": 8,
             "y": 120
           }
@@ -3027,7 +3027,7 @@
           {
             "op": "text",
             "size": 12,
-            "text": "Connect Google at magpi.app",
+            "text": "Connect Google at magpi.to",
             "x": 8,
             "y": 122
           }
@@ -3175,7 +3175,7 @@
             {
               "op": "text",
               "size": 12,
-              "text": "Pick an insight at magpi.app",
+              "text": "Pick an insight at magpi.to",
               "x": 8,
               "y": 120
             }
@@ -3630,7 +3630,7 @@
           {
             "op": "text",
             "size": 12,
-            "text": "Pick an insight at magpi.app",
+            "text": "Pick an insight at magpi.to",
             "x": 8,
             "y": 120
           }
@@ -3667,7 +3667,7 @@
           {
             "op": "text",
             "size": 12,
-            "text": "Add a PostHog key at magpi.app",
+            "text": "Add a PostHog key at magpi.to",
             "x": 8,
             "y": 120
           }
@@ -3691,7 +3691,7 @@
           {
             "op": "text",
             "size": 12,
-            "text": "Pick an insight at magpi.app",
+            "text": "Pick an insight at magpi.to",
             "x": 8,
             "y": 120
           }

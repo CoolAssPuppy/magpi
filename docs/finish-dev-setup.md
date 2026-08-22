@@ -361,11 +361,34 @@ GitHub accepts a `redirect_uri` that is a subdirectory of the registered
 callback, so registering the host root covers both. Registering either full
 path covers that flow and breaks the other.
 
+### One app for production and for working locally
+
+Yes, and it needs no second app, as long as your local web app talks to the
+hosted Supabase project rather than the local stack.
+
+Neither callback is ever a localhost address. Both are built from the Supabase
+URL, so both stay on `https://bxsgodfrrllijpmimsgs.supabase.co`, which is the
+host you registered. Signing in from `http://localhost:3001` still goes to
+GitHub, back to Supabase, and only then back to your machine, and that last hop
+is controlled by the **Redirect URLs** list in section 8.2, where localhost is
+already allowed.
+
+The one case that needs a second app is running the local Supabase stack. Then
+the callbacks become `http://127.0.0.1:56521/...`, a different host, and the
+registered one cannot cover it. If you want that, register a second OAuth app
+with `http://127.0.0.1:56521` as its callback and put its credentials in the
+`dev` config. GitHub allows a plain HTTP loopback callback; it is the one
+exception to its HTTPS rule.
+
+The simpler path is to leave `dev` pointing at the hosted project whenever you
+are working on anything that signs in or connects an account, and use the local
+stack for schema and pgTAP work, where no OAuth happens.
+
 1. Open <https://github.com/settings/developers> → **OAuth Apps** → **New OAuth
    App**.
 2. Fill in:
    - Application name: `Magpi`
-   - Homepage URL: `https://magpi.app`, or your Vercel URL
+   - Homepage URL: `https://magpi.to`, or your Vercel URL
    - Authorization callback URL, the host root and nothing more:
 
      ```
@@ -403,7 +426,7 @@ prints a value and `supabase start` no longer warns about a missing variable.
 ### 8.2 Site URL and the redirect allowlist
 
 1. Open <https://supabase.com/dashboard/project/bxsgodfrrllijpmimsgs/auth/url-configuration>.
-2. **Site URL**: your production URL, for example `https://magpi.app`.
+2. **Site URL**: your production URL, for example `https://magpi.to`.
 3. Under **Redirect URLs**, click **Add URL** for each of these:
 
    ```
@@ -466,9 +489,9 @@ supabase link --project-ref bxsgodfrrllijpmimsgs
 supabase secrets set \
   TOKEN_ENCRYPTION_KEY="$(doppler secrets get TOKEN_ENCRYPTION_KEY --project magpi --config prd --plain)" \
   TOKEN_ENCRYPTION_KEY_ID="1" \
-  WEB_BASE_URL="https://magpi.app" \
-  WEB_ORIGINS="https://magpi.app" \
-  PAIRING_URL="https://magpi.app/link" \
+  WEB_BASE_URL="https://magpi.to" \
+  WEB_ORIGINS="https://magpi.to" \
+  PAIRING_URL="https://magpi.to/link" \
   OAUTH_GOOGLE_CLIENT_ID="$(doppler secrets get OAUTH_GOOGLE_CLIENT_ID --project magpi --config dev --plain)" \
   OAUTH_GOOGLE_CLIENT_SECRET="$(doppler secrets get OAUTH_GOOGLE_CLIENT_SECRET --project magpi --config dev --plain)" \
   OAUTH_GITHUB_CLIENT_ID="$(doppler secrets get OAUTH_GITHUB_CLIENT_ID --project magpi --config dev --plain)" \
@@ -610,7 +633,7 @@ against `gateway`.
    ```
 
 6. Click **Deploy**.
-7. For the domain: **Settings → Domains → Add**, enter `magpi.app`, and follow
+7. For the domain: **Settings → Domains → Add**, enter `magpi.to`, and follow
    the DNS instructions.
 
 **Do not judge a deploy at one minute.** CI then build takes about four

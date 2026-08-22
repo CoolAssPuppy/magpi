@@ -20,7 +20,7 @@ _BLINK_MS = 1200
 
 def draw(ctx):
     if ctx.state == "not_connected":
-        _message(ctx, "Not connected", "Connect an account at magpi.app")
+        _message(ctx, "Not connected", "Connect an account at magpi.to")
         return
     if ctx.state == "error":
         _message(ctx, "Counter error", (ctx.data or {}).get("message"))
@@ -28,7 +28,7 @@ def draw(ctx):
 
     counters = _counters(ctx.data)
     if not counters:
-        _message(ctx, "Nothing counted", "Pick a counter at magpi.app")
+        _message(ctx, "Nothing counted", "Pick a counter at magpi.to")
         return
 
     selected = _selected_index(ctx.data, len(counters))

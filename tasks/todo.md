@@ -47,27 +47,27 @@ website. Built from the brief in `docs/BRIEF.md`.
 - [x] device-start, device-poll, device-approve
 - [x] SDK copied and stripped of conference branding
 - [x] `/link` page with QR and code
-- [ ] Pair a real badge
+- [ ] Pair a real badge (needs the hardware)
 
 ## 7. Gateway skeleton
 
 - [x] `GET /gateway/desk` returning a hardcoded envelope
-- [ ] Notifier renders it on hardware
+- [ ] Notifier renders it on hardware (needs the hardware)
 
 ## 8. Connections
 
 - [x] providers table with `kind`
 - [x] OAuth begin, callback, claim
 - [x] API key form, encryption
-- [ ] Connect Google and Vercel for real
+- [ ] Connect Google and Vercel for real (needs registered OAuth apps)
 
 ## 9. The five pages
 
-- [ ] next_thing: builder, device page, web preview, tests
-- [ ] day_shape: builder, device page, web preview, tests
-- [ ] deploys: builder, device page, web preview, tests
-- [ ] counters: builder, device page, web preview, tests
-- [ ] one_number: builder, device page, web preview, tests
+- [x] next_thing: builder, device page, web preview, tests
+- [x] day_shape: builder, device page, web preview, tests
+- [x] deploys: builder, device page, web preview, tests
+- [x] counters: builder, device page, web preview, tests
+- [x] one_number: builder, device page, web preview, tests
 
 ## 10. The pages screen
 
@@ -82,9 +82,9 @@ website. Built from the brief in `docs/BRIEF.md`.
 
 ## 12. Tests and coverage
 
-- [ ] E2E tests
-- [ ] Coverage: web 95, API 90, device 95
-- [ ] Full gate green
+- [x] E2E tests
+- [x] Coverage: web 95, API 90, device 95
+- [ ] Full gate green (`pnpm gate --strict`)
 
 ## 13. Observability
 
@@ -92,12 +92,13 @@ website. Built from the brief in `docs/BRIEF.md`.
 
 ## 14. Docs
 
-- [ ] `docs/finish-dev-setup.md`
-- [ ] `device/DEPLOY.md`
+- [x] `docs/finish-dev-setup.md`
+- [x] `device/DEPLOY.md`
 
 ## 15. Ship
 
-- [ ] Package both apps and install them on the badge
+- [x] Package both apps (`pnpm badge:package`, 27 files, dry run verified)
+- [ ] Install them on the badge (needs the hardware)
 
 ## Review
 

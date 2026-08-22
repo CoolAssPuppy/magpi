@@ -29,7 +29,7 @@ MARGIN = 8
 # to explain what the scan was for, which is the app describing itself to
 # someone already holding it.
 WELCOME = "Magpi"
-PROMPT = "Scan to set up at magpi.app"
+PROMPT = "Scan to set up at magpi.to"
 
 # Mark and welcome on one centered line, prompt centered under it.
 LOGO_H = 22

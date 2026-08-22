@@ -21,7 +21,7 @@ _HEADING_CELL = 3
 
 def draw(ctx):
     if ctx.state == "not_connected":
-        _message(ctx, "Not connected", "Add a PostHog key at magpi.app")
+        _message(ctx, "Not connected", "Add a PostHog key at magpi.to")
         return
     if ctx.state == "error":
         _message(ctx, "Source error", (ctx.data or {}).get("message"))
@@ -29,7 +29,7 @@ def draw(ctx):
 
     number = ctx.data or {}
     if number.get("value") is None:
-        _message(ctx, "No number yet", "Pick an insight at magpi.app")
+        _message(ctx, "No number yet", "Pick an insight at magpi.to")
         return
 
     _draw_label(ctx, number)

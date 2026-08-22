@@ -119,7 +119,7 @@ class TestNoPages(unittest.TestCase):
     def test_a_payload_with_nothing_enabled_sends_the_wearer_to_the_website(self):
         screen = draw(loaded(pages=[]))
         self.assertTrue(blocks.drew_block_text(screen, "NO PAGES YET"))
-        self.assertIn("Open magpi.app to choose pages", texts(screen))
+        self.assertIn("Open magpi.to to choose pages", texts(screen))
 
     def test_a_badge_the_server_has_forgotten_is_not_left_on_a_black_screen(self):
         def forgotten(power=None):

@@ -1,7 +1,7 @@
 {
   "tasks": {
     "test": "deno test --allow-env --allow-net supabase/functions/",
-    "test:coverage": "deno test --allow-env --allow-net --coverage=coverage supabase/functions/ && deno coverage coverage",
+    "test:coverage": "deno test --allow-env --allow-net --coverage=coverage supabase/functions/ && deno coverage coverage --exclude=\"test\\.(js|mjs|ts|jsx|tsx)$\" --exclude=\"_shared/testing/\"",
     "check": "deno check supabase/functions/**/*.ts",
     "lint": "deno lint supabase/functions/"
   },
@@ -15,9 +15,7 @@
   },
   "lint": {
     "rules": {
-      "exclude": [
-        "no-slow-types"
-      ]
+      "exclude": ["no-slow-types"]
     }
   }
 }

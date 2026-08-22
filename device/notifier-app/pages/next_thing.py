@@ -26,7 +26,7 @@ _LINES = 2
 
 def draw(ctx):
     if ctx.state == "not_connected":
-        _message(ctx, "Not connected", "Connect Google at magpi.app")
+        _message(ctx, "Not connected", "Connect Google at magpi.to")
         return
     if ctx.state == "error":
         _message(ctx, "Calendar error", ctx.data.get("message") or "Google did not answer")

@@ -23,7 +23,7 @@ _PULSE_PERIOD_MS = 2000
 
 def draw(ctx):
     if ctx.state == "not_connected":
-        _message(ctx, "Not connected", "Add a Vercel token at magpi.app")
+        _message(ctx, "Not connected", "Add a Vercel token at magpi.to")
         return
     if ctx.state == "error":
         _message(ctx, "Vercel error", (ctx.data or {}).get("message"))
