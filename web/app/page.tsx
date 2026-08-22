@@ -1,8 +1,9 @@
 import Link from "next/link";
 
 import { FoldedMagpie, MagpieMark } from "@/components/magpie-mark";
-import { ScreenPreview } from "@/components/screen/screen-preview";
+import { BadgePreview } from "@/components/screen/badge-preview";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { opsFor } from "@/lib/preview/fixtures";
 
 const PAGES = [
   { number: "01", name: "Next thing", source: "Google Calendar" },
@@ -86,7 +87,7 @@ export default function HomePage() {
 
       <section className="gap-4xl border-border bg-surface px-2xl py-5xl flex flex-col items-start border-t lg:flex-row lg:items-center">
         <div className="rounded-round border-border bg-raised p-xl shrink-0 border">
-          <ScreenPreview page="next_thing" />
+          <BadgePreview ops={opsFor("next_thing")} label="Next thing, on the badge" />
         </div>
         <div className="gap-xl flex flex-col items-start">
           <h2 className="font-display text-2xl font-bold leading-tight lg:text-3xl">

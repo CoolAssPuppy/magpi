@@ -72,6 +72,19 @@ CODE_MIN_SIZE = 6
 BODY_SIZE = 6
 
 
+# The ROM fonts and the height each one draws at. A constant rather than the
+# comment above, because the web previews render at these sizes and a number
+# only a comment holds is a number that drifts.
+ROM_FONT_SIZES = {
+    "ark": 11,
+    "sins": 12,
+    "badgeware": 14,
+    "memo": 15,
+    "smart": 16,
+    "badgewaremax": 20,
+}
+
+
 def rom_font_named(name):
     """A ROM font by name, or None where there is no rom_font.
 

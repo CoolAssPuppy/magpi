@@ -1,0 +1,3544 @@
+{
+  "fonts": {
+    "ark": 11,
+    "badgeware": 14,
+    "badgewaremax": 20,
+    "memo": 15,
+    "sins": 12,
+    "smart": 16
+  },
+  "pages": {
+    "counters": {
+      "cases": {
+        "empty": {
+          "data": {
+            "counters": []
+          },
+          "draw": [
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "cell": 3,
+              "op": "block",
+              "text": "NOTHING COUNTED",
+              "x": 8,
+              "y": 80
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "op": "text",
+              "size": 12,
+              "text": "Pick a counter at magpi.app",
+              "x": 8,
+              "y": 120
+            }
+          ],
+          "leds": [0, 0, 0, 0]
+        },
+        "one_source": {
+          "data": {
+            "counters": [
+              {
+                "delta": 0,
+                "label": "Gmail",
+                "recent": null,
+                "value": 0
+              }
+            ],
+            "selected": 0
+          },
+          "draw": [
+            {
+              "op": "pen",
+              "value": "#171717"
+            },
+            {
+              "h": 81,
+              "op": "rect",
+              "w": 160,
+              "x": 0,
+              "y": 16
+            },
+            {
+              "op": "pen",
+              "value": "#2a2a2a"
+            },
+            {
+              "h": 1,
+              "op": "rect",
+              "w": 160,
+              "x": 0,
+              "y": 96
+            },
+            {
+              "h": 81,
+              "op": "rect",
+              "w": 1,
+              "x": 159,
+              "y": 16
+            },
+            {
+              "op": "pen",
+              "value": "#0fbfa8"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "GMAIL",
+              "x": 8,
+              "y": 26
+            },
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "cell": 5,
+              "op": "block",
+              "text": "0",
+              "x": 8,
+              "y": 46
+            },
+            {
+              "op": "pen",
+              "value": "#2a2a2a"
+            },
+            {
+              "h": 1,
+              "op": "rect",
+              "w": 320,
+              "x": 0,
+              "y": 194
+            },
+            {
+              "op": "pen",
+              "value": "#0fbfa8"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "A: CYCLE",
+              "x": 224,
+              "y": 210
+            }
+          ],
+          "leds": [0, 0, 0, 0]
+        },
+        "typical": {
+          "data": {
+            "counters": [
+              {
+                "delta": 3,
+                "label": "Gmail",
+                "recent": "Re: storage quota bump",
+                "value": 14
+              },
+              {
+                "delta": 0,
+                "label": "Linear",
+                "recent": "Fix the preview drift",
+                "value": 7
+              },
+              {
+                "delta": 1,
+                "label": "Slack",
+                "recent": "standup in five",
+                "value": 2
+              },
+              {
+                "delta": -2,
+                "label": "Reviews",
+                "recent": "Port the SDK",
+                "value": 5
+              }
+            ],
+            "selected": 0
+          },
+          "draw": [
+            {
+              "op": "pen",
+              "value": "#171717"
+            },
+            {
+              "h": 81,
+              "op": "rect",
+              "w": 160,
+              "x": 0,
+              "y": 16
+            },
+            {
+              "op": "pen",
+              "value": "#2a2a2a"
+            },
+            {
+              "h": 1,
+              "op": "rect",
+              "w": 160,
+              "x": 0,
+              "y": 96
+            },
+            {
+              "h": 81,
+              "op": "rect",
+              "w": 1,
+              "x": 159,
+              "y": 16
+            },
+            {
+              "op": "pen",
+              "value": "#0fbfa8"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "GMAIL",
+              "x": 8,
+              "y": 26
+            },
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "cell": 5,
+              "op": "block",
+              "text": "14",
+              "x": 8,
+              "y": 46
+            },
+            {
+              "op": "pen",
+              "value": "#0fbfa8"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "+3",
+              "x": 71,
+              "y": 69
+            },
+            {
+              "op": "pen",
+              "value": "#2a2a2a"
+            },
+            {
+              "h": 1,
+              "op": "rect",
+              "w": 160,
+              "x": 160,
+              "y": 96
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "LINEAR",
+              "x": 168,
+              "y": 26
+            },
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "cell": 5,
+              "op": "block",
+              "text": "7",
+              "x": 168,
+              "y": 46
+            },
+            {
+              "op": "pen",
+              "value": "#2a2a2a"
+            },
+            {
+              "h": 1,
+              "op": "rect",
+              "w": 160,
+              "x": 0,
+              "y": 177
+            },
+            {
+              "h": 81,
+              "op": "rect",
+              "w": 1,
+              "x": 159,
+              "y": 97
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "SLACK",
+              "x": 8,
+              "y": 107
+            },
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "cell": 5,
+              "op": "block",
+              "text": "2",
+              "x": 8,
+              "y": 127
+            },
+            {
+              "op": "pen",
+              "value": "#0fbfa8"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "+1",
+              "x": 41,
+              "y": 150
+            },
+            {
+              "op": "pen",
+              "value": "#2a2a2a"
+            },
+            {
+              "h": 1,
+              "op": "rect",
+              "w": 160,
+              "x": 160,
+              "y": 177
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "REVIEWS",
+              "x": 168,
+              "y": 107
+            },
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "cell": 5,
+              "op": "block",
+              "text": "5",
+              "x": 168,
+              "y": 127
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "-2",
+              "x": 201,
+              "y": 150
+            },
+            {
+              "op": "pen",
+              "value": "#2a2a2a"
+            },
+            {
+              "h": 1,
+              "op": "rect",
+              "w": 320,
+              "x": 0,
+              "y": 194
+            },
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "Re: storage quota bump",
+              "x": 8,
+              "y": 210
+            },
+            {
+              "op": "pen",
+              "value": "#0fbfa8"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "A: CYCLE",
+              "x": 224,
+              "y": 210
+            }
+          ],
+          "leds": [0, 0, 0, 0]
+        }
+      },
+      "name": "COUNTS",
+      "states": {
+        "empty": [
+          {
+            "op": "pen",
+            "value": "#ffffff"
+          },
+          {
+            "cell": 3,
+            "op": "block",
+            "text": "NOTHING COUNTED",
+            "x": 8,
+            "y": 80
+          },
+          {
+            "op": "pen",
+            "value": "#8a8a8a"
+          },
+          {
+            "op": "text",
+            "size": 12,
+            "text": "Pick a counter at magpi.app",
+            "x": 8,
+            "y": 120
+          }
+        ],
+        "error": [
+          {
+            "op": "pen",
+            "value": "#ffffff"
+          },
+          {
+            "cell": 3,
+            "op": "block",
+            "text": "COUNTER ERROR",
+            "x": 8,
+            "y": 80
+          }
+        ],
+        "not_connected": [
+          {
+            "op": "pen",
+            "value": "#ffffff"
+          },
+          {
+            "cell": 3,
+            "op": "block",
+            "text": "NOT CONNECTED",
+            "x": 8,
+            "y": 80
+          },
+          {
+            "op": "pen",
+            "value": "#8a8a8a"
+          },
+          {
+            "op": "text",
+            "size": 12,
+            "text": "Connect an account at magpi.app",
+            "x": 8,
+            "y": 120
+          }
+        ],
+        "ok": [
+          {
+            "op": "pen",
+            "value": "#ffffff"
+          },
+          {
+            "cell": 3,
+            "op": "block",
+            "text": "NOTHING COUNTED",
+            "x": 8,
+            "y": 80
+          },
+          {
+            "op": "pen",
+            "value": "#8a8a8a"
+          },
+          {
+            "op": "text",
+            "size": 12,
+            "text": "Pick a counter at magpi.app",
+            "x": 8,
+            "y": 120
+          }
+        ]
+      }
+    },
+    "day_shape": {
+      "cases": {
+        "empty": {
+          "data": {
+            "blocks": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            "current_hour": 8,
+            "free_minutes": 720,
+            "meeting_count": 0
+          },
+          "draw": [
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "cell": 3,
+              "op": "block",
+              "text": "TODAY",
+              "x": 8,
+              "y": 26
+            },
+            {
+              "op": "pen",
+              "value": "#0fbfa8"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "A: TOMORROW",
+              "x": 191,
+              "y": 30
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 16,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 28,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 40,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 52,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 64,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 76,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 88,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 100,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 112,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 124,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 136,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 148,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 160,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 172,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 184,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 196,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 208,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 220,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 232,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 244,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 256,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 268,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 280,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 292,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#0fbfa8"
+            },
+            {
+              "h": 4,
+              "op": "rect",
+              "w": 11,
+              "x": 28,
+              "y": 134
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "op": "text",
+              "size": 16,
+              "text": "Nothing booked",
+              "x": 8,
+              "y": 178
+            }
+          ],
+          "leds": null
+        },
+        "one_meeting": {
+          "data": {
+            "blocks": [0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            "current_hour": 9,
+            "free_minutes": 660,
+            "meeting_count": 1
+          },
+          "draw": [
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "cell": 3,
+              "op": "block",
+              "text": "TODAY",
+              "x": 8,
+              "y": 26
+            },
+            {
+              "op": "pen",
+              "value": "#0fbfa8"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "A: TOMORROW",
+              "x": 191,
+              "y": 30
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 16,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 28,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 40,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 52,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 64,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 76,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 48,
+              "op": "rect",
+              "w": 11,
+              "x": 88,
+              "y": 84
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 100,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 112,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 124,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 136,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 148,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 160,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 172,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 184,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 196,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 208,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 220,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 232,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 244,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 256,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 268,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 280,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 292,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#0fbfa8"
+            },
+            {
+              "h": 4,
+              "op": "rect",
+              "w": 11,
+              "x": 40,
+              "y": 134
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "07",
+              "x": 16,
+              "y": 140
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "12",
+              "x": 76,
+              "y": 140
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "17",
+              "x": 136,
+              "y": 140
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "22",
+              "x": 196,
+              "y": 140
+            },
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "op": "text",
+              "size": 16,
+              "text": "1 meeting",
+              "x": 8,
+              "y": 178
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "op": "text",
+              "size": 16,
+              "text": "11h free",
+              "x": 162,
+              "y": 178
+            }
+          ],
+          "leds": null
+        },
+        "typical": {
+          "data": {
+            "blocks": [0, 0, 1, 3, 3, 0, 1, 3, 0, 0, 2, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            "current_hour": 12,
+            "free_minutes": 200,
+            "meeting_count": 4
+          },
+          "draw": [
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "cell": 3,
+              "op": "block",
+              "text": "TODAY",
+              "x": 8,
+              "y": 26
+            },
+            {
+              "op": "pen",
+              "value": "#0fbfa8"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "A: TOMORROW",
+              "x": 191,
+              "y": 30
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 16,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 28,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#585858"
+            },
+            {
+              "h": 24,
+              "op": "rect",
+              "w": 11,
+              "x": 40,
+              "y": 108
+            },
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "h": 72,
+              "op": "rect",
+              "w": 11,
+              "x": 52,
+              "y": 60
+            },
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "h": 72,
+              "op": "rect",
+              "w": 11,
+              "x": 64,
+              "y": 60
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 76,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#585858"
+            },
+            {
+              "h": 24,
+              "op": "rect",
+              "w": 11,
+              "x": 88,
+              "y": 108
+            },
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "h": 72,
+              "op": "rect",
+              "w": 11,
+              "x": 100,
+              "y": 60
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 112,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 124,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 48,
+              "op": "rect",
+              "w": 11,
+              "x": 136,
+              "y": 84
+            },
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "h": 72,
+              "op": "rect",
+              "w": 11,
+              "x": 148,
+              "y": 60
+            },
+            {
+              "op": "pen",
+              "value": "#585858"
+            },
+            {
+              "h": 24,
+              "op": "rect",
+              "w": 11,
+              "x": 160,
+              "y": 108
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 172,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 184,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 196,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 208,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 220,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 232,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 244,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 256,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 268,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 280,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#1e1e1e"
+            },
+            {
+              "h": 12,
+              "op": "rect",
+              "w": 11,
+              "x": 292,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#0fbfa8"
+            },
+            {
+              "h": 4,
+              "op": "rect",
+              "w": 11,
+              "x": 76,
+              "y": 134
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "07",
+              "x": 16,
+              "y": 140
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "12",
+              "x": 76,
+              "y": 140
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "17",
+              "x": 136,
+              "y": 140
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "22",
+              "x": 196,
+              "y": 140
+            },
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "op": "text",
+              "size": 16,
+              "text": "4 meetings",
+              "x": 8,
+              "y": 178
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "op": "text",
+              "size": 16,
+              "text": "3h 20m free",
+              "x": 178,
+              "y": 178
+            }
+          ],
+          "leds": null
+        }
+      },
+      "name": "DAY",
+      "states": {
+        "empty": [
+          {
+            "op": "pen",
+            "value": "#ffffff"
+          },
+          {
+            "cell": 3,
+            "op": "block",
+            "text": "TODAY",
+            "x": 8,
+            "y": 26
+          },
+          {
+            "op": "pen",
+            "value": "#0fbfa8"
+          },
+          {
+            "op": "text",
+            "size": 11,
+            "text": "A: TOMORROW",
+            "x": 191,
+            "y": 30
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 16,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 28,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 40,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 52,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 64,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 76,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 88,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 100,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 112,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 124,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 136,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 148,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 160,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 172,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 184,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 196,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 208,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 220,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 232,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 244,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 256,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 268,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 280,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 292,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#8a8a8a"
+          },
+          {
+            "op": "text",
+            "size": 16,
+            "text": "Nothing booked",
+            "x": 8,
+            "y": 178
+          }
+        ],
+        "error": [
+          {
+            "op": "pen",
+            "value": "#ffffff"
+          },
+          {
+            "cell": 3,
+            "op": "block",
+            "text": "CALENDAR ERROR",
+            "x": 8,
+            "y": 80
+          }
+        ],
+        "not_connected": [
+          {
+            "op": "pen",
+            "value": "#ffffff"
+          },
+          {
+            "cell": 3,
+            "op": "block",
+            "text": "NOT CONNECTED",
+            "x": 8,
+            "y": 80
+          },
+          {
+            "op": "pen",
+            "value": "#8a8a8a"
+          },
+          {
+            "op": "text",
+            "size": 12,
+            "text": "Connect Google at magpi.app",
+            "x": 8,
+            "y": 120
+          }
+        ],
+        "ok": [
+          {
+            "op": "pen",
+            "value": "#ffffff"
+          },
+          {
+            "cell": 3,
+            "op": "block",
+            "text": "TODAY",
+            "x": 8,
+            "y": 26
+          },
+          {
+            "op": "pen",
+            "value": "#0fbfa8"
+          },
+          {
+            "op": "text",
+            "size": 11,
+            "text": "A: TOMORROW",
+            "x": 191,
+            "y": 30
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 16,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 28,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 40,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 52,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 64,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 76,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 88,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 100,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 112,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 124,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 136,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 148,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 160,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 172,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 184,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 196,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 208,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 220,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 232,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 244,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 256,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 268,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 280,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#1e1e1e"
+          },
+          {
+            "h": 12,
+            "op": "rect",
+            "w": 11,
+            "x": 292,
+            "y": 120
+          },
+          {
+            "op": "pen",
+            "value": "#8a8a8a"
+          },
+          {
+            "op": "text",
+            "size": 16,
+            "text": "Nothing booked",
+            "x": 8,
+            "y": 178
+          }
+        ]
+      }
+    },
+    "deploys": {
+      "cases": {
+        "all_ready": {
+          "data": {
+            "expanded": 0,
+            "projects": [
+              {
+                "age_ms": 3600000,
+                "name": "magpi-web",
+                "state": "READY"
+              }
+            ]
+          },
+          "draw": [
+            {
+              "op": "pen",
+              "value": "#0fbfa8"
+            },
+            {
+              "h": 44,
+              "op": "rect",
+              "w": 320,
+              "x": 0,
+              "y": 16
+            },
+            {
+              "op": "pen",
+              "value": "#000000"
+            },
+            {
+              "cell": 3,
+              "op": "block",
+              "text": "READY",
+              "x": 8,
+              "y": 28
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "1 OF 1",
+              "x": 246,
+              "y": 33
+            },
+            {
+              "op": "pen",
+              "value": "#171717"
+            },
+            {
+              "h": 46,
+              "op": "rect",
+              "w": 320,
+              "x": 0,
+              "y": 70
+            },
+            {
+              "op": "pen",
+              "value": "#0fbfa8"
+            },
+            {
+              "h": 46,
+              "op": "rect",
+              "w": 3,
+              "x": 0,
+              "y": 70
+            },
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "op": "text",
+              "size": 16,
+              "text": "magpi-web",
+              "x": 8,
+              "y": 74
+            },
+            {
+              "op": "pen",
+              "value": "#0fbfa8"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "READY 1h",
+              "x": 224,
+              "y": 78
+            }
+          ],
+          "leds": [0, 0, 0, 0]
+        },
+        "empty": {
+          "data": {
+            "projects": []
+          },
+          "draw": [
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "cell": 3,
+              "op": "block",
+              "text": "NO PROJECTS",
+              "x": 8,
+              "y": 80
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "op": "text",
+              "size": 12,
+              "text": "Nothing to watch yet",
+              "x": 8,
+              "y": 120
+            }
+          ],
+          "leds": [0, 0, 0, 0]
+        },
+        "typical": {
+          "data": {
+            "expanded": 0,
+            "projects": [
+              {
+                "age_ms": 120000,
+                "commit": "fix the preview font metrics",
+                "name": "magpi-web",
+                "state": "ERROR"
+              },
+              {
+                "age_ms": 40000,
+                "name": "magpi-docs",
+                "state": "BUILDING"
+              },
+              {
+                "age_ms": 10800000,
+                "name": "notenerds",
+                "state": "READY"
+              },
+              {
+                "age_ms": 172800000,
+                "name": "strategic-nerds",
+                "state": "READY"
+              }
+            ]
+          },
+          "draw": [
+            {
+              "op": "pen",
+              "value": "#e04a32"
+            },
+            {
+              "h": 44,
+              "op": "rect",
+              "w": 320,
+              "x": 0,
+              "y": 16
+            },
+            {
+              "op": "pen",
+              "value": "#000000"
+            },
+            {
+              "cell": 3,
+              "op": "block",
+              "text": "ERROR",
+              "x": 8,
+              "y": 28
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "1 OF 4",
+              "x": 246,
+              "y": 33
+            },
+            {
+              "op": "pen",
+              "value": "#171717"
+            },
+            {
+              "h": 46,
+              "op": "rect",
+              "w": 320,
+              "x": 0,
+              "y": 70
+            },
+            {
+              "op": "pen",
+              "value": "#e04a32"
+            },
+            {
+              "h": 46,
+              "op": "rect",
+              "w": 3,
+              "x": 0,
+              "y": 70
+            },
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "op": "text",
+              "size": 16,
+              "text": "magpi-web",
+              "x": 8,
+              "y": 74
+            },
+            {
+              "op": "pen",
+              "value": "#e04a32"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "ERROR 2m",
+              "x": 224,
+              "y": 78
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "fix the preview font metrics",
+              "x": 8,
+              "y": 96
+            },
+            {
+              "op": "pen",
+              "value": "#e0a020"
+            },
+            {
+              "h": 34,
+              "op": "rect",
+              "w": 3,
+              "x": 0,
+              "y": 116
+            },
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "op": "text",
+              "size": 16,
+              "text": "magpi-docs",
+              "x": 8,
+              "y": 120
+            },
+            {
+              "op": "pen",
+              "value": "#e0a020"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "BUILD 40s",
+              "x": 213,
+              "y": 124
+            },
+            {
+              "op": "pen",
+              "value": "#0fbfa8"
+            },
+            {
+              "h": 34,
+              "op": "rect",
+              "w": 3,
+              "x": 0,
+              "y": 150
+            },
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "op": "text",
+              "size": 16,
+              "text": "notenerds",
+              "x": 8,
+              "y": 154
+            },
+            {
+              "op": "pen",
+              "value": "#0fbfa8"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "READY 3h",
+              "x": 224,
+              "y": 158
+            },
+            {
+              "op": "pen",
+              "value": "#0fbfa8"
+            },
+            {
+              "h": 34,
+              "op": "rect",
+              "w": 3,
+              "x": 0,
+              "y": 184
+            },
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "op": "text",
+              "size": 16,
+              "text": "strategic-nerds",
+              "x": 8,
+              "y": 188
+            },
+            {
+              "op": "pen",
+              "value": "#0fbfa8"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "READY 2d",
+              "x": 224,
+              "y": 192
+            }
+          ],
+          "leds": [1, 1, 1, 1]
+        }
+      },
+      "name": "DEPLOYS",
+      "states": {
+        "empty": [
+          {
+            "op": "pen",
+            "value": "#ffffff"
+          },
+          {
+            "cell": 3,
+            "op": "block",
+            "text": "NO PROJECTS",
+            "x": 8,
+            "y": 80
+          },
+          {
+            "op": "pen",
+            "value": "#8a8a8a"
+          },
+          {
+            "op": "text",
+            "size": 12,
+            "text": "Nothing to watch yet",
+            "x": 8,
+            "y": 120
+          }
+        ],
+        "error": [
+          {
+            "op": "pen",
+            "value": "#ffffff"
+          },
+          {
+            "cell": 3,
+            "op": "block",
+            "text": "VERCEL ERROR",
+            "x": 8,
+            "y": 80
+          }
+        ],
+        "not_connected": [
+          {
+            "op": "pen",
+            "value": "#ffffff"
+          },
+          {
+            "cell": 3,
+            "op": "block",
+            "text": "NOT CONNECTED",
+            "x": 8,
+            "y": 80
+          },
+          {
+            "op": "pen",
+            "value": "#8a8a8a"
+          },
+          {
+            "op": "text",
+            "size": 12,
+            "text": "Add a Vercel token at magpi.app",
+            "x": 8,
+            "y": 120
+          }
+        ],
+        "ok": [
+          {
+            "op": "pen",
+            "value": "#ffffff"
+          },
+          {
+            "cell": 3,
+            "op": "block",
+            "text": "NO PROJECTS",
+            "x": 8,
+            "y": 80
+          },
+          {
+            "op": "pen",
+            "value": "#8a8a8a"
+          },
+          {
+            "op": "text",
+            "size": 12,
+            "text": "Nothing to watch yet",
+            "x": 8,
+            "y": 120
+          }
+        ]
+      }
+    },
+    "next_thing": {
+      "cases": {
+        "all_day": {
+          "data": {
+            "all_day": true,
+            "end": "23:59",
+            "location": null,
+            "minutes_until": 60,
+            "start": "00:00",
+            "title": "Out of office"
+          },
+          "draw": [
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "cell": 4,
+              "op": "block",
+              "text": "ALL DAY",
+              "x": 8,
+              "y": 26
+            },
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "op": "text",
+              "size": 16,
+              "text": "Out of office",
+              "x": 8,
+              "y": 112
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "00:00 - 23:59",
+              "x": 8,
+              "y": 160
+            }
+          ],
+          "leds": [0, 0, 0, 0]
+        },
+        "empty": {
+          "data": {},
+          "draw": [
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "cell": 4,
+              "op": "block",
+              "text": "NOTHING UNTIL TOMORROW",
+              "x": 8,
+              "y": 46
+            }
+          ],
+          "leds": [0, 0, 0, 0]
+        },
+        "imminent": {
+          "data": {
+            "end": "10:00",
+            "location": null,
+            "minutes_until": 0,
+            "start": "09:45",
+            "title": "Standup"
+          },
+          "draw": [
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "cell": 10,
+              "op": "block",
+              "text": "NOW",
+              "x": 8,
+              "y": 26
+            },
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "op": "text",
+              "size": 16,
+              "text": "Standup",
+              "x": 8,
+              "y": 112
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "09:45 - 10:00",
+              "x": 8,
+              "y": 160
+            }
+          ],
+          "leds": [1, 1, 1, 1]
+        },
+        "long_title": {
+          "data": {
+            "end": "15:30",
+            "location": "Room 4",
+            "minutes_until": 240,
+            "start": "14:00",
+            "title": "Quarterly planning with everyone who touches the ingest path"
+          },
+          "draw": [
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "cell": 10,
+              "op": "block",
+              "text": "240",
+              "x": 8,
+              "y": 26
+            },
+            {
+              "op": "pen",
+              "value": "#0fbfa8"
+            },
+            {
+              "op": "text",
+              "size": 16,
+              "text": "MIN",
+              "x": 188,
+              "y": 80
+            },
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "op": "text",
+              "size": 16,
+              "text": "Quarterly planning",
+              "x": 8,
+              "y": 112
+            },
+            {
+              "op": "text",
+              "size": 16,
+              "text": "with everyone who",
+              "x": 8,
+              "y": 132
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "14:00 - 15:30 - Room 4",
+              "x": 8,
+              "y": 160
+            }
+          ],
+          "leds": [0, 0, 0, 0]
+        },
+        "typical": {
+          "data": {
+            "end": "10:30",
+            "location": "MEET",
+            "minutes_until": 12,
+            "more": [
+              {
+                "start": "11:00",
+                "title": "Design sync"
+              }
+            ],
+            "start": "09:54",
+            "title": "Platform review with the storage team"
+          },
+          "draw": [
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "cell": 10,
+              "op": "block",
+              "text": "12",
+              "x": 8,
+              "y": 26
+            },
+            {
+              "op": "pen",
+              "value": "#0fbfa8"
+            },
+            {
+              "op": "text",
+              "size": 16,
+              "text": "MIN",
+              "x": 128,
+              "y": 80
+            },
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "op": "text",
+              "size": 16,
+              "text": "Platform review",
+              "x": 8,
+              "y": 112
+            },
+            {
+              "op": "text",
+              "size": 16,
+              "text": "with the storage",
+              "x": 8,
+              "y": 132
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "09:54 - 10:30 - MEET",
+              "x": 8,
+              "y": 160
+            },
+            {
+              "op": "pen",
+              "value": "#0fbfa8"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "A: NEXT 1",
+              "x": 213,
+              "y": 160
+            }
+          ],
+          "leds": [0.25, 0.25, 0.25, 0.25]
+        }
+      },
+      "name": "NEXT",
+      "states": {
+        "empty": [
+          {
+            "op": "pen",
+            "value": "#ffffff"
+          },
+          {
+            "cell": 4,
+            "op": "block",
+            "text": "NOTHING UNTIL TOMORROW",
+            "x": 8,
+            "y": 46
+          }
+        ],
+        "error": [
+          {
+            "op": "pen",
+            "value": "#ffffff"
+          },
+          {
+            "cell": 4,
+            "op": "block",
+            "text": "CALENDAR ERROR",
+            "x": 8,
+            "y": 46
+          },
+          {
+            "op": "pen",
+            "value": "#8a8a8a"
+          },
+          {
+            "op": "text",
+            "size": 12,
+            "text": "Google did not answer",
+            "x": 8,
+            "y": 122
+          }
+        ],
+        "not_connected": [
+          {
+            "op": "pen",
+            "value": "#ffffff"
+          },
+          {
+            "cell": 4,
+            "op": "block",
+            "text": "NOT CONNECTED",
+            "x": 8,
+            "y": 46
+          },
+          {
+            "op": "pen",
+            "value": "#8a8a8a"
+          },
+          {
+            "op": "text",
+            "size": 12,
+            "text": "Connect Google at magpi.app",
+            "x": 8,
+            "y": 122
+          }
+        ],
+        "ok": [
+          {
+            "op": "pen",
+            "value": "#ffffff"
+          },
+          {
+            "cell": 4,
+            "op": "block",
+            "text": "NOTHING UNTIL TOMORROW",
+            "x": 8,
+            "y": 46
+          }
+        ]
+      }
+    },
+    "one_number": {
+      "cases": {
+        "big_value": {
+          "data": {
+            "delta_pct": -0.4,
+            "label": "Events this month",
+            "source": "PostHog",
+            "spark": [1, 2, 3],
+            "unit": null,
+            "updated": "1h ago",
+            "value": 123456789
+          },
+          "draw": [
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "EVENTS THIS MONTH",
+              "x": 8,
+              "y": 28
+            },
+            {
+              "op": "pen",
+              "value": "#e04a32"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "-0.4%",
+              "x": 257,
+              "y": 28
+            },
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "cell": 5,
+              "op": "block",
+              "text": "123456789",
+              "x": 8,
+              "y": 48
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 14,
+              "op": "rect",
+              "w": 9,
+              "x": 283,
+              "y": 176
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 36,
+              "op": "rect",
+              "w": 9,
+              "x": 293,
+              "y": 154
+            },
+            {
+              "op": "pen",
+              "value": "#0fbfa8"
+            },
+            {
+              "h": 58,
+              "op": "rect",
+              "w": 9,
+              "x": 303,
+              "y": 132
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "POSTHOG",
+              "x": 8,
+              "y": 206
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "1H AGO",
+              "x": 246,
+              "y": 206
+            }
+          ],
+          "leds": null
+        },
+        "empty": {
+          "data": {
+            "label": "Weekly active",
+            "value": null
+          },
+          "draw": [
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "cell": 3,
+              "op": "block",
+              "text": "NO NUMBER YET",
+              "x": 8,
+              "y": 80
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "op": "text",
+              "size": 12,
+              "text": "Pick an insight at magpi.app",
+              "x": 8,
+              "y": 120
+            }
+          ],
+          "leds": null
+        },
+        "typical": {
+          "data": {
+            "delta_pct": 4.2,
+            "label": "Weekly active",
+            "source": "PostHog",
+            "spark": [
+              60, 62, 61, 66, 64, 70, 68, 74, 71, 78, 76, 82, 80, 87, 84, 90, 86, 92, 89, 94, 91,
+              96, 93, 98, 95, 92, 97, 96, 94, 98
+            ],
+            "unit": null,
+            "updated": "4m ago",
+            "value": 8412
+          },
+          "draw": [
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "WEEKLY ACTIVE",
+              "x": 8,
+              "y": 28
+            },
+            {
+              "op": "pen",
+              "value": "#0fbfa8"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "+4.2%",
+              "x": 257,
+              "y": 28
+            },
+            {
+              "op": "pen",
+              "value": "#ffffff"
+            },
+            {
+              "cell": 9,
+              "op": "block",
+              "text": "8412",
+              "x": 8,
+              "y": 48
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 14,
+              "op": "rect",
+              "w": 9,
+              "x": 13,
+              "y": 176
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 16,
+              "op": "rect",
+              "w": 9,
+              "x": 23,
+              "y": 174
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 15,
+              "op": "rect",
+              "w": 9,
+              "x": 33,
+              "y": 175
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 21,
+              "op": "rect",
+              "w": 9,
+              "x": 43,
+              "y": 169
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 19,
+              "op": "rect",
+              "w": 9,
+              "x": 53,
+              "y": 171
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 25,
+              "op": "rect",
+              "w": 9,
+              "x": 63,
+              "y": 165
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 23,
+              "op": "rect",
+              "w": 9,
+              "x": 73,
+              "y": 167
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 30,
+              "op": "rect",
+              "w": 9,
+              "x": 83,
+              "y": 160
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 27,
+              "op": "rect",
+              "w": 9,
+              "x": 93,
+              "y": 163
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 35,
+              "op": "rect",
+              "w": 9,
+              "x": 103,
+              "y": 155
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 32,
+              "op": "rect",
+              "w": 9,
+              "x": 113,
+              "y": 158
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 39,
+              "op": "rect",
+              "w": 9,
+              "x": 123,
+              "y": 151
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 37,
+              "op": "rect",
+              "w": 9,
+              "x": 133,
+              "y": 153
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 45,
+              "op": "rect",
+              "w": 9,
+              "x": 143,
+              "y": 145
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 41,
+              "op": "rect",
+              "w": 9,
+              "x": 153,
+              "y": 149
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 48,
+              "op": "rect",
+              "w": 9,
+              "x": 163,
+              "y": 142
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 44,
+              "op": "rect",
+              "w": 9,
+              "x": 173,
+              "y": 146
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 51,
+              "op": "rect",
+              "w": 9,
+              "x": 183,
+              "y": 139
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 47,
+              "op": "rect",
+              "w": 9,
+              "x": 193,
+              "y": 143
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 53,
+              "op": "rect",
+              "w": 9,
+              "x": 203,
+              "y": 137
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 49,
+              "op": "rect",
+              "w": 9,
+              "x": 213,
+              "y": 141
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 55,
+              "op": "rect",
+              "w": 9,
+              "x": 223,
+              "y": 135
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 52,
+              "op": "rect",
+              "w": 9,
+              "x": 233,
+              "y": 138
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 58,
+              "op": "rect",
+              "w": 9,
+              "x": 243,
+              "y": 132
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 54,
+              "op": "rect",
+              "w": 9,
+              "x": 253,
+              "y": 136
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 51,
+              "op": "rect",
+              "w": 9,
+              "x": 263,
+              "y": 139
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 56,
+              "op": "rect",
+              "w": 9,
+              "x": 273,
+              "y": 134
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 55,
+              "op": "rect",
+              "w": 9,
+              "x": 283,
+              "y": 135
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "h": 53,
+              "op": "rect",
+              "w": 9,
+              "x": 293,
+              "y": 137
+            },
+            {
+              "op": "pen",
+              "value": "#0fbfa8"
+            },
+            {
+              "h": 58,
+              "op": "rect",
+              "w": 9,
+              "x": 303,
+              "y": 132
+            },
+            {
+              "op": "pen",
+              "value": "#8a8a8a"
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "POSTHOG",
+              "x": 8,
+              "y": 206
+            },
+            {
+              "op": "text",
+              "size": 11,
+              "text": "4M AGO",
+              "x": 246,
+              "y": 206
+            }
+          ],
+          "leds": null
+        }
+      },
+      "name": "NUMBER",
+      "states": {
+        "empty": [
+          {
+            "op": "pen",
+            "value": "#ffffff"
+          },
+          {
+            "cell": 3,
+            "op": "block",
+            "text": "NO NUMBER YET",
+            "x": 8,
+            "y": 80
+          },
+          {
+            "op": "pen",
+            "value": "#8a8a8a"
+          },
+          {
+            "op": "text",
+            "size": 12,
+            "text": "Pick an insight at magpi.app",
+            "x": 8,
+            "y": 120
+          }
+        ],
+        "error": [
+          {
+            "op": "pen",
+            "value": "#ffffff"
+          },
+          {
+            "cell": 3,
+            "op": "block",
+            "text": "SOURCE ERROR",
+            "x": 8,
+            "y": 80
+          }
+        ],
+        "not_connected": [
+          {
+            "op": "pen",
+            "value": "#ffffff"
+          },
+          {
+            "cell": 3,
+            "op": "block",
+            "text": "NOT CONNECTED",
+            "x": 8,
+            "y": 80
+          },
+          {
+            "op": "pen",
+            "value": "#8a8a8a"
+          },
+          {
+            "op": "text",
+            "size": 12,
+            "text": "Add a PostHog key at magpi.app",
+            "x": 8,
+            "y": 120
+          }
+        ],
+        "ok": [
+          {
+            "op": "pen",
+            "value": "#ffffff"
+          },
+          {
+            "cell": 3,
+            "op": "block",
+            "text": "NO NUMBER YET",
+            "x": 8,
+            "y": 80
+          },
+          {
+            "op": "pen",
+            "value": "#8a8a8a"
+          },
+          {
+            "op": "text",
+            "size": 12,
+            "text": "Pick an insight at magpi.app",
+            "x": 8,
+            "y": 120
+          }
+        ]
+      }
+    }
+  },
+  "screen": {
+    "h": 240,
+    "w": 320
+  }
+}
