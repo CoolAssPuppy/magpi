@@ -1,8 +1,8 @@
 // After `supabase db reset` the browser still holds a cookie whose refresh
 // token no longer exists. Left unhandled, that stale cookie breaks the app for
-// good: the visitor cannot even reach /login, because /login is rendered by the
-// same request that throws. A failed refresh means no session, so say so and
-// delete the cookie.
+// good: the visitor cannot even reach the homepage, because it is rendered by
+// the same request that throws. A failed refresh means no session, so say so
+// and delete the cookie.
 
 // Generic over the user shape so callers keep supabase's own `User` rather than
 // widening it down to a local interface and back again with an assertion.

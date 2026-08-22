@@ -33,7 +33,7 @@ export async function beginOAuthAction(form: FormData): Promise<void> {
   if (!parsed.success) redirect("/connections?error=unknown_provider");
 
   const context = await withSessionContext();
-  if (!context) redirect("/login?next=/connections");
+  if (!context) redirect("/?next=/connections");
 
   const response = await fetch(`${context.apiBaseUrl}/connections-begin`, {
     method: "POST",

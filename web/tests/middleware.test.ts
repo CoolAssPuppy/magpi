@@ -160,12 +160,12 @@ describe("what the page is allowed to connect to", () => {
 });
 
 describe("route gating", () => {
-  it("sends a stranger asking for a private page to sign in", async () => {
+  it("sends a stranger asking for a private page to the homepage, which signs in", async () => {
     auth({});
     const response = await updateSession(request("/dashboard"));
 
     expect(response.status).toBe(307);
-    expect(new URL(response.headers.get("location") ?? "").pathname).toBe("/login");
+    expect(new URL(response.headers.get("location") ?? "").pathname).toBe("/");
   });
 
   it("remembers where they were going, query string and all", async () => {
@@ -265,7 +265,7 @@ describe("a session that can never be refreshed again", () => {
     expect(response.cookies.get("theme")).toBeUndefined();
   });
 
-  it("clears the cookie on the way to /login as well", async () => {
+  it("clears the cookie on the way to the homepage as well", async () => {
     auth(DEAD);
     const response = await updateSession(request("/dashboard", COOKIES));
 

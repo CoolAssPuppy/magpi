@@ -7,8 +7,8 @@ test.describe("pages that need an account", () => {
     test(`sends a stranger from ${path} to sign in`, async ({ page }) => {
       await page.goto(path);
 
-      await expect(page).toHaveURL(/\/login/);
-      await expect(page.getByRole("heading", { level: 1 })).toHaveText("Sign in");
+      await expect(page).toHaveURL(/\/\?next=/);
+      await expect(page.getByRole("button", { name: /sign in with github/i })).toBeVisible();
     });
   }
 
@@ -32,9 +32,9 @@ test.describe("pages that need an account", () => {
   });
 });
 
-test.describe("the sign-in page", () => {
+test.describe("signing in, from the homepage", () => {
   test("offers GitHub, and nothing else", async ({ page }) => {
-    await page.goto("/login");
+    await page.goto("/");
 
     await expect(page.getByRole("button", { name: /github/i })).toBeVisible();
 
@@ -45,7 +45,7 @@ test.describe("the sign-in page", () => {
   });
 
   test("refuses to bounce the caller off to another site", async ({ page }) => {
-    await page.goto("/login?next=https://evil.example/steal");
+    await page.goto("/?next=https://evil.example/steal");
 
     // The offsite value is dropped, so signing in lands on the dashboard. The
     // raw url still appears in the router payload, which is Next echoing the
@@ -60,13 +60,13 @@ test.describe("the sign-in page", () => {
   });
 
   test("explains a failed sign in instead of showing a blank form", async ({ page }) => {
-    await page.goto("/login?error=exchange");
+    await page.goto("/?error=exchange");
 
     await expect(page.getByRole("main").getByRole("alert")).toContainText("already been used");
   });
 
   test("ignores an error code it does not recognise", async ({ page }) => {
-    await page.goto("/login?error=not-a-real-error");
+    await page.goto("/?error=not-a-real-error");
 
     await expect(page.getByRole("main").getByRole("alert")).toHaveCount(0);
   });

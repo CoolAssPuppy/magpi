@@ -97,7 +97,7 @@ describe("reading the caller", () => {
     expect(read).toEqual({ user: null, isStale: true });
   });
 
-  it("swallows an unrelated throw rather than breaking the page that renders /login", async () => {
+  it("swallows an unrelated throw rather than breaking the page that signs in", async () => {
     const read = await readSessionUser(clientThrowing(new Error("fetch failed")));
     expect(read).toEqual({ user: null, isStale: false });
   });

@@ -14,7 +14,7 @@ test.describe("the headers every response carries", () => {
     page,
   }) => {
     const first = (await page.goto("/"))?.headers()["x-nonce"];
-    const second = (await page.goto("/login"))?.headers()["x-nonce"];
+    const second = (await page.goto("/?again=1"))?.headers()["x-nonce"];
 
     expect(first).not.toBe(second);
   });

@@ -2,8 +2,8 @@ import { expect, test } from "@playwright/test";
 
 const STORAGE_KEY = "magpi-theme";
 
-/** The toggle lives on the sign-in page, which needs no account. */
-const PAGE = "/login";
+/** The toggle lives in the homepage footer, which needs no account. */
+const PAGE = "/";
 
 async function storedTheme(page: import("@playwright/test").Page): Promise<string | null> {
   return page.evaluate((key) => window.localStorage.getItem(key), STORAGE_KEY);
@@ -51,7 +51,7 @@ test.describe("choosing a theme", () => {
     await page.goto(PAGE);
     await page.getByRole("radio", { name: "Dark" }).click();
 
-    await page.goto("/");
+    await page.goto("/?next=%2Fsettings");
 
     expect(await rootTheme(page)).toBe("dark");
   });
@@ -100,7 +100,9 @@ test.describe("a visitor whose browser blocks site data", () => {
 
     await page.goto(PAGE);
 
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Sign in");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      "A bird that watches your whole day.",
+    );
     await expect(page.getByRole("radio", { name: "Auto" })).toHaveAttribute("aria-checked", "true");
     await context.close();
   });

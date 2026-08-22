@@ -15,7 +15,13 @@ async function callbackUrl(next: string): Promise<string> {
   return `${protocol}://${host}/auth/callback?next=${encodeURIComponent(next)}`;
 }
 
-/** GitHub first, because it is one click and most people signing in have one. */
+/**
+ * The whole of signing in.
+ *
+ * There is no sign-in page: the button is on the homepage, and this takes the
+ * caller straight to GitHub. A page whose only content is one button is a
+ * click in the way.
+ */
 export async function signInWithGitHub(formData: FormData): Promise<void> {
   const next = safeNextPath(formData.get("next"));
   const supabase = await createClient();
@@ -25,6 +31,6 @@ export async function signInWithGitHub(formData: FormData): Promise<void> {
     options: { redirectTo: await callbackUrl(next) },
   });
 
-  if (error || !data.url) redirect("/login?error=github");
+  if (error || !data.url) redirect("/?error=github");
   redirect(data.url);
 }

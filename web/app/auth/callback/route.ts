@@ -9,11 +9,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const code = searchParams.get("code");
   const next = safeNextPath(searchParams.get("next"));
 
-  if (!code) return NextResponse.redirect(`${origin}/login?error=missing_code`);
+  if (!code) return NextResponse.redirect(`${origin}/?error=missing_code`);
 
   const supabase = await createClient();
   const { error } = await supabase.auth.exchangeCodeForSession(code);
-  if (error) return NextResponse.redirect(`${origin}/login?error=exchange`);
+  if (error) return NextResponse.redirect(`${origin}/?error=exchange`);
 
   // An account with no badge has nothing to configure yet, so pairing comes
   // first. A count, not the rows: nothing here reads them.

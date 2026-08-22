@@ -1,5 +1,5 @@
-import Link from "next/link";
-
+import { signInWithGitHub } from "@/app/actions/sign-in";
+import { safeNextPath } from "@/lib/redirects";
 import { DataFlow } from "@/components/data-flow";
 import { FoldedMagpie, MagpieMark } from "@/components/magpie-mark";
 import { ProviderMark } from "@/components/provider-mark";
@@ -21,16 +21,34 @@ const PAGES: CarouselPage[] = [
 // app is registered for them; the homepage still names them, because this is
 // the list of what Magpi reads, not the list of what is switched on today.
 const PROVIDERS = [
-  { slug: "google", name: "Google", kind: "OAUTH" },
-  { slug: "linear", name: "Linear", kind: "OAUTH" },
-  { slug: "slack", name: "Slack", kind: "OAUTH" },
-  { slug: "notion", name: "Notion", kind: "OAUTH" },
-  { slug: "github", name: "GitHub", kind: "OAUTH" },
-  { slug: "vercel", name: "Vercel", kind: "API KEY" },
-  { slug: "posthog", name: "PostHog", kind: "API KEY" },
+  { slug: "google", name: "Google" },
+  { slug: "linear", name: "Linear" },
+  { slug: "slack", name: "Slack" },
+  { slug: "notion", name: "Notion" },
+  { slug: "github", name: "GitHub" },
+  { slug: "vercel", name: "Vercel" },
+  { slug: "posthog", name: "PostHog" },
 ];
 
-export default function HomePage() {
+/** What a failed sign in says. Never the upstream error, which is for logs. */
+const ERRORS: Record<string, string> = {
+  github: "GitHub did not complete the sign in. Try again.",
+  exchange: "That link has already been used. Start again.",
+  missing_code: "That link is incomplete. Start again.",
+};
+
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  // Where a gated page sent them, so signing in lands there rather than on
+  // the dashboard every time.
+  const next = safeNextPath(params.next);
+  const errorKey = typeof params.error === "string" ? params.error : null;
+  const errorMessage = errorKey ? ERRORS[errorKey] : null;
+
   return (
     <main>
       <header className="border-border border-b">
@@ -40,12 +58,15 @@ export default function HomePage() {
             <span className="font-display text-md font-bold">Magpi</span>
           </div>
           <nav className="gap-lg flex items-center">
-            <Link
-              href="/login"
-              className="rounded-panel bg-action px-lg py-sm font-display text-action-ink text-sm font-medium"
-            >
-              Sign in
-            </Link>
+            <form action={signInWithGitHub}>
+              <input type="hidden" name="next" value={next} />
+              <button
+                type="submit"
+                className="rounded-panel bg-action px-lg py-sm font-display text-action-ink text-sm font-medium"
+              >
+                Sign in
+              </button>
+            </form>
           </nav>
         </div>
       </header>
@@ -63,13 +84,25 @@ export default function HomePage() {
               Magpi puts your calendar, your deploys, your unread counts, and all your glanceable
               data on a badge that sits on your desk.
             </p>
-            <div className="gap-md flex flex-wrap items-center">
-              <Link
-                href="/login"
-                className="rounded-panel bg-action px-xl py-lg font-display text-action-ink text-base font-medium"
+            {errorMessage ? (
+              <p
+                role="alert"
+                className="border-l-edge border-critical bg-surface px-lg py-md text-sm"
               >
-                Sign in with GitHub
-              </Link>
+                {errorMessage}
+              </p>
+            ) : null}
+            <div className="gap-md flex flex-wrap items-center">
+              <form action={signInWithGitHub}>
+                <input type="hidden" name="next" value={next} />
+                <button
+                  type="submit"
+                  className="rounded-panel bg-action px-xl py-lg font-display text-action-ink gap-sm inline-flex items-center text-base font-medium"
+                >
+                  <ProviderMark slug="github" />
+                  Sign in with GitHub
+                </button>
+              </form>
               <a
                 href="https://github.com/CoolAssPuppy/magpi"
                 className="rounded-panel border-border-strong px-xl py-lg font-display gap-sm inline-flex items-center border text-base"
@@ -105,9 +138,6 @@ export default function HomePage() {
                     <ProviderMark slug={provider.slug} />
                   </span>
                   <span className="font-display flex-1 text-base">{provider.name}</span>
-                  <span className="w-4xl font-display text-2xs text-ink-faint shrink-0 text-right">
-                    {provider.kind}
-                  </span>
                 </li>
               ))}
             </ul>
@@ -140,38 +170,6 @@ export default function HomePage() {
               A desk companion for the Pimoroni Tufty 2350.
             </p>
             <ThemeToggle />
-          </div>
-          <div className="gap-4xl flex">
-            <div className="gap-sm flex flex-col">
-              <span className="font-display text-2xs text-ink-faint tracking-wide">BUILD</span>
-              <a href="https://github.com/CoolAssPuppy/magpi" className="text-base">
-                Source
-              </a>
-              <a
-                href="https://github.com/CoolAssPuppy/magpi/blob/main/docs/finish-dev-setup.md"
-                className="text-base"
-              >
-                Setup guide
-              </a>
-              <a
-                href="https://github.com/CoolAssPuppy/magpi/blob/main/docs/DESIGN.md"
-                className="text-base"
-              >
-                Design notes
-              </a>
-            </div>
-            <div className="gap-sm flex flex-col">
-              <span className="font-display text-2xs text-ink-faint tracking-wide">HARDWARE</span>
-              <a href="https://shop.pimoroni.com" className="text-base">
-                Tufty 2350
-              </a>
-              <a href="https://github.com/pimoroni/badgeware-docs" className="text-base">
-                Badgeware docs
-              </a>
-              <a href="https://github.com/pimoroni/tufty2350" className="text-base">
-                Firmware
-              </a>
-            </div>
           </div>
         </div>
       </footer>

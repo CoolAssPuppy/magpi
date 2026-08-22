@@ -12,7 +12,8 @@ test.describe("the homepage", () => {
   test("offers a way in", async ({ page }) => {
     await page.goto("/");
 
-    await expect(page.getByRole("link", { name: /sign in with github/i })).toBeVisible();
+    // A button, not a link: there is no sign-in page, so it submits straight to GitHub.
+    await expect(page.getByRole("button", { name: /sign in with github/i })).toBeVisible();
   });
 
   test("explains the pages and the privacy claim", async ({ page }) => {

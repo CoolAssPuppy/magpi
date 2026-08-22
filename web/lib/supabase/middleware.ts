@@ -134,7 +134,7 @@ export async function updateSession(request: NextRequest) {
    * The cookie copy is required. getUser may have rotated the refresh token
    * onto supabaseResponse, and rotation burns the old token immediately, so a
    * fresh redirect carrying no cookies signs the user straight back out and
-   * bounces them between /login and the page they asked for.
+   * bounces them between the homepage and the page they asked for.
    */
   const redirectTo = (url: URL): NextResponse => {
     const response = NextResponse.redirect(url);
@@ -146,7 +146,7 @@ export async function updateSession(request: NextRequest) {
 
   if (isProtected && !user) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    url.pathname = "/";
     url.search = `?next=${encodeURIComponent(pathname + request.nextUrl.search)}`;
     return redirectTo(url);
   }
