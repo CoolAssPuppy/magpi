@@ -10,7 +10,20 @@ import type { ConnectionRow } from "@/lib/rows";
 
 export const metadata: Metadata = { title: "Connections" };
 
-export default async function ConnectionsPage() {
+const BEGIN_ERRORS: Record<string, string> = {
+  begin: "That provider is not configured on this deployment yet.",
+  unknown_provider: "There is no such provider.",
+};
+
+export default async function ConnectionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const errorKey = typeof params.error === "string" ? params.error : null;
+  const errorMessage = errorKey ? BEGIN_ERRORS[errorKey] : null;
+
   const [providers, connections] = await Promise.all([listProviders(), listConnections()]);
   // Many per provider now, in the order they were connected.
   const byProvider = new Map<string, typeof connections>();
@@ -21,6 +34,14 @@ export default async function ConnectionsPage() {
   return (
     <AppShell current="/connections" title="Connections">
       <div className="max-w-panel flex flex-col">
+        {errorMessage ? (
+          <p
+            role="alert"
+            className="border-l-edge border-critical bg-surface px-lg py-md mb-md text-sm"
+          >
+            {errorMessage}
+          </p>
+        ) : null}
         <header className="pb-md flex items-center justify-between">
           <h2 className="font-display text-2xs text-ink-faint tracking-wide">
             {providers.length} PROVIDERS, ALL READ ONLY
