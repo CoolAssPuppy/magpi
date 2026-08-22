@@ -92,3 +92,21 @@ policy = "per_worker"
 # routes share a deployment with them and the check is per function. Any new
 # function must call requireUser or authenticate a badge token as its first
 # act.
+
+[functions.device-start]
+verify_jwt = false
+
+[functions.device-poll]
+verify_jwt = false
+
+[functions.device-approve]
+verify_jwt = false
+
+[functions.connections-begin]
+verify_jwt = false
+
+[functions.connections-callback]
+verify_jwt = false
+
+[functions.connections-claim]
+verify_jwt = false

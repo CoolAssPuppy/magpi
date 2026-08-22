@@ -162,60 +162,46 @@ def qr_layout(modules, box_x, box_y, box_w, box_h, quiet=QUIET):
 
 
 class Palette:
-    """Colors resolved once at construction. `color` is a BadgeOS global and
-    is not importable at module scope under test."""
+    """The device palette, resolved once. `color` is a BadgeOS global and is
+    not importable at module scope under test.
+
+    These are the badge's own colours and they do not follow the website
+    theme: the badge has no light mode. docs/DESIGN.md holds the same values
+    under "The device group".
+    """
 
     def __init__(self, color):
-        # #121212. Near-black rather than true black: an OLED-style pure
-        # black makes the white QR card look like it is floating, and the
-        # slight lift reads as a surface the card sits on.
-        self.bg = color.rgb(18, 18, 18)
-        self.fg = color.rgb(240, 240, 240)
-        self.dim = color.rgb(150, 150, 150)
-        self.accent = color.rgb(62, 207, 142)
-        self.warn = color.rgb(240, 180, 60)
-        self.bad = color.rgb(232, 92, 92)
-        # The QR card stays pure white on pure black. Contrast is what a
-        # phone camera needs, and this is the one element where looking
-        # consistent matters less than scanning on the first try.
+        # #171717. Near-black rather than true black: a pure black ground
+        # makes the white QR card look like it is floating, and the slight
+        # lift reads as a surface the card sits on.
+        self.bg = color.rgb(23, 23, 23)
+        self.fg = color.rgb(255, 255, 255)
+        self.dim = color.rgb(138, 138, 138)
+        # The wing sheen. The one accent, used where something is live.
+        self.accent = color.rgb(15, 191, 168)
+        # Where the sheen turns on the tail. A second accent, for selected.
+        self.live = color.rgb(122, 92, 255)
+        self.warn = color.rgb(224, 160, 32)
+        self.bad = color.rgb(224, 74, 50)
+        # The QR card stays pure white on pure black. Contrast is what a phone
+        # camera needs, and this is the one element where looking consistent
+        # matters less than scanning on the first try.
         self.card = color.rgb(255, 255, 255)
         self.ink = color.rgb(0, 0, 0)
-        # The contribution grid, quietest to busiest. GitHub's own ramp, which
-        # is the point: someone glancing at a badge should recognise it before
-        # they have read a word of it. Index 0 is an empty day and sits just
-        # above the background rather than on it, so the shape of the grid is
-        # visible even in a quiet year.
-        self.grid = (
-            color.rgb(38, 38, 38),
-            color.rgb(14, 68, 41),
-            color.rgb(0, 109, 50),
-            color.rgb(38, 166, 65),
-            color.rgb(57, 211, 83),
-        )
-        # The artwork inks, ordered by luminance so an index is a brightness
-        # ladder: a badge cell has one channel where a screen has a whole
-        # character grid to play with.
-        #
-        # Index 0 is the ground, so a level of 0 can be drawn as "clear" or
-        # skipped, and the ramp and its background never disagree. Separate
-        # from `grid` above on purpose: that one is GitHub's contribution ramp
-        # and two other apps read it.
-        self.artwork_bg = color.rgb(9, 14, 13)
-        self.artwork = (
-            self.artwork_bg,
-            color.rgb(0, 189, 88),
-            color.rgb(62, 207, 142),
-            color.rgb(149, 230, 184),
-            color.rgb(225, 252, 215),
+        # A raised surface, the hairline that bounds it, and the scanline
+        # between. Three steps rather than a gradient, because nothing in this
+        # design system lands between two states.
+        self.panel = color.rgb(23, 23, 23)
+        self.line = color.rgb(42, 42, 42)
+        self.scanline = color.rgb(16, 16, 16)
+        # The busyness ramp, quietest to busiest. Used by the day shape band,
+        # where a cell has one channel and no room for a label.
+        self.ramp = (
+            color.rgb(30, 30, 30),
+            color.rgb(88, 88, 88),
+            color.rgb(138, 138, 138),
             color.rgb(255, 255, 255),
         )
-        # The console chrome: a raised surface, the hairline that bounds it,
-        # and the scanline that sits between. Three steps between the ground
-        # and the surface rather than a gradient, because nothing in this
-        # design system lands between two states.
-        self.panel = color.rgb(20, 26, 24)
-        self.line = color.rgb(34, 46, 42)
-        self.scanline = color.rgb(15, 20, 19)
 
 
 class PairingScreen:
