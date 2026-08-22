@@ -1,4 +1,4 @@
-# Test doubles shared by every device test suite (badge-sdk, supabase-app).
+# Test doubles shared by every device test suite.
 # Importing this module installs a fake `requests` module and
 # BadgeOS runtime stubs before any app or SDK code can import the real ones,
 # so import it first in every test module. CPython only; never shipped.
@@ -98,7 +98,7 @@ class FakeScreen:
     def shape(self, s):
         self.calls.append(("shape", s))
 
-    # PicoGraphics primitives used by stock Badgeware apps and MAD. Kept
+    # PicoGraphics primitives used by stock Badgeware apps. Kept
     # distinct from vector `shape` calls so tests can assert which firmware
     # boundary was exercised.
     def rectangle(self, x, y, w, h):

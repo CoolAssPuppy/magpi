@@ -17,8 +17,8 @@ from testing import fakes  # noqa: F401,E402  installs runtime stubs
 
 from sb import images  # noqa: E402
 
-GATEWAY = "https://project.supabase.co/functions/v1"
-IMAGE_URL = "https://project.supabase.co/storage/v1/object/public/trivia/q-1?v=17"
+GATEWAY = "https://gateway.example.com/functions/v1"
+IMAGE_URL = "https://gateway.example.com/storage/v1/object/public/pages/p-1?v=17"
 PNG = b"\x89PNG\r\n\x1a\n" + b"0" * 64
 
 
@@ -96,13 +96,13 @@ class ImageCache(unittest.TestCase):
 
     def test_a_url_on_another_host_is_refused_before_any_request(self):
         with self.assertRaises(images.ImageError):
-            images.fetch("https://evil.test/storage/v1/object/public/trivia/q-1", cfg=self.cfg())
+            images.fetch("https://evil.test/storage/v1/object/public/pages/p-1", cfg=self.cfg())
 
         self.assertEqual(self.recorder.calls, [], "the badge opened a socket to another host")
 
     def test_a_host_that_merely_starts_the_same_is_refused(self):
         with self.assertRaises(images.ImageError):
-            images.fetch("https://project.supabase.co.evil.test/x", cfg=self.cfg())
+            images.fetch("https://gateway.example.com.evil.test/x", cfg=self.cfg())
 
         self.assertEqual(self.recorder.calls, [])
 
@@ -129,7 +129,7 @@ class ImageCache(unittest.TestCase):
             images.fetch(IMAGE_URL, cfg=self.cfg())
 
     def test_the_cache_does_not_grow_without_end(self):
-        # The flash is small and a conference is long.
+        # The flash is small and a badge runs for days.
         for n in range(images.MAX_CACHED + 4):
             images.requests = Recorder()
             images.fetch(IMAGE_URL.replace("v=17", "v=%d" % n), cfg=self.cfg())

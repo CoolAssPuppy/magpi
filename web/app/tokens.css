@@ -166,6 +166,24 @@
   --color-focus: var(--color-violet-500);
   --color-invert-ground: var(--color-ink-900);
   --color-invert-ink: var(--color-chalk-200);
+
+  /*
+   * The folded bird. Each plane is a flat value and the crease is a line, so
+   * the shape reads as paper rather than a render. Light is black paper on
+   * warm white, with the belly and head patch staying chalk because that is
+   * what the real bird does.
+   */
+  --color-paper-body: var(--color-ink-900);
+  --color-paper-body-shade: var(--color-ink-600);
+  --color-paper-body-mid: var(--color-ink-700);
+  --color-paper-wing: var(--color-ink-950);
+  --color-paper-underwing: var(--color-chalk-400);
+  --color-paper-underwing-dark: var(--color-chalk-300);
+  --color-paper-tail: var(--color-ink-700);
+  --color-paper-tail-dark: var(--color-ink-900);
+  --color-paper-head: var(--color-chalk-300);
+  --color-paper-head-shade: var(--color-chalk-400);
+  --color-paper-crease: var(--color-chalk-200);
 }
 
 /* System dark, unless an explicit light choice says otherwise. */
@@ -187,6 +205,19 @@
     --color-focus: var(--color-violet-400);
     --color-invert-ground: var(--color-chalk-200);
     --color-invert-ink: var(--color-ink-950);
+
+    /* White paper on black. The sheen stays the same colour in both. */
+    --color-paper-body: var(--color-chalk-200);
+    --color-paper-body-shade: var(--color-ink-200);
+    --color-paper-body-mid: var(--color-ink-100);
+    --color-paper-wing: var(--color-chalk-50);
+    --color-paper-underwing: var(--color-ink-600);
+    --color-paper-underwing-dark: var(--color-ink-800);
+    --color-paper-tail: var(--color-ink-600);
+    --color-paper-tail-dark: var(--color-ink-700);
+    --color-paper-head: var(--color-ink-900);
+    --color-paper-head-shade: var(--color-ink-700);
+    --color-paper-crease: var(--color-ink-500);
   }
 }
 
@@ -208,4 +239,17 @@
   --color-focus: var(--color-violet-400);
   --color-invert-ground: var(--color-chalk-200);
   --color-invert-ink: var(--color-ink-950);
+
+  /* White paper on black. The sheen stays the same colour in both. */
+  --color-paper-body: var(--color-chalk-200);
+  --color-paper-body-shade: var(--color-ink-200);
+  --color-paper-body-mid: var(--color-ink-100);
+  --color-paper-wing: var(--color-chalk-50);
+  --color-paper-underwing: var(--color-ink-600);
+  --color-paper-underwing-dark: var(--color-ink-800);
+  --color-paper-tail: var(--color-ink-600);
+  --color-paper-tail-dark: var(--color-ink-700);
+  --color-paper-head: var(--color-ink-900);
+  --color-paper-head-shade: var(--color-ink-700);
+  --color-paper-crease: var(--color-ink-500);
 }

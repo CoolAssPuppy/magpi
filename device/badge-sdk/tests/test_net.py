@@ -152,11 +152,11 @@ class TestPairingCalls(unittest.TestCase):
         body = port.start("uid-1", "1.2.0", "1.0.0")
         self.assertEqual(body["user_code"], "AAAA-BBBB")
         call = fakes.fake_requests.calls[-1]
-        # The Edge Function is deployed as `device-start`, and _shared/http.ts
-        # routes on the function name, so a `/device/start` path resolves to a
-        # function named `device` and 404s. This assertion previously encoded
-        # the wrong path, which is why the suite stayed green while no badge
-        # could pair against a real deployment.
+        # The function is deployed as `device-start`, and the gateway routes
+        # on the function name, so a `/device/start` path resolves to a function
+        # named `device` and 404s. This assertion previously encoded the wrong
+        # path, which is why the suite stayed green while no badge could pair
+        # against a real deployment.
         self.assertEqual(call["url"], "https://api.example.com/device-start")
         self.assertEqual(json.loads(call["data"]), {"badge_uid": "uid-1", "fw": "1.2.0", "sdk": "1.0.0"})
 
@@ -176,9 +176,9 @@ class TestPairingCalls(unittest.TestCase):
         self.assertEqual(ctx.exception.code, pairing.PENDING)
 
     def test_retry_after_is_read_from_the_top_level(self):
-        # The gateway puts retry_after beside error, not inside detail
-        # (_shared/errors.ts). A reader that looks under detail silently
-        # ignores every backoff the server asks for.
+        # The gateway puts retry_after beside error, not inside detail. A
+        # reader that looks under detail silently ignores every backoff the
+        # server asks for.
         fakes.fake_requests.handler = lambda *a: FakeResponse(
             429, {"error": "slow_down", "retry_after": 30, "detail": {"retry_after": 1}}
         )

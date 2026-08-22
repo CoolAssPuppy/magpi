@@ -1,14 +1,14 @@
 # The badge lifecycle: which branch an app boots into, what B does on each of
 # them, and the handover when a badge turns out to be revoked.
 #
-# This used to live in the Supabase app's __init__.py, where it could not be
+# This used to live in an app's own __init__.py, where it could not be
 # imported off-device because it reached `badge`, `screen` and `run` as globals
 # the firmware injects. That is why the one bug this code produced in the wild
 # shipped: pressing B on an unpaired badge swapped the machine for a pairing
 # machine and the frame loop carried on calling the old one's methods on it.
 #
 # BadgeApp takes an Env instead of reaching for globals, so all of it is
-# reachable from a test now, for every app rather than only for slides.
+# reachable from a test now, for every app rather than only for one.
 
 import os
 import sys
