@@ -675,22 +675,49 @@ A drive named `TUFTY` mounts. Its root is the device's `/system`.
 
 ### 12.2 Copy the files
 
-The packager does the naming for you. The launcher lists every folder that
-holds an `icon.png` and names the tile from the folder, turning underscores
-into spaces and capitalising each word. There is no title field, so the
-deployed folder name is the label.
+The packager does the naming for you. The launcher lists every folder under
+`/system/apps` that holds an `__init__.py`, and names the tile from the folder,
+turning underscores into spaces and capitalising each word. There is no title
+field, so the deployed folder name is the label.
 
 ```
 cd /Users/prashant/Developer/consumer-apps/magpi
-COPYFILE_DISABLE=1 pnpm badge:package
+COPYFILE_DISABLE=1 doppler run --config prd -- pnpm badge:package
 ```
 
 That copies:
 
 ```
-device/notifier-app  →  /Volumes/TUFTY/apps/Notifier
+device/notifier-app  →  /Volumes/TUFTY/apps/Magpi
 device/pomodoro-app  →  /Volumes/TUFTY/apps/Pomodoro
 device/badge-sdk/sb  →  /Volumes/TUFTY/badge/sdk/sb
+```
+
+and writes one file that is not a copy of anything:
+
+```
+/Volumes/TUFTY/badge/config.json
+```
+
+**Run it under `doppler run --config prd`.** `config.json` holds the gateway
+origin, which the packager takes from `FUNCTIONS_BASE_URL`. Both apps open that
+file before they touch the radio, so a badge packaged without it opens on an
+error box instead of the pairing code. The packager refuses to write a badge it
+cannot name a gateway for.
+
+The default `dev` config names the local stack as `127.0.0.1`, which on a badge
+is the badge. That is refused too.
+
+**Pair from the site that shares the badge's stack.** They are separate
+databases, and a code started against one does not exist in the other. A badge
+on `prd` pairs from the deployed site; entering its code on `localhost:3000`
+answers "That code is not valid."
+
+To pair from `localhost:3000`, point the badge at the stack on this machine by
+its LAN address instead:
+
+```
+MAGPI_GATEWAY=http://$(ipconfig getifaddr en0):56521/functions/v1 pnpm badge:package
 ```
 
 **`COPYFILE_DISABLE=1` matters.** Without it macOS writes an AppleDouble `._`
@@ -704,17 +731,25 @@ find /Volumes/TUFTY -name '.DS_Store' -delete
 
 ### 12.3 WiFi
 
-Notifier needs the network. Pomodoro never does.
+Magpi needs the network. Pomodoro never does.
 
-Create `/Volumes/TUFTY/secrets.py` with:
+`/Volumes/TUFTY/secrets.py` is already there: the firmware ships it. Edit it,
+do not replace it. The other two lines belong to the stock clock app, and a
+file with only the WiFi keys in it breaks that app.
 
 ```python
 WIFI_SSID = "your network"
 WIFI_PASSWORD = "your password"
+REGION = "us"      # leave whatever is already here
+TIMEZONE = -7      # leave whatever is already here
 ```
 
 2.4GHz only. The Tufty has no 5GHz radio, and a network that is 5GHz-only
 looks to the badge like a network that is not there.
+
+Check it before you eject. `WIFI_SSID = ""` is the shipped default, and a badge
+with that still in place reaches the pairing screen and says **No WiFi
+configured**.
 
 ### 12.4 Eject
 
@@ -728,7 +763,8 @@ Pulling the cable without ejecting can leave a half-written file, and the
 badge then fails on an import with no clue why.
 
 You will know this worked when the badge reboots to the launcher and shows two
-new tiles, **Notifier** and **Pomodoro**, each with the folded magpie on it.
+new tiles, **Magpi** and **Pomodoro**, each with the folded magpie on a
+coloured square.
 
 ---
 
@@ -745,7 +781,7 @@ In order. Each step depends on the one before it.
    appears because the app is in Testing.
 3. **Turn on a page.** Go to **Pages** and toggle **Next thing** on. The
    preview beside it fills with your real next meeting.
-4. **Pair the badge.** Open **Notifier** on the badge. It joins WiFi, which
+4. **Pair the badge.** Open **Magpi** on the badge. It joins WiFi, which
    takes about twenty seconds on a cold start, then shows a code. Type that
    code into **Link a badge** and click **Pair this badge**.
 5. **Watch it arrive.** Within one poll interval, thirty seconds by default,

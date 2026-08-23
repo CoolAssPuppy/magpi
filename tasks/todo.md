@@ -98,6 +98,9 @@ website.
 ## 15. Ship
 
 - [x] Package both apps (`pnpm badge:package`, 27 files, dry run verified)
+- [x] Write `badge/config.json` from the environment, and refuse without it
+- [x] Badge icons at 24 square, RGBA, on a transparent ground
+- [x] Rejoin the radio on a backoff instead of sitting on "No network"
 - [ ] Install them on the badge (needs the hardware)
 
 ## Review
