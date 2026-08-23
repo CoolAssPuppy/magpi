@@ -29,6 +29,19 @@ const REGISTRY: Record<string, ProviderRecord> = {
     enabled: true,
     position: 10,
   },
+  notion: {
+    slug: "notion",
+    display_name: "Notion",
+    description: "Pages waiting on you.",
+    kind: "oauth",
+    auth_url: "https://api.notion.com/v1/oauth/authorize",
+    token_url: "https://api.notion.com/v1/oauth/token",
+    // Capabilities are set on the integration, so there is nothing to ask for.
+    scopes: [],
+    docs_url: null,
+    enabled: true,
+    position: 35,
+  },
   linear: {
     slug: "linear",
     display_name: "Linear",
@@ -79,7 +92,7 @@ const REGISTRY: Record<string, ProviderRecord> = {
   },
 };
 
-const OAUTH_SLUGS = ["google", "linear", "slack", "github"] as const;
+const OAUTH_SLUGS = ["google", "linear", "slack", "github", "notion"] as const;
 
 function driver(slug: string): OAuthDriver {
   return oauthDriverFor(REGISTRY[slug]);
@@ -128,15 +141,41 @@ Deno.test("the scopes asked for are the registry's, never a hardcoded list", () 
   // was last configured with.
   for (const slug of OAUTH_SLUGS) {
     const url = new URL(driver(slug).buildAuthUrl(AUTH_INPUT));
-    const scope = url.searchParams.get("scope") ?? "";
+    // Whichever parameter that provider carries them in. Slack splits bot and
+    // user scopes across two names.
+    const asked = `${url.searchParams.get("scope") ?? ""} ${
+      url.searchParams.get("user_scope") ?? ""
+    }`;
     for (const wanted of REGISTRY[slug].scopes) {
-      assert(scope.includes(wanted), `${slug} did not ask for ${wanted}`);
+      assert(asked.includes(wanted), `${slug} did not ask for ${wanted}`);
     }
   }
 });
 
+Deno.test("slack asks for a user token, not a bot one", () => {
+  // scope buys a bot token; user_scope buys one that acts as the person.
+  // Everything this product reads is the person's, and search:read is not a
+  // valid bot scope, so asking under scope is asking to be refused.
+  const url = new URL(driver("slack").buildAuthUrl(AUTH_INPUT));
+
+  assertEquals(url.searchParams.get("user_scope"), "search:read");
+  assertEquals(url.searchParams.get("scope"), null);
+});
+
+Deno.test("notion says who is installing, and asks for no scopes", () => {
+  // Capabilities live on the integration, so there is nothing to ask for, and
+  // the public flow requires an owner.
+  const url = new URL(driver("notion").buildAuthUrl(AUTH_INPUT));
+
+  assertEquals(url.searchParams.get("owner"), "user");
+  assertEquals(url.searchParams.get("scope"), null);
+});
+
 Deno.test("linear separates scopes with commas and everyone else with spaces", () => {
-  const custom: ProviderRecord = { ...REGISTRY.linear, scopes: ["read", "issues:read"] };
+  const custom: ProviderRecord = {
+    ...REGISTRY.linear,
+    scopes: ["read", "issues:read"],
+  };
   assertEquals(
     new URL(oauthDriverFor(custom).buildAuthUrl(AUTH_INPUT)).searchParams.get("scope"),
     "read,issues:read",
@@ -300,7 +339,12 @@ Deno.test("a provider error carried on a 200 is still a failure", async () => {
   // GitHub answers a bad code with HTTP 200 and an `error` field. Reading only
   // the status would store a connection with no usable token.
   await withFetch(
-    labelOr(() => json({ error: "bad_verification_code", error_description: "code expired" })),
+    labelOr(() =>
+      json({
+        error: "bad_verification_code",
+        error_description: "code expired",
+      }),
+    ),
     async () => {
       const err = await assertRejects(() => driver("github").exchangeCode(EXCHANGE), ApiError);
       assertEquals(err.status, 502);
@@ -432,7 +476,11 @@ Deno.test("slack's user token is lifted out of authed_user", async () => {
       json({
         access_token: "xoxb-bot-token",
         team: { name: "Magpi HQ" },
-        authed_user: { id: "U123", access_token: "xoxp-user-token", scope: "search:read" },
+        authed_user: {
+          id: "U123",
+          access_token: "xoxp-user-token",
+          scope: "search:read",
+        },
       }),
     async () => {
       const set = await driver("slack").exchangeCode(EXCHANGE);
@@ -523,7 +571,11 @@ Deno.test("a refresh is a grant_type=refresh_token post carrying the old token",
   await withFetch(
     () => json({ access_token: "new-access" }),
     async (calls) => {
-      await driver("google").refresh({ clientId: "c", clientSecret: "s", refreshToken: "old" });
+      await driver("google").refresh({
+        clientId: "c",
+        clientSecret: "s",
+        refreshToken: "old",
+      });
       assertEquals(calls.length, 1);
       assertEquals(calls[0].method, "POST");
       assertEquals(calls[0].body?.get("grant_type"), "refresh_token");
@@ -539,7 +591,12 @@ Deno.test("a refresh without an access token fails rather than blanking the toke
       () => json({ refresh_token: "rotated" }),
       async () => {
         const err = await assertRejects(
-          () => driver(slug).refresh({ clientId: "c", clientSecret: "s", refreshToken: "old" }),
+          () =>
+            driver(slug).refresh({
+              clientId: "c",
+              clientSecret: "s",
+              refreshToken: "old",
+            }),
           ApiError,
         );
         assertEquals(err.status, 502);
@@ -570,12 +627,18 @@ async function withEnv(vars: Record<string, string | null>, body: () => void | P
 }
 
 Deno.test("provider credentials come from per-provider environment variables", async () => {
-  await withEnv({ OAUTH_GITHUB_CLIENT_ID: "id-1", OAUTH_GITHUB_CLIENT_SECRET: "secret-1" }, () => {
-    assertEquals(providerCredentials("github"), {
-      clientId: "id-1",
-      clientSecret: "secret-1",
-    });
-  });
+  await withEnv(
+    {
+      OAUTH_GITHUB_CLIENT_ID: "id-1",
+      OAUTH_GITHUB_CLIENT_SECRET: "secret-1",
+    },
+    () => {
+      assertEquals(providerCredentials("github"), {
+        clientId: "id-1",
+        clientSecret: "secret-1",
+      });
+    },
+  );
 });
 
 Deno.test("an unconfigured provider is a 503, not a call with empty credentials", async () => {
@@ -620,15 +683,26 @@ Deno.test("the callback url is the public origin, not the internal gateway", asy
 });
 
 Deno.test("the callback url falls back to SUPABASE_URL where they are the same host", async () => {
-  await withEnv({ SUPABASE_URL: "https://proj.supabase.co", FUNCTIONS_BASE_URL: null }, () => {
-    assertEquals(callbackUrl(), "https://proj.supabase.co/functions/v1/connections-callback");
-    return Promise.resolve();
-  });
+  await withEnv(
+    {
+      SUPABASE_URL: "https://proj.supabase.co",
+      FUNCTIONS_BASE_URL: null,
+    },
+    () => {
+      assertEquals(callbackUrl(), "https://proj.supabase.co/functions/v1/connections-callback");
+      return Promise.resolve();
+    },
+  );
 });
 
 Deno.test("a trailing slash on the public origin does not double up", async () => {
-  await withEnv({ FUNCTIONS_BASE_URL: "https://proj.supabase.co/functions/v1/" }, () => {
-    assertEquals(callbackUrl(), "https://proj.supabase.co/functions/v1/connections-callback");
-    return Promise.resolve();
-  });
+  await withEnv(
+    {
+      FUNCTIONS_BASE_URL: "https://proj.supabase.co/functions/v1/",
+    },
+    () => {
+      assertEquals(callbackUrl(), "https://proj.supabase.co/functions/v1/connections-callback");
+      return Promise.resolve();
+    },
+  );
 });

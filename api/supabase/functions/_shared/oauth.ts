@@ -142,6 +142,16 @@ interface DriverQuirks {
    * connect never came back.
    */
   basicAuthForToken?: boolean;
+  /**
+   * Which query parameter carries the scopes.
+   *
+   * Slack v2 splits them: `scope` buys a bot token, `user_scope` buys one that
+   * acts as the person. Everything this product reads is the person's, and
+   * normalizePayload already digs the user token out of authed_user, so asking
+   * under `scope` was asking for the wrong token with scopes that are not
+   * valid for it.
+   */
+  scopeParam?: string;
   /** Lifts the token out of a non-standard envelope before the shared path. */
   normalizePayload?(payload: Record<string, unknown>): Record<string, unknown>;
   /** The account label after a code exchange. Must not throw. */
@@ -195,6 +205,9 @@ const QUIRKS: Record<string, DriverQuirks> = {
   },
 
   notion: {
+    // Capabilities are set on the integration, so there are no scopes to ask
+    // for, and the public flow requires saying who is installing it.
+    extraAuthParams: { owner: "user" },
     // Notion wants the client id and secret as HTTP Basic, and rejects them in
     // the body.
     basicAuthForToken: true,
@@ -217,6 +230,7 @@ const QUIRKS: Record<string, DriverQuirks> = {
   },
 
   slack: {
+    scopeParam: "user_scope",
     // Slack returns the user token nested under authed_user and puts a bot
     // token at the top level. The mentions read needs the user one.
     normalizePayload(payload) {
@@ -254,11 +268,14 @@ export function oauthDriverFor(record: ProviderRecord): OAuthDriver {
     scopes: provider.scopes,
 
     buildAuthUrl({ clientId, redirectUri, state, codeChallenge }) {
+      const scopes = provider.scopes.join(quirks.scopeSeparator ?? " ");
       const params = new URLSearchParams({
         client_id: clientId,
         redirect_uri: redirectUri,
         response_type: "code",
-        scope: provider.scopes.join(quirks.scopeSeparator ?? " "),
+        // An empty scope parameter is not the same as none: Notion has no
+        // scopes at all and reads better without the key.
+        ...(scopes ? { [quirks.scopeParam ?? "scope"]: scopes } : {}),
         state,
         code_challenge: codeChallenge,
         code_challenge_method: "S256",
