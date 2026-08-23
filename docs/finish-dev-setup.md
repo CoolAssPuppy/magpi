@@ -637,8 +637,20 @@ against `gateway`.
 1. Open <https://vercel.com/new>.
 2. Import `CoolAssPuppy/magpi`.
 3. **Root directory**: click **Edit** and set it to `web`. This is the one
-   setting people miss; without it the build cannot find `package.json`.
-4. Framework preset: Next.js, detected automatically.
+   setting people miss; without it the build cannot find `package.json`. It is
+   also the only one of these that cannot live in the repo, so it is the only
+   one to get right by hand.
+4. Framework preset: leave it. `web/vercel.json` pins it to Next.js, and a
+   value in that file beats whatever the dashboard holds.
+
+   Do not trust the detection. It runs against the root directory as it stands
+   at import, so a project imported before step 3 detects nothing and saves
+   **Other**. Changing the root directory afterwards does not run it again. A
+   project in that state builds Next perfectly, then publishes `web/public` as
+   a static site and throws the app away: every page answers 404 while
+   `/icon-192.png` returns an image. That is the signature, and `vercel.json`
+   is there so it cannot happen again.
+
 5. Under **Environment Variables**, add the four rows marked **Yes** in section
    9, with production values:
 
