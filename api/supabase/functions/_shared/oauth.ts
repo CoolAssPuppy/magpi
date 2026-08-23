@@ -10,8 +10,8 @@ import { ApiError } from "./errors.ts";
 import { randomToken, sha256Base64Url } from "./crypto.ts";
 import {
   type OAuthProviderRecord,
-  requireOAuthProvider,
   type ProviderRecord,
+  requireOAuthProvider,
 } from "./providers.ts";
 
 export const STATE_TTL_SECONDS = 600;
@@ -55,7 +55,10 @@ export interface OAuthDriver {
 }
 
 /** The verifier never leaves the server. */
-export function createPkce(): { verifier: string; challengePromise: Promise<string> } {
+export function createPkce(): {
+  verifier: string;
+  challengePromise: Promise<string>;
+} {
   const verifier = randomToken(32);
   return { verifier, challengePromise: sha256Base64Url(verifier) };
 }
@@ -115,12 +118,30 @@ async function postForToken(
   return record;
 }
 
+/**
+ * Never throws: naming the account is a nicety, and a connection that works
+ * should not fail because the label lookup did.
+ *
+ * It does say so, though. A silent null here is how every Google connection
+ * ended up nameless for a day: the endpoint needed a scope nobody had asked
+ * for, answered 401, and nothing anywhere mentioned it.
+ */
 async function fetchJson(url: string, headers: Record<string, string>): Promise<unknown> {
   try {
-    const response = await fetch(url, { headers: { accept: "application/json", ...headers } });
-    if (!response.ok) return null;
+    const response = await fetch(url, {
+      headers: { accept: "application/json", ...headers },
+    });
+    if (!response.ok) {
+      // The host only, never the query: a token can ride in one.
+      console.error("account lookup refused", {
+        host: new URL(url).host,
+        status: response.status,
+      });
+      return null;
+    }
     return await response.json();
   } catch {
+    console.error("account lookup unreachable", { host: new URL(url).host });
     return null;
   }
 }
@@ -193,15 +214,30 @@ const QUIRKS: Record<string, DriverQuirks> = {
     // that dies in an hour.
     extraAuthParams: { access_type: "offline", prompt: "consent" },
     async accountFromExchange(_payload, accessToken) {
-      const info = await fetchJson("https://openidconnect.googleapis.com/v1/userinfo", {
+      // The Gmail profile, not the OpenID userinfo endpoint: userinfo needs
+      // the openid and email scopes, which this does not ask for, so it
+      // answered 401 and every Google connection came out nameless. This
+      // works on gmail.metadata, which is already granted, and returns the
+      // mailbox the counters are actually counting.
+      const info = await fetchJson("https://gmail.googleapis.com/gmail/v1/users/me/profile", {
         authorization: `Bearer ${accessToken}`,
       });
-      return readString(info, "email");
+      return readString(info, "emailAddress");
     },
   },
 
   linear: {
     scopeSeparator: ",",
+    async accountFromExchange(_payload, accessToken) {
+      const info = await fetchJson("https://api.linear.app/graphql?query=%7Bviewer%7Bemail%7D%7D", {
+        authorization: accessToken,
+      });
+      const data =
+        typeof info === "object" && info !== null ? (info as Record<string, unknown>).data : null;
+      const viewer =
+        typeof data === "object" && data !== null ? (data as Record<string, unknown>).viewer : null;
+      return readString(viewer, "email");
+    },
   },
 
   notion: {
@@ -375,7 +411,9 @@ export function callbackUrl(): string {
   if (explicit) return `${explicit.replace(/\/+$/, "")}/connections-callback`;
 
   const base = Deno.env.get("SUPABASE_URL");
-  if (!base) throw new ApiError(500, "misconfigured", "server is not configured");
+  if (!base) {
+    throw new ApiError(500, "misconfigured", "server is not configured");
+  }
   return `${base.replace(/\/+$/, "")}/functions/v1/connections-callback`;
 }
 
