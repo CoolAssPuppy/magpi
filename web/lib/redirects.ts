@@ -1,7 +1,7 @@
 // The `next` parameter is attacker-controlled, so only same-site paths pass.
 
 export const DEFAULT_NEXT_PATH = "/dashboard";
-export const LINK_BADGE_PATH = "/link";
+export const BADGES_PATH = "/badges";
 
 // Some URL parsers normalize a backslash into a forward slash, so
 // "/\evil.example" becomes "//evil.example" after the prefix checks have run.
@@ -14,10 +14,29 @@ const UNSAFE_CHARACTERS = /[\u0000-\u0020\u007f\\]/;
  * describe what a badge shows, so landing on them first asks someone to
  * decorate a thing they do not have. A `next` the visitor arrived with always
  * wins, because someone who scanned a QR is already holding a code.
+ *
+ * The badges screen, not the pairing dialog. This used to name a route that
+ * now forwards with `pair=1`, so every sign-in on an account with no badge
+ * opened a modal over the page it had just landed on. The screen says "No
+ * badges yet" and carries the button that opens the dialog, which is the same
+ * offer without taking the page away from someone who came to do something
+ * else.
  */
 export function landingPath(next: string, hasBadges: boolean): string {
   if (next !== DEFAULT_NEXT_PATH) return next;
-  return hasBadges ? DEFAULT_NEXT_PATH : LINK_BADGE_PATH;
+  return hasBadges ? DEFAULT_NEXT_PATH : BADGES_PATH;
+}
+
+/**
+ * Where the badge's QR lands, given the code it carried.
+ *
+ * A code is the one time the dialog should open on arrival: whoever followed
+ * that link is holding a badge showing a code and has nothing else to do here.
+ * Without one this is an ordinary visit to the badges screen.
+ */
+export function pairingPath(code: string | null): string {
+  if (!code) return BADGES_PATH;
+  return `${BADGES_PATH}?pair=1&code=${encodeURIComponent(code)}`;
 }
 
 export function safeNextPath(value: unknown, fallback: string = DEFAULT_NEXT_PATH): string {
