@@ -59,6 +59,27 @@ class FakeView:
         self.drawn += 1
 
 
+class FailingPort:
+    """A DevicePort whose radio never joins, until a test says it does."""
+
+    instances = []
+
+    def __init__(self, *args, **kwargs):
+        self.resets = 0
+        self.begins = 0
+        self.joins = False
+        FailingPort.instances.append(self)
+
+    def wifi_status(self):
+        return pairing.WIFI_CONNECTED if self.joins else pairing.WIFI_FAILED
+
+    def wifi_begin(self):
+        self.begins += 1
+
+    def wifi_reset(self):
+        self.resets += 1
+
+
 class StubPort:
     """A DevicePort that is joined the moment it is asked."""
 
@@ -82,6 +103,7 @@ class StubPort:
 def build(paired=True, buttons=None, claims_b=False, runtime_b_states=()):
     """An app wired to fakes, plus the pieces a test needs to poke at."""
     StubPort.instances = []
+    FailingPort.instances = []
     machines = []
 
     def make_machine(fetch):
@@ -237,6 +259,103 @@ class RetryWhileStillPaired(unittest.TestCase):
 
         self.assertEqual(self.app.mode, MODE_RUNNING)
         self.assertIn("load", self.machines[0].calls)
+
+
+class WhenTheRadioWillNotJoin(unittest.TestCase):
+    """A desk companion has to get itself back on the network.
+
+    The first join failing used to be the end of it: the runtime stopped
+    polling the radio, the app drew "No network", and the badge sat there until
+    somebody walked over and pressed B. An AP that comes back a minute later,
+    or a badge switched on before the router finished booting, both landed
+    here. So a failed join is now retried on a widening backoff, the same rule
+    pairing already uses, and B only shortcuts a wait that would have happened
+    anyway.
+    """
+
+    def setUp(self):
+        self.buttons = fakes.ButtonQueue()
+        self._paired = net.is_paired
+        self._port = net.DevicePort
+        net.is_paired = lambda: True
+        net.DevicePort = FailingPort
+        self.app, self.machines = build()
+        self.app.update()  # opens, begins the join
+        self.port = FailingPort.instances[0]
+
+    def tearDown(self):
+        net.is_paired = self._paired
+        net.DevicePort = self._port
+
+    def _run_for(self, ms, step=500):
+        for _ in range(ms // step):
+            fakes.fake_badge.advance(step)
+            self.buttons.frame(self.app.update)
+
+    def test_a_failed_join_tells_the_app_once(self):
+        self._run_for(1000)
+        self.assertEqual(self.machines[0].calls.count("no_network"), 1)
+
+    def test_the_radio_is_asked_again_after_the_backoff(self):
+        self._run_for(1000)
+        self.assertEqual(self.port.begins, 1)
+
+        self._run_for(pairing.BACKOFF_BASE_MS + 1000)
+        self.assertEqual(self.port.begins, 2)
+        self.assertEqual(self.port.resets, 1)
+
+    def test_the_wait_widens_rather_than_hammering_the_radio(self):
+        self._run_for(1000)
+        first = self.app.wifi_retry_at
+
+        self._run_for(pairing.BACKOFF_BASE_MS + 1000)
+        self._run_for(1000)
+        second = self.app.wifi_retry_at
+
+        self.assertGreater(second - first, pairing.BACKOFF_BASE_MS)
+
+    def test_joining_clears_the_backoff(self):
+        self._run_for(1000)
+        self.port.joins = True
+
+        self._run_for(pairing.BACKOFF_BASE_MS + 2000)
+
+        self.assertIsNone(self.app.wifi_retry_at)
+        self.assertEqual(self.app.wifi_failures, 0)
+        self.assertIn("load", self.machines[0].calls)
+
+    def test_the_runtime_takes_b_back_while_a_retry_is_pending(self):
+        """An app that borrowed B cannot fix a radio that will not join, and
+        the wait between attempts is as much a stuck screen as the join is."""
+        net.DevicePort = FailingPort
+        app, _ = build(claims_b=True)
+        app.update()
+        for _ in range(2):
+            fakes.fake_badge.advance(500)
+            self.buttons.frame(app.update)
+
+        self.assertIsNotNone(app.wifi_retry_at)
+        self.assertTrue(app.runtime_owns_b())
+
+    def test_b_starts_the_next_attempt_early(self):
+        self._run_for(1000)
+        self.buttons.press("BUTTON_B")
+        self.buttons.frame(self.app.update)
+
+        self.assertEqual(self.port.begins, 2)
+
+    def test_b_does_not_reset_a_badge_that_has_been_failing_for_ages(self):
+        """Otherwise a wearer leaning on B holds the radio at a three second
+        retry forever, which is the opposite of what a widening wait is for."""
+        self._run_for(1000)
+        self._run_for(pairing.BACKOFF_BASE_MS + 1000)
+        self._run_for(1000)
+        failures = self.app.wifi_failures
+
+        self.buttons.press("BUTTON_B")
+        self.buttons.frame(self.app.update)
+
+        self.assertGreaterEqual(self.app.wifi_failures, failures)
 
 
 class ClaimingB(unittest.TestCase):

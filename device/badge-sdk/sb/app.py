@@ -110,6 +110,14 @@ class BadgeApp:
         self.port = None
         # When the join started, or None once the first fetch has settled.
         self.wifi_since = None
+        # A join that fails is retried on a widening backoff rather than left
+        # for a wearer to notice. An app that stays up all day meets a router
+        # reboot, an AP that has not finished coming back, and a badge switched
+        # on in a room it cannot reach yet; none of those are worth a screen
+        # that says "No network" until somebody walks over and presses B.
+        # Consecutive failures, and when the next attempt is due.
+        self.wifi_failures = 0
+        self.wifi_retry_at = None
         # Whether B has been seen released since running began, and when the
         # current hold started. A pin stuck high never arms, so it can never
         # wipe a token; a real hold arms on release and then fires on time.
@@ -148,6 +156,8 @@ class BadgeApp:
         # no network and failed, which every paired badge showed as "Cannot
         # reach the server" on a network that was fine.
         self.port = net.DevicePort()
+        self.wifi_failures = 0
+        self.wifi_retry_at = None
         self.port.wifi_begin()
         self.wifi_since = env.badge.ticks
         self.unpaired_since = None
@@ -167,9 +177,12 @@ class BadgeApp:
             sdk=net.SDK_VERSION,
         )
         self.view = PairingScreen(env.screen, env.shape, env.color)
-        # The running-mode join is over. Leaving this set would point
-        # settle_first_fetch at a port this mode no longer owns.
+        # The running-mode join is over. Leaving either set would point
+        # settle_first_fetch, or the rejoin timer, at a port this mode no
+        # longer owns. Pairing runs its own join inside its machine.
         self.wifi_since = None
+        self.wifi_retry_at = None
+        self.wifi_failures = 0
         self.unpaired_since = None
 
     def update(self):
@@ -222,6 +235,7 @@ class BadgeApp:
                 if handler is not None:
                     handler(self.machine, now)
 
+        self.rejoin_when_due(now)
         self.settle_first_fetch(now)
 
         # A badge the server has forgotten cannot be retried into working, and
@@ -310,13 +324,14 @@ class BadgeApp:
 
         An app only gets to keep B while the badge can still help itself. The
         moment it cannot -- the server has forgotten it, the radio is still
-        joining, or the app has put up one of the screens that tells the wearer
-        to press B -- the button goes back to meaning "try again", because that
-        is the only thing that can fix any of those.
+        joining or waiting to try again, or the app has put up one of the
+        screens that tells the wearer to press B -- the button goes back to
+        meaning "try again", because that is the only thing that can fix any of
+        those.
         """
         if not self.spec.claims_b:
             return True
-        if self.wifi_since is not None:
+        if self.wifi_since is not None or self.wifi_retry_at is not None:
             return True
         return getattr(self.machine, "state", None) in self.spec.runtime_b_states
 
@@ -335,14 +350,31 @@ class BadgeApp:
             return True
 
         if self.port is not None and self.port.wifi_status() != pairing.WIFI_CONNECTED:
-            self.port.wifi_reset()
-            self.port.wifi_begin()
-            self.wifi_since = now
-            self.machine.waiting_for_network()
+            self.rejoin(now)
             return False
 
         self.machine.load(now, self.power())
         return False
+
+    def rejoin(self, now):
+        """Drop the radio and join again, starting the settle over.
+
+        B and the backoff timer both land here, so pressing B during a wait is
+        the same act as the wait finishing, only sooner. The count is not
+        cleared: a wearer pressing B twice in a row must not reset a badge that
+        has been failing for ten minutes back to a three second retry.
+        """
+        self.port.wifi_reset()
+        self.port.wifi_begin()
+        self.wifi_since = now
+        self.wifi_retry_at = None
+        self.machine.waiting_for_network()
+
+    def rejoin_when_due(self, now):
+        """Start the next attempt once its backoff has elapsed."""
+        if self.wifi_retry_at is None or now < self.wifi_retry_at:
+            return
+        self.rejoin(now)
 
     def settle_first_fetch(self, now):
         """Fetch as soon as the radio is up, and give up when it will not come.
@@ -355,9 +387,13 @@ class BadgeApp:
         status = self.port.wifi_status()
         if status == pairing.WIFI_CONNECTED:
             self.wifi_since = None
+            self.wifi_failures = 0
+            self.wifi_retry_at = None
             self.machine.load(now, self.power())
         elif status == pairing.WIFI_FAILED or now - self.wifi_since >= pairing.WIFI_TIMEOUT_MS:
             self.wifi_since = None
+            self.wifi_failures += 1
+            self.wifi_retry_at = now + pairing.backoff_ms(self.wifi_failures)
             self.machine.no_network(now)
 
     # -- pairing -------------------------------------------------------------

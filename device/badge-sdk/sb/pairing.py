@@ -107,7 +107,7 @@ class MissingCredentials(Exception):
     pass
 
 
-def _backoff_ms(failures):
+def backoff_ms(failures):
     if failures <= 0:
         return BACKOFF_BASE_MS
     delay = BACKOFF_BASE_MS * (2 ** min(failures - 1, _MAX_DOUBLINGS))
@@ -190,7 +190,7 @@ class PairingMachine:
         self._failures += 1
         self._retry_state = retry_state
         self._enter(
-            STATE_ERROR, message, now_ms, detail=detail, delay_ms=_backoff_ms(self._failures)
+            STATE_ERROR, message, now_ms, detail=detail, delay_ms=backoff_ms(self._failures)
         )
 
     def _connect(self, now_ms):
@@ -227,11 +227,11 @@ class PairingMachine:
                     "Cannot reach WiFi",
                     now_ms,
                     detail="Retrying. Check your WiFi if this persists.",
-                    delay_ms=_backoff_ms(self._failures),
+                    delay_ms=backoff_ms(self._failures),
                 )
             else:
                 self._enter(
-                    STATE_CONNECTING, "Joining WiFi", now_ms, delay_ms=_backoff_ms(self._failures)
+                    STATE_CONNECTING, "Joining WiFi", now_ms, delay_ms=backoff_ms(self._failures)
                 )
             return
         self._next_at = now_ms + WIFI_POLL_MS
@@ -365,7 +365,7 @@ class PairingMachine:
         # The agreed interval is the floor. A backoff shorter than it would
         # turn a failing request into a faster poll than a succeeding one,
         # which is how a badge earns a slow_down for being broken.
-        delay = max(self._interval, _backoff_ms(self._failures))
+        delay = max(self._interval, backoff_ms(self._failures))
         retry_ms = _retry_after_ms(error)
         self._next_at = now_ms + (retry_ms if retry_ms > delay else delay)
 

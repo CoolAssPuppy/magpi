@@ -278,6 +278,23 @@ def verify_peer(cfg, response):
         raise PairingError("certificate", "gateway certificate does not match the pin")
 
 
+# How many times a reported join failure is answered with another join on the
+# same live interface before it counts as a real failure.
+#
+# The cyw43 firmware reports a transient authentication or WPA handshake
+# failure on a first association often enough that Pimoroni patched the driver
+# to rejoin four times on its own before saying bad-auth
+# (ci/cyw43-driver-bounded-auth-retry.patch in pimoroni/tufty2350), and
+# BadgeOS's own wifi module then retries five times on top of that
+# (modules/common/wifi.py). This is that second number.
+#
+# Taking the first negative status as final, which is what this did, is why a
+# badge on a working network reached "Cannot reach WiFi": the first poll half a
+# second after connect() saw the transient code and the badge never tried
+# again.
+WIFI_JOIN_RETRIES = 5
+
+
 class DevicePort:
     """The PairingMachine port, implemented against real hardware."""
 
@@ -286,13 +303,18 @@ class DevicePort:
         self.base = self.cfg["gateway"].rstrip("/")
         self._wlan_factory = wlan_factory or _default_wlan
         self._wlan = None
+        # Held so a rejoin needs no second read of secrets.py.
+        self._credentials = None
+        self._joins_left = 0
 
     # -- WiFi --------------------------------------------------------------
 
     def wifi_begin(self):
         ssid, password = wifi_credentials()
+        self._credentials = (ssid, password)
         if self._wlan is None:
             self._wlan = self._wlan_factory()
+        self._joins_left = WIFI_JOIN_RETRIES
         self._wlan.active(True)
         self._wlan.connect(ssid, password)
 
@@ -312,10 +334,28 @@ class DevicePort:
         # password, no AP found, generic fail). Anything else is still in
         # progress; the machine's own timeout catches a stall.
         if isinstance(status, int) and status < 0:
+            return self._rejoin()
+        return WIFI_CONNECTING
+
+    def _rejoin(self):
+        """Answer a reported failure with another join, while any are left.
+
+        On the live interface, the way BadgeOS does it. Cycling active() here
+        costs a second of radio init per attempt and discards the driver's own
+        join state; the power-down belongs in wifi_reset, which is what a
+        caller reaches for once this has run out.
+        """
+        if self._joins_left <= 0 or self._credentials is None:
+            return WIFI_FAILED
+        self._joins_left -= 1
+        try:
+            self._wlan.connect(*self._credentials)
+        except Exception:
             return WIFI_FAILED
         return WIFI_CONNECTING
 
     def wifi_reset(self):
+        self._joins_left = 0
         if self._wlan is None:
             return
         try:
@@ -462,6 +502,7 @@ def _default_wlan():
 __all__ = [
     "DevicePort",
     "SDK_VERSION",
+    "WIFI_JOIN_RETRIES",
     "WIFI_CONNECTED",
     "WIFI_CONNECTING",
     "WIFI_FAILED",

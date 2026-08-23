@@ -117,12 +117,79 @@ class TestWifi(unittest.TestCase):
         port.wifi_begin()
         self.assertEqual(port.wifi_status(), pairing.WIFI_CONNECTED)
 
-    def test_negative_status_is_a_failure(self):
+    def test_a_reported_failure_rejoins_before_it_gives_up(self):
+        """The cyw43 firmware reports a transient auth or no-AP failure on a
+        first association often enough that BadgeOS retries five times before
+        believing it (modules/common/wifi.py), and the driver itself rejoins
+        four more times underneath that (ci/cyw43-driver-bounded-auth-retry
+        .patch). Taking the first negative status as final made a badge on a
+        working network say it could not reach WiFi."""
+        self._install_secrets(WIFI_SSID="badges", WIFI_PASSWORD="hunter2")
+        wlan = FakeWlan(connected=False, status=-2)
+        port = _port(wlan)
+        port.wifi_begin()
+
+        self.assertEqual(port.wifi_status(), pairing.WIFI_CONNECTING)
+        self.assertEqual(wlan.connect_calls, [("badges", "hunter2")] * 2)
+
+    def test_the_rejoins_run_out(self):
         self._install_secrets(WIFI_SSID="badges")
         wlan = FakeWlan(connected=False, status=-3)
         port = _port(wlan)
         port.wifi_begin()
+
+        for _ in range(net.WIFI_JOIN_RETRIES):
+            self.assertEqual(port.wifi_status(), pairing.WIFI_CONNECTING)
         self.assertEqual(port.wifi_status(), pairing.WIFI_FAILED)
+
+    def test_a_rejoin_keeps_the_interface_up(self):
+        """BadgeOS only powers the radio down once it has given up. Cycling
+        active() between attempts costs a second each time and throws away the
+        driver's own join state."""
+        self._install_secrets(WIFI_SSID="badges")
+        wlan = FakeWlan(connected=False, status=-2)
+        port = _port(wlan)
+        port.wifi_begin()
+        port.wifi_status()
+
+        self.assertEqual(wlan.active_calls, [True])
+
+    def test_a_join_that_lands_stops_the_rejoins(self):
+        self._install_secrets(WIFI_SSID="badges")
+        wlan = FakeWlan(connected=False, status=-2)
+        port = _port(wlan)
+        port.wifi_begin()
+        port.wifi_status()
+
+        wlan.connected = True
+        self.assertEqual(port.wifi_status(), pairing.WIFI_CONNECTED)
+        self.assertEqual(len(wlan.connect_calls), 2)
+
+    def test_a_rejoin_the_interface_refuses_is_a_failure(self):
+        self._install_secrets(WIFI_SSID="badges")
+        wlan = FakeWlan(connected=False, status=-2)
+        port = _port(wlan)
+        port.wifi_begin()
+
+        def refuse(ssid, password):
+            raise OSError("radio is gone")
+
+        wlan.connect = refuse
+        self.assertEqual(port.wifi_status(), pairing.WIFI_FAILED)
+
+    def test_beginning_again_restores_the_rejoins(self):
+        """Otherwise a badge that failed once in the morning has no retries
+        left for every join it makes for the rest of the day."""
+        self._install_secrets(WIFI_SSID="badges")
+        wlan = FakeWlan(connected=False, status=-2)
+        port = _port(wlan)
+        port.wifi_begin()
+        for _ in range(net.WIFI_JOIN_RETRIES + 1):
+            port.wifi_status()
+        self.assertEqual(port.wifi_status(), pairing.WIFI_FAILED)
+
+        port.wifi_begin()
+        self.assertEqual(port.wifi_status(), pairing.WIFI_CONNECTING)
 
     def test_in_progress_status_is_connecting(self):
         self._install_secrets(WIFI_SSID="badges")

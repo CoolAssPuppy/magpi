@@ -465,11 +465,11 @@ class TestRestart(unittest.TestCase):
 
 class TestBackoff(unittest.TestCase):
     def test_backoff_doubles_and_caps(self):
-        self.assertEqual(pairing._backoff_ms(0), pairing.BACKOFF_BASE_MS)
-        self.assertEqual(pairing._backoff_ms(1), pairing.BACKOFF_BASE_MS)
-        self.assertEqual(pairing._backoff_ms(2), pairing.BACKOFF_BASE_MS * 2)
-        self.assertEqual(pairing._backoff_ms(3), pairing.BACKOFF_BASE_MS * 4)
-        self.assertEqual(pairing._backoff_ms(99), pairing.BACKOFF_MAX_MS)
+        self.assertEqual(pairing.backoff_ms(0), pairing.BACKOFF_BASE_MS)
+        self.assertEqual(pairing.backoff_ms(1), pairing.BACKOFF_BASE_MS)
+        self.assertEqual(pairing.backoff_ms(2), pairing.BACKOFF_BASE_MS * 2)
+        self.assertEqual(pairing.backoff_ms(3), pairing.BACKOFF_BASE_MS * 4)
+        self.assertEqual(pairing.backoff_ms(99), pairing.BACKOFF_MAX_MS)
 
 
 if __name__ == "__main__":
