@@ -5,7 +5,7 @@
 -- role, and that the deny-by-default tables really deny.
 
 begin;
-select plan(54);
+select plan(55);
 
 create extension if not exists pgtap with schema extensions;
 
@@ -309,6 +309,16 @@ $$, 'a client may rename their own connection');
 -- missing update policy hid: Postgres reports a filtered update as success.
 select is((select count(*)::int from public.connections where label = 'Renamed'), 1,
   'and the rename actually changed a row');
+
+-- Both flows read their row back through a function with a fixed return
+-- signature. Adding a column to the table does nothing if the function still
+-- lists the old ones, and that exact miss shipped twice: once for the state,
+-- once for the parked tokens, each time turning a reconnect into a duplicate.
+select is(
+  (select count(*)::int from pg_proc
+    where proname in ('consume_oauth_state', 'consume_pending_connection')
+      and pg_get_function_result(oid) like '%connection_id%'), 2,
+  'both consume functions return the connection they were told about');
 
 select * from finish();
 
