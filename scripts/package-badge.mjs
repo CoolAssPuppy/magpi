@@ -31,7 +31,18 @@ const SDK_TARGET = "badge/sdk/sb";
 // Never shipped: test-only packages, caches, and the host tooling that imports
 // them. Device code is stdlib-only, and a tests folder on the badge is bytes
 // that cannot run.
-const SKIP = new Set(["tests", "tools", "__pycache__", ".DS_Store"]);
+const SKIP = new Set(["tests", "tools", "__pycache__"]);
+
+/**
+ * Nothing beginning with a dot reaches a badge.
+ *
+ * A coverage run left a 52K .coverage beside the app and the packager copied
+ * it onto a device with 2MB of flash. Naming each offender as it appears is
+ * how the next one gets shipped too; the badge needs no dotfile at all.
+ */
+function isHidden(name) {
+  return name.startsWith(".");
+}
 
 function readTarget() {
   const index = process.argv.indexOf("--out");
@@ -69,8 +80,7 @@ function copyTree(from, to) {
     recursive: true,
     filter: (source) => {
       const name = source.split("/").pop() ?? "";
-      if (SKIP.has(name)) return false;
-      return !name.startsWith("._");
+      return !SKIP.has(name) && !isHidden(name);
     },
   });
 }
