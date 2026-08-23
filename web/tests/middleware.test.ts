@@ -177,7 +177,7 @@ describe("route gating", () => {
   });
 
   it("gates every private prefix and the paths beneath them", async () => {
-    for (const path of ["/dashboard", "/pages", "/connections", "/link", "/settings"]) {
+    for (const path of ["/dashboard", "/pages", "/badges", "/connections", "/link", "/settings"]) {
       auth({});
       const exact = await updateSession(request(path));
       expect(exact.status, `${path} should be gated`).toBe(307);
@@ -186,6 +186,17 @@ describe("route gating", () => {
       const nested = await updateSession(request(`${path}/anything`));
       expect(nested.status, `${path}/anything should be gated`).toBe(307);
     }
+  });
+
+  it("gates the screen a sign-in lands on, which is where the badges are", async () => {
+    // landingPath sends an account with no badge here, so it is the first
+    // authenticated page most people see and the easiest one to leave open.
+    auth({});
+    const response = await updateSession(request("/badges"));
+
+    expect(response.status).toBe(307);
+    const location = new URL(response.headers.get("location") ?? "");
+    expect(location.searchParams.get("next")).toBe("/badges");
   });
 
   it("does not gate a public path that merely starts with the same letters", async () => {

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const PRIVATE = ["/dashboard", "/pages", "/connections", "/link", "/settings"];
+const PRIVATE = ["/dashboard", "/pages", "/badges", "/connections", "/link", "/settings"];
 
 test.describe("pages that need an account", () => {
   for (const path of PRIVATE) {

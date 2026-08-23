@@ -4,7 +4,17 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getBadgeApiUrl, getSupabasePublishableKey, getSupabaseUrl } from "@/lib/env";
 import { isSupabaseAuthCookie, readSessionUser } from "@/lib/supabase/session";
 
-const PROTECTED_PREFIXES = ["/dashboard", "/pages", "/connections", "/link", "/settings"];
+// /badges belongs here as much as any of them: it lists the wearer's badges
+// and is where a sign-in with no badge lands, so it is the first authenticated
+// page most people see. It was added to the app without being added here.
+const PROTECTED_PREFIXES = [
+  "/dashboard",
+  "/pages",
+  "/badges",
+  "/connections",
+  "/link",
+  "/settings",
+];
 
 function originOf(url: string): string | null {
   try {
