@@ -62,11 +62,11 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "chunks_space_id_fkey"
-            columns: ["space_id"]
+            foreignKeyName: "chunks_space_in_org"
+            columns: ["space_id", "org_id"]
             isOneToOne: false
             referencedRelation: "spaces"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "org_id"]
           },
         ]
       }
@@ -144,11 +144,11 @@ export type Database = {
             referencedColumns: ["slug"]
           },
           {
-            foreignKeyName: "connections_space_id_fkey"
-            columns: ["space_id"]
+            foreignKeyName: "connections_space_in_org"
+            columns: ["space_id", "org_id"]
             isOneToOne: false
             referencedRelation: "spaces"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "org_id"]
           },
         ]
       }
@@ -277,11 +277,11 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "documents_space_id_fkey"
-            columns: ["space_id"]
+            foreignKeyName: "documents_space_in_org"
+            columns: ["space_id", "org_id"]
             isOneToOne: false
             referencedRelation: "spaces"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "org_id"]
           },
         ]
       }
@@ -593,11 +593,11 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ingest_jobs_space_id_fkey"
-            columns: ["space_id"]
+            foreignKeyName: "ingest_jobs_space_in_org"
+            columns: ["space_id", "org_id"]
             isOneToOne: false
             referencedRelation: "spaces"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "org_id"]
           },
         ]
       }
@@ -1091,6 +1091,15 @@ export type Database = {
           used: number
         }[]
       }
+      check_query_allowed: {
+        Args: { p_org_id: string }
+        Returns: {
+          allowed: boolean
+          plan_limit: number
+          reason: string
+          used: number
+        }[]
+      }
       claim_ingest_jobs: {
         Args: { p_limit: number }
         Returns: {
@@ -1160,6 +1169,10 @@ export type Database = {
       prune_oauth_states: { Args: never; Returns: undefined }
       prune_pending_connections: { Args: never; Returns: undefined }
       prune_rate_limits: { Args: never; Returns: undefined }
+      record_retrieval: {
+        Args: { p_document_ids: string[] }
+        Returns: undefined
+      }
       search: {
         Args: {
           match_count?: number

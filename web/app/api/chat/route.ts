@@ -8,7 +8,7 @@ import {
 } from '@/lib/chat/protocol';
 import { loadConversation, loadMessages, toTurns } from '@/lib/chat/store';
 import { createServiceClient } from '@/lib/supabase/service';
-import { getSessionContext } from '@/lib/supabase/context';
+import { getSessionContext, type SessionContext } from '@/lib/supabase/context';
 
 const RATE_LIMIT_PER_WINDOW = 30;
 const RATE_LIMIT_WINDOW_S = 60;
@@ -18,6 +18,9 @@ const STATUS: Record<ChatErrorCode, number> = {
   invalid_request: 400,
   not_found: 404,
   rate_limited: 429,
+  // Payment Required. The plan is the thing in the way, and no amount of
+  // waiting clears it.
+  plan_limited: 402,
   server_error: 500,
 };
 
@@ -34,11 +37,26 @@ export async function POST(request: Request): Promise<Response> {
   const parsed = chatRequestSchema.safeParse(await readJson(request));
   if (!parsed.success) return failure('invalid_request', 'That question could not be read.');
 
-  const limit = await consumeRateLimit(context.userId);
+  let limit;
+  try {
+    limit = await consumeRateLimit(context.userId);
+  } catch (error) {
+    // consume_rate_limit fails closed inside the database, so an error here is
+    // the limiter being unreachable rather than a verdict. Answering anyway
+    // would make the limit optional whenever Postgres hiccups.
+    console.error('rate limit check failed', { userId: context.userId, error });
+    return failure('server_error', 'Something went wrong. Ask again.');
+  }
+
   if (!limit.allowed) {
     return failure('rate_limited', 'You are asking faster than we can answer. Try again shortly.', {
       'Retry-After': String(limit.retryAfterSeconds),
     });
+  }
+
+  const allowance = await checkQueryAllowance(context.supabase, context.orgId);
+  if (!allowance.allowed) {
+    return failure('plan_limited', allowance.reason);
   }
 
   const conversation = await loadConversation(context.supabase, parsed.data.conversationId);
@@ -91,6 +109,29 @@ async function readJson(request: Request): Promise<unknown> {
   } catch {
     return null;
   }
+}
+
+const PLAN_LIMIT_REACHED = 'This organization has used its questions for the month.';
+
+/**
+ * The monthly question limit, which the usage panel displayed and nothing
+ * enforced. Read through the caller's own client, the same way the upload page
+ * reads `check_ingest_allowed`.
+ */
+async function checkQueryAllowance(
+  supabase: SessionContext['supabase'],
+  orgId: string,
+): Promise<{ allowed: boolean; reason: string }> {
+  const { data, error } = await supabase.rpc('check_query_allowed', { p_org_id: orgId }).single();
+
+  // A limit that cannot be read is not a limit that has been passed. Refusing
+  // here would take chat down whenever the function is unreachable.
+  if (error) {
+    console.error('query allowance check failed', { orgId, error });
+    return { allowed: true, reason: '' };
+  }
+
+  return { allowed: data.allowed, reason: data.reason ?? PLAN_LIMIT_REACHED };
 }
 
 async function consumeRateLimit(

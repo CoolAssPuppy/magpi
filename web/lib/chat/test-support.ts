@@ -65,7 +65,11 @@ export type RecordingResults = {
   maybeSingle?: unknown;
   rows?: readonly unknown[];
   error?: { message: string } | null;
+  /** Keyed by function name, for the `.rpc(name, args).single()` shape. */
+  rpc?: Readonly<Record<string, { data?: unknown; error?: { message: string } | null }>>;
 };
+
+export type RecordedRpc = { name: string; args: unknown };
 
 /**
  * A postgrest builder that records what was asked of it. Enough of the chain to
@@ -75,12 +79,22 @@ export function recordingClient(results: RecordingResults): {
   supabase: SupabaseClient<Database>;
   writes: RecordedWrite[];
   reads: RecordedRead[];
+  rpcCalls: RecordedRpc[];
 } {
   const writes: RecordedWrite[] = [];
   const reads: RecordedRead[] = [];
+  const rpcCalls: RecordedRpc[] = [];
   const error = results.error ?? null;
 
   const supabase = {
+    rpc: (name: string, args: unknown) => {
+      rpcCalls.push({ name, args });
+      const result = results.rpc?.[name];
+      return {
+        single: () => Promise.resolve({ data: result?.data ?? null, error: result?.error ?? null }),
+      };
+    },
+
     from: (table: string) => ({
       insert: (values: Record<string, unknown>) => {
         writes.push({ table, operation: 'insert', values });
@@ -114,5 +128,5 @@ export function recordingClient(results: RecordingResults): {
     }),
   } as unknown as SupabaseClient<Database>;
 
-  return { supabase, writes, reads };
+  return { supabase, writes, reads, rpcCalls };
 }

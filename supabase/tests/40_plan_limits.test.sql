@@ -6,7 +6,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(13);
+select plan(19);
 
 select is(public.plan_document_limit('free'), 200,
   'the free plan holds 200 documents');
@@ -98,6 +98,55 @@ select ok(
 select is(
   (select reason from public.check_ingest_allowed('00000000-0000-4000-8000-000000000000')),
   'organization not found', 'an unknown org is refused rather than waved through'
+);
+
+-- The question limit, which was read by the usage panel and enforced by nothing
+-- until check_query_allowed existed. Back on the free plan for these.
+update public.organizations set plan = 'free'
+where id = current_setting('recall.org_a')::uuid;
+
+select ok(
+  (select allowed from public.check_query_allowed(current_setting('recall.org_a')::uuid)),
+  'an organization that has asked nothing can ask'
+);
+
+-- One short of the free limit of 500, and quantity is summed rather than
+-- counted, so a single row of 499 has to read the same as 499 rows of one.
+insert into public.usage_events (org_id, kind, quantity, occurred_at)
+values (current_setting('recall.org_a')::uuid, 'query', 499, now());
+
+select ok(
+  (select allowed from public.check_query_allowed(current_setting('recall.org_a')::uuid)),
+  'the 500th question of the month is still allowed'
+);
+
+select is(
+  (select used from public.check_query_allowed(current_setting('recall.org_a')::uuid)),
+  499::bigint, 'used is the sum of the quantities, not the number of rows'
+);
+
+insert into public.usage_events (org_id, kind, quantity, occurred_at)
+values (current_setting('recall.org_a')::uuid, 'query', 1, now());
+
+select ok(
+  not (select allowed from public.check_query_allowed(current_setting('recall.org_a')::uuid)),
+  'the 501st is refused'
+);
+
+-- Last month's questions are somebody else's problem. Without this the limit is
+-- a lifetime cap wearing the word monthly.
+insert into public.usage_events (org_id, kind, quantity, occurred_at)
+values (current_setting('recall.org_a')::uuid, 'query', 5000,
+        date_trunc('month', now() at time zone 'utc') - interval '1 day');
+
+select is(
+  (select used from public.check_query_allowed(current_setting('recall.org_a')::uuid)),
+  500::bigint, 'a question asked last month does not count against this month'
+);
+
+select is(
+  (select reason from public.check_query_allowed('00000000-0000-4000-8000-000000000000')),
+  'organization not found', 'an unknown org is refused here too'
 );
 
 select * from finish();

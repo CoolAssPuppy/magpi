@@ -72,6 +72,9 @@ function fakeDeps(overrides: Partial<AnswerDeps> = {}): {
       return { inputTokens: 300, outputTokens: 12 };
     },
     generateTitle: async () => 'SSO blockers',
+    recordQuery: async (...payload) => {
+      calls.push({ name: 'recordQuery', payload });
+    },
     now: () => (clock += 250),
     ...overrides,
   };
@@ -203,6 +206,50 @@ describe('runAnswerTurn', () => {
     });
     expect(calls.map((call) => call.name)).toContain('addUserMessage');
     expect(calls.map((call) => call.name)).not.toContain('addAssistantMessage');
+    consoleError.mockRestore();
+  });
+
+  // usage_events with kind 'query' was read by the usage panel and by
+  // check_query_allowed and written by nothing, so the meter read zero for every
+  // organization and the monthly limit was enforced against a number that never
+  // moved.
+  it('meters the question once the answer is stored', async () => {
+    const { deps, calls } = fakeDeps();
+
+    await collect(runAnswerTurn(turnInput(), deps));
+
+    expect(calls.map((call) => call.name)).toContain('recordQuery');
+  });
+
+  it('meters nothing for a turn that never produced an answer', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { deps, calls } = fakeDeps({
+      streamAnswer: async function* () {
+        throw new Error('connection reset');
+      },
+    });
+
+    await collect(runAnswerTurn(turnInput(), deps));
+
+    expect(calls.map((call) => call.name)).not.toContain('recordQuery');
+    consoleError.mockRestore();
+  });
+
+  // The answer is delivered and stored by the time the meter is written, so a
+  // failed meter write costs the organization one question and costs the reader
+  // nothing. The other way round is the wrong trade.
+  it('keeps a delivered answer when the meter cannot be written', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { deps } = fakeDeps({
+      recordQuery: async () => {
+        throw new Error('usage_events unreachable');
+      },
+    });
+
+    const events = await collect(runAnswerTurn(turnInput(), deps));
+
+    expect(events.at(-1)).toEqual({ type: 'done', messageId: ASSISTANT_MESSAGE_ID });
+    expect(events.some((event) => event.type === 'error')).toBe(false);
     consoleError.mockRestore();
   });
 

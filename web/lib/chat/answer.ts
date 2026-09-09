@@ -32,6 +32,8 @@ export type AnswerDeps = {
     messages: readonly ChatMessage[];
   }) => AsyncGenerator<string, ModelUsage>;
   readonly generateTitle: (input: { question: string; orgId: string }) => Promise<string>;
+  /** One answered question, against the organization's monthly allowance. */
+  readonly recordQuery: (orgId: string) => Promise<void>;
   readonly now: () => number;
 };
 
@@ -106,13 +108,19 @@ export async function* runAnswerTurn(
     return;
   }
 
-  // Both of these follow the closed answer, because neither is worth a
+  // All three of these follow the closed answer, because none is worth a
   // millisecond of the reader's time waiting for a token. They have their own
   // try for the same reason: the answer is on screen and stored by the time
-  // either runs, so a failed rewrite or a rate-limited title has nothing left
-  // to tell the reader. Inside the block above, a failed title write yielded an
-  // error event and took the delivered answer off the screen.
+  // any of them runs, so a failed rewrite, a rate-limited title or an
+  // unreachable meter has nothing left to tell the reader. Inside the block
+  // above, a failed title write yielded an error event and took the delivered
+  // answer off the screen.
+  //
+  // A meter that fails costs the organization one question. Failing the answer
+  // to protect the meter is the wrong way round.
   try {
+    await deps.recordQuery(input.orgId);
+
     if (condensed.kind === 'rewritten') {
       await deps.store.setCondensedQuery(userMessageId, condensed.text);
     }

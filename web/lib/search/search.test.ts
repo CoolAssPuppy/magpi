@@ -51,7 +51,6 @@ describe('searchChunks', () => {
       { supabase: client, embed: embedTo([0.1, 0.2]) },
     );
 
-    expect(calls).toHaveLength(1);
     expect(calls[0].name).toBe('search');
     expect(calls[0].args).toEqual({
       query_embedding: '[0.1,0.2]',
@@ -59,6 +58,38 @@ describe('searchChunks', () => {
       space_filter: ['33333333-3333-4333-8333-333333333333'],
       match_count: 8,
     });
+  });
+
+  // documents.last_retrieved_at and retrieval_count are what the admin
+  // dead-content panel reads, and nothing wrote either, so the panel reported
+  // every document in the organization as never retrieved.
+  it('marks the documents it returned as read, once each', async () => {
+    const { client, calls } = fakeRpcClient([
+      row({ chunk_id: 'c1', document_id: 'd1' }),
+      row({ chunk_id: 'c2', document_id: 'd1' }),
+      row({ chunk_id: 'c3', document_id: 'd2' }),
+    ]);
+
+    await searchChunks(
+      { queryText: 'sso', spaceFilter: null, matchCount: 8, orgId: 'org-1' },
+      { supabase: client, embed: embedTo([0.1, 0.2]) },
+    );
+
+    expect(calls[1]).toEqual({
+      name: 'record_retrieval',
+      args: { p_document_ids: ['d1', 'd2'] },
+    });
+  });
+
+  it('records nothing when a search found nothing', async () => {
+    const { client, calls } = fakeRpcClient([]);
+
+    await searchChunks(
+      { queryText: 'sso', spaceFilter: null, matchCount: 8, orgId: 'org-1' },
+      { supabase: client, embed: embedTo([0.1, 0.2]) },
+    );
+
+    expect(calls.map((call) => call.name)).toEqual(['search']);
   });
 
   it('sends no space filter when the conversation is not narrowed', async () => {

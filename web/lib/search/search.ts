@@ -54,11 +54,36 @@ export async function searchChunks(
 
   if (error) throw new Error(error.message);
 
-  return (data ?? []).map((hit) => ({
+  const chunks = (data ?? []).map((hit) => ({
     chunkId: hit.chunk_id,
     documentId: hit.document_id,
     spaceId: hit.space_id,
     content: hit.content,
     score: hit.score,
   }));
+
+  await recordRetrieval(deps.supabase, chunks);
+  return chunks;
+}
+
+/**
+ * Marks the documents this search returned as read.
+ *
+ * `documents.last_retrieved_at` and `retrieval_count` are what the admin
+ * dead-content panel reads, and nothing wrote either, so the panel reported
+ * every document in the organization as never retrieved.
+ *
+ * Distinct document ids, so a document that matched five chunks counts once. A
+ * failure is logged and swallowed: the reader has their passages and losing a
+ * count on an analytics panel is not worth failing their question over.
+ */
+async function recordRetrieval(
+  supabase: SupabaseClient<Database>,
+  chunks: readonly RetrievedChunk[],
+): Promise<void> {
+  const documentIds = [...new Set(chunks.map((chunk) => chunk.documentId))];
+  if (documentIds.length === 0) return;
+
+  const { error } = await supabase.rpc('record_retrieval', { p_document_ids: documentIds });
+  if (error) console.error('retrieval not recorded', { error });
 }

@@ -1,6 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('server-only', () => ({}));
+
 import type { Database } from '@/lib/database.types';
 import { MODELS } from '@/lib/models';
 import type { ModelCallRecord } from '@/lib/openai/call';

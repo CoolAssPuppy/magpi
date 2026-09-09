@@ -59,13 +59,24 @@ vi.mock('@/lib/chat/answer', async (importOriginal) => ({
 
 const { POST } = await import('./route');
 
-function signedIn(overrides: { conversation?: unknown; messages?: readonly unknown[] } = {}) {
+function signedIn(
+  overrides: {
+    conversation?: unknown;
+    messages?: readonly unknown[];
+    allowance?: { data?: unknown; error?: { message: string } | null };
+  } = {},
+) {
   const { supabase } = recordingClient({
     maybeSingle:
       overrides.conversation === undefined
         ? { id: CONVERSATION_ID, space_filter: null, title: null }
         : overrides.conversation,
     rows: overrides.messages ?? [],
+    rpc: {
+      check_query_allowed: overrides.allowance ?? {
+        data: { allowed: true, reason: null, used: 3, plan_limit: 500 },
+      },
+    },
   });
 
   return {
@@ -113,6 +124,42 @@ describe('POST /api/chat', () => {
 
     expect(response.status).toBe(400);
     expect(await response.json()).toMatchObject({ code: 'invalid_request' });
+  });
+
+  // The monthly limit plan_monthly_query_limit describes, which the usage panel
+  // displayed and nothing enforced.
+  it('refuses a caller whose organization has used its questions for the month', async () => {
+    sessionState.context = signedIn({
+      allowance: {
+        data: {
+          allowed: false,
+          reason: 'question limit reached for free plan',
+          used: 500,
+          plan_limit: 500,
+        },
+      },
+    });
+
+    const response = await POST(ask({ conversationId: CONVERSATION_ID, message: 'hello' }));
+
+    expect(response.status).toBe(402);
+    expect(await response.json()).toEqual({
+      code: 'plan_limited',
+      message: 'question limit reached for free plan',
+    });
+  });
+
+  // A limit that cannot be read has not been passed. Refusing here would take
+  // chat down for everyone whenever the function is unreachable.
+  it('answers anyway when the allowance itself cannot be read', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    sessionState.context = signedIn({ allowance: { error: { message: 'connection reset' } } });
+
+    const response = await POST(ask({ conversationId: CONVERSATION_ID, message: 'hello' }));
+
+    expect(response.status).toBe(200);
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 
   it('refuses a caller over the rate limit and says when to come back', async () => {

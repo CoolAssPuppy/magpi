@@ -434,6 +434,78 @@ $$;
 revoke all on function public.check_ingest_allowed(uuid) from public, anon;
 grant execute on function public.check_ingest_allowed(uuid) to authenticated, service_role;
 
+-- The same gate for questions. plan_monthly_query_limit was read by the usage
+-- panel and enforced by nothing, so a free organization could ask 500,000
+-- questions against a 500 limit and the only sign was a number on a screen an
+-- admin might never open.
+--
+-- The window is the calendar month in UTC, which is what the usage panel already
+-- sums over. Billing periods do not line up with calendar months, and when they
+-- need to this reads the period off the subscription instead.
+create or replace function public.check_query_allowed(p_org_id uuid)
+returns table (allowed boolean, reason text, used bigint, plan_limit integer)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_plan public.org_plan;
+  v_limit integer;
+  v_used bigint;
+begin
+  select plan into v_plan from public.organizations where id = p_org_id;
+  if v_plan is null then
+    return query select false, 'organization not found'::text, 0::bigint, 0;
+    return;
+  end if;
+
+  v_limit := public.plan_monthly_query_limit(v_plan);
+
+  select coalesce(sum(quantity), 0) into v_used
+  from public.usage_events
+  where org_id = p_org_id
+    and kind = 'query'
+    and occurred_at >= date_trunc('month', now() at time zone 'utc');
+
+  if v_used >= v_limit then
+    return query select false, format('question limit reached for %s plan', v_plan), v_used, v_limit;
+  else
+    return query select true, null::text, v_used, v_limit;
+  end if;
+end;
+$$;
+
+revoke all on function public.check_query_allowed(uuid) from public, anon;
+grant execute on function public.check_query_allowed(uuid) to authenticated, service_role;
+
+-- What the admin dead-content panel reads. Both columns existed from the first
+-- migration and nothing ever wrote either, so the panel reported every document
+-- in the organization as never retrieved and the number was the document count.
+--
+-- Security definer because a reader holds no update grant on documents, and
+-- scoped to their own visible spaces for the same reason the grant is absent:
+-- otherwise any signed-in user could mark another organization's documents as
+-- freshly read and hide them from that organization's own panel.
+--
+-- The count is bumped once per search that returned the document, not once per
+-- chunk, so a document that matched five chunks counts as one retrieval.
+create or replace function public.record_retrieval(p_document_ids uuid[])
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  update public.documents
+  set last_retrieved_at = now(),
+      retrieval_count = retrieval_count + 1
+  where id = any(p_document_ids)
+    and space_id in (select public.visible_space_ids());
+$$;
+
+revoke all on function public.record_retrieval(uuid[]) from public, anon;
+grant execute on function public.record_retrieval(uuid[]) to authenticated, service_role;
+
 -- Every new user gets an organization and a personal space. Doing it in a trigger
 -- means there is no signed-in state where a user has nowhere to put a document.
 create or replace function public.handle_new_user()

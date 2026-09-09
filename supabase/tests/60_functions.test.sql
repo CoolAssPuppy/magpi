@@ -308,8 +308,8 @@ select set_eq(
             or has_function_privilege('anon', p.oid, 'EXECUTE')) $$,
   array['visible_space_ids', 'is_org_member', 'is_org_admin', 'is_space_member',
         'search', 'plan_document_limit', 'plan_monthly_query_limit',
-        'check_ingest_allowed'],
-  'the only functions a client role may execute are the eight meant to be callable'
+        'check_ingest_allowed', 'check_query_allowed', 'record_retrieval'],
+  'the only functions a client role may execute are the ten meant to be callable'
 );
 
 -- Grants ---------------------------------------------------------------------------
@@ -443,7 +443,7 @@ select set_eq(
     from (values
       ('visible_space_ids'), ('is_org_member'), ('is_org_admin'), ('is_space_member'),
       ('search'), ('plan_document_limit'), ('plan_monthly_query_limit'),
-      ('check_ingest_allowed')
+      ('check_ingest_allowed'), ('check_query_allowed'), ('record_retrieval')
     ) as c(f)
   $$,
   'the applied function execute privileges are exactly the ones 80_functions.sql declares'

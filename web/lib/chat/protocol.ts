@@ -42,6 +42,9 @@ export const CHAT_ERROR_CODES = [
   'invalid_request',
   'not_found',
   'rate_limited',
+  // Separate from rate_limited because the answer is different. Asking again in
+  // a minute works for one and not for the other.
+  'plan_limited',
   'server_error',
 ] as const;
 

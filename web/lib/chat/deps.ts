@@ -8,6 +8,7 @@ import { searchChunks } from '@/lib/search/search';
 import type { AnswerDeps } from './answer';
 import { resolveCitations } from './citations';
 import { condenseQuestion } from './condense';
+import { recordQuery } from './meter';
 import { createConversationStore } from './store';
 import { generateTitle } from './title';
 
@@ -21,6 +22,7 @@ export function createAnswerDeps(supabase: SupabaseClient<Database>): AnswerDeps
     search: (input) => searchChunks(input, { supabase }),
     resolveCitations: (chunkIds) => resolveCitations(supabase, [...chunkIds]),
     generateTitle: (input) => generateTitle(input),
+    recordQuery: (orgId) => recordQuery(orgId),
     now: () => Date.now(),
 
     streamAnswer: ({ orgId, messages }) =>

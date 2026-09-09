@@ -9,7 +9,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(42);
+select plan(46);
 
 -- Four users. Alice and Bob are in separate organizations. Carol and Dave are in
 -- the same organization, and only Carol is in the team space, so Dave is the
@@ -467,6 +467,38 @@ select ok(
    where n.nspname = 'public'
      and c.relname in ('ingest_jobs', 'documents', 'dream_runs', 'connections', 'messages')),
   'every published table carries a full replica identity so its policy can run on the old row'
+);
+
+-- record_retrieval is security definer, so it writes documents that its caller
+-- holds no update grant on. That makes the space check inside it the only thing
+-- standing between a signed-in stranger and another organization's dead-content
+-- panel, which is exactly the shape of the bugs this file exists to catch.
+set local role authenticated;
+set local request.jwt.claims to '{"sub":"a0000000-0000-4000-8000-000000000001","role":"authenticated"}';
+
+select lives_ok(
+  $$ select public.record_retrieval(array[
+       '51000000-0000-4000-8000-00000000000a'::uuid,
+       '51000000-0000-4000-8000-00000000000c'::uuid
+     ]) $$,
+  'a reader may record a retrieval naming a document they cannot see'
+);
+
+reset role;
+
+select is(
+  (select retrieval_count from public.documents where id = '51000000-0000-4000-8000-00000000000a'),
+  1::bigint, 'the document in her own space is counted'
+);
+
+select is(
+  (select retrieval_count from public.documents where id = '51000000-0000-4000-8000-00000000000c'),
+  0::bigint, 'the one in another organization is not, though she named it'
+);
+
+select isnt(
+  (select last_retrieved_at from public.documents where id = '51000000-0000-4000-8000-00000000000a'),
+  null, 'and the panel now has a date to read'
 );
 
 select * from finish();
