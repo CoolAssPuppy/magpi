@@ -4,6 +4,7 @@ import {
   describeDreamKind,
   describeDreamStatus,
   formatRunDuration,
+  type DreamKind,
   type DreamStatusView,
 } from './status';
 
@@ -32,6 +33,7 @@ export type DocumentRecord = Pick<Tables<'documents'>, 'id' | 'title' | 'url' | 
 
 export type DreamRunSummary = {
   readonly id: string;
+  readonly kind: DreamKind;
   readonly spaceId: string;
   readonly spaceName: string;
   readonly kindLabel: string;
@@ -66,6 +68,7 @@ export function buildRunSummaries({
     return [
       {
         id: run.id,
+        kind: run.kind,
         spaceId: run.space_id,
         spaceName,
         kindLabel: kind.label,
@@ -120,7 +123,11 @@ export function buildLinkCandidates({
   return links.flatMap((link) => {
     const a = byId.get(link.document_a);
     const b = byId.get(link.document_b);
-    // A pair the caller cannot read both sides of is a pair they cannot judge.
+    // Composite foreign keys pin both documents to the link's own space, and
+    // RLS makes them visible together, so this is not the isolation check. It
+    // handles a torn read: the links and the documents are two queries, and a
+    // source document can be deleted between them. A pair missing a side cannot
+    // be judged, so it waits for the next read.
     if (!a || !b) return [];
 
     return [

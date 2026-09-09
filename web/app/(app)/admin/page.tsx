@@ -119,7 +119,10 @@ export default async function AdminOverviewPage({
         </Suspense>
       </Panel>
 
-      <Panel title="Search activity" description="How much is being asked, and how long answers take.">
+      <Panel
+        title="Search activity"
+        description="How much is being asked, and how long answers take."
+      >
         <Suspense fallback={<PanelSkeleton rows={6} />}>
           <SearchActivityPanel {...wide} days={days} />
         </Suspense>

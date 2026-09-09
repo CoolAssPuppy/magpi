@@ -70,7 +70,7 @@ describe('dream run summaries', () => {
     expect(summary.inputSummary).toBe('No documents');
   });
 
-  it('drops a run in a space the caller cannot see', () => {
+  it('drops a run whose space was missing from the same read', () => {
     const summaries = buildRunSummaries({
       runs: [getRun({ space_id: 'space-hidden' })],
       spaces: [getSpace()],
@@ -158,7 +158,7 @@ describe('candidate document links', () => {
     expect(candidate.state).toBe('pending');
   });
 
-  it('drops a pair whose documents the caller cannot see, since it cannot be judged', () => {
+  it('drops a pair missing a side, since a half-read pair cannot be judged', () => {
     const candidates = buildLinkCandidates({
       links: [getLink()],
       documents: [getDocument()],

@@ -36,7 +36,10 @@ export function billingRedirect(request: Request, query: string): NextResponse {
 /** Resolves the caller and confirms with the database that they may change the plan. */
 export async function resolveBillingCaller(request: Request): Promise<BillingCaller> {
   if (!isSameOrigin(request)) {
-    return { kind: 'refused', response: NextResponse.json({ error: 'bad origin' }, { status: 403 }) };
+    return {
+      kind: 'refused',
+      response: NextResponse.json({ error: 'bad origin' }, { status: 403 }),
+    };
   }
 
   const context = await getSessionContext();

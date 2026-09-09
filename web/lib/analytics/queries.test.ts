@@ -416,26 +416,14 @@ describe('organization scoping', () => {
    * quietly returning another customer's rows.
    */
   const panels: readonly (readonly [string, (stub: Stub) => Promise<unknown>])[] = [
-    [
-      'ingest health',
-      (stub) => fetchIngestHealth(stub.client, ORG),
-    ],
-    [
-      'answer latency',
-      (stub) => fetchAnswerLatency(stub.client, ORG, { days: 7, now: NOW }),
-    ],
+    ['ingest health', (stub) => fetchIngestHealth(stub.client, ORG)],
+    ['answer latency', (stub) => fetchAnswerLatency(stub.client, ORG, { days: 7, now: NOW })],
     [
       'top questions',
       (stub) => fetchTopQuestions(stub.client, ORG, { days: 7, limit: 5, now: NOW }),
     ],
-    [
-      'dead content',
-      (stub) => fetchDeadContent(stub.client, ORG, { sampleSize: 5 }),
-    ],
-    [
-      'plan usage',
-      (stub) => fetchPlanUsage(stub.client, ORG, { now: NOW }),
-    ],
+    ['dead content', (stub) => fetchDeadContent(stub.client, ORG, { sampleSize: 5 })],
+    ['plan usage', (stub) => fetchPlanUsage(stub.client, ORG, { now: NOW })],
   ];
 
   function emptyStub(): Stub {
@@ -445,7 +433,11 @@ describe('organization scoping', () => {
       ingest_jobs: [empty],
       messages: [empty],
       documents: [{ count: 0 }, { count: 0 }, empty],
-      organizations: [{ data: { plan: 'free', seats: 1, stripe_customer_id: null, stripe_subscription_id: null } }],
+      organizations: [
+        {
+          data: { plan: 'free', seats: 1, stripe_customer_id: null, stripe_subscription_id: null },
+        },
+      ],
       org_members: [{ count: 0 }],
       usage_events: [empty, empty, empty],
       plan_document_limit: [{ data: 200 }],

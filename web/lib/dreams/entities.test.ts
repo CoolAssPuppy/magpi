@@ -89,7 +89,7 @@ describe('entity groups', () => {
     expect(group.entities[0].documents).toHaveLength(1);
   });
 
-  it('drops a mention of a document the caller cannot see', () => {
+  it('drops a mention whose document was missing from the same read', () => {
     const [group] = buildEntityGroups({
       entities: [getEntity()],
       mentions: [getMention({ document_id: 'doc-hidden' })],
@@ -99,7 +99,7 @@ describe('entity groups', () => {
     expect(group.entities[0].documents).toEqual([]);
   });
 
-  it('keeps an entity whose documents are all invisible, and says so through an empty list', () => {
+  it('keeps an entity whose documents all went missing, and says so through an empty list', () => {
     const [group] = buildEntityGroups({
       entities: [getEntity()],
       mentions: [getMention({ document_id: 'doc-hidden' })],

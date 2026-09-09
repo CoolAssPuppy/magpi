@@ -48,11 +48,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "chunks_document_id_fkey"
-            columns: ["document_id"]
+            foreignKeyName: "chunks_document_in_space"
+            columns: ["document_id", "space_id"]
             isOneToOne: false
             referencedRelation: "documents"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "space_id"]
           },
           {
             foreignKeyName: "chunks_org_id_fkey"
@@ -204,6 +204,7 @@ export type Database = {
           origin: Database["public"]["Enums"]["document_origin"]
           retrieval_count: number
           size_bytes: number | null
+          source_chunk_ids: string[] | null
           space_id: string
           storage_path: string | null
           title: string
@@ -224,6 +225,7 @@ export type Database = {
           origin: Database["public"]["Enums"]["document_origin"]
           retrieval_count?: number
           size_bytes?: number | null
+          source_chunk_ids?: string[] | null
           space_id: string
           storage_path?: string | null
           title?: string
@@ -244,6 +246,7 @@ export type Database = {
           origin?: Database["public"]["Enums"]["document_origin"]
           retrieval_count?: number
           size_bytes?: number | null
+          source_chunk_ids?: string[] | null
           space_id?: string
           storage_path?: string | null
           title?: string
@@ -258,6 +261,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "connections"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_dream_run_in_space"
+            columns: ["dream_run_id", "space_id"]
+            isOneToOne: false
+            referencedRelation: "dream_runs"
+            referencedColumns: ["id", "space_id"]
           },
           {
             foreignKeyName: "documents_org_id_fkey"
@@ -328,11 +338,11 @@ export type Database = {
             referencedColumns: ["id", "space_id"]
           },
           {
-            foreignKeyName: "dream_links_dream_run_id_fkey"
-            columns: ["dream_run_id"]
+            foreignKeyName: "dream_links_run_in_space"
+            columns: ["dream_run_id", "space_id"]
             isOneToOne: false
             referencedRelation: "dream_runs"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "space_id"]
           },
           {
             foreignKeyName: "dream_links_space_id_fkey"
@@ -502,11 +512,11 @@ export type Database = {
             referencedColumns: ["id", "space_id"]
           },
           {
-            foreignKeyName: "entity_mentions_entity_id_fkey"
-            columns: ["entity_id"]
+            foreignKeyName: "entity_mentions_entity_in_space"
+            columns: ["entity_id", "space_id"]
             isOneToOne: false
             referencedRelation: "entities"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "space_id"]
           },
           {
             foreignKeyName: "entity_mentions_space_id_fkey"
