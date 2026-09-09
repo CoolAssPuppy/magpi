@@ -2,7 +2,7 @@ import { assert, assertEquals } from '@std/assert';
 
 import type { ConnectionRow } from './connections.ts';
 import { encryptProviderToken } from './provider_tokens.ts';
-import { resolveCredentials } from './token_refresh.ts';
+import { refreshIfSpent, resolveCredentials } from './token_refresh.ts';
 import { type StubDb, stubDb, type StubRequest } from './testing/stub_db.ts';
 import { envSource } from './testing/assertions.ts';
 import type { SourceDeps } from './sources/contract.ts';
@@ -271,6 +271,96 @@ Deno.test('a scope selection the picker has never populated reads as no selectio
     assertEquals(outcome.kind, 'ready');
     if (outcome.kind !== 'ready') return;
     assertEquals(outcome.credentials.scopeSelection.ids, []);
+  } finally {
+    await h.stub.close();
+  }
+});
+
+/**
+ * The scheduled pass renews connections nobody is about to use, so it asks for
+ * no token and must be handed none.
+ *
+ * Every test below hands the row a ciphertext sealed for a different user. The
+ * AAD will not match, so anything that reads it throws rather than answering,
+ * which is what turns "does not decrypt" into something a test can hold.
+ */
+async function sealedForSomeoneElse(provider = 'google_drive'): Promise<string> {
+  return await encryptProviderToken(
+    'at_stored',
+    { userId: '22222222-2222-4222-8222-222222222222', provider },
+    ENV,
+  );
+}
+
+Deno.test('a connection with time left is reported without its token being read', async () => {
+  const h = harness('google_drive', () => json({}));
+  try {
+    const summary = await refreshIfSpent(
+      await connection({ access_token_enc: await sealedForSomeoneElse() }),
+      { db: h.stub.db, http: h.http, env: ENV },
+    );
+
+    assertEquals(summary.kind, 'unspent');
+    assertEquals(h.calls.length, 0);
+  } finally {
+    await h.stub.close();
+  }
+});
+
+Deno.test('a renewed connection carries the provider token, never the stored one', async () => {
+  const h = harness('google_drive', () => json({ access_token: 'at_fresh', expires_in: 3600 }));
+  try {
+    const summary = await refreshIfSpent(
+      await connection({
+        token_expires_at: '2026-09-09T12:00:30.000Z',
+        access_token_enc: await sealedForSomeoneElse(),
+      }),
+      { db: h.stub.db, http: h.http, env: ENV },
+    );
+
+    assertEquals(summary.kind, 'refreshed');
+    if (summary.kind !== 'refreshed') return;
+    assertEquals(summary.accessToken, 'at_fresh');
+  } finally {
+    await h.stub.close();
+  }
+});
+
+Deno.test('a provider whose tokens never expire clears the expiry without a decrypt', async () => {
+  const h = harness('notion', () => json({}));
+  try {
+    const summary = await refreshIfSpent(
+      await connection({
+        provider: 'notion',
+        token_expires_at: '2026-09-09T12:00:30.000Z',
+        access_token_enc: await sealedForSomeoneElse('notion'),
+      }),
+      { db: h.stub.db, http: h.http, env: ENV },
+    );
+
+    assertEquals(summary.kind, 'unspent');
+    assertEquals(h.calls.length, 0);
+    assertEquals(updatesTo(h.stub, 'connections')[0], { token_expires_at: null });
+  } finally {
+    await h.stub.close();
+  }
+});
+
+Deno.test('a refusal is reported to the scheduled pass as a reason, not a token', async () => {
+  const h = harness('google_drive', () => json({ error: 'invalid_grant' }, 400));
+  try {
+    const summary = await refreshIfSpent(
+      await connection({
+        token_expires_at: '2026-09-09T12:00:30.000Z',
+        access_token_enc: await sealedForSomeoneElse(),
+      }),
+      { db: h.stub.db, http: h.http, env: ENV },
+    );
+
+    assertEquals(summary.kind, 'expired');
+    if (summary.kind !== 'expired') return;
+    assert(summary.detail.includes('reconnect'));
+    assertEquals(updatesTo(h.stub, 'connections')[0].status, 'expired');
   } finally {
     await h.stub.close();
   }

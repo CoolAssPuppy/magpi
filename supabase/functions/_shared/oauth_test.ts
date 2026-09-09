@@ -173,18 +173,6 @@ Deno.test("the provider's own error text never reaches the response", async () =
   assert(!err.message.includes('sk_live_abc'));
 });
 
-Deno.test('a refresh that omits a new refresh token keeps the old one', async () => {
-  // Linear rotates on every refresh; most providers do not.
-  const deps = answering({ access_token: 'at_2', expires_in: 3600 });
-  const tokens = await oauthDriverFor(record('google_drive'), deps).refreshTokens({
-    clientId: 'id',
-    clientSecret: 'secret',
-    refreshToken: 'rt_original',
-  });
-  assertEquals(tokens.accessToken, 'at_2');
-  assertEquals(tokens.refreshToken, 'rt_original');
-});
-
 Deno.test('the callback url is the public functions origin', () => {
   assertEquals(
     callbackUrl(envSource({ SB_FUNCTIONS_BASE_URL: 'https://fx.example' })),

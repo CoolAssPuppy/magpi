@@ -8,6 +8,11 @@
 // Every read path goes through resolveCredentials, so refresh() is called by
 // construction rather than by remembering to. A refusal is a status change the
 // user can see on the connections page, never a stalled sync with no reason.
+//
+// Two ways in, one body. resolveCredentials is for a caller about to read from
+// the provider and needs the token; refreshIfSpent is for the scheduled pass,
+// which only reports on connections and would otherwise pay a decrypt per row
+// for a token it discards.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -32,6 +37,20 @@ export type CredentialsOutcome =
   | { kind: 'ready'; credentials: SourceCredentials; refreshed: boolean }
   | { kind: 'expired'; detail: string };
 
+/**
+ * What a renewal pass produced, with no readable token in it.
+ *
+ * The scheduled pass renews connections nobody is about to use, so a decrypted
+ * access token would be twenty AES-GCM operations per tick spent answering a
+ * question `isSpent` already answered off the row. `unspent` therefore hands
+ * back the ciphertext it did not open, and only `refreshed` carries a plaintext
+ * token, because the provider just gave us one.
+ */
+export type RefreshSummary =
+  | { kind: 'unspent'; accessTokenEnc: string }
+  | { kind: 'refreshed'; accessToken: string }
+  | { kind: 'expired'; detail: string };
+
 export interface RefreshDeps {
   db: SupabaseClient;
   http: SourceDeps;
@@ -52,34 +71,37 @@ async function expire(
   deps: RefreshDeps,
   connection: ConnectionRow,
   detail: string,
-): Promise<CredentialsOutcome> {
+): Promise<{ kind: 'expired'; detail: string }> {
   await markConnectionStatus(deps.db, connection.id, 'expired', detail);
   return { kind: 'expired', detail };
 }
 
 /**
- * A usable access token for one connection, renewing it first when it is spent.
+ * Renews one connection's token when it is spent, and says what happened.
+ *
+ * Nothing here reads the stored access token: a caller that only needs to know
+ * the connection is healthy gets that answer without a decrypt, and a caller
+ * that needs the token decrypts the ciphertext handed back.
  *
  * The outcome is a value rather than an exception because both answers are
  * ordinary: a sync worker walking twenty connections skips the expired one and
  * carries on with the rest.
  */
-export async function resolveCredentials(
+export async function refreshIfSpent(
   connection: ConnectionRow,
   deps: RefreshDeps,
-): Promise<CredentialsOutcome> {
+): Promise<RefreshSummary> {
   const env = deps.env ?? denoEnv;
-  const scopeSelection = selectedIdsOf(connection.scope_selection);
 
   if (!connection.access_token_enc) {
     return await expire(deps, connection, 'This connection holds no token, connect it again.');
   }
+  const accessTokenEnc = connection.access_token_enc;
 
   const ctx = { userId: connection.user_id, provider: connection.provider };
 
   if (!isSpent(connection, deps.http.now())) {
-    const accessToken = await decryptProviderToken(connection.access_token_enc, ctx, env);
-    return { kind: 'ready', credentials: { accessToken, scopeSelection }, refreshed: false };
+    return { kind: 'unspent', accessTokenEnc };
   }
 
   if (!connection.refresh_token_enc) {
@@ -118,8 +140,7 @@ export async function resolveCredentials(
         .from('connections')
         .update({ token_expires_at: null })
         .eq('id', connection.id);
-      const accessToken = await decryptProviderToken(connection.access_token_enc, ctx, env);
-      return { kind: 'ready', credentials: { accessToken, scopeSelection }, refreshed: false };
+      return { kind: 'unspent', accessTokenEnc };
     }
 
     case 'refreshed': {
@@ -142,11 +163,42 @@ export async function resolveCredentials(
         return await expire(deps, connection, 'The renewed token could not be stored.');
       }
 
+      return { kind: 'refreshed', accessToken: outcome.accessToken };
+    }
+  }
+}
+
+/**
+ * A usable access token for one connection, renewing it first when it is spent.
+ *
+ * Every read path goes through here, which is what makes the renewal happen by
+ * construction rather than by remembering to.
+ */
+export async function resolveCredentials(
+  connection: ConnectionRow,
+  deps: RefreshDeps,
+): Promise<CredentialsOutcome> {
+  const scopeSelection = selectedIdsOf(connection.scope_selection);
+  const summary = await refreshIfSpent(connection, deps);
+
+  switch (summary.kind) {
+    case 'expired':
+      return summary;
+
+    case 'refreshed':
       return {
         kind: 'ready',
-        credentials: { accessToken: outcome.accessToken, scopeSelection },
+        credentials: { accessToken: summary.accessToken, scopeSelection },
         refreshed: true,
       };
+
+    case 'unspent': {
+      const accessToken = await decryptProviderToken(
+        summary.accessTokenEnc,
+        { userId: connection.user_id, provider: connection.provider },
+        deps.env ?? denoEnv,
+      );
+      return { kind: 'ready', credentials: { accessToken, scopeSelection }, refreshed: false };
     }
   }
 }

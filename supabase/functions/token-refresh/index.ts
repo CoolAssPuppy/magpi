@@ -11,7 +11,7 @@ import { serveFunction } from '../_shared/http.ts';
 import { parseBody, workerBatchSchema } from '../_shared/validate.ts';
 import { claimableConnections } from '../_shared/connections.ts';
 import { hasDriver } from '../_shared/sources/index.ts';
-import { resolveCredentials } from '../_shared/token_refresh.ts';
+import { refreshIfSpent } from '../_shared/token_refresh.ts';
 import { jobDepsFromEnv, requireWorkerCaller } from '../_shared/jobs/runtime.ts';
 
 const DEFAULT_BATCH = 20;
@@ -33,18 +33,21 @@ serveFunction('token-refresh', async (core) => {
   for (const connection of connections) {
     if (!hasDriver(connection.provider)) continue;
 
-    const outcome = await resolveCredentials(connection, {
+    // refreshIfSpent rather than resolveCredentials: this pass reports on
+    // connections rather than reading from them, and the token it would be
+    // handed is one AES-GCM decrypt per connection thrown straight away.
+    const summary = await refreshIfSpent(connection, {
       db: deps.db,
       http: deps.http,
       env: deps.env,
     });
 
     results.push(
-      outcome.kind === 'expired'
-        ? { connection_id: connection.id, outcome: 'expired', detail: outcome.detail }
+      summary.kind === 'expired'
+        ? { connection_id: connection.id, outcome: 'expired', detail: summary.detail }
         : {
           connection_id: connection.id,
-          outcome: outcome.refreshed ? 'refreshed' : 'ready',
+          outcome: summary.kind === 'refreshed' ? 'refreshed' : 'ready',
         },
     );
   }

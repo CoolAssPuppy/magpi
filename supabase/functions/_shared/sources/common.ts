@@ -5,6 +5,7 @@
 // turns a provider's bad day into a 500, so every read here answers with a
 // default instead of throwing.
 
+import { basicAuthHeader, tokenGrantQuirksFor } from '../oauth.ts';
 import { type RefreshInput, type RefreshOutcome, SourceDeps, SourceError } from './contract.ts';
 
 export function asRecord(value: unknown): Record<string, unknown> {
@@ -99,13 +100,21 @@ export async function requestJson(
  *
  * Failure is a value: the caller writes it onto the connection as a status the
  * user can read, and a thrown error here would become a stalled sync with no
- * explanation.
+ * explanation. That is the whole reason the grant lives here rather than on the
+ * OAuth broker, whose failures are exceptions on their way to an HTTP response.
+ *
+ * `provider` is the slug and reaches the log; `displayName` is what a person
+ * calls the source and reaches connections.status_detail. Both, because one
+ * string cannot be a database key and a product name at the same time.
  */
 export async function refreshWithTokenEndpoint(
   provider: string,
+  displayName: string,
   deps: SourceDeps,
   input: RefreshInput,
 ): Promise<RefreshOutcome> {
+  const quirks = tokenGrantQuirksFor(provider);
+
   let response: Response;
   try {
     response = await deps.fetch(input.tokenUrl, {
@@ -113,26 +122,31 @@ export async function refreshWithTokenEndpoint(
       headers: {
         accept: 'application/json',
         'content-type': 'application/x-www-form-urlencoded',
+        ...(quirks.basicAuth ? basicAuthHeader(input.clientId, input.clientSecret) : {}),
       },
       body: new URLSearchParams({
-        client_id: input.clientId,
-        client_secret: input.clientSecret,
+        ...(quirks.basicAuth
+          ? {}
+          : { client_id: input.clientId, client_secret: input.clientSecret }),
         grant_type: 'refresh_token',
         refresh_token: input.refreshToken,
       }),
     });
   } catch {
-    return { kind: 'failed', detail: `${provider} could not be reached to renew the connection.` };
+    return {
+      kind: 'failed',
+      detail: `${displayName} could not be reached to renew the connection.`,
+    };
   }
 
   let payload: unknown = null;
   try {
     payload = await response.json();
   } catch {
-    return { kind: 'failed', detail: `${provider} returned an unreadable renewal response.` };
+    return { kind: 'failed', detail: `${displayName} returned an unreadable renewal response.` };
   }
 
-  const record = asRecord(payload);
+  const record = quirks.normalizePayload(asRecord(payload));
   const accessToken = asString(record.access_token);
   if (!response.ok || typeof record.error === 'string' || accessToken.length === 0) {
     // The provider's own wording is not forwarded: it can quote the request,
@@ -140,7 +154,7 @@ export async function refreshWithTokenEndpoint(
     console.error('token refresh refused', { provider, status: response.status });
     return {
       kind: 'failed',
-      detail: `${provider} refused to renew this connection, reconnect it.`,
+      detail: `${displayName} refused to renew this connection, reconnect it.`,
     };
   }
 

@@ -5,6 +5,10 @@
 // Endpoints and scopes come from the `providers` row, not from this file. What
 // lives here is the handful of things providers genuinely disagree about, one
 // small entry per slug, so a fix to token-exchange error handling is made once.
+//
+// The broker authorizes and exchanges. Renewing a token afterwards belongs to
+// the source driver, which reads the same quirks through tokenGrantQuirksFor
+// rather than keeping a second copy of them.
 
 import { ApiError } from './errors.ts';
 import { randomToken, sha256Base64Url } from './crypto.ts';
@@ -46,11 +50,6 @@ export interface OAuthDriver {
     redirectUri: string;
     code: string;
     codeVerifier: string;
-  }): Promise<TokenSet>;
-  refreshTokens(input: {
-    clientId: string;
-    clientSecret: string;
-    refreshToken: string;
   }): Promise<TokenSet>;
 }
 
@@ -241,6 +240,36 @@ const QUIRKS: Record<string, DriverQuirks> = {
   },
 };
 
+function quirksFor(slug: string): DriverQuirks {
+  return Object.hasOwn(QUIRKS, slug) ? QUIRKS[slug] : {};
+}
+
+/** Credentials in a header, for the providers that answer 401 to them in a form. */
+export function basicAuthHeader(clientId: string, clientSecret: string): Record<string, string> {
+  return { authorization: `Basic ${btoa(`${clientId}:${clientSecret}`)}` };
+}
+
+/**
+ * What one provider's token endpoint disagrees about on a refresh grant.
+ *
+ * The renewal itself lives with the source drivers, because its failures are
+ * values written onto the connection rather than exceptions. The knowledge of
+ * which provider wants what stays here, where every other per-slug difference
+ * already is, so a provider that is fixed in one grant is fixed in both.
+ */
+export interface TokenGrantQuirks {
+  basicAuth: boolean;
+  normalizePayload(payload: Record<string, unknown>): Record<string, unknown>;
+}
+
+export function tokenGrantQuirksFor(slug: string): TokenGrantQuirks {
+  const quirks = quirksFor(slug);
+  return {
+    basicAuth: quirks.basicAuthForToken === true,
+    normalizePayload: quirks.normalizePayload ?? ((payload) => payload),
+  };
+}
+
 function requireAccessToken(payload: Record<string, unknown>, context: string): string {
   const accessToken = payload.access_token;
   if (typeof accessToken !== 'string' || accessToken.length === 0) {
@@ -257,7 +286,7 @@ function requireAccessToken(payload: Record<string, unknown>, context: string): 
  */
 export function oauthDriverFor(record: ProviderRecord, deps: HttpDeps = liveHttp): OAuthDriver {
   const provider: OAuthProviderRecord = requireOAuthProvider(record);
-  const quirks: DriverQuirks = Object.hasOwn(QUIRKS, provider.slug) ? QUIRKS[provider.slug] : {};
+  const quirks = quirksFor(provider.slug);
   const normalize = quirks.normalizePayload ?? ((payload: Record<string, unknown>) => payload);
 
   return {
@@ -298,7 +327,7 @@ export function oauthDriverFor(record: ProviderRecord, deps: HttpDeps = liveHttp
           deps,
           provider.token_url,
           form,
-          basic ? { authorization: `Basic ${btoa(`${clientId}:${clientSecret}`)}` } : {},
+          basic ? basicAuthHeader(clientId, clientSecret) : {},
         ),
       );
 
@@ -310,33 +339,6 @@ export function oauthDriverFor(record: ProviderRecord, deps: HttpDeps = liveHttp
         expiresAt: expiresAtFrom(payload.expires_in),
         scopes: splitScopes(payload.scope),
         externalAccountId: (await quirks.accountFromExchange?.(deps, payload, accessToken)) ?? null,
-      };
-    },
-
-    async refreshTokens({ clientId, clientSecret, refreshToken }) {
-      const payload = normalize(
-        await postForToken(
-          deps,
-          provider.token_url,
-          new URLSearchParams({
-            client_id: clientId,
-            client_secret: clientSecret,
-            grant_type: 'refresh_token',
-            refresh_token: refreshToken,
-          }),
-        ),
-      );
-
-      return {
-        accessToken: requireAccessToken(payload, 'refresh'),
-        // Keeping the old token when a response omits it survives a provider
-        // that rotates on some calls and not others. Linear rotates; most do not.
-        refreshToken: typeof payload.refresh_token === 'string'
-          ? payload.refresh_token
-          : refreshToken,
-        expiresAt: expiresAtFrom(payload.expires_in),
-        scopes: splitScopes(payload.scope),
-        externalAccountId: null,
       };
     },
   };

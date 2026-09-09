@@ -4,7 +4,7 @@ import { apiErrorFrom } from '../testing/assertions.ts';
 import type { SourceCredentials, SourceDeps, SourceDriver } from './contract.ts';
 import { SourceError } from './contract.ts';
 import { driverFor, hasDriver, SOURCE_PROVIDERS } from './index.ts';
-import { FIXTURE_NOW, stubSource } from './testing/http_stub.ts';
+import { FIXTURE_NOW, stubAnswering, stubSource } from './testing/http_stub.ts';
 
 /**
  * A token must never reach a message.
@@ -64,6 +64,7 @@ interface DriverCall {
   run(driver: SourceDriver, deps: SourceDeps): Promise<unknown>;
 }
 
+/** The calls every driver answers over the wire, whatever its provider is. */
 const CALLS: DriverCall[] = [
   {
     name: 'listChanges',
@@ -87,8 +88,59 @@ const CALLS: DriverCall[] = [
     name: 'listScopeOptions',
     run: (driver, deps) => driver.listScopeOptions(credentials(), deps),
   },
-  { name: 'refresh', run: (driver, deps) => driver.refresh(deps, REFRESH_INPUT) },
 ];
+
+const REFRESH_CALL: DriverCall = {
+  name: 'refresh',
+  run: (driver, deps) => driver.refresh(deps, REFRESH_INPUT),
+};
+
+/**
+ * Which drivers renew over the wire, asked rather than listed.
+ *
+ * A provider whose tokens never expire answers `not_supported` without touching
+ * deps, so every assertion below would hold just as well against a body that
+ * did nothing at all. Those drivers are covered by the request-count test
+ * instead, which is a claim an empty body cannot satisfy.
+ *
+ * Asking each driver keeps the split honest: one that starts making a request
+ * moves itself into the leak tests, and one that stops making one moves itself
+ * out.
+ */
+const RENEWS_OVER_THE_WIRE = new Set<string>();
+for (const provider of SOURCE_PROVIDERS) {
+  const outcome = await driverFor(provider).refresh(stubAnswering(500), REFRESH_INPUT);
+  if (outcome.kind !== 'not_supported') RENEWS_OVER_THE_WIRE.add(provider);
+}
+
+function callsFor(provider: string): DriverCall[] {
+  return RENEWS_OVER_THE_WIRE.has(provider) ? [...CALLS, REFRESH_CALL] : CALLS;
+}
+
+/**
+ * The other half of the split above.
+ *
+ * `not_supported` is a promise about the network, not only about the return
+ * value: the connection's stored refresh token is handed to this call, and a
+ * driver that posted it somewhere while answering "there is nothing to trade"
+ * would have sent a live credential to a token endpoint for no reason. The
+ * request count is what says it did not.
+ */
+for (const provider of SOURCE_PROVIDERS) {
+  if (RENEWS_OVER_THE_WIRE.has(provider)) continue;
+
+  Deno.test(`${provider}.refresh sends nothing when it has nothing to trade`, async () => {
+    const stub = stubAnswering(500);
+    const outcome = await driverFor(provider).refresh(stub, REFRESH_INPUT);
+
+    assertEquals(outcome.kind, 'not_supported');
+    assertEquals(
+      stub.calls.length,
+      0,
+      `${provider}.refresh made a request on the way to saying no`,
+    );
+  });
+}
 
 /**
  * Everything a failure could carry, not just the message: a stack or a cause
@@ -110,7 +162,7 @@ async function surfaceOf(
 }
 
 for (const provider of SOURCE_PROVIDERS) {
-  for (const call of CALLS) {
+  for (const call of callsFor(provider)) {
     for (const status of [401, 403, 429, 500]) {
       Deno.test(`${provider}.${call.name} never leaks the token on a ${status}`, async () => {
         const surface = await surfaceOf(call, driverFor(provider), depsAnswering(status));
@@ -201,7 +253,7 @@ for (const provider of SOURCE_PROVIDERS) {
     // connections side by side differing by a trailing full stop is the tell
     // that one of them was written for a different slot.
     const driver = driverFor(provider);
-    for (const call of CALLS) {
+    for (const call of callsFor(provider)) {
       for (const status of [401, 500]) {
         const spoken = await userFacingText(call, driver, depsAnswering(status));
         if (spoken === '') continue;
@@ -219,7 +271,7 @@ for (const provider of SOURCE_PROVIDERS) {
 
   Deno.test(`${provider} names itself the way a person would, not by its slug`, async () => {
     const driver = driverFor(provider);
-    for (const call of CALLS) {
+    for (const call of callsFor(provider)) {
       for (const status of [401, 500]) {
         const spoken = await userFacingText(call, driver, depsAnswering(status));
         assert(

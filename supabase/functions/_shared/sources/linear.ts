@@ -264,6 +264,6 @@ export const linearDriver: SourceDriver = {
   },
 
   refresh(deps: SourceDeps, input: RefreshInput): Promise<RefreshOutcome> {
-    return refreshWithTokenEndpoint(DISPLAY_NAME, deps, input);
+    return refreshWithTokenEndpoint(PROVIDER, DISPLAY_NAME, deps, input);
   },
 };
