@@ -299,12 +299,35 @@ language sql
 security definer
 set search_path = ''
 as $$
+  -- Take back a claim whose worker never came back. A job left at 'running' is
+  -- invisible to both halves below, which filter on 'queued', so nothing else in
+  -- the system would ever touch it again and the page would show a spinner that
+  -- never resolves. claimed_at exists for this and nothing else.
+  --
+  -- Fifteen minutes is safe without waiting on the measured Edge Function
+  -- ceiling, because the job body times itself out at DEFAULT_BUDGET_MS, which
+  -- is 45 seconds. No legitimate ingest is still running at twenty times that.
+  --
+  -- The reclaim increments nothing. The attempt was counted when the job was
+  -- claimed, and counting it again would charge a crashed worker twice and
+  -- retire a healthy document after two real failures.
+  --
+  -- All three statements see the same snapshot, so a job reclaimed here becomes
+  -- claimable on the next invocation rather than this one. At a two-minute
+  -- worker interval that is not worth the complexity of avoiding.
+  with reclaimed as (
+    update public.ingest_jobs
+    set status = 'queued'
+    where status = 'running'
+      and claimed_at < now() - interval '15 minutes'
+    returning id
+  ),
   -- Retire what the claim is about to skip. `attempts < 3` alone would leave a
   -- poison job sitting at 'queued' forever, invisible to a page filtering on
   -- failures, which is the spinner that never resolves the spec is explicit
   -- about. A data-modifying CTE always runs to completion whether or not the
   -- outer query reads it, and the two row sets are disjoint on `attempts`.
-  with retired as (
+  retired as (
     update public.ingest_jobs
     set status = 'failed',
         error = 'gave up after 3 attempts'
