@@ -25,6 +25,17 @@
 
   /* Prose measure. Section 4 caps body copy at 65-75ch. */
   --measure-prose: 68ch;
+
+  /*
+   * The one value the vendored compat layer computes rather than aliases, and
+   * the muted series in the chart palette. It is copied here, unchanged,
+   * because compat.css says of itself that it goes away once its aliases have
+   * moved, and the dataviz validation recorded in docs/design.md was run
+   * against this exact color.
+   */
+  --border-stronger: oklch(
+    from var(--foreground) l calc(c * 0.5) h / calc(5% + 45% * var(--contrast-border))
+  );
 }
 
 /*

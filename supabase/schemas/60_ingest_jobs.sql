@@ -39,6 +39,8 @@ alter table public.ingest_jobs
 
 create index ingest_jobs_space_idx on public.ingest_jobs (space_id, updated_at desc);
 create index ingest_jobs_document_idx on public.ingest_jobs (document_id);
+-- Disconnecting a source deletes the connection, which cascades here.
+create index ingest_jobs_connection_idx on public.ingest_jobs (connection_id);
 
 alter table public.ingest_jobs enable row level security;
 alter table public.ingest_jobs force row level security;

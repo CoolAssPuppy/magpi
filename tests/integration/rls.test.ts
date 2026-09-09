@@ -111,7 +111,11 @@ describe('a signed-in person, over real HTTP', () => {
 
   it('cannot select every column of connections either', async () => {
     const { error } = await alice.client.from('connections').select('*');
-    expect(error).not.toBeNull();
+
+    // The code, not merely an error. `not.toBeNull()` passes when the table has
+    // been renamed away, and a test that survives the deletion of the thing it
+    // guards is not guarding it.
+    expect(error?.code).toBe('42501');
   });
 
   it('cannot write a chunk, because chunks are service-role only', async () => {
@@ -128,7 +132,7 @@ describe('a signed-in person, over real HTTP', () => {
       content: 'should never land',
     });
 
-    expect(error).not.toBeNull();
+    expect(error?.code).toBe('42501');
   });
 
   it("cannot spend somebody else's rate limit budget", async () => {
@@ -138,6 +142,10 @@ describe('a signed-in person, over real HTTP', () => {
       p_window_s: 60,
     });
 
-    expect(error).not.toBeNull();
+    // 42501 is the refusal. PGRST202 is PostgREST saying the function is not in
+    // its schema cache, which is what this asserted for as long as it asserted
+    // only that something went wrong: deleting consume_rate_limit outright kept
+    // the test green.
+    expect(error?.code).toBe('42501');
   });
 });

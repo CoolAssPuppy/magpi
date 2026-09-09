@@ -113,12 +113,11 @@ function main() {
 
   for (const scanRoot of SCAN_ROOTS) {
     const dir = resolve(ROOT, scanRoot);
-    let files;
-    try {
-      files = [...walk(dir)];
-    } catch {
-      continue;
-    }
+
+    // Deliberately not wrapped. A scan root that has been renamed used to make
+    // this step skip that whole tree and report success, so the check would
+    // have gone quiet exactly when the code moved out from under it.
+    const files = [...walk(dir)];
 
     for (const file of files) {
       const relativePath = relative(ROOT, file);

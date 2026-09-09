@@ -5,7 +5,7 @@ returns setof uuid
 language sql
 stable
 security definer
-set search_path = public
+set search_path = ''
 as $$
   select space_id from public.space_members where user_id = (select auth.uid())
 $$;
@@ -23,7 +23,7 @@ returns boolean
 language sql
 stable
 security definer
-set search_path = public
+set search_path = ''
 as $$
   select exists (
     select 1 from public.org_members
@@ -39,7 +39,7 @@ returns boolean
 language sql
 stable
 security definer
-set search_path = public
+set search_path = ''
 as $$
   select exists (
     select 1 from public.org_members
@@ -57,7 +57,7 @@ returns boolean
 language sql
 stable
 security definer
-set search_path = public
+set search_path = ''
 as $$
   select exists (
     select 1 from public.space_members

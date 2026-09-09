@@ -8,7 +8,21 @@ import { createConfirmedUser, deleteUser, serviceClient, signedInClient } from '
  * The other gets an answer that does not include it, with no error and no
  * permission dialog. Same query, same index, different rows, because RLS ran
  * inside the vector search.
+ *
+ * It asks `public.search` to prove that, rather than reading `chunks` directly.
+ * Reading the table proves RLS on the table, which is a weaker claim and the
+ * one this file used to make while its own header claimed the stronger one.
+ * `search` is `security invoker` precisely so the reader's policies apply
+ * inside it, and that is the property worth a test.
  */
+
+/**
+ * A query vector. The content is found through the full text half of the hybrid
+ * search rather than the vector half, because a chunk written here has no
+ * embedding, so the value only has to be a well-formed vector. It is not the
+ * zero vector: cosine distance is undefined for that.
+ */
+const QUERY_VECTOR = `[${['1', ...Array.from({ length: 1535 }, () => '0')].join(',')}]`;
 test('two people in different spaces get different answers to the same question', async () => {
   const insider = await createConfirmedUser('insider');
   const outsider = await createConfirmedUser('outsider');
@@ -48,16 +62,43 @@ test('two people in different spaces get different answers to the same question'
     });
 
     const asInsider = await signedInClient(insider.email, insider.password);
-    const insiderRows = await asInsider.from('chunks').select('id').eq('document_id', document.id);
-
     const asOutsider = await signedInClient(outsider.email, outsider.password);
+
+    const ask = (client: Awaited<ReturnType<typeof signedInClient>>) =>
+      client.rpc('search', {
+        query_embedding: QUERY_VECTOR,
+        // Every term has to appear: websearch_to_tsquery ANDs them, and the
+        // chunk below carries no embedding, so the lexical arm is the only one
+        // that can reach it. In production the semantic arm carries a question
+        // phrased any other way.
+        query_text: 'Team plan seat',
+        match_count: 12,
+      });
+
+    const insiderHits = await ask(asInsider);
+    const outsiderHits = await ask(asOutsider);
+
+    expect(insiderHits.error).toBeNull();
+    expect(insiderHits.data?.map((hit: { document_id: string }) => hit.document_id)).toContain(
+      document.id,
+    );
+
+    // No error, no permission dialog. The same question, answered from fewer
+    // rows.
+    expect(outsiderHits.error).toBeNull();
+    expect(outsiderHits.data?.map((hit: { document_id: string }) => hit.document_id)).not.toContain(
+      document.id,
+    );
+
+    // The table underneath tells the same story, which is what makes the search
+    // result above a permission boundary rather than a ranking accident.
+    const insiderRows = await asInsider.from('chunks').select('id').eq('document_id', document.id);
     const outsiderRows = await asOutsider
       .from('chunks')
       .select('id')
       .eq('document_id', document.id);
 
     expect(insiderRows.data).toHaveLength(1);
-    // No error, no permission dialog. Just fewer rows.
     expect(outsiderRows.error).toBeNull();
     expect(outsiderRows.data).toHaveLength(0);
   } finally {

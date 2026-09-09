@@ -114,12 +114,14 @@ function pathExists(path) {
 }
 
 function main() {
-  let routes;
-  try {
-    routes = [...new Set(collectRoutes(APP_DIR))].sort();
-  } catch {
-    console.log('mobile-spec: no (app) routes yet');
-    return;
+  // Deliberately not wrapped. Renaming web/app/(app) used to turn this step
+  // into a pass printing "no (app) routes yet", so the one check that keeps the
+  // mobile spec honest went quiet at the exact moment the routes moved.
+  const routes = [...new Set(collectRoutes(APP_DIR))].sort();
+
+  if (routes.length === 0) {
+    console.error(`mobile-spec FAILED: ${APP_DIR} holds no routes`);
+    process.exit(1);
   }
 
   const spec = readFileSync(SPEC, 'utf8');

@@ -60,6 +60,8 @@ create index documents_space_id_idx on public.documents (space_id);
 create index documents_org_id_idx on public.documents (org_id);
 create index documents_origin_idx on public.documents (space_id, origin);
 create index documents_dead_content_idx on public.documents (org_id, last_retrieved_at);
+-- Deleting a dream run cascades to the document it wrote.
+create index documents_dream_run_idx on public.documents (dream_run_id);
 
 alter table public.documents enable row level security;
 alter table public.documents force row level security;

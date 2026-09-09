@@ -50,6 +50,9 @@ alter table public.documents
   on delete set null (dream_run_id);
 
 create index dream_runs_space_created_idx on public.dream_runs (space_id, created_at desc);
+-- The dream output a reader can delete from the UI, which nulls this column
+-- rather than cascading.
+create index dream_runs_output_idx on public.dream_runs (output_document_id);
 
 -- A candidate link between two documents in the same space, from different
 -- sources, that look like they are about the same thing. Surfaced for a human.
@@ -84,6 +87,10 @@ alter table public.dream_links
     on delete cascade;
 
 create index dream_links_space_idx on public.dream_links (space_id, created_at desc);
+-- Deleting a document cascades to both ends of every link it appears in, and
+-- the space index leads on space_id so neither end is reachable through it.
+create index dream_links_document_a_idx on public.dream_links (document_a);
+create index dream_links_document_b_idx on public.dream_links (document_b);
 
 alter table public.dream_runs enable row level security;
 alter table public.dream_runs force row level security;

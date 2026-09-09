@@ -40,6 +40,10 @@ alter table public.entity_mentions
     foreign key (chunk_id, space_id) references public.chunks (id, space_id)
     on delete cascade;
 
+-- Re-ingesting a document deletes its chunks, and every chunk delete cascades
+-- through entity_mentions_chunk_in_space. Without this it is a sequential scan
+-- of entity_mentions per chunk, on the most frequent write in the product.
+create index entity_mentions_chunk_idx on public.entity_mentions (chunk_id);
 create index entity_mentions_document_idx on public.entity_mentions (document_id);
 create index entity_mentions_space_id_idx on public.entity_mentions (space_id);
 

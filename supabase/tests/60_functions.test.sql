@@ -257,13 +257,19 @@ select is(
 
 -- A definer function without a pinned search_path can be pointed at a shadow
 -- table by whoever calls it.
+--
+-- The empty string, not merely something. This asserted only that a
+-- `search_path=` entry existed, so it passed on `search_path=public` and four
+-- functions sat on that for the whole build. `public` is a schema a role may be
+-- able to create in, which is the thing being defended against; every body in
+-- this file names its tables in full, so nothing needs a path at all.
 select is(
   (select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'public' and p.prosecdef
      and (p.proconfig is null
           or not exists (select 1 from unnest(p.proconfig) as cfg
-                         where cfg like 'search\_path=%'))),
-  0, 'every security definer function in public pins a search_path'
+                         where cfg = 'search_path=""'))),
+  0, 'every security definer function in public pins an empty search_path'
 );
 
 -- A revoke never survives `supabase db diff`, so every security definer function
