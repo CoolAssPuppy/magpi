@@ -189,6 +189,38 @@ async function resolveSpaces(db, orgId, members) {
 }
 
 /**
+ * Reads the bucket definition out of `supabase/config.toml`.
+ *
+ * The alternative is a second copy of the limit and the mime list in this file,
+ * and a second copy is how they drift. This one already had: config.toml said
+ * 50MiB, this script said 50MB, and only one of those two spellings is a format
+ * the storage API accepts.
+ *
+ * A deliberately small parser rather than a TOML dependency. It reads one known
+ * table out of one file we own, and a wrong answer fails loudly on the next
+ * line rather than corrupting anything.
+ */
+function bucketConfig() {
+  const toml = readFileSync(resolve(ROOT, 'supabase/config.toml'), 'utf8');
+  const table = toml.split(`[storage.buckets.${BUCKET}]`)[1];
+  if (!table) throw new SeedError(`supabase/config.toml has no [storage.buckets.${BUCKET}]`);
+
+  const body = table.split(/\n\[/)[0];
+  const limit = body.match(/file_size_limit\s*=\s*"([^"]+)"/)?.[1];
+  const mimeBlock = body.match(/allowed_mime_types\s*=\s*\[([^\]]*)\]/)?.[1] ?? '';
+
+  if (!limit) throw new SeedError('the documents bucket has no file_size_limit');
+
+  return {
+    // config.toml takes MiB and the storage API refuses it: "Invalid file size
+    // format, hint: use 20GB / 20MB / 30KB / 3B". Same limit, two spellings,
+    // one of which fails.
+    fileSizeLimit: limit.replace(/MiB$/, 'MB').replace(/GiB$/, 'GB').replace(/KiB$/, 'KB'),
+    allowedMimeTypes: [...mimeBlock.matchAll(/"([^"]+)"/g)].map((match) => match[1]),
+  };
+}
+
+/**
  * `supabase/config.toml` declares the bucket, and a stack started before that
  * line was written does not have it. Creating it here costs one call and keeps
  * a running local stack out of a restart, which would take the database with it.
@@ -199,10 +231,7 @@ async function ensureBucket(db) {
 
   const { error } = await db.storage.createBucket(BUCKET, {
     public: false,
-    // MB, not MiB. config.toml accepts MiB and the storage API does not:
-    // "Invalid file size format, hint: use 20GB / 20MB / 30KB / 3B".
-    fileSizeLimit: '50MB',
-    allowedMimeTypes: ['text/markdown', 'text/plain', 'application/pdf'],
+    ...bucketConfig(),
   });
   if (error && !/already exists/i.test(error.message)) {
     throw new SeedError(`creating the ${BUCKET} bucket: ${error.message}`);
