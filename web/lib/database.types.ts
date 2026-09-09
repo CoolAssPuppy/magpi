@@ -1091,6 +1091,29 @@ export type Database = {
           used: number
         }[]
       }
+      claim_ingest_jobs: {
+        Args: { p_limit: number }
+        Returns: {
+          attempts: number
+          claimed_at: string | null
+          connection_id: string | null
+          created_at: string
+          document_id: string
+          error: string | null
+          id: string
+          org_id: string
+          space_id: string
+          stage: Database["public"]["Enums"]["ingest_stage"]
+          status: Database["public"]["Enums"]["ingest_status"]
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "ingest_jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       consume_oauth_state: {
         Args: { p_state: string }
         Returns: {

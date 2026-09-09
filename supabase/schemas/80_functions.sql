@@ -284,6 +284,39 @@ $$;
 revoke all on function public.prune_rate_limits() from public, anon, authenticated;
 grant execute on function public.prune_rate_limits() to service_role;
 
+-- Claims queued ingest jobs atomically.
+--
+-- The worker used to select queued rows and then update them to running, which
+-- is a read rather than a claim: two concurrent invocations select the same rows
+-- and both process them. The document is embedded twice, the model bill is paid
+-- twice, and the second writer collides on chunks (document_id, ordinal).
+--
+-- `for update skip locked` is what makes it a claim. Two callers running at the
+-- same instant get disjoint sets, and neither waits on the other.
+create or replace function public.claim_ingest_jobs(p_limit integer)
+returns setof public.ingest_jobs
+language sql
+security definer
+set search_path = ''
+as $$
+  update public.ingest_jobs j
+  set status = 'running',
+      claimed_at = now(),
+      attempts = j.attempts + 1
+  where j.id in (
+    select c.id
+    from public.ingest_jobs c
+    where c.status = 'queued'
+    order by c.created_at
+    limit greatest(p_limit, 0)
+    for update skip locked
+  )
+  returning j.*;
+$$;
+
+revoke all on function public.claim_ingest_jobs(integer) from public, anon, authenticated;
+grant execute on function public.claim_ingest_jobs(integer) to service_role;
+
 -- Plan limits live in the database, not the client. An ingest job that would
 -- take an org past its plan is refused here.
 create or replace function public.plan_document_limit(p_plan public.org_plan)
