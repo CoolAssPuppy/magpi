@@ -75,6 +75,20 @@ export function parseBody<T>(schema: z.ZodType<T>, data: unknown): T {
   });
 }
 
+/**
+ * Whether an uploaded object belongs to the space the caller named.
+ *
+ * Objects are keyed `${space_id}/${document_id}/${filename}` and the storage
+ * policy checks that first segment against the caller's visible spaces. The same
+ * check happens again when a document is filed, because a row pointing at
+ * someone else's bytes would be read by the worker under the service role, where
+ * no policy is watching.
+ */
+export function isUploadInSpace(storagePath: string, spaceId: string): boolean {
+  if (storagePath.includes('..') || storagePath.startsWith('/')) return false;
+  return storagePath.startsWith(`${spaceId}/`) && storagePath.length > spaceId.length + 1;
+}
+
 /** A provider slug becomes part of an upstream URL, so "../" must not survive. */
 export function isValidSlug(value: string): boolean {
   return value.length <= 64 && SLUG_RE.test(value);

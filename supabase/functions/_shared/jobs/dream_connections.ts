@@ -1,0 +1,139 @@
+// The connections pass: find pairs of recent documents that look like they are
+// about the same thing, and write the ones the model can explain.
+
+import { z } from 'zod';
+
+import { ApiError } from '../errors.ts';
+import {
+  ask,
+  type DreamOutcome,
+  NOTHING,
+  parsed,
+  type Pass,
+  readAnswer,
+  sinceIso,
+} from './dream_pass.ts';
+import type { LinkDraft, SpaceDocumentRow } from './space_writer.ts';
+
+// The connections pass costs one embedding and one search per document, so the
+// document count is the wall-clock cost. Twenty keeps the pass inside the budget
+// on a busy space, and tomorrow night reaches the rest.
+const MAX_COMPARED_DOCUMENTS = 20;
+
+// A page of candidate links a person will actually read. Ranking past this is
+// work nobody looks at.
+const MAX_LINKS = 20;
+
+const SEARCH_MATCH_COUNT = 10;
+
+const rationalesSchema = z.array(
+  z.object({ pair: z.number().int().min(0), rationale: z.string().trim().min(1).max(400) }),
+).max(MAX_LINKS);
+
+const searchHitsSchema = z.array(z.object({ document_id: z.string(), score: z.number() }));
+
+const RATIONALE_SYSTEM =
+  'You say in one line why two documents look like they are about the same thing. Answer with ' +
+  'STRICT JSON and nothing else: an array of objects with the keys pair (the number given) and ' +
+  'rationale (one sentence).';
+
+/** Two documents from one connection are one source talking to itself. */
+function sourceOf(document: SpaceDocumentRow): string {
+  return document.connection_id ?? 'upload';
+}
+
+async function searchNeighbours(pass: Pass, embedding: number[], text: string): Promise<
+  { document_id: string; score: number }[]
+> {
+  // Under the service role the function's RLS constrains nothing, so this array
+  // is the only thing keeping the pass inside its own space.
+  const { data, error } = await pass.deps.db.rpc('search', {
+    query_embedding: embedding,
+    query_text: text,
+    space_filter: [pass.run.space_id],
+    match_count: SEARCH_MATCH_COUNT,
+  }).returns<unknown>();
+  if (error) {
+    console.error('the connections search failed', error.message);
+    throw new ApiError(500, 'internal', 'the space could not be searched');
+  }
+  return parsed(searchHitsSchema, data ?? [], 'search results');
+}
+
+/** The pairs worth asking about: distinct documents, one hop from each source. */
+async function candidatePairs(pass: Pass, documents: SpaceDocumentRow[]): Promise<
+  { sourceId: string; otherId: string; similarity: number }[]
+> {
+  const { run, deps, db, budget } = pass;
+  const found = new Map<string, { sourceId: string; otherId: string; similarity: number }>();
+
+  for (const document of documents) {
+    if (found.size >= MAX_LINKS) break;
+    budget.checkpoint('read');
+    const chunk = await db.firstChunkOf(document.id);
+    if (!chunk) continue;
+
+    budget.checkpoint('embed');
+    const [embedding] = await deps.models.embed({ orgId: run.org_id, texts: [chunk.content] });
+    if (!embedding) continue;
+
+    budget.checkpoint('read');
+    for (const hit of await searchNeighbours(pass, embedding, chunk.content)) {
+      if (hit.document_id === document.id) continue;
+      const key = [document.id, hit.document_id].sort().join(':');
+      if (found.has(key)) continue;
+      // The fused search score, which ranks this pair against the others in this
+      // pass and means nothing outside it.
+      found.set(key, { sourceId: document.id, otherId: hit.document_id, similarity: hit.score });
+    }
+  }
+  return [...found.values()].slice(0, MAX_LINKS);
+}
+
+export async function dreamConnections(pass: Pass): Promise<DreamOutcome> {
+  const { run, deps, db, budget } = pass;
+  budget.checkpoint('read');
+  const documents = await db.recentDocuments(sinceIso(deps), MAX_COMPARED_DOCUMENTS);
+  if (documents.length === 0) return NOTHING;
+
+  const candidates = await candidatePairs(pass, documents);
+  budget.checkpoint('read');
+  const others = await db.documentsByIds([...new Set(candidates.map((c) => c.otherId))]);
+  const known = new Map([...documents, ...others].map((doc) => [doc.id, doc]));
+  const outcome = { ...NOTHING, inputDocumentCount: documents.length };
+
+  // A document this read could not return is one the space cannot see, and a
+  // pair whose halves came from the same connection is not news.
+  const pairs = candidates.flatMap((candidate) => {
+    const source = known.get(candidate.sourceId);
+    const other = known.get(candidate.otherId);
+    if (!source || !other || sourceOf(source) === sourceOf(other)) return [];
+    return [{ candidate, title: `${source.title} and ${other.title}` }];
+  });
+  if (pairs.length === 0) return outcome;
+
+  budget.checkpoint('extract');
+  const prompt = pairs.map((pair, index) => `${index}: ${pair.title}`).join('\n');
+  const answer = await ask(pass, RATIONALE_SYSTEM, `CANDIDATE PAIRS\n${prompt}`, 800);
+  const rationales = new Map(
+    readAnswer(rationalesSchema, answer, 'link rationales').map((row) => [row.pair, row.rationale]),
+  );
+
+  // A link nobody can explain is a row a person has to guess at, so only the
+  // explained ones are written.
+  const drafts: LinkDraft[] = pairs.flatMap(({ candidate }, index) => {
+    const rationale = rationales.get(index);
+    if (!rationale) return [];
+    return [{
+      dreamRunId: run.id,
+      documentA: candidate.sourceId,
+      documentB: candidate.otherId,
+      similarity: candidate.similarity,
+      rationale,
+    }];
+  });
+
+  budget.checkpoint('store');
+  await db.insertLinks(drafts);
+  return { ...outcome, produced: drafts.length };
+}

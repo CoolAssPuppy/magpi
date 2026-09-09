@@ -171,3 +171,22 @@ The wider lesson is that adding a constraint is a behavior change on the delete
 path as much as the insert path, and only the insert path was being thought
 about when this went in. The existing assertions caught it, which is the whole
 argument for having them.
+
+## Deno resolves its config from the working directory, not from the files
+
+`deno check supabase/functions` from the repo root reported 136 type errors, 33
+of them `Import "zod" not a dependency`, with a correct import map sitting in
+`supabase/functions/deno.json` the whole time. Deno looks for its config by
+walking up from the current directory, not up from the files it was handed, and
+the repo root has no `deno.json`.
+
+`cd supabase/functions && deno check .` reported zero errors on the same code.
+
+The cost was not the fix, it was the reading. Those errors sat in the gate for
+most of an hour looking like a workstream mid-build, and I nearly asked the
+agent writing that code to account for errors that were mine.
+
+**Rule.** Every Deno command in `package.json` passes
+`--config supabase/functions/deno.json` explicitly. A tool that silently falls
+back to a default when it cannot find its config will blame your code for your
+invocation.

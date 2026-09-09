@@ -4,7 +4,7 @@
 // validates against the auth server rather than decoding locally, so a revoked
 // or rotated-key token is rejected; decoding the claims here would accept both.
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 import { ApiError, bearerToken } from './errors.ts';
 import { coreEnv, denoEnv, type EnvSource, publishableKey } from './env.ts';
@@ -39,7 +39,7 @@ export async function requireUser(
  * resolves auth.uid() and would be nobody under this key.
  */
 export async function requireSpaceMembership(
-  db: { from: (table: string) => ReturnType<ReturnType<typeof createClient>['from']> },
+  db: SupabaseClient,
   userId: string,
   spaceId: string,
 ): Promise<{ orgId: string }> {

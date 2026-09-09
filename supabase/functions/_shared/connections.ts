@@ -1,14 +1,12 @@
 // Reading and updating connections under the service role.
 //
-// This is the only place a provider secret is decrypted. The encryption key
-// reaches the edge functions and nothing else, because the web app has no reason
-// to hold one.
+// Nothing here decrypts a token. A caller wanting a usable credential goes
+// through resolveCredentials in token_refresh.ts, which is the one path that
+// renews a spent one, so no read path can quietly skip the renewal.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { ApiError } from './errors.ts';
-import { denoEnv, type EnvSource } from './env.ts';
-import { decryptProviderToken } from './provider_tokens.ts';
 
 export type ConnectionStatus = 'active' | 'syncing' | 'error' | 'revoked' | 'expired';
 
@@ -101,25 +99,4 @@ export async function advanceCursor(
     })
     .eq('id', connectionId);
   if (error) throw new ApiError(500, 'internal', 'cursor update failed');
-}
-
-/**
- * The plaintext access token for one connection.
- *
- * Callers wanting a token that is definitely still valid go through
- * resolveCredentials in token_refresh.ts instead: this one decrypts what is
- * stored and says nothing about whether the provider still honours it.
- */
-export async function decryptAccessToken(
-  connection: ConnectionRow,
-  source: EnvSource = denoEnv,
-): Promise<string> {
-  if (!connection.access_token_enc) {
-    throw new ApiError(409, 'connection_unusable', 'that connection holds no token');
-  }
-  return decryptProviderToken(
-    connection.access_token_enc,
-    { userId: connection.user_id, provider: connection.provider },
-    source,
-  );
 }

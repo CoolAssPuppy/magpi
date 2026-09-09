@@ -4,6 +4,7 @@ import {
   connectionsBeginSchema,
   dreamRunSchema,
   ingestEnqueueSchema,
+  isUploadInSpace,
   isValidSlug,
   parseBody,
   workerBatchSchema,
@@ -62,4 +63,21 @@ Deno.test('a slug that could climb a path is not a slug', () => {
   assertEquals(isValidSlug('../etc'), false);
   assertEquals(isValidSlug('-leading'), false);
   assertEquals(isValidSlug('a'.repeat(65)), false);
+});
+
+Deno.test('an upload is only accepted under the space that owns it', () => {
+  assertEquals(isUploadInSpace(`${SPACE}/doc-1/report.pdf`, SPACE), true);
+});
+
+Deno.test('an upload pointing at another space is refused', () => {
+  const other = '99999999-9999-4999-8999-999999999999';
+  assertEquals(isUploadInSpace(`${other}/doc-1/report.pdf`, SPACE), false);
+  assertEquals(isUploadInSpace(`${SPACE}-decoy/doc-1/report.pdf`, SPACE), false);
+});
+
+Deno.test('a path that could climb out of its space is refused', () => {
+  assertEquals(isUploadInSpace(`${SPACE}/../other/report.pdf`, SPACE), false);
+  assertEquals(isUploadInSpace(`/${SPACE}/report.pdf`, SPACE), false);
+  assertEquals(isUploadInSpace(`${SPACE}/`, SPACE), false);
+  assertEquals(isUploadInSpace(SPACE, SPACE), false);
 });
