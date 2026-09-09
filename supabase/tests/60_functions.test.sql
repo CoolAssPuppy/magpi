@@ -9,7 +9,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(39);
+select plan(40);
 
 insert into auth.users (id, email, instance_id, aud, role)
 values
@@ -406,6 +406,47 @@ select set_eq(
     cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE')) as pr(p)
   $$,
   'the applied table privileges are exactly the ones the schema files declare'
+);
+
+-- The same comparison for function execute privileges, written out by hand from
+-- supabase/schemas/80_functions.sql. The one above covers tables and says nothing
+-- about functions, which is where the drift actually was: eleven of the eighteen
+-- had their revoke only in migrations/20260909161000, so a shadow database built
+-- from schemas/ alone handed every one of them back to PUBLIC and no diff would
+-- have mentioned it.
+--
+-- It reads proacl as stored rather than asking has_function_privilege, because
+-- the question is what the schema files declared and not what a role can reach
+-- through inheritance. A null proacl is expanded to the default first, so a
+-- function whose revoke went missing appears here as a grant to PUBLIC rather
+-- than as no row at all, which is the whole failure being tested for.
+--
+-- Only the roles a client can reach are compared. service_role is the database's
+-- own credential and already holds every table privilege in the assertion above,
+-- so a row for it proves nothing in either direction.
+select set_eq(
+  $$ select r.role_name || ' ' || p.proname::text
+     from pg_proc p
+     join pg_namespace n on n.oid = p.pronamespace
+     cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
+     cross join lateral (
+       select case when a.grantee = 0 then 'PUBLIC'
+                   else pg_get_userbyid(a.grantee)::text end
+     ) as r(role_name)
+     where n.nspname = 'public'
+       and a.privilege_type = 'EXECUTE'
+       and r.role_name in ('PUBLIC', 'anon', 'authenticated') $$,
+  $$
+    -- anon and PUBLIC are absent on purpose, the same way anon is absent from
+    -- the table comparison. A row for either on the left is itself the failure.
+    select 'authenticated ' || f
+    from (values
+      ('visible_space_ids'), ('is_org_member'), ('is_org_admin'), ('is_space_member'),
+      ('search'), ('plan_document_limit'), ('plan_monthly_query_limit'),
+      ('check_ingest_allowed')
+    ) as c(f)
+  $$,
+  'the applied function execute privileges are exactly the ones 80_functions.sql declares'
 );
 
 -- connections is the one table granted by column list rather than whole, because

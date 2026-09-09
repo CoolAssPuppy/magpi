@@ -10,6 +10,12 @@ as $$
   select space_id from public.space_members where user_id = (select auth.uid())
 $$;
 
+-- Revoking from PUBLIC removes execute from every role not granted it
+-- explicitly, service_role included, so each grant below is required and not
+-- merely tidiness. `supabase db diff` emits grants and never revokes, so a
+-- revoke that lives only in a migration is gone the next time this file is the
+-- one that builds the shadow database. anon has no surface in this product.
+revoke all on function public.visible_space_ids() from public, anon;
 grant execute on function public.visible_space_ids() to authenticated, service_role;
 
 create or replace function public.is_org_member(p_org_id uuid)
@@ -25,6 +31,7 @@ as $$
   )
 $$;
 
+revoke all on function public.is_org_member(uuid) from public, anon;
 grant execute on function public.is_org_member(uuid) to authenticated, service_role;
 
 create or replace function public.is_org_admin(p_org_id uuid)
@@ -42,6 +49,7 @@ as $$
   )
 $$;
 
+revoke all on function public.is_org_admin(uuid) from public, anon;
 grant execute on function public.is_org_admin(uuid) to authenticated, service_role;
 
 create or replace function public.is_space_member(p_space_id uuid)
@@ -57,6 +65,7 @@ as $$
   )
 $$;
 
+revoke all on function public.is_space_member(uuid) from public, anon;
 grant execute on function public.is_space_member(uuid) to authenticated, service_role;
 
 -- Hybrid retrieval: pgvector similarity plus Postgres full text search, merged
@@ -160,6 +169,7 @@ $$;
 alter function public.search(extensions.vector, text, uuid[], integer)
   set hnsw.iterative_scan = relaxed_order;
 
+revoke all on function public.search(extensions.vector, text, uuid[], integer) from public, anon;
 grant execute on function public.search(extensions.vector, text, uuid[], integer)
   to authenticated, service_role;
 
@@ -372,6 +382,7 @@ as $$
   end;
 $$;
 
+revoke all on function public.plan_document_limit(public.org_plan) from public, anon;
 grant execute on function public.plan_document_limit(public.org_plan) to authenticated, service_role;
 
 create or replace function public.plan_monthly_query_limit(p_plan public.org_plan)
@@ -387,7 +398,9 @@ as $$
   end;
 $$;
 
-grant execute on function public.plan_monthly_query_limit(public.org_plan) to authenticated, service_role;
+revoke all on function public.plan_monthly_query_limit(public.org_plan) from public, anon;
+grant execute on function public.plan_monthly_query_limit(public.org_plan)
+  to authenticated, service_role;
 
 create or replace function public.check_ingest_allowed(p_org_id uuid)
 returns table (allowed boolean, reason text, used bigint, plan_limit integer)
@@ -418,6 +431,7 @@ begin
 end;
 $$;
 
+revoke all on function public.check_ingest_allowed(uuid) from public, anon;
 grant execute on function public.check_ingest_allowed(uuid) to authenticated, service_role;
 
 -- Every new user gets an organization and a personal space. Doing it in a trigger
@@ -460,6 +474,11 @@ begin
 end;
 $$;
 
+-- A trigger function is invoked by the trigger and runs as the table owner, so
+-- no role needs execute to make it fire and the default grant to PUBLIC only
+-- lets a caller run it by hand.
+revoke all on function public.handle_new_user() from public, anon, authenticated;
+
 create or replace trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
@@ -488,6 +507,8 @@ begin
 end;
 $$;
 
+revoke all on function public.sync_org_space_membership() from public, anon, authenticated;
+
 create or replace trigger org_members_sync_org_space
   after insert or delete on public.org_members
   for each row execute function public.sync_org_space_membership();
@@ -502,6 +523,8 @@ begin
   return new;
 end;
 $$;
+
+revoke all on function public.touch_updated_at() from public, anon, authenticated;
 
 create or replace trigger connections_touch_updated_at
   before update on public.connections
