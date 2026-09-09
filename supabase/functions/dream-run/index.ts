@@ -10,6 +10,9 @@
 // user wants is what the run produced. A space large enough to exceed the budget
 // comes back as a timeout naming its stage, which is the honest result and the
 // one the spec asks to be visible.
+//
+// Running inline is why the row is created the way start.ts creates it: a run
+// nobody else may pick up.
 
 import { ApiError, jsonResponse } from '../_shared/errors.ts';
 import { serveFunction } from '../_shared/http.ts';
@@ -17,8 +20,9 @@ import { dreamRunSchema, parseBody } from '../_shared/validate.ts';
 import { audit, serviceClient } from '../_shared/db.ts';
 import { enforceRateLimits } from '../_shared/rate_limit.ts';
 import { requireSpaceMembership, requireUser } from '../_shared/auth.ts';
-import { type DreamRunRecord, runDreamJob } from '../_shared/jobs/dream.ts';
+import { runDreamJob } from '../_shared/jobs/dream.ts';
 import { jobDepsFromEnv } from '../_shared/jobs/runtime.ts';
+import { startManualRun } from './start.ts';
 
 serveFunction('dream-run', async (core) => {
   const input = parseBody(dreamRunSchema, core.body);
@@ -46,18 +50,12 @@ serveFunction('dream-run', async (core) => {
     throw new ApiError(409, 'dreaming_disabled', 'dreaming is switched off for this space');
   }
 
-  const { data: run, error } = await db
-    .from('dream_runs')
-    .insert({
-      org_id: orgId,
-      space_id: input.space_id,
-      kind: input.kind,
-      status: 'queued',
-      triggered_by: user.id,
-    })
-    .select('id, org_id, space_id, kind')
-    .single<DreamRunRecord>();
-  if (error || !run) throw new ApiError(500, 'internal', 'the run could not be started');
+  const deps = jobDepsFromEnv();
+  const run = await startManualRun(
+    db,
+    { orgId, spaceId: input.space_id, kind: input.kind, triggeredBy: user.id },
+    deps.http.now(),
+  );
 
   audit({
     actor: `user:${user.id}`,
@@ -67,7 +65,7 @@ serveFunction('dream-run', async (core) => {
     meta: { space_id: input.space_id, kind: input.kind },
   });
 
-  const result = await runDreamJob(run, jobDepsFromEnv());
+  const result = await runDreamJob(run, deps);
 
   // 200 whatever the outcome. A run that timed out did what it could and the row
   // says so; a non-2xx would tell the page the request failed, which is a

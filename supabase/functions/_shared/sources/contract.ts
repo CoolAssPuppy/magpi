@@ -38,6 +38,15 @@ export interface ChangePage {
    * hands back and nothing else reads it.
    */
   cursor: string | null;
+  /**
+   * True when the driver stopped on its own request cap rather than on the end
+   * of the changes.
+   *
+   * `runSyncJob` walks again from the cursor above until this is false or the
+   * run's budget is gone, so a driver that sets it must also hand back a cursor
+   * that resumes where it stopped. Setting it without moving the cursor says
+   * the rest belongs to the next run.
+   */
   hasMore: boolean;
 }
 

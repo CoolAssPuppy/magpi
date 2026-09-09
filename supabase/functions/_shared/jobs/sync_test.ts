@@ -42,15 +42,34 @@ async function connection(overrides: Partial<ConnectionRow> = {}): Promise<Conne
   };
 }
 
-function issuesPage(nodes: { id: string; identifier: string; title: string; updatedAt: string }[]) {
+function issuesPage(
+  nodes: { id: string; identifier: string; title: string; updatedAt: string }[],
+  next: string | null = null,
+) {
   return {
     data: {
       issues: {
         nodes: nodes.map((node) => ({ ...node, url: `https://linear.app/${node.identifier}` })),
-        pageInfo: { hasNextPage: false, endCursor: null },
+        pageInfo: { hasNextPage: next !== null, endCursor: next },
       },
     },
   };
+}
+
+function issue(index: number) {
+  return {
+    id: `issue-${index}`,
+    identifier: `ENG-${index}`,
+    title: `Issue ${index}`,
+    updatedAt: `2026-09-09T09:0${index}:00.000Z`,
+  };
+}
+
+/** Every cursor this run wrote onto the connection, in the order it wrote them. */
+function cursorsWritten(stub: StubDb): unknown[] {
+  return patches(stub, 'connections')
+    .map((patch) => patch.cursor)
+    .filter((cursor) => cursor !== undefined);
 }
 
 function rowsInserted(stub: StubDb, table: string): Record<string, unknown>[] {
@@ -73,6 +92,8 @@ interface Harness {
 
 function harness(options: {
   page?: unknown;
+  /** One body per provider request, the last repeating once the list runs out. */
+  pages?: unknown[];
   status?: number;
   reply?: (request: StubRequest) => { body?: unknown; status?: number } | undefined;
   clock?: { now(): Date };
@@ -95,6 +116,13 @@ function harness(options: {
     return { body: [] };
   });
 
+  let request = 0;
+  const bodyFor = (): unknown => {
+    const sequence = options.pages;
+    if (!sequence) return options.page ?? issuesPage([]);
+    return sequence[Math.min(request++, sequence.length - 1)];
+  };
+
   return {
     stub,
     deps: {
@@ -103,7 +131,7 @@ function harness(options: {
         now: options.clock?.now ?? (() => NOW),
         fetch: () =>
           Promise.resolve(
-            new Response(JSON.stringify(options.page ?? issuesPage([])), {
+            new Response(JSON.stringify(bodyFor()), {
               status: options.status ?? 200,
               headers: { 'content-type': 'application/json' },
             }),
@@ -320,6 +348,90 @@ Deno.test('a pass that runs out of time leaves the cursor where it was', async (
     for (const patch of patches(h.stub, 'connections')) {
       assertEquals(patch.cursor, undefined, 'a timed out pass moved the cursor');
     }
+  } finally {
+    await h.stub.close();
+  }
+});
+
+Deno.test('a backlog the driver could not finish in one call is walked in the same run', async () => {
+  // Five requests is the Linear driver's own ceiling for one listChanges, so the
+  // sixth page is reached only if the job asks it for another pass.
+  const pages: unknown[] = [1, 2, 3, 4, 5].map((n) => issuesPage([issue(n)], `page-${n + 1}`));
+  pages.push(issuesPage([issue(6)]));
+
+  const h = harness({ pages });
+  try {
+    const result = await runSyncJob(await connection(), h.deps);
+
+    assertEquals(result.kind, 'synced');
+    if (result.kind !== 'synced') return;
+    assertEquals(result.documentCount, 6);
+    assertEquals(result.hasMore, false);
+    assertEquals(rowsInserted(h.stub, 'ingest_jobs').length, 6);
+
+    const cursors = cursorsWritten(h.stub);
+    assertEquals(cursors.length, 2);
+    assert(
+      String(cursors[0]).includes('"page":"page-6"'),
+      'the first pass did not record where it stopped',
+    );
+    // The backlog is spent, so the connection is back to a plain watermark.
+    assertEquals(cursors[1], '2026-09-09T09:06:00.000Z');
+  } finally {
+    await h.stub.close();
+  }
+});
+
+Deno.test('a walk that runs out of time keeps what it filed and says there is more', async () => {
+  const h = harness({
+    page: issuesPage([issue(1)], 'page-2'),
+    clock: steppingClock(NOW, 500),
+    budgetMs: 20_000,
+  });
+  try {
+    const result = await runSyncJob(await connection(), h.deps);
+
+    // A connection with a backlog is behind, not broken. Reporting a timeout
+    // would put an error on a row that made real progress.
+    assertEquals(result.kind, 'synced');
+    if (result.kind !== 'synced') return;
+    assert(result.hasMore, 'a run that stopped early said there was nothing left');
+
+    const cursors = cursorsWritten(h.stub);
+    assert(cursors.length > 1, 'the run stopped after one page');
+    assert(
+      String(cursors.at(-1)).includes('"kind":"backlog"'),
+      'the next run has nowhere to resume from',
+    );
+    assertEquals(patches(h.stub, 'connections').at(-1)?.status, 'active');
+  } finally {
+    await h.stub.close();
+  }
+});
+
+Deno.test('a driver that reports more without moving its cursor is asked once more', async () => {
+  // Slack reads a fixed number of channels per pass and reports the rest as
+  // more. Channels with nothing in them leave the cursor exactly as it was, so
+  // asking again in this run would read the same channels until the budget went.
+  const channels = Array.from({ length: 21 }, (_, index) => `C${index}`);
+  const h = harness({ page: { ok: true, messages: [] } });
+  try {
+    const result = await runSyncJob(
+      await connection({
+        provider: 'slack',
+        scope_selection: {
+          kind: 'channel',
+          available: channels.map((id) => ({ id, name: id })),
+          selected: channels,
+        },
+      }),
+      h.deps,
+    );
+
+    assertEquals(result.kind, 'synced');
+    if (result.kind !== 'synced') return;
+    assertEquals(result.hasMore, true);
+    assertEquals(cursorsWritten(h.stub).length, 2);
   } finally {
     await h.stub.close();
   }

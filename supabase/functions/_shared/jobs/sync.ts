@@ -18,10 +18,27 @@ import { DEFAULT_BUDGET_MS, StageTimeout, startBudget } from './budget.ts';
 import type { JobDeps } from './types.ts';
 
 export type SyncResult =
-  | { kind: 'synced'; documentCount: number; enqueued: number; cursor: string | null }
+  | {
+    kind: 'synced';
+    documentCount: number;
+    enqueued: number;
+    cursor: string | null;
+    hasMore: boolean;
+  }
   | { kind: 'expired'; detail: string }
   | { kind: 'timeout'; stage: string }
   | { kind: 'failed'; detail: string };
+
+/**
+ * How many times one run will ask a driver for another page of changes.
+ *
+ * The wall-clock budget is the real limit and this is the guard behind it: a
+ * driver that answers `hasMore` forever would otherwise spend the whole budget
+ * on one connection, and in a test with a fixed clock it would never stop at
+ * all. Twenty passes over four drivers that each cap their own requests is far
+ * more than any budget affords.
+ */
+const MAX_PASSES = 20;
 
 interface ExistingDocument {
   id: string;
@@ -128,6 +145,12 @@ async function enqueueIngest(
 export async function runSyncJob(connection: ConnectionRow, deps: JobDeps): Promise<SyncResult> {
   const budget = startBudget(deps.http, deps.budgetMs ?? DEFAULT_BUDGET_MS);
 
+  let cursor = connection.cursor;
+  let documentCount = 0;
+  let enqueued = 0;
+  let walked = 0;
+  let hasMore = false;
+
   try {
     budget.checkpoint('credentials');
     const outcome = await resolveCredentials(connection, {
@@ -140,32 +163,48 @@ export async function runSyncJob(connection: ConnectionRow, deps: JobDeps): Prom
     if (outcome.kind === 'expired') return { kind: 'expired', detail: outcome.detail };
 
     await markConnectionStatus(deps.db, connection.id, 'syncing', null);
+    const driver = driverFor(connection.provider);
 
-    budget.checkpoint('list');
-    const page = await driverFor(connection.provider).listChanges(
-      outcome.credentials,
-      deps.http,
-      { cursor: connection.cursor },
-    );
+    for (let pass = 0; pass < MAX_PASSES; pass++) {
+      const from = cursor;
 
-    budget.checkpoint('file');
-    const documentIds = await fileDocuments(deps, connection, page.documents);
+      budget.checkpoint('list');
+      const page = await driver.listChanges(outcome.credentials, deps.http, { cursor: from });
 
-    budget.checkpoint('enqueue');
-    const enqueued = await enqueueIngest(deps, connection, documentIds);
+      budget.checkpoint('file');
+      const documentIds = await fileDocuments(deps, connection, page.documents);
 
-    // The cursor advances only after the jobs exist. Advancing first and then
-    // failing to queue would skip those documents for good.
-    await advanceCursor(deps.db, connection.id, page.cursor, deps.http.now());
+      budget.checkpoint('enqueue');
+      enqueued += await enqueueIngest(deps, connection, documentIds);
+      documentCount += page.documents.length;
 
-    return {
-      kind: 'synced',
-      documentCount: page.documents.length,
-      enqueued,
-      cursor: page.cursor,
-    };
+      // The cursor advances only after the jobs exist. Advancing first and then
+      // failing to queue would skip those documents for good.
+      await advanceCursor(deps.db, connection.id, page.cursor, deps.http.now());
+
+      cursor = page.cursor;
+      hasMore = page.hasMore;
+      walked += 1;
+
+      if (!hasMore) break;
+      // A driver can report more without having moved: Slack reads a fixed
+      // number of channels per pass and leaves the cursor alone when they were
+      // all quiet. Asking again would read the same channels until the budget
+      // went, so the rest of that backlog is the next run's.
+      if (page.cursor === from) break;
+      if (budget.isSpent()) break;
+    }
+
+    return { kind: 'synced', documentCount, enqueued, cursor, hasMore };
   } catch (err) {
     if (err instanceof StageTimeout) {
+      // A run that filed pages before the clock ran out is behind, not broken.
+      // The cursor it wrote is durable and the next run resumes from it, so
+      // marking the connection with an error would put a fault on a row that
+      // did exactly what it could.
+      if (walked > 0) {
+        return { kind: 'synced', documentCount, enqueued, cursor, hasMore: true };
+      }
       await markConnectionStatus(deps.db, connection.id, 'error', err.message);
       return { kind: 'timeout', stage: err.stage };
     }
