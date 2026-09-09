@@ -27,7 +27,11 @@ grant select, insert, delete on public.space_members to authenticated;
 
 grant select on public.providers to authenticated;
 
-grant select, delete on public.connections to authenticated;
+-- connections is deliberately absent from the table-level select grants. Its
+-- token columns are excluded by an explicit column list in
+-- supabase/migrations/*_function_and_column_privileges.sql, and a table grant
+-- here would put them back.
+grant delete on public.connections to authenticated;
 grant select, delete on public.documents to authenticated;
 grant select on public.chunks to authenticated;
 grant select on public.entities to authenticated;

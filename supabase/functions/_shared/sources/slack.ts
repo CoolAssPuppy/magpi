@@ -21,6 +21,7 @@ const PROVIDER = 'slack';
 const API_BASE = 'https://slack.com/api';
 const HISTORY_LIMIT = 200;
 const SCOPE_PAGE_LIMIT = 200;
+const TITLE_LIMIT = 120;
 
 /** Pages of `conversations.list` one scope listing will walk before it stops. */
 const MAX_SCOPE_PAGES = 5;
@@ -31,8 +32,6 @@ const MAX_SCOPE_PAGES = 5;
  * channels picked catches up over several passes rather than timing out on one.
  */
 const MAX_CHANNELS_PER_PASS = 20;
-
-const TITLE_LIMIT = 120;
 
 const RECONNECT_MESSAGE = 'Slack refused this connection, reconnect it';
 const FAILURE_MESSAGE = 'Slack could not be read just now, the next sync will try again';
