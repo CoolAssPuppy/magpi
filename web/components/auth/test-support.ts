@@ -14,12 +14,18 @@ export type AuthClientOptions = {
    * the auth server is still thinking about it.
    */
   neverResolves?: boolean;
+  /**
+   * What signUp answers with. A session comes back when the project has email
+   * confirmation switched off, which is the Supabase CLI's local default, and
+   * means the account is usable immediately rather than waiting on a link.
+   */
+  session?: { access_token: string } | null;
 };
 
 /**
  * Stands in for GoTrue as the browser client exposes it. Every method answers
- * the same way, because each auth form makes exactly one call and reads only
- * the error off it.
+ * the same way, because each auth form makes exactly one call and reads the
+ * error off it, plus the session on signUp.
  */
 export function authClient(options: AuthClientOptions = {}): {
   supabase: SupabaseClient<Database>;
@@ -33,7 +39,7 @@ export function authClient(options: AuthClientOptions = {}): {
     (...args: readonly unknown[]) => {
       calls.push({ method, args });
       if (options.neverResolves) return new Promise<never>(() => {});
-      return Promise.resolve({ error });
+      return Promise.resolve({ data: { session: options.session ?? null }, error });
     };
 
   const supabase = {

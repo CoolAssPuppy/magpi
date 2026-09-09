@@ -35,6 +35,30 @@ afterEach(() => {
   push.mockReset();
 });
 
+describe('what happens after the account exists', () => {
+  it('goes straight to chat when the project needs no confirmation', async () => {
+    const assign = vi.fn();
+    goTrue({ session: { access_token: 'a-real-session' } });
+    vi.stubGlobal('location', { origin: PAGE_ORIGIN, assign });
+    render(<SignUpForm />);
+
+    await signUp();
+
+    // No email was sent, so telling the reader to go and look for one is a lie.
+    expect(assign).toHaveBeenCalledWith('/chat');
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('sends the reader to look for an email only when one is actually coming', async () => {
+    goTrue({ session: null });
+    render(<SignUpForm />);
+
+    await signUp();
+
+    expect(push).toHaveBeenCalledWith('/sign-up-success');
+  });
+});
+
 describe('creating an account', () => {
   it('sends the address and password, with a confirmation link that comes back to this app', async () => {
     const { calls } = goTrue();

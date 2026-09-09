@@ -31,7 +31,7 @@ export function SignUpForm() {
     setError(null);
 
     const supabase = createClient();
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: { emailRedirectTo: `${window.location.origin}/auth/confirm?next=/chat` },
@@ -40,6 +40,16 @@ export function SignUpForm() {
     if (signUpError) {
       setError(signUpError.message);
       setIsPending(false);
+      return;
+    }
+
+    // Whether a confirmation email was sent is a project setting, not something
+    // this form decides, and signUp answers it: a session comes back when
+    // confirmation is off and the account is already usable. Telling everyone to
+    // check their email is a lie in that configuration, and it is the one the
+    // Supabase CLI ships with locally.
+    if (data.session) {
+      window.location.assign('/chat');
       return;
     }
 
