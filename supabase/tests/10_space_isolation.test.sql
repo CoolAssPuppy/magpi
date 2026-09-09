@@ -9,7 +9,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(48);
+select plan(51);
 
 -- Four users. Alice and Bob are in separate organizations. Carol and Dave are in
 -- the same organization, and only Carol is in the team space, so Dave is the
@@ -534,6 +534,41 @@ select throws_ok(
   '23505',
   null,
   'nor can a provider that names no account at all'
+);
+
+-- The three columns that decide which organization owns a space, what kind it
+-- is, and whose personal space it is. Nothing in the product updates any of
+-- them after the row is created: the only two writes are the name and the
+-- dreaming toggle.
+--
+-- The column grant already keeps `authenticated` out. This is the same rule for
+-- every role, service_role included, and service_role is the key every Edge
+-- Function holds. Promoting a team space to `kind = 'org'` is the escalation
+-- that matters: `sync_org_space_membership` then enrols every future member of
+-- the organization into it.
+select throws_ok(
+  $$ update public.spaces set kind = 'org'
+     where id = '50000000-0000-4000-8000-00000000000a' $$,
+  'P0001',
+  'a space cannot change kind, organization or owner after it is created',
+  'not even the service role may promote a team space to the org space'
+);
+
+select throws_ok(
+  $$ update public.spaces set org_id = (
+       select org_id from public.spaces where id = '50000000-0000-4000-8000-00000000000b')
+     where id = '50000000-0000-4000-8000-00000000000a' $$,
+  'P0001',
+  'a space cannot change kind, organization or owner after it is created',
+  'nor move it into another organization'
+);
+
+-- The two writes the product actually makes still work, which is what stops
+-- this being a trigger that breaks the settings page.
+select lives_ok(
+  $$ update public.spaces set name = 'Renamed by the owner', dreaming_enabled = false
+     where id = '50000000-0000-4000-8000-00000000000a' $$,
+  'renaming a space and turning dreaming off are untouched'
 );
 
 select * from finish();
