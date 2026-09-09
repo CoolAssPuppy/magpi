@@ -1,0 +1,135 @@
+{
+  "": {
+    "data": {
+      "issues": {
+        "nodes": [
+          {
+            "id": "3f8c1a92-5d47-4c1b-9f0e-2a6b71d4c803",
+            "identifier": "KB-118",
+            "title": "Search returns stale titles after a page is renamed",
+            "url": "https://linear.app/atlas-knowledge/issue/KB-118/search-returns-stale-titles-after-a-page-is-renamed",
+            "updatedAt": "2026-09-09T07:02:44.130Z"
+          }
+        ],
+        "pageInfo": {
+          "hasNextPage": true,
+          "endCursor": "eyJvZmZzZXQiOjF9"
+        }
+      }
+    }
+  },
+  "eyJvZmZzZXQiOjF9": {
+    "data": {
+      "issues": {
+        "nodes": [
+          {
+            "id": "b21d4e07-8c3a-49f6-a5d2-6e91f0c7ab54",
+            "identifier": "KB-121",
+            "title": "Write the retention policy for archived handbook pages",
+            "url": "https://linear.app/atlas-knowledge/issue/KB-121/write-the-retention-policy-for-archived-handbook-pages",
+            "updatedAt": "2026-09-08T16:41:05.902Z"
+          }
+        ],
+        "pageInfo": {
+          "hasNextPage": true,
+          "endCursor": "eyJvZmZzZXQiOjJ9"
+        }
+      }
+    }
+  },
+  "eyJvZmZzZXQiOjJ9": {
+    "data": {
+      "issues": {
+        "nodes": [
+          {
+            "id": "c7a90b13-2f65-4d88-b1c4-90de5a2f7611",
+            "identifier": "PLT-64",
+            "title": "Index rebuild job times out on workspaces over 40k pages",
+            "url": "https://linear.app/atlas-knowledge/issue/PLT-64/index-rebuild-job-times-out-on-workspaces-over-40k-pages",
+            "updatedAt": "2026-09-07T09:14:22.418Z"
+          }
+        ],
+        "pageInfo": {
+          "hasNextPage": true,
+          "endCursor": "eyJvZmZzZXQiOjN9"
+        }
+      }
+    }
+  },
+  "eyJvZmZzZXQiOjN9": {
+    "data": {
+      "issues": {
+        "nodes": [
+          {
+            "id": "e40f2b8d-71c9-4a35-8b26-0d7e93f5c122",
+            "identifier": "KB-124",
+            "title": "Onboarding guide links to the old glossary",
+            "url": "https://linear.app/atlas-knowledge/issue/KB-124/onboarding-guide-links-to-the-old-glossary",
+            "updatedAt": "2026-09-06T13:55:31.004Z"
+          }
+        ],
+        "pageInfo": {
+          "hasNextPage": true,
+          "endCursor": "eyJvZmZzZXQiOjR9"
+        }
+      }
+    }
+  },
+  "eyJvZmZzZXQiOjR9": {
+    "data": {
+      "issues": {
+        "nodes": [
+          {
+            "id": "f18c30a6-9b47-4d02-8e51-27ca6f9b3d70",
+            "identifier": "PLT-71",
+            "title": "Backfill worker retries the same page forever",
+            "url": "https://linear.app/atlas-knowledge/issue/PLT-71/backfill-worker-retries-the-same-page-forever",
+            "updatedAt": "2026-09-05T10:22:18.771Z"
+          }
+        ],
+        "pageInfo": {
+          "hasNextPage": true,
+          "endCursor": "eyJvZmZzZXQiOjV9"
+        }
+      }
+    }
+  },
+  "eyJvZmZzZXQiOjV9": {
+    "data": {
+      "issues": {
+        "nodes": [
+          {
+            "id": "0a5e94c2-6d81-43f7-b39e-84c107f2a6bd",
+            "identifier": "KB-130",
+            "title": "Glossary entries lost their owners in the import",
+            "url": "https://linear.app/atlas-knowledge/issue/KB-130/glossary-entries-lost-their-owners-in-the-import",
+            "updatedAt": "2026-09-04T08:07:59.316Z"
+          }
+        ],
+        "pageInfo": {
+          "hasNextPage": true,
+          "endCursor": "eyJvZmZzZXQiOjZ9"
+        }
+      }
+    }
+  },
+  "eyJvZmZzZXQiOjZ9": {
+    "data": {
+      "issues": {
+        "nodes": [
+          {
+            "id": "6d2b81f4-0c53-49ae-97b2-5f8e30d1c47a",
+            "identifier": "PLT-77",
+            "title": "Archive job leaves orphaned attachments",
+            "url": "https://linear.app/atlas-knowledge/issue/PLT-77/archive-job-leaves-orphaned-attachments",
+            "updatedAt": "2026-09-03T17:36:12.548Z"
+          }
+        ],
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": null
+        }
+      }
+    }
+  }
+}

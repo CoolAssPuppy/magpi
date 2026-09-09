@@ -15,6 +15,7 @@ import type {
 } from './contract.ts';
 import { SourceError } from './contract.ts';
 import { asArray, asRecord, asString, isoStamp, parseInstant, requestJson } from './common.ts';
+import { encodeBacklog, newestStamp, parseCursor } from './cursor.ts';
 
 const PROVIDER = 'notion';
 const DISPLAY_NAME = 'Notion';
@@ -157,24 +158,17 @@ function takeNewerThan(results: unknown[], since: number | null): Walked {
   return { pages, reachedCursor: false };
 }
 
-/** Every stamp here came from isoStamp, so these strings sort as their instants do. */
-function newestStamp(documents: SourceDocumentRef[]): string | null {
-  let newest: string | null = null;
-  for (const doc of documents) {
-    if (newest === null || doc.updatedAt > newest) newest = doc.updatedAt;
-  }
-  return newest;
-}
-
 async function listChanges(
   creds: SourceCredentials,
   deps: SourceDeps,
   input: { cursor: string | null },
 ): Promise<ChangePage> {
-  const since = parseInstant(input.cursor);
+  const position = parseCursor(input.cursor);
+  const since = parseInstant(position.since);
   const documents: SourceDocumentRef[] = [];
-  let startCursor: string | null = null;
-  let hasMore = false;
+
+  let startCursor = position.kind === 'backlog' ? position.page : null;
+  let nextPage: string | null = null;
 
   for (let request = 0; request < MAX_REQUESTS; request++) {
     const body = await postJson(creds, deps, `${API}/search`, searchBody(startCursor));
@@ -182,12 +176,29 @@ async function listChanges(
     for (const page of walked.pages) documents.push(toRef(page, deps));
 
     const next = asString(body.next_cursor);
-    hasMore = !walked.reachedCursor && body.has_more === true && next.length > 0;
-    if (!hasMore) break;
-    startCursor = next;
+    nextPage = !walked.reachedCursor && body.has_more === true && next.length > 0 ? next : null;
+    if (nextPage === null) break;
+    startCursor = nextPage;
   }
 
-  return { documents, cursor: newestStamp(documents) ?? input.cursor, hasMore };
+  const watermark = newestStamp(
+    documents,
+    position.kind === 'backlog' ? position.watermark : position.since,
+  );
+
+  // A pass that ran out of requests hands the page token to the next one.
+  // Answering with the newest stamp instead would strand everything behind it,
+  // because search sorts descending and the next pass would start over at the
+  // top and stop on the first page it had already read.
+  if (nextPage !== null) {
+    return {
+      documents,
+      cursor: encodeBacklog({ page: nextPage, watermark, since: position.since }),
+      hasMore: true,
+    };
+  }
+
+  return { documents, cursor: watermark, hasMore: false };
 }
 
 const BLOCK_PREFIXES = new Map<string, string>([

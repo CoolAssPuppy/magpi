@@ -23,10 +23,10 @@ import {
   asRecord,
   asString,
   isoStamp,
-  parseInstant,
   refreshWithTokenEndpoint,
   requestJson,
 } from './common.ts';
+import { encodeBacklog, newestStamp, parseCursor } from './cursor.ts';
 
 const PROVIDER = 'linear';
 const DISPLAY_NAME = 'Linear';
@@ -35,14 +35,21 @@ const PAGE_SIZE = 50;
 const TEAM_PAGE_SIZE = 100;
 const API_KEY_PREFIX = 'lin_api_';
 
+// A pass reads at most this many pages. A workspace with more changes than that
+// finishes over the passes that follow, one page token at a time.
+const MAX_REQUESTS = 5;
+
 /** An error code naming the credential rather than the request. */
 const CREDENTIAL_CODE = /auth|forbidden|permission/i;
 
 const RECONNECT_MESSAGE = `${DISPLAY_NAME} refused this connection, reconnect it.`;
 const FAILURE_MESSAGE = `${DISPLAY_NAME} could not be read, the next sync will try again.`;
 
-const CHANGES_QUERY = `query MagpiChanges($first: Int!, $filter: IssueFilter) {
-  issues(first: $first, filter: $filter, orderBy: updatedAt) {
+// `orderBy` names the field and not a direction, and Linear is free to answer
+// either way, so coverage comes from walking `after: endCursor` to the end
+// rather than from trusting the first page to hold the oldest changes.
+const CHANGES_QUERY = `query MagpiChanges($first: Int!, $after: String, $filter: IssueFilter) {
+  issues(first: $first, after: $after, filter: $filter, orderBy: updatedAt) {
     nodes { id identifier title url updatedAt }
     pageInfo { hasNextPage endCursor }
   }
@@ -148,26 +155,6 @@ function toDocumentRef(node: Record<string, unknown>, deps: SourceDeps): SourceD
   };
 }
 
-/**
- * The newest stamp in the page, or the cursor we came in with.
- *
- * Holding the old cursor when a page is empty keeps a quiet connection from
- * rewinding to the beginning of time on its next pass.
- */
-function newestUpdatedAt(documents: SourceDocumentRef[], fallback: string | null): string | null {
-  let newest = fallback;
-  let newestMs = parseInstant(fallback) ?? Number.NEGATIVE_INFINITY;
-
-  for (const document of documents) {
-    const ms = parseInstant(document.updatedAt);
-    if (ms !== null && ms > newestMs) {
-      newestMs = ms;
-      newest = document.updatedAt;
-    }
-  }
-  return newest;
-}
-
 /** Description first, then one block per comment, each named. */
 function issueText(issue: Record<string, unknown>): string {
   const blocks: string[] = [];
@@ -196,21 +183,50 @@ export const linearDriver: SourceDriver = {
     deps: SourceDeps,
     input: { cursor: string | null },
   ): Promise<ChangePage> {
-    const data = await query(deps, creds.accessToken, CHANGES_QUERY, {
-      first: PAGE_SIZE,
-      filter: changeFilter(input.cursor, creds.scopeSelection.ids),
-    });
+    const position = parseCursor(input.cursor);
+    const filter = changeFilter(position.since, creds.scopeSelection.ids);
+    const documents: SourceDocumentRef[] = [];
 
-    const issues = asRecord(data.issues);
-    const documents = asArray(issues.nodes)
-      .map((node) => toDocumentRef(asRecord(node), deps))
-      .filter((document) => document.externalId.length > 0);
+    let after = position.kind === 'backlog' ? position.page : null;
+    let nextPage: string | null = null;
 
-    return {
+    for (let request = 0; request < MAX_REQUESTS; request++) {
+      const data = await query(deps, creds.accessToken, CHANGES_QUERY, {
+        first: PAGE_SIZE,
+        after,
+        filter,
+      });
+
+      const issues = asRecord(data.issues);
+      for (const node of asArray(issues.nodes)) {
+        const document = toDocumentRef(asRecord(node), deps);
+        if (document.externalId.length > 0) documents.push(document);
+      }
+
+      const pageInfo = asRecord(issues.pageInfo);
+      const endCursor = asString(pageInfo.endCursor);
+      nextPage = pageInfo.hasNextPage === true && endCursor.length > 0 ? endCursor : null;
+      if (nextPage === null) break;
+      after = nextPage;
+    }
+
+    const watermark = newestStamp(
       documents,
-      cursor: newestUpdatedAt(documents, input.cursor),
-      hasMore: asRecord(issues.pageInfo).hasNextPage === true,
-    };
+      position.kind === 'backlog' ? position.watermark : position.since,
+    );
+
+    // A pass that ran out of requests resumes at the page it stopped on. The
+    // newest stamp it saw is not where to resume: with no direction pinned on
+    // the query, the pages it has not read can hold anything.
+    if (nextPage !== null) {
+      return {
+        documents,
+        cursor: encodeBacklog({ page: nextPage, watermark, since: position.since }),
+        hasMore: true,
+      };
+    }
+
+    return { documents, cursor: watermark, hasMore: false };
   },
 
   async fetchDocument(

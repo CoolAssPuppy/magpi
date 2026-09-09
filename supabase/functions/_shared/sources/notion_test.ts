@@ -2,7 +2,14 @@ import { assert, assertEquals } from '@std/assert';
 
 import type { SourceCredentials } from './contract.ts';
 import { SourceError } from './contract.ts';
-import { loadFixture, stubAnswering, type StubRoute, stubSource } from './testing/http_stub.ts';
+import { asRecord, asString } from './common.ts';
+import {
+  loadFixture,
+  stubAnswering,
+  type StubCall,
+  type StubRoute,
+  stubSource,
+} from './testing/http_stub.ts';
 import { notionDriver } from './notion.ts';
 
 const CREDS: SourceCredentials = {
@@ -26,6 +33,20 @@ async function searchRoutes(): Promise<StubRoute[]> {
     },
     { when: (call) => call.url.endsWith('/v1/search'), body: first },
   ];
+}
+
+/** The cursor a search request asked to resume from, empty on a first request. */
+function startCursorOf(call: StubCall): string {
+  return asString(asRecord(JSON.parse(call.body ?? 'null')).start_cursor);
+}
+
+/** The recorded backlog, each page answered to the cursor that asks for it. */
+async function backlogRoutes(): Promise<StubRoute[]> {
+  const chain = asRecord(await loadFixture('notion', 'search_backlog'));
+  return Object.entries(chain).map(([cursor, body]) => ({
+    when: (call: StubCall) => call.url.endsWith('/v1/search') && startCursorOf(call) === cursor,
+    body,
+  }));
 }
 
 async function documentRoutes(): Promise<StubRoute[]> {
@@ -97,6 +118,44 @@ Deno.test('a pass that finds nothing new keeps the cursor it was handed', async 
   assertEquals(page.documents, []);
   assertEquals(page.cursor, '2026-09-09T00:00:00.000Z');
   assertEquals(page.hasMore, false);
+});
+
+Deno.test('a workspace larger than one pass resumes into the backlog', async () => {
+  const routes = await backlogRoutes();
+
+  const first = stubSource(routes);
+  const firstPass = await notionDriver.listChanges(CREDS, first, { cursor: null });
+
+  assertEquals(first.calls.length, 5);
+  assertEquals(firstPass.hasMore, true);
+  assertEquals(firstPass.documents.map((doc) => doc.title), [
+    'Handbook index',
+    'Release checklist',
+    'On-call rotation',
+    'Vendor review notes',
+    'Interview loop',
+  ]);
+
+  const second = stubSource(routes);
+  const secondPass = await notionDriver.listChanges(CREDS, second, { cursor: firstPass.cursor });
+
+  assertEquals(startCursorOf(second.calls[0]), 'cursor_backlog_6');
+  // Search sorts descending, so a pass that resumed at the newest page would
+  // read the same five pages again and never reach these two.
+  assertEquals(secondPass.documents.map((doc) => doc.title), [
+    'Archived: 2024 offsite',
+    'Archived: brand guidelines',
+  ]);
+  assertEquals(second.calls.length, 2);
+  assertEquals(secondPass.hasMore, false);
+  // With the backlog behind it read, the cursor becomes the newest page the walk saw.
+  assertEquals(secondPass.cursor, '2026-09-08T17:45:00.000Z');
+
+  const third = stubSource(routes);
+  const thirdPass = await notionDriver.listChanges(CREDS, third, { cursor: secondPass.cursor });
+
+  assertEquals(thirdPass.documents, []);
+  assertEquals(thirdPass.cursor, secondPass.cursor);
 });
 
 Deno.test('a title comes from the title-typed property whatever it is named', async () => {
