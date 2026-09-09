@@ -6,6 +6,7 @@ import {
   type ChatErrorBody,
   type ChatErrorCode,
 } from '@/lib/chat/protocol';
+import { PROMPT_HISTORY_TURNS } from '@/lib/chat/prompt';
 import { loadConversation, loadMessages, toTurns } from '@/lib/chat/store';
 import { createServiceClient } from '@/lib/supabase/service';
 import { getSessionContext, type SessionContext } from '@/lib/supabase/context';
@@ -62,7 +63,10 @@ export async function POST(request: Request): Promise<Response> {
   const conversation = await loadConversation(context.supabase, parsed.data.conversationId);
   if (!conversation) return failure('not_found', 'That conversation is not available.');
 
-  const history = toTurns(await loadMessages(context.supabase, conversation.id));
+  // Only the tail of a conversation reaches a model, so only the tail is read.
+  const history = toTurns(
+    await loadMessages(context.supabase, conversation.id, { limit: PROMPT_HISTORY_TURNS }),
+  );
 
   const events = runAnswerTurn(
     {

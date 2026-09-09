@@ -58,6 +58,7 @@ export type RecordedRead = {
   columns: string;
   match?: readonly [string, unknown];
   order?: readonly [string, boolean];
+  limit?: number;
 };
 
 export type RecordingResults = {
@@ -120,7 +121,15 @@ export function recordingClient(results: RecordingResults): {
             maybeSingle: () => Promise.resolve({ data: results.maybeSingle ?? null, error }),
             order: (orderColumn: string, options: { ascending: boolean }) => {
               read.order = [orderColumn, options.ascending];
-              return Promise.resolve({ data: results.rows ?? [], error });
+              const settled = Promise.resolve({ data: results.rows ?? [], error });
+
+              return {
+                limit: (count: number) => {
+                  read.limit = count;
+                  return settled;
+                },
+                then: (resolve: (value: unknown) => unknown) => settled.then(resolve),
+              };
             },
           };
         },

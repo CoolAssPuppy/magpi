@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { AnswerDeps } from '@/lib/chat/answer';
 import { decodeEvents, type ChatEvent } from '@/lib/chat/protocol';
-import { recordingClient } from '@/lib/chat/test-support';
+import { PROMPT_HISTORY_TURNS } from '@/lib/chat/prompt';
+import { recordingClient, type RecordedRead } from '@/lib/chat/test-support';
 
 const CONVERSATION_ID = '44444444-4444-4444-8444-444444444444';
 const USER_ID = '77777777-7777-4777-8777-777777777777';
@@ -59,6 +60,9 @@ vi.mock('@/lib/chat/answer', async (importOriginal) => ({
 
 const { POST } = await import('./route');
 
+/** What the most recently signed-in caller's client was asked to read. */
+let lastReads: RecordedRead[] = [];
+
 function signedIn(
   overrides: {
     conversation?: unknown;
@@ -66,7 +70,7 @@ function signedIn(
     allowance?: { data?: unknown; error?: { message: string } | null };
   } = {},
 ) {
-  const { supabase } = recordingClient({
+  const { supabase, reads } = recordingClient({
     maybeSingle:
       overrides.conversation === undefined
         ? { id: CONVERSATION_ID, space_filter: null, title: null }
@@ -78,6 +82,8 @@ function signedIn(
       },
     },
   });
+
+  lastReads = reads;
 
   return {
     userId: USER_ID,
@@ -219,6 +225,13 @@ describe('POST /api/chat', () => {
     await reader?.cancel();
 
     expect(answerState.abandoned).toBe(true);
+  });
+
+  it('reads only the turns the prompt will use, not the whole conversation', async () => {
+    await POST(ask({ conversationId: CONVERSATION_ID, message: 'hello' })).then(readEvents);
+
+    const messages = lastReads.find((read) => read.table === 'messages');
+    expect(messages?.limit).toBe(PROMPT_HISTORY_TURNS);
   });
 
   it('replays the earlier turns of the conversation', async () => {
