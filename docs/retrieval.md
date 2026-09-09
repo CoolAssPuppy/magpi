@@ -99,19 +99,16 @@ visibly, which is why it would happen on stage.
 
 ## Chunking
 
-**Status: intended, not implemented.** `supabase/functions/_shared/chunking.ts`
-does not exist as of 2026-09-09. This section is the contract for whoever
-writes it in phase 4. If the implementation lands with different numbers, this
-section is wrong and gets corrected in the same commit as the code.
+**Status: implemented.** `supabase/functions/_shared/chunking.ts` matches every
+value below. If the implementation changes, this section changes in the same
+commit.
 
-Intended policy:
-
-| Property           | Intended value | Reason                                                                                                                                                         |
-| ------------------ | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Target chunk size  | 800 tokens     | Large enough that a paragraph keeps its context, small enough that a 20-chunk answer stays well inside the chat model's window with room for the conversation. |
-| Overlap            | 100 tokens     | A sentence split across a boundary appears whole in one of the two chunks, so a fact that straddles a boundary is still retrievable.                           |
-| Minimum chunk size | 100 tokens     | Fragments below this are merged into the previous chunk. A 12-token chunk embeds to noise and pollutes the semantic arm.                                       |
-| Maximum chunk size | 1,200 tokens   | A hard ceiling for the case where no boundary rule fires, so a single pathological paragraph cannot produce a chunk that dominates a result set.               |
+| Property           | Value        | Reason                                                                                                                                                         |
+| ------------------ | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Target chunk size  | 800 tokens   | Large enough that a paragraph keeps its context, small enough that a 20-chunk answer stays well inside the chat model's window with room for the conversation. |
+| Overlap            | 100 tokens   | A sentence split across a boundary appears whole in one of the two chunks, so a fact that straddles a boundary is still retrievable.                           |
+| Minimum chunk size | 100 tokens   | Fragments below this are merged into the previous chunk. A 12-token chunk embeds to noise and pollutes the semantic arm.                                       |
+| Maximum chunk size | 1,200 tokens | A hard ceiling for the case where no boundary rule fires, so a single pathological paragraph cannot produce a chunk that dominates a result set.               |
 
 Boundary rules, applied in order, splitting at the first rule that produces a
 chunk inside the size band:

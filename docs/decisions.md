@@ -68,3 +68,11 @@ brand register, not a marketing site.
 **Playwright fixtures create confirmed users through the admin API.** A journey
 that is not testing signup should not have to walk the mail inbox to get a user.
 Signup itself is covered separately.
+
+**`auto_expose_new_tables` stays off, and grants stay explicit.** `config.toml`
+leaves it commented out, which is the current always-revoked default, and that
+is the reason no table in `public` had a DML grant. Turning it on would have
+fixed the symptom by granting every future table automatically. Explicit grants
+in `95_grants.sql` are the posture we want: a new table gets its privileges in
+the same commit as its policies, and a reviewer reading that one file sees the
+whole client-facing surface.
