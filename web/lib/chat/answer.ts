@@ -47,12 +47,12 @@ export async function* runAnswerTurn(
   input: AnswerTurnInput,
   deps: AnswerDeps,
 ): AsyncGenerator<ChatEvent> {
-  const userMessageId = await deps.store.addUserMessage({
-    conversationId: input.conversationId,
-    content: input.question,
-  });
-
   try {
+    const userMessageId = await deps.store.addUserMessage({
+      conversationId: input.conversationId,
+      content: input.question,
+    });
+
     const condensed = await deps.condense({
       question: input.question,
       history: input.history,
@@ -67,7 +67,7 @@ export async function* runAnswerTurn(
     });
 
     const chunkIds = chunks.map((chunk) => chunk.chunkId);
-    yield { type: 'citations', citations: await deps.resolveCitations(chunkIds) };
+    yield { type: 'citations', citations: [...(await deps.resolveCitations(chunkIds))] };
 
     const startedAt = deps.now();
     const stream = deps.streamAnswer({

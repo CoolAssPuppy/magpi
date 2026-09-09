@@ -1,9 +1,30 @@
+import { z } from 'zod';
+
 import type { Tables } from '@/lib/database.types';
 
 export type IngestJobRecord = Pick<
   Tables<'ingest_jobs'>,
   'id' | 'space_id' | 'document_id' | 'stage' | 'status' | 'error'
 >;
+
+/**
+ * A replication payload is a boundary like any other, so it is parsed rather
+ * than asserted. A row shape this app does not recognise is dropped instead of
+ * being counted as an import.
+ */
+const ingestJobEventSchema = z.object({
+  id: z.string(),
+  space_id: z.string(),
+  document_id: z.string(),
+  stage: z.enum(['fetch', 'extract', 'chunk', 'embed', 'store']),
+  status: z.enum(['queued', 'running', 'succeeded', 'failed', 'timeout']),
+  error: z.string().nullable(),
+});
+
+export function parseIngestJobEvent(payload: unknown): IngestJobRecord | null {
+  const parsed = ingestJobEventSchema.safeParse(payload);
+  return parsed.success ? parsed.data : null;
+}
 
 export type ImportFailure = {
   readonly id: string;
@@ -18,10 +39,13 @@ export type ActivitySummary = {
   readonly failures: readonly ImportFailure[];
 };
 
+/**
+ * A check constraint makes a failed or timed-out job without an error
+ * impossible, so the first line is the real path. The rest keeps the function
+ * total, because the generated type still says the column is nullable.
+ */
 function failureReason(job: IngestJobRecord): string {
   if (job.error) return job.error;
-  // A timed-out job is the expected failure on a large document, so it says
-  // which stage it died in rather than reading as a sync still in flight.
   if (job.status === 'timeout') return `Timed out during ${job.stage}.`;
   return `Failed during ${job.stage}.`;
 }

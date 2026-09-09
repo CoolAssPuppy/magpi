@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { Json } from '@/lib/database.types';
 
-import { excerptOf, parseCitationIds, resolveCitations } from './citations';
+import { excerptOf, parseCitationIds, resolveCitations, resolveCitationSets } from './citations';
 import { chunkRow, readerSeeing, type ChunkRow } from './test-support';
 
 const CHUNK_A = '11111111-1111-4111-8111-111111111111';
@@ -53,6 +53,7 @@ describe('resolveCitations', () => {
         documentId: DOC_A,
         documentTitle: 'Q3 platform notes',
         excerpt: 'The SSO rollout is blocked on ENG-4417.',
+        label: 1,
       },
     ]);
   });
@@ -78,6 +79,20 @@ describe('resolveCitations', () => {
     expect(citations.map((citation) => citation.chunkId)).toEqual([CHUNK_A]);
   });
 
+  it('keeps the numbering the answer was written against when one is dropped', async () => {
+    const second: ChunkRow = chunkRow({
+      id: CHUNK_B,
+      document_id: DOC_B,
+      documents: { title: 'Second' },
+    });
+    const { supabase } = readerSeeing([second]);
+
+    const citations = await resolveCitations(supabase, [CHUNK_A, CHUNK_B]);
+
+    expect(citations).toHaveLength(1);
+    expect(citations[0]).toMatchObject({ chunkId: CHUNK_B, label: 2 });
+  });
+
   it('reads nothing when a message has no citations', async () => {
     const { supabase, asked } = readerSeeing([chunkRow()]);
 
@@ -91,5 +106,22 @@ describe('resolveCitations', () => {
     const [citation] = await resolveCitations(supabase, [CHUNK_A]);
 
     expect(citation.documentTitle).toBe('Untitled');
+  });
+});
+
+describe('resolveCitationSets', () => {
+  it('reads a whole conversation of citations in one query', async () => {
+    const second: ChunkRow = chunkRow({
+      id: CHUNK_B,
+      document_id: DOC_B,
+      documents: { title: 'Second' },
+    });
+    const { supabase, asked } = readerSeeing([chunkRow(), second]);
+
+    const sets = await resolveCitationSets(supabase, [[CHUNK_A], [CHUNK_A, CHUNK_B]]);
+
+    expect(asked).toHaveLength(1);
+    expect(sets[0].map((citation) => citation.label)).toEqual([1]);
+    expect(sets[1].map((citation) => citation.label)).toEqual([1, 2]);
   });
 });

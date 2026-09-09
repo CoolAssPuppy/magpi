@@ -84,7 +84,7 @@ describe('provider listings', () => {
     expect(listings[0].connections[0].spaceName).toBe('Engineering');
   });
 
-  it('drops a connection whose space the caller cannot see', () => {
+  it('drops a connection whose space was missing from the same read', () => {
     const listings = buildProviderListings({
       providers: [getProvider()],
       connections: [getConnection({ space_id: 'space-gone' })],

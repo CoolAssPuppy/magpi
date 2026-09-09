@@ -19,6 +19,7 @@ const rateLimitState = {
 const answerState = {
   events: [] as ChatEvent[],
   seenInput: null as unknown,
+  abandoned: false,
 };
 
 vi.mock('@/lib/supabase/context', () => ({
@@ -48,7 +49,11 @@ vi.mock('@/lib/chat/answer', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/chat/answer')>()),
   runAnswerTurn: async function* (input: unknown) {
     answerState.seenInput = input;
-    for (const event of answerState.events) yield event;
+    try {
+      for (const event of answerState.events) yield event;
+    } finally {
+      answerState.abandoned = true;
+    }
   },
 }));
 
@@ -86,6 +91,7 @@ async function readEvents(response: Response): Promise<readonly ChatEvent[]> {
 beforeEach(() => {
   sessionState.context = signedIn();
   rateLimitState.allowed = true;
+  answerState.abandoned = false;
   answerState.events = [
     { type: 'delta', text: 'Blocked on ENG-4417.' },
     { type: 'done', messageId: '66666666-6666-4666-8666-666666666666' },
@@ -156,6 +162,16 @@ describe('POST /api/chat', () => {
     await POST(ask({ conversationId: CONVERSATION_ID, message: 'hello' })).then(readEvents);
 
     expect(answerState.seenInput).toMatchObject({ spaceFilter: ['space-1'] });
+  });
+
+  it('abandons the turn when the reader drops the connection', async () => {
+    const response = await POST(ask({ conversationId: CONVERSATION_ID, message: 'hello' }));
+    const reader = response.body?.getReader();
+
+    await reader?.read();
+    await reader?.cancel();
+
+    expect(answerState.abandoned).toBe(true);
   });
 
   it('replays the earlier turns of the conversation', async () => {

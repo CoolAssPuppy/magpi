@@ -25,7 +25,7 @@ export function ConversationView({
 }: ConversationViewProps) {
   const router = useRouter();
   const [state, dispatch] = useReducer(chatReducer, initialChatState(initialTurns, initialTitle));
-  const foot = useRef<HTMLDivElement>(null);
+  const transcript = useRef<HTMLDivElement>(null);
   const started = useRef(false);
 
   const ask = useCallback(
@@ -49,14 +49,18 @@ export function ConversationView({
   }, [ask, conversationId, pendingQuestion, router]);
 
   useEffect(() => {
-    foot.current?.scrollIntoView({ block: 'end' });
+    const element = transcript.current;
+    if (element) element.scrollTop = element.scrollHeight;
   }, [state.turns]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-6">
-      <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+      <h1 className="font-heading text-xl leading-tight font-medium text-foreground">
+        {state.title ?? 'New conversation'}
+      </h1>
+
+      <div ref={transcript} className="min-h-0 flex-1 overflow-y-auto pr-1">
         <MessageList turns={state.turns} />
-        <div ref={foot} />
       </div>
 
       <Composer

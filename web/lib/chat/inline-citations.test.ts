@@ -8,6 +8,7 @@ const citation = (overrides: Partial<Citation> = {}): Citation => ({
   documentId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
   documentTitle: 'Q3 platform notes',
   excerpt: 'The SSO rollout is blocked on ENG-4417.',
+  label: 1,
   ...overrides,
 });
 
@@ -26,6 +27,7 @@ describe('splitAnswer', () => {
     const second = citation({
       chunkId: '22222222-2222-4222-8222-222222222222',
       documentId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      label: 2,
     });
 
     const labels = splitAnswer('One [1] and two [2].', [citation(), second])

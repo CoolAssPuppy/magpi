@@ -13,9 +13,11 @@ import {
 } from './view-model';
 
 /**
- * Never selects access_token_enc or refresh_token_enc. A token has no business
- * leaving the database, and the surest way to keep it there is to never name the
- * column in a query the web app runs.
+ * Named columns, never a star. `authenticated` holds column-level select on
+ * connections rather than a table-level grant, so that access_token_enc and
+ * refresh_token_enc are unreadable through connections_select_visible. A star
+ * here is a 403 from PostgREST, not a token leak, but naming the columns is the
+ * point either way.
  */
 const CONNECTION_COLUMNS =
   'id, provider, space_id, user_id, external_account_id, status, status_detail, last_synced_at, scope_selection';

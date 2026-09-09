@@ -26,6 +26,7 @@ const citation = (overrides: Partial<Citation> = {}): Citation => ({
   documentId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
   documentTitle: 'Q3 platform notes',
   excerpt: 'The SSO rollout is blocked on ENG-4417.',
+  label: 1,
   ...overrides,
 });
 
@@ -200,8 +201,29 @@ describe('runAnswerTurn', () => {
       type: 'error',
       message: 'Something went wrong answering that. Ask again.',
     });
+    expect(calls.map((call) => call.name)).toContain('addUserMessage');
     expect(calls.map((call) => call.name)).not.toContain('addAssistantMessage');
     consoleError.mockRestore();
+  });
+
+  it('leaves a recoverable conversation when the reader drops the connection', async () => {
+    const { deps, calls } = fakeDeps({
+      streamAnswer: async function* () {
+        yield 'half an ans';
+        yield 'wer that never arrives';
+        return { inputTokens: 300, outputTokens: 12 };
+      },
+    });
+
+    // What the route does in its cancel handler when the client goes away.
+    const events = runAnswerTurn(turnInput(), deps);
+    await events.next();
+    await events.next();
+    await events.return(undefined);
+
+    const written = calls.map((call) => call.name);
+    expect(written).toContain('addUserMessage');
+    expect(written).not.toContain('addAssistantMessage');
   });
 
   it('answers from nothing rather than failing when retrieval finds no passages', async () => {
@@ -218,5 +240,26 @@ describe('runAnswerTurn', () => {
 
     expect(events[0]).toEqual({ type: 'citations', citations: [] });
     expect(events.at(-1)).toEqual({ type: 'done', messageId: ASSISTANT_MESSAGE_ID });
+  });
+
+  it('answers with an error event when the question itself cannot be stored', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { deps } = fakeDeps();
+    const refusing: AnswerDeps = {
+      ...deps,
+      store: {
+        ...deps.store,
+        addUserMessage: async () => {
+          throw new Error('new row violates row-level security');
+        },
+      },
+    };
+
+    const events = await collect(runAnswerTurn(turnInput(), refusing));
+
+    expect(events).toEqual([
+      { type: 'error', message: 'Something went wrong answering that. Ask again.' },
+    ]);
+    consoleError.mockRestore();
   });
 });

@@ -33,6 +33,13 @@ export function SyncActivity({ spaceIds }: { spaceIds: readonly string[] }) {
         const job = parseIngestJobEvent(payload.new);
         if (job) setJobs((current) => applyJobEvent(current, job, spaceIds));
       })
+      // The payload is ignored on purpose and this handler takes no argument so
+      // that it cannot be read. connections is `replica identity full`, so the
+      // WAL row carries every column including access_token_enc, and Realtime
+      // authorizes against RLS rather than the column grant that keeps that
+      // column out of a REST response. Refetching through the server is the only
+      // path that respects the grant. Do not destructure the row to save a
+      // round trip.
       .on('postgres_changes', { event: '*', schema: 'public', table: 'connections' }, () => {
         router.refresh();
       })

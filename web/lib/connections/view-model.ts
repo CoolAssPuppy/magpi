@@ -100,8 +100,11 @@ export function buildProviderListings({
       scopeSelectionKind: provider.scope_selection_kind,
       connections: connections
         .filter((connection) => connection.provider === provider.slug)
-        // A connection whose space is not in the visible set is not one this
-        // caller can act on, and naming it would leak the space's existence.
+        // RLS already guarantees a visible connection has a visible space, so
+        // this is not the permission check. It handles a torn read: connections
+        // and spaces are two queries, and a space can leave the caller's set
+        // between them. Rendering a row with no space name is worse than
+        // dropping it until the next read.
         .flatMap((connection) => {
           const spaceName = spaceNames.get(connection.space_id);
           return spaceName ? [toSummary(connection, spaceName, now)] : [];

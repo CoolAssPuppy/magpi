@@ -10,8 +10,6 @@ import { loadConversation, loadMessages, toTurns } from '@/lib/chat/store';
 import { createServiceClient } from '@/lib/supabase/service';
 import { getSessionContext } from '@/lib/supabase/context';
 
-export const dynamic = 'force-dynamic';
-
 const RATE_LIMIT_PER_WINDOW = 30;
 const RATE_LIMIT_WINDOW_S = 60;
 

@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { applyJobEvent, describeActivity, summarizeJobs, type IngestJobRecord } from './activity';
+import {
+  applyJobEvent,
+  describeActivity,
+  parseIngestJobEvent,
+  summarizeJobs,
+  type IngestJobRecord,
+} from './activity';
 
 const getJob = (overrides?: Partial<IngestJobRecord>): IngestJobRecord => ({
   id: 'job-1',
@@ -42,7 +48,7 @@ describe('import activity', () => {
     expect(describeActivity(summary)).toBe('1 import failed');
   });
 
-  it('reports a timeout as a failure with its stage, because it will never finish', () => {
+  it('still names the stage if a terminal job somehow arrives with no error', () => {
     const summary = summarizeJobs([
       getJob({ id: 'job-5', status: 'timeout', stage: 'embed', error: null }),
     ]);
@@ -81,5 +87,14 @@ describe('following an import live', () => {
     const next = applyJobEvent(new Map(), getJob({ space_id: 'space-other' }), ['space-1']);
 
     expect(next.size).toBe(0);
+  });
+
+  it('reads a replication payload into a job', () => {
+    expect(parseIngestJobEvent(getJob())).toEqual(getJob());
+  });
+
+  it('drops a payload that is not a job, rather than counting a shape it cannot read', () => {
+    expect(parseIngestJobEvent({ id: 'job-1' })).toBeNull();
+    expect(parseIngestJobEvent(null)).toBeNull();
   });
 });

@@ -91,15 +91,56 @@ one line for line, so the transport is spelled out.
   `Database['public']['Tables']['messages']['Row']`. Citations are chunk ids in
   `messages.citations` and are resolved on read through
   `chunks` under RLS, never stored as text.
-- **Transport.** Web streams from the route handler at `POST /api/chat` as
-  Server-Sent Events over `fetch`, reading the body as a `ReadableStream`.
-  **Native does not use `URLSession.bytes` semantics implicitly.** iOS uses
-  `URLSession.shared.bytes(for:)` and parses `data:` lines by hand. Android
-  uses OkHttp with a `ResponseBody.source()` read loop. Both send the same JSON
-  body: `{ conversationId, question, spaceFilter }`. Both must handle a
-  mid-stream disconnect by keeping the persisted user message and reloading,
-  because the user message is written before the model call and the assistant
-  message after it completes.
+- **Transport.** `POST /api/chat`, body `{ conversationId, message }` where the
+  message is trimmed and between 1 and 4000 characters. There is no space filter
+  in the request: scope comes from `conversations.space_filter` on the row, which
+  is why no client lets a reader change scope mid-conversation.
+
+  The response is `200` with `Content-Type: application/x-ndjson; charset=utf-8`,
+  `Cache-Control: no-store` and `X-Accel-Buffering: no`. The body is one JSON
+  object per line, each terminated by a newline. Five event types, discriminated
+  on `type`, defined in `web/lib/chat/protocol.ts`:
+
+  ```
+  { "type": "citations", "citations": Citation[] }
+  { "type": "delta",     "text": string }
+  { "type": "done",      "messageId": uuid }
+  { "type": "title",     "title": string }
+  { "type": "error",     "message": string }
+
+  Citation = { chunkId, documentId, documentTitle, excerpt, label }
+  ```
+
+  Ordering a client may rely on:
+
+  1. `citations` exactly once, always before any answer text. The array may be
+     empty, meaning retrieval found nothing and the answer will say so. Sources
+     are on screen before the first token.
+  2. `delta` zero or more times. Concatenate in arrival order.
+  3. `done` exactly once, carrying the stored `messages.id`.
+  4. `title` at most once, only for a conversation that had none, always after
+     `done`. Naming a conversation never delays an answer.
+  5. `error` is terminal and can replace any of the above from that point. What
+     was already delivered stays valid and nothing follows it.
+
+  **Two obligations on every client.** Buffer the trailing fragment: an event can
+  be split across two network reads, so split on the newline, keep the remainder,
+  and prepend it to the next read. And drop a line that does not parse rather
+  than treating it as an error, so adding an event type later does not break an
+  older build.
+
+  Failures before the stream opens are a JSON body `{ code, message }` with a
+  status, never an event: `unauthorized` 401, `invalid_request` 400, `not_found`
+  404, `rate_limited` 429 with a `Retry-After` header in seconds, `server_error` 500. A client has exactly two failure shapes to handle: a JSON body with a
+  status, or an `error` event inside a 200.
+
+  iOS uses `URLSession.shared.bytes(for:)` and splits on newlines. Android uses
+  OkHttp with a `ResponseBody.source()` read loop. Both must keep the persisted
+  user message and reload after a mid-stream disconnect, because the question is
+  written before the model call and the answer after it completes. A dropped
+  connection leaves the question stored and no answer at all, never a partial
+  one.
+
 - **Loading.** The user turn appears immediately. The assistant turn shows a
   caret until the first token arrives.
 - **Empty.** Not reachable. A conversation always has at least one message.

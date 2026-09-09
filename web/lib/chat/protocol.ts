@@ -12,6 +12,12 @@ export const citationSchema = z.object({
   documentId: z.uuid(),
   documentTitle: z.string(),
   excerpt: z.string(),
+  /**
+   * The position this passage held in the prompt, which is the number the
+   * answer cites. It stays fixed when a later reader cannot see one of the
+   * others, so [3] never comes to mean a different source.
+   */
+  label: z.number().int().positive(),
 });
 
 export type Citation = z.infer<typeof citationSchema>;

@@ -24,7 +24,7 @@ export function splitAnswer(
   MARKER.lastIndex = 0;
   for (let match = MARKER.exec(text); match !== null; match = MARKER.exec(text)) {
     const label = Number(match[1]);
-    const cited = citations[label - 1];
+    const cited = citations.find((citation) => citation.label === label);
     if (!cited) continue;
 
     appendText(segments, text.slice(consumed, match.index));
