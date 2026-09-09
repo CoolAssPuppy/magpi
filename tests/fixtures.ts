@@ -41,8 +41,37 @@ export async function createConfirmedUser(label: string) {
   return { email, password, userId: data.user.id };
 }
 
+/**
+ * Deletes the user and the organization the signup trigger built for them.
+ *
+ * Deleting an auth user cascades their personal space and their membership rows,
+ * and leaves the organization behind because nothing references the user from
+ * it. Forty-one orphaned organizations had accumulated on the local database
+ * before anyone noticed, each carrying an org space, which moves the planner's
+ * estimates for the RLS subquery every content policy runs.
+ */
 export async function deleteUser(userId: string) {
-  await serviceClient().auth.admin.deleteUser(userId);
+  const service = serviceClient();
+
+  const { data: memberships } = await service
+    .from('org_members')
+    .select('org_id')
+    .eq('user_id', userId);
+
+  await service.auth.admin.deleteUser(userId);
+
+  for (const membership of memberships ?? []) {
+    const { count } = await service
+      .from('org_members')
+      .select('user_id', { count: 'exact', head: true })
+      .eq('org_id', membership.org_id);
+
+    // Only when the last member has gone. A shared organization outlives any one
+    // of its people, which is the whole point of the two-user journey.
+    if ((count ?? 0) === 0) {
+      await service.from('organizations').delete().eq('id', membership.org_id);
+    }
+  }
 }
 
 /** A client acting as one signed-in person, so RLS decides what they see. */

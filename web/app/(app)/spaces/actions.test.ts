@@ -293,12 +293,18 @@ describe('dreaming over a space', () => {
     expect(dbState.writes).toEqual([]);
   });
 
-  it('passes on a refusal from row level security rather than showing the switch moved', async () => {
+  it('reports a refusal without repeating what the database said', async () => {
     dbState.failures['spaces:update'] = 'permission denied for table spaces';
 
     const state = await setDreaming(form({ spaceId: SPACE_ID, enabled: 'true' }));
 
-    expect(state).toEqual({ status: 'error', message: 'permission denied for table spaces' });
+    // The raw message names a table and a privilege, which is a database
+    // internal and not something a reader can act on. Both surfaces that switch
+    // dreaming now answer with the same sentence.
+    expect(state).toEqual({
+      status: 'error',
+      message: 'Dreaming could not be changed for that space.',
+    });
     expect(dbState.revalidated).toEqual([]);
   });
 });

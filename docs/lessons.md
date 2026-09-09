@@ -286,3 +286,63 @@ obviously wrong on its face and it is what caught the second instance. "0
 failures" is not, and it is what nearly ended the first. A check whose failure
 mode is indistinguishable from success is the thing to avoid; grep is only the
 most common way to build one.
+
+## What a message writer needs from its renderer is whether anything goes in front of it
+
+Four columns bit us in one evening, each in a different way, and all four were
+the same question asked badly. `dream_runs.error`, `connections.status_detail`,
+`ingest_jobs.error` and the dream input count are all written by an edge
+function and rendered by the web app, and every round went: one side changed how
+it wrote, the other side's rendering broke somewhere neither side's tests could
+see.
+
+- A message naming its own stage read "Timed out during synthesize. Ran out of
+  time during synthesize after 148000ms."
+- A clause joined after a full stop read "Timed out. the run was interrupted."
+- A noun phrase spliced into a sentence read "It was reading No documents."
+- A raw provider slug stood in for a product name: "google_drive refused this
+  connection."
+
+None of those failed a test on either side, because each side's tests were
+correct about its own half.
+
+**Rule.** When one side writes text another side renders, the only thing the
+writer needs to know is whether the renderer puts anything in front of it.
+Everything else follows. Joined onto a prefix the renderer owns, the message is
+a clause and terminating it belongs to the renderer. Rendered standalone, it
+arrives whole. Write that down when the column is created, not after the fourth
+message about it.
+
+`web/lib/text/sentence.ts` is the joiner, and it is idempotent on purpose. A
+column that carries both shapes is then safe rather than lucky.
+
+The wider point is about how these were found. Every one surfaced because one
+side changed how it _consumed_ the other's output, never from testing either
+side. Fixed copy sitting next to a wrong value stays quiet forever. A sentence
+assembled from the data fails loudly when the data is wrong, which is the
+argument for building copy out of measured values rather than asserting them.
+
+## Do not assert an exact count against an approximate index
+
+`20_search.test.sql` asserted that a caller gets exactly five of their own rows
+back once `hnsw.iterative_scan` is on. It failed twice in eight full-gate runs
+and passed every time it was run alone, which is the worst shape a test can
+have: green when you investigate it, red when you are trying to ship.
+
+The fixture is fully deterministic, so the fixture was not the problem. HNSW
+assigns every element a random level as it is inserted, so the graph is a
+different shape on each build and how far a scan walks before it has enough
+results is not fixed. The test was asking an approximate index for an exact
+answer.
+
+**Rule.** Assert the property, not the number. Without the setting the caller
+gets nothing at all, which is a total failure rather than a degraded one, and
+that is both the bug that was found and the thing worth pinning. `> 0` catches
+the regression and does not depend on which way a graph happened to build.
+
+Verified both directions, which is the only reason to trust the weaker
+assertion: with the setting removed from the function, assertion 11 fails; with
+it restored, it passes. Removing it needs a vector operation in the same session
+first, or the `alter function ... reset` is refused with "permission denied to
+set parameter" and the break silently does not happen. That refusal is easy to
+read as the test passing.

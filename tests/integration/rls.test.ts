@@ -37,6 +37,31 @@ async function createPerson(label: string): Promise<Person> {
   return { email, userId: data.user.id, client };
 }
 
+/**
+ * Deletes a person and the organization they were the last member of. Deleting
+ * an auth user cascades their personal space and their memberships and leaves
+ * the organization standing, which accumulates one orphan per run.
+ */
+async function removePerson(userId: string) {
+  const service = serviceClient();
+  const { data: memberships } = await service
+    .from('org_members')
+    .select('org_id')
+    .eq('user_id', userId);
+
+  await service.auth.admin.deleteUser(userId);
+
+  for (const membership of memberships ?? []) {
+    const { count } = await service
+      .from('org_members')
+      .select('user_id', { count: 'exact', head: true })
+      .eq('org_id', membership.org_id);
+    if ((count ?? 0) === 0) {
+      await service.from('organizations').delete().eq('id', membership.org_id);
+    }
+  }
+}
+
 describe('a signed-in person, over real HTTP', () => {
   let alice: Person;
   let bob: Person;
@@ -46,9 +71,9 @@ describe('a signed-in person, over real HTTP', () => {
   });
 
   afterAll(async () => {
-    const service = serviceClient();
-    await service.auth.admin.deleteUser(alice.userId);
-    await service.auth.admin.deleteUser(bob.userId);
+    // The organization the signup trigger built is not reached by the user
+    // cascade, so a suite that only deletes users leaves one behind per run.
+    for (const person of [alice, bob]) await removePerson(person.userId);
   });
 
   it('gets a personal space and an org space from the signup trigger', async () => {

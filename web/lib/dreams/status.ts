@@ -1,5 +1,6 @@
 import type { Enums } from '@/lib/database.types';
 import type { StatusTone } from '@/lib/connections/status';
+import { asSentence } from '@/lib/text/sentence';
 
 export type DreamStatus = Enums<'dream_status'>;
 export type DreamKind = Enums<'dream_kind'>;
@@ -52,17 +53,6 @@ export type DreamStatusView = {
   readonly detail: string;
   readonly stage: DreamStage | null;
 };
-
-/**
- * The worker writes its message as a clause, and it lands here after a full
- * stop. A run the platform interrupted arrives with no stage prefix at all, so
- * the message is the whole sentence and has to read as one.
- */
-function asSentence(message: string): string {
-  const trimmed = message.trim();
-  const opened = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
-  return opened.endsWith('.') ? opened : `${opened}.`;
-}
 
 function failureDetail(failure: DreamFailure, verb: string): string {
   if (failure.stage && failure.message) {

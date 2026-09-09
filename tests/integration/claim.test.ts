@@ -45,7 +45,20 @@ describe('claiming ingest jobs', () => {
   });
 
   afterAll(async () => {
-    if (userId) await db.auth.admin.deleteUser(userId);
+    if (!userId) return;
+    // The signup trigger's organization is not reached by the user cascade.
+    const { data: memberships } = await db
+      .from('org_members')
+      .select('org_id')
+      .eq('user_id', userId);
+    await db.auth.admin.deleteUser(userId);
+    for (const membership of memberships ?? []) {
+      const { count } = await db
+        .from('org_members')
+        .select('user_id', { count: 'exact', head: true })
+        .eq('org_id', membership.org_id);
+      if ((count ?? 0) === 0) await db.from('organizations').delete().eq('id', membership.org_id);
+    }
   });
 
   it('hands the same job to exactly one worker when several claim at once', async () => {

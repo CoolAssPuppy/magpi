@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { errorState, successState, type ActionState } from '@/lib/actions/state';
 import { withSession } from '@/lib/actions/with-session';
 import { requestDreamRun, type DreamRunOutcome } from '@/lib/dreams/edge';
+import { setSpaceDreaming as writeSpaceDreaming } from '@/lib/spaces/dreaming';
 
 const DREAMS_PATH = '/dreams';
 
@@ -55,11 +56,12 @@ export async function setSpaceDreaming(
   if (!input.success) return errorState('That is not a space.');
 
   return withSession(async (context) => {
-    const { error } = await context.supabase
-      .from('spaces')
-      .update({ dreaming_enabled: input.data.enabled })
-      .eq('id', input.data.spaceId);
-    if (error) return errorState('Dreaming could not be changed for that space.');
+    const result = await writeSpaceDreaming(
+      context.supabase,
+      input.data.spaceId,
+      input.data.enabled,
+    );
+    if (!result.ok) return errorState(result.error);
     return successState(undefined);
   }, DREAMS_PATH);
 }

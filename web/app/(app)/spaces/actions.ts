@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { errorState, successState, type ActionState } from '@/lib/actions/state';
 import { withSession } from '@/lib/actions/with-session';
+import { setSpaceDreaming } from '@/lib/spaces/dreaming';
 
 const createSpaceSchema = z.object({
   name: z.string().trim().min(1, 'A space needs a name.').max(120),
@@ -84,12 +85,8 @@ export async function setDreaming(formData: FormData): Promise<ActionState<undef
     });
     if (!parsed.success) return errorState('That setting could not be changed.');
 
-    const { error } = await supabase
-      .from('spaces')
-      .update({ dreaming_enabled: parsed.data.enabled })
-      .eq('id', parsed.data.spaceId);
-
-    if (error) return errorState(error.message);
+    const result = await setSpaceDreaming(supabase, parsed.data.spaceId, parsed.data.enabled);
+    if (!result.ok) return errorState(result.error);
     return successState(undefined);
   }, '/spaces');
 }
