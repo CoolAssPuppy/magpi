@@ -190,3 +190,21 @@ agent writing that code to account for errors that were mine.
 `--config supabase/functions/deno.json` explicitly. A tool that silently falls
 back to a default when it cannot find its config will blame your code for your
 invocation.
+
+## Concurrent `supabase db reset` leaves the database with zero tables
+
+Three workstreams each ran `supabase db reset` to pick up a migration, and the
+local database twice ended up with no tables at all. pgTAP reported six files
+as `Dubious, test returned 3` rather than as assertion failures, which is what
+"the schema is not there" looks like from inside a test runner. The storage API
+reported `DatabaseSchemaMismatch` at the same time.
+
+Nothing was lost, because the schema files are the source of truth and one more
+reset restored everything. The cost was the reading: two workstreams paused
+thinking they had broken something, and a set of test failures had no relation
+to the code being tested.
+
+**Rule.** One owner for the database lifecycle. Agents that need a migration
+applied ask for it rather than running the reset themselves, and a suite that
+reports a whole file as dubious should check `select count(*) from
+information_schema.tables` before anyone reads the diff.
