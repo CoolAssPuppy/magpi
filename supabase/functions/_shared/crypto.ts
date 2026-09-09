@@ -3,9 +3,9 @@
 // database, so a leaked row cannot be replayed as a credential.
 
 export function base64urlEncode(bytes: Uint8Array): string {
-  let binary = "";
+  let binary = '';
   for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
+  return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');
 }
 
 export function randomToken(byteLength = 32): string {
@@ -15,17 +15,17 @@ export function randomToken(byteLength = 32): string {
 }
 
 export function toHex(bytes: Uint8Array): string {
-  return [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  return [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 export async function sha256Hex(input: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
   return toHex(new Uint8Array(digest));
 }
 
 /** For PKCE S256 code challenges. */
 export async function sha256Base64Url(input: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
   return base64urlEncode(new Uint8Array(digest));
 }
 

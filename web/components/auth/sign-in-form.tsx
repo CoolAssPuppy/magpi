@@ -60,7 +60,7 @@ export function SignInForm({ next }: { next: string }) {
             <Label htmlFor="password">Password</Label>
             <Link
               href="/forgot-password"
-              className="text-foreground-lighter hover:text-foreground text-xs underline-offset-4 hover:underline"
+              className="text-xs text-foreground-lighter underline-offset-4 hover:text-foreground hover:underline"
             >
               Forgot it?
             </Link>
@@ -81,9 +81,9 @@ export function SignInForm({ next }: { next: string }) {
       </form>
 
       <div className="flex items-center gap-3">
-        <span className="bg-border h-px flex-1" />
-        <span className="text-foreground-lighter text-xs">or</span>
-        <span className="bg-border h-px flex-1" />
+        <span className="h-px flex-1 bg-border" />
+        <span className="text-xs text-foreground-lighter">or</span>
+        <span className="h-px flex-1 bg-border" />
       </div>
 
       <SocialSignIn next={next} />

@@ -23,7 +23,13 @@ const isLight = args.has('--light');
 const isStrict = args.has('--strict');
 
 const LIGHT_STEPS = [
-  { name: 'format check', cmd: 'pnpm', argv: ['format:check'] },
+  { name: 'format check (web)', cmd: 'pnpm', argv: ['format:check'] },
+  {
+    name: 'format check (functions)',
+    cmd: 'pnpm',
+    argv: ['format:check:functions'],
+    needs: 'deno',
+  },
   { name: 'lint (web)', cmd: 'pnpm', argv: ['lint:web'] },
   { name: 'lint (functions)', cmd: 'pnpm', argv: ['lint:functions'], needs: 'deno' },
   { name: 'typecheck (web)', cmd: 'pnpm', argv: ['typecheck:web'] },
@@ -31,6 +37,7 @@ const LIGHT_STEPS = [
   { name: 'web unit tests', cmd: 'pnpm', argv: ['test'] },
   { name: 'function unit tests', cmd: 'pnpm', argv: ['test:functions'], needs: 'deno' },
   { name: 'workflow contract', cmd: 'node', argv: ['scripts/workflow-contract-check.mjs'] },
+  { name: 'raw color', cmd: 'node', argv: ['scripts/check-raw-color.mjs'] },
   { name: 'web build', cmd: 'pnpm', argv: ['build'] },
 ];
 

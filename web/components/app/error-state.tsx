@@ -2,11 +2,11 @@ export function ErrorState({ title, detail }: { title: string; detail?: string }
   return (
     <div
       role="alert"
-      className="border-border-destructive bg-destructive-200 rounded-[var(--radius-panel)] border p-5"
+      className="rounded-[var(--radius-panel)] border border-border-destructive bg-destructive-200 p-5"
     >
-      <h2 className="font-heading text-destructive-600 text-base font-medium">{title}</h2>
+      <h2 className="font-heading text-base font-medium text-destructive-600">{title}</h2>
       {detail ? (
-        <p className="text-foreground-light mt-1 max-w-[var(--measure-prose)] text-sm">{detail}</p>
+        <p className="mt-1 max-w-[var(--measure-prose)] text-sm text-foreground-light">{detail}</p>
       ) : null}
     </div>
   );

@@ -107,12 +107,12 @@ section is wrong and gets corrected in the same commit as the code.
 
 Intended policy:
 
-| Property | Intended value | Reason |
-|---|---|---|
-| Target chunk size | 800 tokens | Large enough that a paragraph keeps its context, small enough that a 20-chunk answer stays well inside the chat model's window with room for the conversation. |
-| Overlap | 100 tokens | A sentence split across a boundary appears whole in one of the two chunks, so a fact that straddles a boundary is still retrievable. |
-| Minimum chunk size | 100 tokens | Fragments below this are merged into the previous chunk. A 12-token chunk embeds to noise and pollutes the semantic arm. |
-| Maximum chunk size | 1,200 tokens | A hard ceiling for the case where no boundary rule fires, so a single pathological paragraph cannot produce a chunk that dominates a result set. |
+| Property           | Intended value | Reason                                                                                                                                                         |
+| ------------------ | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Target chunk size  | 800 tokens     | Large enough that a paragraph keeps its context, small enough that a 20-chunk answer stays well inside the chat model's window with room for the conversation. |
+| Overlap            | 100 tokens     | A sentence split across a boundary appears whole in one of the two chunks, so a fact that straddles a boundary is still retrievable.                           |
+| Minimum chunk size | 100 tokens     | Fragments below this are merged into the previous chunk. A 12-token chunk embeds to noise and pollutes the semantic arm.                                       |
+| Maximum chunk size | 1,200 tokens   | A hard ceiling for the case where no boundary rule fires, so a single pathological paragraph cannot produce a chunk that dominates a result set.               |
 
 Boundary rules, applied in order, splitting at the first rule that produces a
 chunk inside the size band:
@@ -170,14 +170,14 @@ Every value here is `not measured` as of 2026-09-09. Filter selectivity is the
 fraction of chunks in the corpus that the querying user can see, which is the
 `space_filter` and RLS predicate combined.
 
-| Corpus size | Filter selectivity | recall@10 | p50 latency | p95 latency | `hnsw.iterative_scan` |
-|---|---|---|---|---|---|
-| 10k chunks | 1 percent | not measured | not measured | not measured | `off` |
-| 10k chunks | 1 percent | not measured | not measured | not measured | `relaxed_order` |
-| 100k chunks | 1 percent | not measured | not measured | not measured | `off` |
-| 100k chunks | 1 percent | not measured | not measured | not measured | `relaxed_order` |
-| 1M chunks | 1 percent | not measured | not measured | not measured | `off` |
-| 1M chunks | 1 percent | not measured | not measured | not measured | `relaxed_order` |
+| Corpus size | Filter selectivity | recall@10    | p50 latency  | p95 latency  | `hnsw.iterative_scan` |
+| ----------- | ------------------ | ------------ | ------------ | ------------ | --------------------- |
+| 10k chunks  | 1 percent          | not measured | not measured | not measured | `off`                 |
+| 10k chunks  | 1 percent          | not measured | not measured | not measured | `relaxed_order`       |
+| 100k chunks | 1 percent          | not measured | not measured | not measured | `off`                 |
+| 100k chunks | 1 percent          | not measured | not measured | not measured | `relaxed_order`       |
+| 1M chunks   | 1 percent          | not measured | not measured | not measured | `off`                 |
+| 1M chunks   | 1 percent          | not measured | not measured | not measured | `relaxed_order`       |
 
 No latency claim goes on a keynote slide until these cells have numbers in them.
 That includes a claim made in passing, in a rehearsal, or in a sentence that

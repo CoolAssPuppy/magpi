@@ -13,6 +13,6 @@
   "fmt": {
     "lineWidth": 100,
     "semiColons": true,
-    "singleQuote": false
+    "singleQuote": true
   }
 }

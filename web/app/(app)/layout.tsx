@@ -23,23 +23,18 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   if (!context) redirect('/sign-in');
 
   const items =
-    context.role === 'owner' || context.role === 'admin'
-      ? [...BASE_ITEMS, ADMIN_ITEM]
-      : BASE_ITEMS;
+    context.role === 'owner' || context.role === 'admin' ? [...BASE_ITEMS, ADMIN_ITEM] : BASE_ITEMS;
 
   return (
     <div className="flex min-h-svh flex-col">
-      <header className="border-border flex items-center justify-between gap-4 border-b px-5 py-3">
-        <Link href="/chat" className="font-heading text-foreground text-base tracking-tight">
+      <header className="flex items-center justify-between gap-4 border-b border-border px-5 py-3">
+        <Link href="/chat" className="font-heading text-base tracking-tight text-foreground">
           Recall
         </Link>
 
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          <Link
-            href="/settings"
-            className="text-foreground-lighter hover:text-foreground text-sm"
-          >
+          <Link href="/settings" className="text-sm text-foreground-lighter hover:text-foreground">
             Settings
           </Link>
           <SignOutButton />

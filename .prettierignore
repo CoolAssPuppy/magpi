@@ -8,3 +8,4 @@ web/styles/supabase
 docs/fixtures
 test-results
 playwright-report
+supabase/functions

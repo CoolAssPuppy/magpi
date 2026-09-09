@@ -14,9 +14,9 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="border-border flex flex-col items-start gap-3 rounded-[var(--radius-panel)] border border-dashed p-8">
-      <h2 className="font-heading text-foreground text-base font-medium">{title}</h2>
-      <p className="text-foreground-lighter max-w-[var(--measure-prose)] text-sm">{description}</p>
+    <div className="flex flex-col items-start gap-3 rounded-[var(--radius-panel)] border border-dashed border-border p-8">
+      <h2 className="font-heading text-base font-medium text-foreground">{title}</h2>
+      <p className="max-w-[var(--measure-prose)] text-sm text-foreground-lighter">{description}</p>
       {action}
     </div>
   );

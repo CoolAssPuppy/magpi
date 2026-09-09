@@ -12,13 +12,13 @@ number nobody ran is a lie with a table around it.
 Pinned in `web/lib/models.ts`. That file is the only place a model id appears in
 the codebase, so a model change is a one-file change plus a line in this table.
 
-| Purpose | Model id | Date pinned | Context window | Max output | Cost per 1M input | Cost per 1M output |
-|---|---|---|---|---|---|---|
-| Embeddings | `text-embedding-3-small` | 2026-09-09 | 8,191 tokens, unverified | 1536 dimensions | $0.02 | not applicable |
-| Chat, the answer turn | `gpt-4.1-2025-04-14` | 2026-09-09 | 1,047,576 tokens | 32,768 tokens | $2.00 | $8.00 |
-| Question condensing | `gpt-4.1-mini-2025-04-14` | 2026-09-09 | 1,047,576 tokens | 32,768 tokens | $0.40 | $1.60 |
-| Conversation titling | `gpt-4.1-mini-2025-04-14` | 2026-09-09 | 1,047,576 tokens | 32,768 tokens | $0.40 | $1.60 |
-| Dreaming | `gpt-4.1-2025-04-14` | 2026-09-09 | 1,047,576 tokens | 32,768 tokens | $2.00 | $8.00 |
+| Purpose               | Model id                  | Date pinned | Context window           | Max output      | Cost per 1M input | Cost per 1M output |
+| --------------------- | ------------------------- | ----------- | ------------------------ | --------------- | ----------------- | ------------------ |
+| Embeddings            | `text-embedding-3-small`  | 2026-09-09  | 8,191 tokens, unverified | 1536 dimensions | $0.02             | not applicable     |
+| Chat, the answer turn | `gpt-4.1-2025-04-14`      | 2026-09-09  | 1,047,576 tokens         | 32,768 tokens   | $2.00             | $8.00              |
+| Question condensing   | `gpt-4.1-mini-2025-04-14` | 2026-09-09  | 1,047,576 tokens         | 32,768 tokens   | $0.40             | $1.60              |
+| Conversation titling  | `gpt-4.1-mini-2025-04-14` | 2026-09-09  | 1,047,576 tokens         | 32,768 tokens   | $0.40             | $1.60              |
+| Dreaming              | `gpt-4.1-2025-04-14`      | 2026-09-09  | 1,047,576 tokens         | 32,768 tokens   | $2.00             | $8.00              |
 
 Prices are OpenAI's published standard-tier list prices, read from
 `developers.openai.com/api/docs/pricing` on 2026-09-09. Cached input and batch
@@ -57,15 +57,15 @@ Finding the exact point where that happens is a deliverable, not an accident.
 `public.ingest_stage` enum. `outcome` is `completed` or the terminal
 `ingest_jobs.status`.
 
-| Scenario | Input size | Stage it died in | Wall clock | Outcome |
-|---|---|---|---|---|
-| 10-page PDF | not measured | not measured | not measured | not measured |
-| 50-page PDF | not measured | not measured | not measured | not measured |
-| 400-page PDF | not measured | not measured | not measured | not measured |
-| Batch of 10 documents | not measured | not measured | not measured | not measured |
-| Batch of 100 documents | not measured | not measured | not measured | not measured |
-| Dream digest over 20 documents | not measured | not measured | not measured | not measured |
-| Dream digest over 200 documents | not measured | not measured | not measured | not measured |
+| Scenario                        | Input size   | Stage it died in | Wall clock   | Outcome      |
+| ------------------------------- | ------------ | ---------------- | ------------ | ------------ |
+| 10-page PDF                     | not measured | not measured     | not measured | not measured |
+| 50-page PDF                     | not measured | not measured     | not measured | not measured |
+| 400-page PDF                    | not measured | not measured     | not measured | not measured |
+| Batch of 10 documents           | not measured | not measured     | not measured | not measured |
+| Batch of 100 documents          | not measured | not measured     | not measured | not measured |
+| Dream digest over 20 documents  | not measured | not measured     | not measured | not measured |
+| Dream digest over 200 documents | not measured | not measured     | not measured | not measured |
 
 `input size` records three things about the fixture actually used: file bytes,
 extracted character count, and resulting chunk count. All three stay
@@ -98,10 +98,10 @@ The observation to make is the point at which those queries start competing with
 that traffic. Two signals, both taken while an admin has the analytics page
 open:
 
-| Signal | How it is read | Value |
-|---|---|---|
+| Signal                                                                               | How it is read                     | Value        |
+| ------------------------------------------------------------------------------------ | ---------------------------------- | ------------ |
 | p95 chat answer latency during an analytics page load, compared with p95 without one | `messages.latency_ms`, two windows | not measured |
-| Primary CPU during an analytics page load | Supabase project metrics | not measured |
+| Primary CPU during an analytics page load                                            | Supabase project metrics           | not measured |
 
 This matters because the dead-content query and the top-questions query both
 scan history rather than an index over a recent window, and their cost grows

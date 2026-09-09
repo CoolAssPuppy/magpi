@@ -13,10 +13,10 @@ export default function LandingPage() {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-16 px-5 py-20">
       <section className="max-w-[var(--measure-prose)]">
-        <h1 className="font-heading text-foreground text-4xl leading-[1.1] font-medium tracking-tight">
+        <h1 className="font-heading text-4xl leading-[1.1] font-medium tracking-tight text-foreground">
           Ask your team&apos;s knowledge base a question.
         </h1>
-        <p className="text-foreground-light mt-5 text-base">
+        <p className="mt-5 text-base text-foreground-light">
           Recall reads Notion, Linear, Slack and Google Drive, and answers in a conversation with
           citations back to the source. Overnight it re-reads what came in, links what is about the
           same thing, and writes a digest.
@@ -32,12 +32,12 @@ export default function LandingPage() {
       </section>
 
       <section className="flex flex-col gap-4">
-        <h2 className="font-heading text-foreground text-lg font-medium">Where it reads from</h2>
+        <h2 className="font-heading text-lg font-medium text-foreground">Where it reads from</h2>
         <ul className="flex flex-wrap gap-2">
           {SOURCES.map((source) => (
             <li
               key={source}
-              className="border-border text-foreground-light rounded-[var(--radius-panel)] border px-3 py-1.5 text-sm"
+              className="rounded-[var(--radius-panel)] border border-border px-3 py-1.5 text-sm text-foreground-light"
             >
               {source}
             </li>
@@ -47,26 +47,28 @@ export default function LandingPage() {
 
       <section className="grid gap-10 md:grid-cols-3">
         <div>
-          <h3 className="font-heading text-foreground text-base font-medium">
+          <h3 className="font-heading text-base font-medium text-foreground">
             Every document lives in one space
           </h3>
-          <p className="text-foreground-lighter mt-2 text-sm">
+          <p className="mt-2 text-sm text-foreground-lighter">
             Personal, team, or everyone. You pick when you put it in, and that is the whole
             permission model.
           </p>
         </div>
         <div>
-          <h3 className="font-heading text-foreground text-base font-medium">
+          <h3 className="font-heading text-base font-medium text-foreground">
             Answers cite their sources
           </h3>
-          <p className="text-foreground-lighter mt-2 text-sm">
+          <p className="mt-2 text-sm text-foreground-lighter">
             Citations are stored as chunk ids and resolved when you read the message, so a person
             who lost access to a space stops seeing the quote.
           </p>
         </div>
         <div>
-          <h3 className="font-heading text-foreground text-base font-medium">It dreams overnight</h3>
-          <p className="text-foreground-lighter mt-2 text-sm">
+          <h3 className="font-heading text-base font-medium text-foreground">
+            It dreams overnight
+          </h3>
+          <p className="mt-2 text-sm text-foreground-lighter">
             Dreaming is a nightly pass that re-reads the day, extracts entities, links documents
             about the same thing, and writes a digest back into the space.
           </p>

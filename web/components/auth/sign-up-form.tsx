@@ -94,9 +94,9 @@ export function SignUpForm() {
       </form>
 
       <div className="flex items-center gap-3">
-        <span className="bg-border h-px flex-1" />
-        <span className="text-foreground-lighter text-xs">or</span>
-        <span className="bg-border h-px flex-1" />
+        <span className="h-px flex-1 bg-border" />
+        <span className="text-xs text-foreground-lighter">or</span>
+        <span className="h-px flex-1 bg-border" />
       </div>
 
       <SocialSignIn next="/chat" />

@@ -21,7 +21,7 @@ export function ThemeToggle() {
   useEffect(() => setIsMounted(true), []);
 
   return (
-    <div className="border-border inline-flex rounded-[var(--radius-panel)] border p-0.5">
+    <div className="inline-flex rounded-[var(--radius-panel)] border border-border p-0.5">
       {OPTIONS.map(({ value, label, Icon }) => (
         <button
           key={value}

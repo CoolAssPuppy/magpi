@@ -15,7 +15,7 @@ export function Nav({ items }: { items: readonly NavItem[] }) {
   const pathname = usePathname();
 
   return (
-    <nav className="border-border flex gap-1 border-b" aria-label="Sections">
+    <nav className="flex gap-1 border-b border-border" aria-label="Sections">
       {items.map((item) => {
         const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
         return (
@@ -27,7 +27,7 @@ export function Nav({ items }: { items: readonly NavItem[] }) {
               '-mb-px border-b-2 px-3 py-2 text-sm transition-colors motion-reduce:transition-none',
               isActive
                 ? 'border-brand-600 text-foreground'
-                : 'text-foreground-lighter hover:text-foreground border-transparent',
+                : 'border-transparent text-foreground-lighter hover:text-foreground',
             )}
           >
             {item.label}

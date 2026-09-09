@@ -9,7 +9,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(41);
+select plan(42);
 
 -- Four users. Alice and Bob are in separate organizations. Carol and Dave are in
 -- the same organization, and only Carol is in the team space, so Dave is the
@@ -143,6 +143,15 @@ values
    (select org_id from public.spaces where id = '50000000-0000-4000-8000-00000000000c'),
    '50000000-0000-4000-8000-00000000000c', '51000000-0000-4000-8000-00000000000c',
    '2026-01-05 00:00:00+00', '2026-01-05 00:00:00+00');
+
+-- Carol's org id, stashed while the reader can still see it. Later assertions
+-- run as Dave, who cannot read Carol's team space, so a subquery through that
+-- space would return null and quietly turn a real check into a vacuous one.
+select set_config(
+  'recall.org_c',
+  (select org_id::text from public.spaces where id = '50000000-0000-4000-8000-00000000000c'),
+  true
+);
 
 -- Alice ---------------------------------------------------------------------
 
@@ -378,9 +387,7 @@ set local request.jwt.claims to '{"sub":"d0000000-0000-4000-8000-000000000004","
 -- boundary rather than a missing org membership.
 select is(
   (select count(*)::int from public.spaces
-   where kind = 'org'
-     and org_id = (select org_id from public.spaces
-                   where id = '50000000-0000-4000-8000-00000000000c')),
+   where kind = 'org' and org_id = current_setting('recall.org_c')::uuid),
   1, 'a colleague in the same org does see that org''s org space'
 );
 
@@ -417,20 +424,24 @@ select is(
 );
 
 -- Anon ----------------------------------------------------------------------
+--
+-- Every content policy names `to authenticated`, so a signed-out caller is
+-- refused at the table privilege before RLS is consulted at all. These assert
+-- the refusal rather than an empty result: granting anon a broad select would
+-- still return no rows today, and would silently become an exposure the moment
+-- someone adds a policy that forgets the role list.
 
 set local request.jwt.claims to '{"role":"anon"}';
 set local role anon;
 
-select is(
-  (select count(*)::int from public.documents
-   where id = '51000000-0000-4000-8000-00000000000a'),
-  0, 'a signed-out caller reads no documents'
+select throws_ok(
+  'select * from public.documents', '42501', null,
+  'a signed-out caller is refused documents outright'
 );
 
-select is(
-  (select count(*)::int from public.chunks
-   where id = '52000000-0000-4000-8000-00000000000a'),
-  0, 'a signed-out caller reads no chunks'
+select throws_ok(
+  'select * from public.chunks', '42501', null,
+  'a signed-out caller is refused chunks outright'
 );
 
 -- Realtime ------------------------------------------------------------------

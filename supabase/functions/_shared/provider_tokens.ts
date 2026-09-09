@@ -22,9 +22,9 @@
 // the new key, old rows still decrypt, and the previous entry is dropped once
 // every row has been rewritten.
 
-import { ApiError, misconfigured } from "./errors.ts";
-import { denoEnv, type EnvSource, tokenEncryptionEnv } from "./env.ts";
-import { toHex } from "./crypto.ts";
+import { ApiError, misconfigured } from './errors.ts';
+import { denoEnv, type EnvSource, tokenEncryptionEnv } from './env.ts';
+import { toHex } from './crypto.ts';
 
 const FORMAT_VERSION = 2;
 const IV_BYTES = 12;
@@ -35,7 +35,7 @@ const KEY_BYTES = 32;
 const keyCache = new Map<string, CryptoKey>();
 
 function unreadable(): ApiError {
-  return new ApiError(500, "internal", "stored token could not be read");
+  return new ApiError(500, 'internal', 'stored token could not be read');
 }
 
 // WebCrypto's types require a view backed by a plain ArrayBuffer, not the
@@ -60,7 +60,7 @@ function decodeBase64(input: string): Uint8Array<ArrayBuffer> {
 
 function fromHex(hex: string): Uint8Array<ArrayBuffer> {
   if (hex.length % 2 !== 0 || !/^[0-9a-f]*$/i.test(hex)) {
-    throw new ApiError(500, "internal", "stored token is malformed");
+    throw new ApiError(500, 'internal', 'stored token is malformed');
   }
   const out = allocate(hex.length / 2);
   for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
@@ -84,9 +84,9 @@ async function importKey(raw: string, label: string): Promise<CryptoKey> {
 
   // extractable = false: the key material cannot be read back out, so it cannot
   // reach a log line or a response body.
-  const key = await crypto.subtle.importKey("raw", bytes, { name: "AES-GCM" }, false, [
-    "encrypt",
-    "decrypt",
+  const key = await crypto.subtle.importKey('raw', bytes, { name: 'AES-GCM' }, false, [
+    'encrypt',
+    'decrypt',
   ]);
   keyCache.set(raw, key);
   return key;
@@ -108,13 +108,13 @@ export async function encryptProviderToken(
   source: EnvSource = denoEnv,
 ): Promise<string> {
   const env = tokenEncryptionEnv(source);
-  const key = await importKey(env.key, "SB_TOKEN_ENC_KEY");
+  const key = await importKey(env.key, 'SB_TOKEN_ENC_KEY');
   const iv = allocate(IV_BYTES);
   crypto.getRandomValues(iv);
 
   const ciphertext = new Uint8Array(
     await crypto.subtle.encrypt(
-      { name: "AES-GCM", iv, additionalData: additionalData(ctx) },
+      { name: 'AES-GCM', iv, additionalData: additionalData(ctx) },
       key,
       copy(new TextEncoder().encode(plaintext)),
     ),
@@ -125,7 +125,7 @@ export async function encryptProviderToken(
   envelope[1] = env.keyId;
   envelope.set(iv, 2);
   envelope.set(ciphertext, 2 + IV_BYTES);
-  return "\\x" + toHex(envelope);
+  return '\\x' + toHex(envelope);
 }
 
 /**
@@ -137,10 +137,10 @@ export async function decryptProviderToken(
   ctx: TokenContext,
   source: EnvSource = denoEnv,
 ): Promise<string> {
-  const envelope = fromHex(stored.startsWith("\\x") ? stored.slice(2) : stored);
+  const envelope = fromHex(stored.startsWith('\\x') ? stored.slice(2) : stored);
 
   if (envelope.length <= 2 + IV_BYTES || envelope[0] !== FORMAT_VERSION) {
-    throw new ApiError(500, "internal", "stored token is malformed");
+    throw new ApiError(500, 'internal', 'stored token is malformed');
   }
 
   const env = tokenEncryptionEnv(source);
@@ -155,13 +155,13 @@ export async function decryptProviderToken(
 
   const key = await importKey(
     raw,
-    keyId === env.keyId ? "SB_TOKEN_ENC_KEY" : `SB_TOKEN_ENC_KEYS_PREVIOUS entry ${keyId}`,
+    keyId === env.keyId ? 'SB_TOKEN_ENC_KEY' : `SB_TOKEN_ENC_KEYS_PREVIOUS entry ${keyId}`,
   );
 
   try {
     const plaintext = await crypto.subtle.decrypt(
       {
-        name: "AES-GCM",
+        name: 'AES-GCM',
         iv: copy(envelope.slice(2, 2 + IV_BYTES)),
         additionalData: additionalData(ctx),
       },

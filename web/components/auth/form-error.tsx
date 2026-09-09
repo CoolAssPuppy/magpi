@@ -7,7 +7,7 @@ export function FormError({ message }: { message: string | null }) {
   return (
     <p
       role="alert"
-      className="border-border-destructive bg-destructive-200 text-destructive-600 rounded-[var(--radius-panel)] border px-3 py-2 text-sm"
+      className="rounded-[var(--radius-panel)] border border-border-destructive bg-destructive-200 px-3 py-2 text-sm text-destructive-600"
     >
       {message}
     </p>

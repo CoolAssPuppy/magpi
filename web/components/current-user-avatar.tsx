@@ -6,8 +6,16 @@ import { useCurrentUserName } from '@/hooks/use-current-user-name';
 
 function initialsFrom(name: string | null): string {
   if (!name) return '?';
-  const parts = name.replace(/@.*$/, '').split(/[\s._-]+/).filter(Boolean);
-  return parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? '').join('') || '?';
+  const parts = name
+    .replace(/@.*$/, '')
+    .split(/[\s._-]+/)
+    .filter(Boolean);
+  return (
+    parts
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? '')
+      .join('') || '?'
+  );
 }
 
 export function CurrentUserAvatar() {
@@ -18,7 +26,7 @@ export function CurrentUserAvatar() {
   return (
     <Avatar className="size-7">
       {image ? <AvatarImage src={image} alt={name ?? 'Your avatar'} /> : null}
-      <AvatarFallback className="bg-background-surface-300 text-foreground-light text-xs">
+      <AvatarFallback className="bg-background-surface-300 text-xs text-foreground-light">
         {initials}
       </AvatarFallback>
     </Avatar>

@@ -8,8 +8,8 @@
 // Every accessor takes its source, so a test names the values it needs instead
 // of mutating the process environment and racing every other test in the file.
 
-import { z } from "zod";
-import { ApiError, misconfigured } from "./errors.ts";
+import { z } from 'zod';
+import { ApiError, misconfigured } from './errors.ts';
 
 export interface EnvSource {
   get(name: string): string | undefined;
@@ -21,7 +21,7 @@ export const denoEnv: EnvSource = { get: (name: string) => Deno.env.get(name) ||
 // URL with a "kong" scheme. The scheme is the thing being checked here.
 const httpUrl = z
   .string()
-  .refine((value) => /^https?:\/\//.test(value) && URL.canParse(value), "must be an http(s) url");
+  .refine((value) => /^https?:\/\//.test(value) && URL.canParse(value), 'must be an http(s) url');
 
 const coreSchema = z.object({
   supabaseUrl: httpUrl,
@@ -35,7 +35,7 @@ function parseOrFail<T>(schema: z.ZodType<T>, value: unknown, label: string): T 
   const result = schema.safeParse(value);
   if (result.success) return result.data;
   throw misconfigured(
-    `${label}: ${result.error.issues.map((i) => `${i.path.join(".")} ${i.message}`).join("; ")}`,
+    `${label}: ${result.error.issues.map((i) => `${i.path.join('.')} ${i.message}`).join('; ')}`,
   );
 }
 
@@ -43,10 +43,10 @@ export function coreEnv(source: EnvSource = denoEnv): CoreEnv {
   return parseOrFail(
     coreSchema,
     {
-      supabaseUrl: source.get("SUPABASE_URL"),
-      serviceRoleKey: source.get("SB_SERVICE_ROLE_KEY"),
+      supabaseUrl: source.get('SUPABASE_URL'),
+      serviceRoleKey: source.get('SB_SERVICE_ROLE_KEY'),
     },
-    "core env",
+    'core env',
   );
 }
 
@@ -59,8 +59,8 @@ export function coreEnv(source: EnvSource = denoEnv): CoreEnv {
  * wins when set.
  */
 export function publishableKey(source: EnvSource = denoEnv): string {
-  const key = source.get("SB_PUBLISHABLE_KEY") ?? source.get("SUPABASE_ANON_KEY");
-  if (!key) throw misconfigured("neither SB_PUBLISHABLE_KEY nor SUPABASE_ANON_KEY is set");
+  const key = source.get('SB_PUBLISHABLE_KEY') ?? source.get('SUPABASE_ANON_KEY');
+  if (!key) throw misconfigured('neither SB_PUBLISHABLE_KEY nor SUPABASE_ANON_KEY is set');
   return key;
 }
 
@@ -76,11 +76,11 @@ export interface OAuthCredentials {
  * is a deployment state and the connections page can say so.
  */
 export function oauthCredentials(slug: string, source: EnvSource = denoEnv): OAuthCredentials {
-  const prefix = `SB_${slug.toUpperCase().replaceAll("-", "_")}`;
+  const prefix = `SB_${slug.toUpperCase().replaceAll('-', '_')}`;
   const clientId = source.get(`${prefix}_CLIENT_ID`);
   const clientSecret = source.get(`${prefix}_CLIENT_SECRET`);
   if (!clientId || !clientSecret) {
-    throw new ApiError(503, "provider_unconfigured", `${slug} is not configured`);
+    throw new ApiError(503, 'provider_unconfigured', `${slug} is not configured`);
   }
   return { clientId, clientSecret };
 }
@@ -111,10 +111,10 @@ function parsePreviousKeys(raw: string | undefined): Map<number, string> {
   const entries = new Map<number, string>();
   if (!raw?.trim()) return entries;
 
-  for (const part of raw.split(",")) {
+  for (const part of raw.split(',')) {
     const trimmed = part.trim();
     if (!trimmed) continue;
-    const separator = trimmed.indexOf(":");
+    const separator = trimmed.indexOf(':');
     const id = Number(trimmed.slice(0, separator));
     if (separator < 1 || !Number.isInteger(id) || id < 1 || id > 255) {
       throw misconfigured('SB_TOKEN_ENC_KEYS_PREVIOUS entries must be "id:base64", id 1 to 255');
@@ -125,12 +125,12 @@ function parsePreviousKeys(raw: string | undefined): Map<number, string> {
 }
 
 export function tokenEncryptionEnv(source: EnvSource = denoEnv): TokenEncryptionEnv {
-  const key = source.get("SB_TOKEN_ENC_KEY");
-  if (!key) throw misconfigured("SB_TOKEN_ENC_KEY is not set; provider tokens cannot be used");
+  const key = source.get('SB_TOKEN_ENC_KEY');
+  if (!key) throw misconfigured('SB_TOKEN_ENC_KEY is not set; provider tokens cannot be used');
   return {
     key,
-    keyId: parseKeyId(source.get("SB_TOKEN_ENC_KEY_ID")),
-    previousKeys: parsePreviousKeys(source.get("SB_TOKEN_ENC_KEYS_PREVIOUS")),
+    keyId: parseKeyId(source.get('SB_TOKEN_ENC_KEY_ID')),
+    previousKeys: parsePreviousKeys(source.get('SB_TOKEN_ENC_KEYS_PREVIOUS')),
   };
 }
 
@@ -145,16 +145,16 @@ export function stripeEnv(source: EnvSource = denoEnv): StripeEnv {
   return parseOrFail(
     stripeSchema,
     {
-      secretKey: source.get("SB_STRIPE_SECRET_KEY"),
-      webhookSecret: source.get("SB_STRIPE_WEBHOOK_SECRET"),
+      secretKey: source.get('SB_STRIPE_SECRET_KEY'),
+      webhookSecret: source.get('SB_STRIPE_WEBHOOK_SECRET'),
     },
-    "stripe env",
+    'stripe env',
   );
 }
 
 export function openAiKey(source: EnvSource = denoEnv): string {
-  const key = source.get("OPENAI_API_KEY");
-  if (!key) throw misconfigured("OPENAI_API_KEY is not set; no model can be called");
+  const key = source.get('OPENAI_API_KEY');
+  if (!key) throw misconfigured('OPENAI_API_KEY is not set; no model can be called');
   return key;
 }
 
@@ -167,11 +167,11 @@ export function openAiKey(source: EnvSource = denoEnv): string {
  * locally they are not.
  */
 export function functionsBaseUrl(source: EnvSource = denoEnv): string {
-  const explicit = source.get("SB_FUNCTIONS_BASE_URL");
-  if (explicit) return explicit.replace(/\/+$/, "");
-  return `${coreEnv(source).supabaseUrl.replace(/\/+$/, "")}/functions/v1`;
+  const explicit = source.get('SB_FUNCTIONS_BASE_URL');
+  if (explicit) return explicit.replace(/\/+$/, '');
+  return `${coreEnv(source).supabaseUrl.replace(/\/+$/, '')}/functions/v1`;
 }
 
 export function webBaseUrl(source: EnvSource = denoEnv): string {
-  return (source.get("SB_WEB_BASE_URL") ?? "http://localhost:3000").replace(/\/+$/, "");
+  return (source.get('SB_WEB_BASE_URL') ?? 'http://localhost:3000').replace(/\/+$/, '');
 }

@@ -8,7 +8,7 @@
 // wire, so a test can assert the filters that scope a read to one space. A fake
 // would happily accept a query that forgot space_id and pass.
 
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 export interface StubRequest {
   /** The table, taken from the PostgREST path. An rpc reads as `rpc/<name>`. */
@@ -47,10 +47,10 @@ export function stubDb(reply: (request: StubRequest) => StubReply | undefined): 
     const url = new URL(request.url);
     const raw = await request.text();
     const record: StubRequest = {
-      table: url.pathname.replace(/^\/rest\/v1\//, ""),
+      table: url.pathname.replace(/^\/rest\/v1\//, ''),
       method: request.method,
       path: url.pathname,
-      query: decodeURIComponent(url.search.replace(/^\?/, "")),
+      query: decodeURIComponent(url.search.replace(/^\?/, '')),
       body: raw ? JSON.parse(raw) : null,
     };
     requests.push(record);
@@ -58,13 +58,13 @@ export function stubDb(reply: (request: StubRequest) => StubReply | undefined): 
     const answer = reply(record) ?? {};
     return new Response(JSON.stringify(answer.body ?? []), {
       status: answer.status ?? 200,
-      headers: { "content-type": "application/json" },
+      headers: { 'content-type': 'application/json' },
     });
   });
 
   const { port } = server.addr as Deno.NetAddr;
   const url = `http://127.0.0.1:${port}`;
-  const db = createClient(url, "stub-key", {
+  const db = createClient(url, 'stub-key', {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 

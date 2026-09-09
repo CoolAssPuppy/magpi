@@ -7,12 +7,12 @@ import { ThemeToggle } from '@/components/theme/theme-toggle';
 export default function MarketingLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-svh flex-col">
-      <header className="border-border flex items-center justify-between gap-4 border-b px-5 py-3">
-        <Link href="/" className="font-heading text-foreground text-base tracking-tight">
+      <header className="flex items-center justify-between gap-4 border-b border-border px-5 py-3">
+        <Link href="/" className="font-heading text-base tracking-tight text-foreground">
           Recall
         </Link>
         <div className="flex items-center gap-3">
-          <Link href="/pricing" className="text-foreground-lighter hover:text-foreground text-sm">
+          <Link href="/pricing" className="text-sm text-foreground-lighter hover:text-foreground">
             Pricing
           </Link>
           <ThemeToggle />
@@ -24,7 +24,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
 
       <main className="flex flex-1 flex-col">{children}</main>
 
-      <footer className="border-border text-foreground-lighter border-t px-5 py-4 text-xs">
+      <footer className="border-t border-border px-5 py-4 text-xs text-foreground-lighter">
         Recall is open source under MIT. Built on Supabase.
       </footer>
     </div>

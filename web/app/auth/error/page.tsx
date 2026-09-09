@@ -21,7 +21,7 @@ export default async function AuthErrorPage({
         </Link>
       }
     >
-      <p className="text-foreground-light text-sm">
+      <p className="text-sm text-foreground-light">
         {error ?? 'The link was missing the token needed to finish signing in.'}
       </p>
     </AuthShell>

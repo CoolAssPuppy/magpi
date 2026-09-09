@@ -15,9 +15,7 @@ export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) {
-    return NextResponse.redirect(
-      `${origin}/auth/error?error=${encodeURIComponent(error.message)}`,
-    );
+    return NextResponse.redirect(`${origin}/auth/error?error=${encodeURIComponent(error.message)}`);
   }
 
   // Behind a load balancer the origin is the balancer's, not the user's, so the

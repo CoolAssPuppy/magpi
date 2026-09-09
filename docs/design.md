@@ -94,20 +94,20 @@ silently missing from the build.
 Every token declared in `web/styles/tokens.css`. Nothing goes in that file that
 the upstream system already answers.
 
-| Token | Value | Justification |
-|---|---|---|
-| `--font-sans` | `var(--font-inter), ui-sans-serif, system-ui, sans-serif` | Inter is the Supabase body face, and `--font-inter` is the variable `next/font/google` writes, so the font loads through Next's font pipeline rather than a render-blocking stylesheet request. |
-| `--font-heading` | `var(--font-manrope), var(--font-inter), ui-sans-serif, system-ui, sans-serif` | Manrope is the Supabase heading face, with Inter ahead of the system stack so a failed heading font falls back to the body face instead of to a system default with different metrics. |
-| `--font-mono` | `var(--font-source-code-pro), ui-monospace, SFMono-Regular, monospace` | Source Code Pro is the Supabase mono face, used for model ids, chunk ids, error detail and code inside cited documents. |
-| `--text-base` | `0.9375rem` | The override from `apps/www`, taken because Tailwind's 1rem default reads a shade too large in an application this dense, where a chat turn, a citation list and a source panel share one viewport. |
-| `--font-weight-normal` | `450` | The override from `apps/www`. Inter at 400 goes thin against the dark theme's background, and 450 is upstream's correction for it. |
-| `--z-base` | `0` | The floor of the named depth scale, so ordinary page content has a name rather than an absent value. |
-| `--z-sticky` | `10` | Sticky headers and the conversation sidebar, which must clear scrolling content and nothing else. |
-| `--z-dropdown` | `20` | Menus, comboboxes and the space picker, above sticky chrome and below anything modal. |
-| `--z-overlay` | `30` | Scrims and backdrops, one step below the thing they dim. |
-| `--z-modal` | `40` | Dialogs, sheets and the command menu, above their own overlay. |
-| `--z-toast` | `50` | Ingest failures and connection status changes, which must be visible above a dialog because they report something that happened outside it. |
-| `--measure-prose` | `68ch` | `DESIGN.md` caps body copy at 65 to 75 characters per line, and 68ch is the middle of that range. Applied to answer text, digests and document bodies. |
+| Token                  | Value                                                                          | Justification                                                                                                                                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--font-sans`          | `var(--font-inter), ui-sans-serif, system-ui, sans-serif`                      | Inter is the Supabase body face, and `--font-inter` is the variable `next/font/google` writes, so the font loads through Next's font pipeline rather than a render-blocking stylesheet request.     |
+| `--font-heading`       | `var(--font-manrope), var(--font-inter), ui-sans-serif, system-ui, sans-serif` | Manrope is the Supabase heading face, with Inter ahead of the system stack so a failed heading font falls back to the body face instead of to a system default with different metrics.              |
+| `--font-mono`          | `var(--font-source-code-pro), ui-monospace, SFMono-Regular, monospace`         | Source Code Pro is the Supabase mono face, used for model ids, chunk ids, error detail and code inside cited documents.                                                                             |
+| `--text-base`          | `0.9375rem`                                                                    | The override from `apps/www`, taken because Tailwind's 1rem default reads a shade too large in an application this dense, where a chat turn, a citation list and a source panel share one viewport. |
+| `--font-weight-normal` | `450`                                                                          | The override from `apps/www`. Inter at 400 goes thin against the dark theme's background, and 450 is upstream's correction for it.                                                                  |
+| `--z-base`             | `0`                                                                            | The floor of the named depth scale, so ordinary page content has a name rather than an absent value.                                                                                                |
+| `--z-sticky`           | `10`                                                                           | Sticky headers and the conversation sidebar, which must clear scrolling content and nothing else.                                                                                                   |
+| `--z-dropdown`         | `20`                                                                           | Menus, comboboxes and the space picker, above sticky chrome and below anything modal.                                                                                                               |
+| `--z-overlay`          | `30`                                                                           | Scrims and backdrops, one step below the thing they dim.                                                                                                                                            |
+| `--z-modal`            | `40`                                                                           | Dialogs, sheets and the command menu, above their own overlay.                                                                                                                                      |
+| `--z-toast`            | `50`                                                                           | Ingest failures and connection status changes, which must be visible above a dialog because they report something that happened outside it.                                                         |
+| `--measure-prose`      | `68ch`                                                                         | `DESIGN.md` caps body copy at 65 to 75 characters per line, and 68ch is the middle of that range. Applied to answer text, digests and document bodies.                                              |
 
 The six `--z-*` tokens are one decision, stated as six values. A stacking
 problem is then a question about where a component belongs on a named scale,

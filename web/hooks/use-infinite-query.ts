@@ -1,18 +1,18 @@
-'use client'
+'use client';
 
-import { PostgrestQueryBuilder, type PostgrestClientOptions } from '@supabase/postgrest-js'
-import { type SupabaseClient } from '@supabase/supabase-js'
-import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
+import { PostgrestQueryBuilder, type PostgrestClientOptions } from '@supabase/postgrest-js';
+import { type SupabaseClient } from '@supabase/supabase-js';
+import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/client';
 
-const supabase = createClient()
+const supabase = createClient();
 
 // The following types are used to make the hook type-safe. It extracts the database type from the supabase client.
-type SupabaseClientType = typeof supabase
+type SupabaseClientType = typeof supabase;
 
 // Utility type to check if the type is any
-type IfAny<T, Y, N> = 0 extends 1 & T ? Y : N
+type IfAny<T, Y, N> = 0 extends 1 & T ? Y : N;
 
 // Extracts the database type from the supabase client. If the supabase client doesn't have a type, it will fallback properly.
 type Database =
@@ -21,32 +21,32 @@ type Database =
         U,
         {
           public: {
-            Tables: Record<string, any>
-            Views: Record<string, any>
-            Functions: Record<string, any>
-          }
+            Tables: Record<string, any>;
+            Views: Record<string, any>;
+            Functions: Record<string, any>;
+          };
         },
         U
       >
     : {
         public: {
-          Tables: Record<string, any>
-          Views: Record<string, any>
-          Functions: Record<string, any>
-        }
-      }
+          Tables: Record<string, any>;
+          Views: Record<string, any>;
+          Functions: Record<string, any>;
+        };
+      };
 
 // Change this to the database schema you want to use
-type DatabaseSchema = Database['public']
+type DatabaseSchema = Database['public'];
 
 // Extracts the table names from the database type
-type SupabaseTableName = keyof DatabaseSchema['Tables']
+type SupabaseTableName = keyof DatabaseSchema['Tables'];
 
 // Extracts the table definition from the database type
-type SupabaseTableData<T extends SupabaseTableName> = DatabaseSchema['Tables'][T]['Row']
+type SupabaseTableData<T extends SupabaseTableName> = DatabaseSchema['Tables'][T]['Row'];
 
 // Default client options for PostgrestQueryBuilder
-type DefaultClientOptions = PostgrestClientOptions
+type DefaultClientOptions = PostgrestClientOptions;
 
 type SupabaseSelectBuilder<T extends SupabaseTableName> = ReturnType<
   PostgrestQueryBuilder<
@@ -55,50 +55,50 @@ type SupabaseSelectBuilder<T extends SupabaseTableName> = ReturnType<
     DatabaseSchema['Tables'][T],
     T
   >['select']
->
+>;
 
 // A function that modifies the query. Can be used to sort, filter, etc. If .range is used, it will be overwritten.
 type SupabaseQueryHandler<T extends SupabaseTableName> = (
-  query: SupabaseSelectBuilder<T>
-) => SupabaseSelectBuilder<T>
+  query: SupabaseSelectBuilder<T>,
+) => SupabaseSelectBuilder<T>;
 
 interface UseInfiniteQueryProps<T extends SupabaseTableName, Query extends string = '*'> {
   // The table name to query
-  tableName: T
+  tableName: T;
   // The columns to select, defaults to `*`
-  columns?: string
+  columns?: string;
   // The number of items to fetch per page, defaults to `20`
-  pageSize?: number
+  pageSize?: number;
   // A function that modifies the query. Can be used to sort, filter, etc. If .range is used, it will be overwritten.
-  trailingQuery?: SupabaseQueryHandler<T>
+  trailingQuery?: SupabaseQueryHandler<T>;
   // Optional key that identifies the current trailing query shape (e.g. filters/sort/search).
   // When this changes, the internal store is recreated so stale paginated rows are discarded.
-  trailingQueryKey?: unknown
+  trailingQueryKey?: unknown;
 }
 
 interface StoreState<TData> {
-  data: TData[]
-  count: number
-  isSuccess: boolean
-  isLoading: boolean
-  isFetching: boolean
-  error: Error | null
-  hasInitialFetch: boolean
+  data: TData[];
+  count: number;
+  isSuccess: boolean;
+  isLoading: boolean;
+  isFetching: boolean;
+  error: Error | null;
+  hasInitialFetch: boolean;
 }
 
-type Listener = () => void
+type Listener = () => void;
 
 interface StoreProps<T extends SupabaseTableName> {
-  tableName: T
-  columns?: string
-  pageSize?: number
-  getTrailingQuery: () => SupabaseQueryHandler<T> | undefined
+  tableName: T;
+  columns?: string;
+  pageSize?: number;
+  getTrailingQuery: () => SupabaseQueryHandler<T> | undefined;
 }
 
 function createStore<TData extends SupabaseTableData<T>, T extends SupabaseTableName>(
-  props: StoreProps<T>
+  props: StoreProps<T>,
 ) {
-  const { tableName, columns = '*', pageSize = 20, getTrailingQuery } = props
+  const { tableName, columns = '*', pageSize = 20, getTrailingQuery } = props;
 
   let state: StoreState<TData> = {
     data: [],
@@ -108,68 +108,68 @@ function createStore<TData extends SupabaseTableData<T>, T extends SupabaseTable
     isFetching: false,
     error: null,
     hasInitialFetch: false,
-  }
+  };
 
-  const listeners = new Set<Listener>()
+  const listeners = new Set<Listener>();
 
   const notify = () => {
-    listeners.forEach((listener) => listener())
-  }
+    listeners.forEach((listener) => listener());
+  };
 
   const setState = (newState: Partial<StoreState<TData>>) => {
-    state = { ...state, ...newState }
-    notify()
-  }
+    state = { ...state, ...newState };
+    notify();
+  };
 
   const fetchPage = async (skip: number) => {
-    if (state.hasInitialFetch && (state.isFetching || state.count <= state.data.length)) return
+    if (state.hasInitialFetch && (state.isFetching || state.count <= state.data.length)) return;
 
-    setState({ isFetching: true })
+    setState({ isFetching: true });
 
     let query = supabase
       .from(tableName)
-      .select(columns, { count: 'exact' }) as unknown as SupabaseSelectBuilder<T>
+      .select(columns, { count: 'exact' }) as unknown as SupabaseSelectBuilder<T>;
 
-    const trailingQuery = getTrailingQuery()
+    const trailingQuery = getTrailingQuery();
     if (trailingQuery) {
-      query = trailingQuery(query)
+      query = trailingQuery(query);
     }
-    const { data: newData, count, error } = await query.range(skip, skip + pageSize - 1)
+    const { data: newData, count, error } = await query.range(skip, skip + pageSize - 1);
 
     if (error) {
-      console.error('An unexpected error occurred:', error)
-      setState({ error })
+      console.error('An unexpected error occurred:', error);
+      setState({ error });
     } else {
       setState({
         data: [...state.data, ...(newData as TData[])],
         count: count || 0,
         isSuccess: true,
         error: null,
-      })
+      });
     }
-    setState({ isFetching: false })
-  }
+    setState({ isFetching: false });
+  };
 
   const fetchNextPage = async () => {
-    if (state.isFetching) return
-    await fetchPage(state.data.length)
-  }
+    if (state.isFetching) return;
+    await fetchPage(state.data.length);
+  };
 
   const initialize = async () => {
-    setState({ isLoading: true, isSuccess: false, data: [] })
-    await fetchNextPage()
-    setState({ isLoading: false, hasInitialFetch: true })
-  }
+    setState({ isLoading: true, isSuccess: false, data: [] });
+    await fetchNextPage();
+    setState({ isLoading: false, hasInitialFetch: true });
+  };
 
   return {
     getState: () => state,
     subscribe: (listener: Listener) => {
-      listeners.add(listener)
-      return () => listeners.delete(listener)
+      listeners.add(listener);
+      return () => listeners.delete(listener);
     },
     fetchNextPage,
     initialize,
-  }
+  };
 }
 
 // Empty initial state to avoid hydration errors.
@@ -181,20 +181,20 @@ const initialState: any = {
   isFetching: false,
   error: null,
   hasInitialFetch: false,
-}
+};
 
 function useInfiniteQuery<
   TData extends SupabaseTableData<T>,
   T extends SupabaseTableName = SupabaseTableName,
 >(props: UseInfiniteQueryProps<T>) {
-  const tableName = props.tableName
-  const columns = props.columns ?? '*'
-  const pageSize = props.pageSize ?? 20
-  const trailingQuery = props.trailingQuery
-  const trailingQueryKey = props.trailingQueryKey
-  const trailingQueryRef = useRef(trailingQuery)
+  const tableName = props.tableName;
+  const columns = props.columns ?? '*';
+  const pageSize = props.pageSize ?? 20;
+  const trailingQuery = props.trailingQuery;
+  const trailingQueryKey = props.trailingQueryKey;
+  const trailingQueryRef = useRef(trailingQuery);
 
-  trailingQueryRef.current = trailingQuery
+  trailingQueryRef.current = trailingQuery;
 
   const store = useMemo(
     () =>
@@ -204,20 +204,20 @@ function useInfiniteQuery<
         pageSize,
         getTrailingQuery: () => trailingQueryRef.current,
       }),
-    [tableName, columns, pageSize, trailingQueryKey]
-  )
+    [tableName, columns, pageSize, trailingQueryKey],
+  );
 
   const state = useSyncExternalStore(
     store.subscribe,
     () => store.getState(),
-    () => initialState as StoreState<TData>
-  )
+    () => initialState as StoreState<TData>,
+  );
 
   useEffect(() => {
     if (!state.hasInitialFetch && typeof window !== 'undefined') {
-      store.initialize()
+      store.initialize();
     }
-  }, [state.hasInitialFetch, store])
+  }, [state.hasInitialFetch, store]);
 
   return {
     data: state.data,
@@ -228,7 +228,7 @@ function useInfiniteQuery<
     error: state.error,
     hasMore: state.count > state.data.length,
     fetchNextPage: store.fetchNextPage,
-  }
+  };
 }
 
 export {
@@ -237,4 +237,4 @@ export {
   type SupabaseTableData,
   type SupabaseTableName,
   type UseInfiniteQueryProps,
-}
+};

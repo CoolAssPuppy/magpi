@@ -38,7 +38,8 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
 
   const { pathname } = request.nextUrl;
-  const isPublic = pathname === '/' || PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+  const isPublic =
+    pathname === '/' || PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
   if (!data?.claims && !isPublic) {
     const url = request.nextUrl.clone();
