@@ -5,13 +5,22 @@ overnight from this file, with no design decisions left open, and that works
 only if the file is maintained as the web app is built.
 
 **Every screen or feature added to web gets an entry here in the same commit.**
-`node scripts/mobile-spec-check.mjs` fails the gate when a route exists under
-`web/app/(app)/` with no entry.
+`node scripts/mobile-spec-check.mjs` fails the gate on three things: a route
+under `web/app/(app)/` with no entry here, an entry missing one of the fourteen
+fields, and a repository path cited anywhere in this file that does not exist on
+disk. Everything else in an entry is checked by a person reading it.
 
 ## How to read an entry
 
-Every entry has the same eleven fields. A field that genuinely does not apply
-says `n/a` and why. A field that has not been decided is a bug in this file.
+Every entry has the same fourteen fields, in the same order. A field that
+genuinely does not apply says `n/a` and why. A field that has not been decided is
+a bug in this file.
+
+Two of the fourteen describe things that do not exist yet on any platform, and
+both are named so that a reader cannot mistake them for a description of shipped
+code. Proposed string keys and proposed analytics events are the contract for
+what gets built, and neither is wired up today. See "String catalog" and
+"Analytics events" below.
 
 - **Web route.** The path under `web/app/(app)/`.
 - **Deep link.** `magpi://` scheme plus path. Universal links map the same
@@ -22,11 +31,13 @@ says `n/a` and why. A field that has not been decided is a bug in this file.
   designed, none is defaulted.
 - **Navigation.** Position and tab order, stated explicitly.
 - **Components.** What web uses and the intended native equivalent.
-- **String keys.** From the shared catalog. No hardcoded copy on any platform.
+- **Proposed string keys.** The names a shared catalog would use, once one
+  exists. Nothing reads them today.
 - **Permissions.** What is requested and the user-facing reason string.
 - **Offline and refresh.** What survives a cold start with no network, and what
   a pull-to-refresh does.
-- **Analytics.** The events emitted.
+- **Proposed analytics events.** The names an event pipeline would use, once one
+  exists. Nothing emits them today.
 
 ## Tab order
 
@@ -45,10 +56,42 @@ profile row on native.
 
 ## String catalog
 
-`web/lib/strings/` on web, `Localizable.xcstrings` on iOS, `strings.xml` on
-Android. Keys are dot-separated and namespaced by screen: `chat.empty.title`,
-`documents.ingest.timeout`. A key added on any platform is added to all three
-in the same commit.
+**Not built.** There is no string catalog on web. Until this line changes, the
+proposed string keys in every entry below are names for a file nobody has
+written.
+
+What web does today is write user-visible copy inline in the component that
+shows it. `web/components/dreams/entity-groups.tsx:29` holds "No documents you
+can see mention this" as a JSX literal, and that is the pattern everywhere in
+`web/components/`.
+
+Two pieces of copy are centralised, both because a switch over a database enum
+needed one place to live:
+
+- `describeIngest` in `web/lib/documents/documents.ts:45` returns the five
+  ingest status strings a document row shows.
+- `KIND_LABELS` in `web/lib/dreams/entities.ts:30` maps the four `entity_kind`
+  values to their headings.
+
+The shape the catalog should take when someone builds it: a new `strings` module
+under `web/lib/` on web, `Localizable.xcstrings` on iOS, `strings.xml` on
+Android. Keys dot-separated and namespaced by screen, as in `chat.empty.title`
+and `documents.ingest.timeout`. A key added on any platform is added to all three
+in the same commit. Most of the work is moving the inline copy out of
+`web/components/`, which is why the module has never appeared on its own.
+
+## Analytics events
+
+**Not built.** No client in this repository emits a product analytics event.
+There is no analytics SDK in `web/package.json` and no call site for any of the
+event names in the entries below.
+
+What exists is metering, which answers a different question. Model calls are
+recorded to `model_calls` and billable quantities to `usage_events`
+(`supabase/schemas/70_usage_events.sql`), written by
+`web/lib/openai/usage-recorder.ts`. The admin screen reads those tables through
+`web/lib/analytics/queries.ts`. None of it records that a person opened a screen
+or tapped a citation.
 
 ## Entries
 
@@ -71,13 +114,13 @@ in the same commit.
 - **Components.** Web uses `components/chat/*` over the Library
   `realtime-chat-nextjs` block, adapted for assistant turns. iOS is a
   `List` in a `NavigationStack`. Android is a `LazyColumn` in a `Scaffold`.
-- **String keys.** `chat.empty.title`, `chat.empty.body`, `chat.empty.upload`,
+- **Proposed string keys.** `chat.empty.title`, `chat.empty.body`, `chat.empty.upload`,
   `chat.empty.connect`, `chat.composer.placeholder`, `chat.filter.allSpaces`.
 - **Permissions.** None.
 - **Offline and refresh.** Conversation list is cached and readable offline.
   The composer is disabled with an offline notice. Pull-to-refresh refetches
   the list.
-- **Analytics.** `chat_opened`, `conversation_created`.
+- **Proposed analytics events.** `chat_opened`, `conversation_created`.
 
 ### Chat conversation
 
@@ -152,11 +195,11 @@ one line for line, so the transport is spelled out.
 - **Components.** Web: `components/chat/message-list.tsx`,
   `components/chat/assistant-turn.tsx`. iOS: `ScrollViewReader` over a
   `LazyVStack`. Android: `LazyColumn` with `rememberLazyListState`.
-- **String keys.** `chat.turn.thinking`, `chat.turn.retry`,
+- **Proposed string keys.** `chat.turn.thinking`, `chat.turn.retry`,
   `chat.citation.unavailable`.
 - **Permissions.** None.
 - **Offline and refresh.** Past turns are cached. Sending requires a network.
-- **Analytics.** `question_asked`, `citation_opened`, `stream_failed`.
+- **Proposed analytics events.** `question_asked`, `citation_opened`, `stream_failed`.
 
 ### Spaces
 
@@ -176,11 +219,11 @@ one line for line, so the transport is spelled out.
 - **Navigation.** Tab 2.
 - **Components.** Web `components/spaces/space-list.tsx`. iOS `List` with
   `Section`. Android `LazyColumn`.
-- **String keys.** `spaces.title`, `spaces.body`, `spaces.create.label`,
+- **Proposed string keys.** `spaces.title`, `spaces.body`, `spaces.create.label`,
   `spaces.kind.personal`, `spaces.kind.team`, `spaces.kind.org`.
 - **Permissions.** None.
 - **Offline and refresh.** Cached and readable. Creating requires a network.
-- **Analytics.** `space_created`.
+- **Proposed analytics events.** `space_created`.
 
 ### Space detail
 
@@ -201,11 +244,11 @@ one line for line, so the transport is spelled out.
 - **Components.** Web `components/spaces/dreaming-toggle.tsx` and
   `space-members.tsx`. iOS `Form` with a `Toggle`. Android
   `Column` with a `Switch`.
-- **String keys.** `space.dreaming.title`, `space.dreaming.body`,
+- **Proposed string keys.** `space.dreaming.title`, `space.dreaming.body`,
   `space.members.count`, `space.personal.note`, `space.org.note`.
 - **Permissions.** None.
 - **Offline and refresh.** Cached. The dreaming switch is disabled offline.
-- **Analytics.** `dreaming_toggled`.
+- **Proposed analytics events.** `dreaming_toggled`.
 
 ### Documents
 
@@ -228,7 +271,7 @@ one line for line, so the transport is spelled out.
 - **Components.** Web uses the Library `dropzone-nextjs` block. iOS uses
   `.fileImporter` plus `PHPickerViewController` where images apply. Android
   uses the Storage Access Framework `ACTION_OPEN_DOCUMENT`.
-- **String keys.** `documents.title`, `documents.body`, `documents.empty.title`,
+- **Proposed string keys.** `documents.title`, `documents.body`, `documents.empty.title`,
   `documents.empty.body`, `documents.space.label`, `documents.ingest.queued`,
   `documents.ingest.running`, `documents.ingest.failed`,
   `documents.ingest.timeout`.
@@ -238,7 +281,7 @@ one line for line, so the transport is spelled out.
 - **Offline and refresh.** The list is cached. An upload started offline is
   refused with a clear message rather than queued, because the storage upload
   and the job row have to land together.
-- **Analytics.** `document_uploaded`, `ingest_failed`, `ingest_timeout`.
+- **Proposed analytics events.** `document_uploaded`, `ingest_failed`, `ingest_timeout`.
 
 ### Document detail
 
@@ -259,11 +302,11 @@ one line for line, so the transport is spelled out.
 - **Navigation.** Pushed from Documents or from a citation in Chat.
 - **Components.** Web is plain prose. iOS `ScrollViewReader` scrolls to the
   cited chunk. Android `LazyColumn` with `scrollToItem`.
-- **String keys.** `document.origin.upload`, `document.origin.sync`,
+- **Proposed string keys.** `document.origin.upload`, `document.origin.sync`,
   `document.origin.dream`, `document.original.open`.
 - **Permissions.** None.
 - **Offline and refresh.** Chunk text is cached once read.
-- **Analytics.** `document_opened`.
+- **Proposed analytics events.** `document_opened`.
 
 ### Connections
 
@@ -287,7 +330,7 @@ one line for line, so the transport is spelled out.
 - **Components.** Web `components/connections/*`. iOS `List` with
   `ASWebAuthenticationSession` for the OAuth leg. Android `LazyColumn` with
   Chrome Custom Tabs.
-- **String keys.** `connections.title`, `connections.status.active`,
+- **Proposed string keys.** `connections.title`, `connections.status.active`,
   `connections.status.syncing`, `connections.status.error`,
   `connections.status.revoked`, `connections.status.expired`,
   `connections.reconnect`, `connections.disconnect`, `connections.resync`.
@@ -296,7 +339,7 @@ one line for line, so the transport is spelled out.
   provider password.
 - **Offline and refresh.** Status is cached. Connecting requires a network.
   Pull-to-refresh refetches status without triggering a sync.
-- **Analytics.** `connection_started`, `connection_claimed`,
+- **Proposed analytics events.** `connection_started`, `connection_claimed`,
   `connection_failed`, `resync_requested`.
 
 ### Connect a provider
@@ -316,11 +359,11 @@ one line for line, so the transport is spelled out.
 - **Navigation.** Pushed from Connections.
 - **Components.** Web `components/connections/scope-picker.tsx`. iOS a `Form`
   with a multi-select `List`. Android a `LazyColumn` of checkboxes.
-- **String keys.** `connect.space.label`, `connect.scope.channels`,
+- **Proposed string keys.** `connect.space.label`, `connect.scope.channels`,
   `connect.scope.folders`, `connect.scope.workspace`, `connect.begin`.
 - **Permissions.** None.
 - **Offline and refresh.** Not usable offline.
-- **Analytics.** `scope_selected`.
+- **Proposed analytics events.** `scope_selected`.
 
 ### Dreams
 
@@ -337,12 +380,12 @@ one line for line, so the transport is spelled out.
 - **Content.** Runs with kind, status, document count, and output.
 - **Navigation.** Tab 5.
 - **Components.** Web `components/dreams/*`. iOS `List`. Android `LazyColumn`.
-- **String keys.** `dreams.definition`, `dreams.empty.title`,
+- **Proposed string keys.** `dreams.definition`, `dreams.empty.title`,
   `dreams.run.entities`, `dreams.run.digest`, `dreams.run.connections`,
   `dreams.status.timeout`.
 - **Permissions.** None.
 - **Offline and refresh.** Cached. Triggering a run requires a network.
-- **Analytics.** `dream_triggered`, `dream_opened`.
+- **Proposed analytics events.** `dream_triggered`, `dream_opened`.
 
 ### Entities
 
@@ -368,12 +411,12 @@ one line for line, so the transport is spelled out.
   cards and the strip stays put through every content state.
 - **Components.** Web `components/dreams/entity-groups.tsx`. iOS `List` with a
   `Section` per kind. Android `LazyColumn` with sticky headers.
-- **String keys.** `entities.empty.title`, `entities.empty.body`,
+- **Proposed string keys.** `entities.empty.title`, `entities.empty.body`,
   `entities.kind.person`, `entities.kind.project`, `entities.kind.customer`,
   `entities.kind.decision`, `entities.mentions.count`.
 - **Permissions.** None.
 - **Offline and refresh.** Cached and readable offline. Pull-to-refresh refetches.
-- **Analytics.** `entities_opened`, `entity_mention_opened`.
+- **Proposed analytics events.** `entities_opened`, `entity_mention_opened`.
 
 ### Dream run
 
@@ -392,13 +435,15 @@ one line for line, so the transport is spelled out.
   `connections` kind, the candidate document pairs with their rationale, each
   confirmable or dismissable.
 - **Navigation.** Pushed from Dreams.
-- **Components.** Web `components/dreams/run-detail.tsx`. iOS `Form`. Android
-  `Column`.
-- **String keys.** `dream.output.none`, `dream.link.confirm`,
+- **Components.** Web composes three, from
+  `web/app/(app)/dreams/[id]/page.tsx:5-7`:
+  `components/dreams/dream-output.tsx`, `components/dreams/link-candidates.tsx`
+  and `components/dreams/run-failure.tsx`. iOS `Form`. Android `Column`.
+- **Proposed string keys.** `dream.output.none`, `dream.link.confirm`,
   `dream.link.dismiss`, `dream.delete.warning`.
 - **Permissions.** None.
 - **Offline and refresh.** Cached. Confirming a link requires a network.
-- **Analytics.** `dream_link_confirmed`, `dream_link_dismissed`,
+- **Proposed analytics events.** `dream_link_confirmed`, `dream_link_dismissed`,
   `dream_output_deleted`.
 
 ### Admin
@@ -421,12 +466,12 @@ one line for line, so the transport is spelled out.
 - **Navigation.** Tab 6, present only for owners and admins.
 - **Components.** Web `components/admin/*` and `components/charts/*` following
   the `dataviz` rules. iOS Swift Charts. Android Vico.
-- **String keys.** `admin.ingest.title`, `admin.latency.title`,
+- **Proposed string keys.** `admin.ingest.title`, `admin.latency.title`,
   `admin.questions.title`, `admin.dead.title`, `admin.usage.title`.
 - **Permissions.** None.
 - **Offline and refresh.** Last fetched values are cached with their timestamp
   shown, so a stale number is never presented as live.
-- **Analytics.** `admin_opened`.
+- **Proposed analytics events.** `admin_opened`.
 
 ### Admin members
 
@@ -442,11 +487,11 @@ one line for line, so the transport is spelled out.
 - **Content.** Members with roles, pending invites, invite and remove.
 - **Navigation.** Subtab under Admin. Subtabs sit outside cards.
 - **Components.** Web table. iOS `List`. Android `LazyColumn`.
-- **String keys.** `members.invite.label`, `members.role.owner`,
+- **Proposed string keys.** `members.invite.label`, `members.role.owner`,
   `members.role.admin`, `members.role.member`, `members.remove.confirm`.
 - **Permissions.** None.
 - **Offline and refresh.** Cached. Inviting requires a network.
-- **Analytics.** `member_invited`, `member_removed`.
+- **Proposed analytics events.** `member_invited`, `member_removed`.
 
 ### Admin billing
 
@@ -466,11 +511,11 @@ one line for line, so the transport is spelled out.
 - **Components.** Web plan card. iOS and Android open the Checkout or Portal
   URL in a system browser. **Neither native client implements in-app purchase.**
   The Team plan is a business-to-business subscription sold on the web.
-- **String keys.** `billing.plan.free`, `billing.plan.team`,
+- **Proposed string keys.** `billing.plan.free`, `billing.plan.team`,
   `billing.plan.enterprise`, `billing.portal.open`, `billing.upgrade`.
 - **Permissions.** None.
 - **Offline and refresh.** The plan is cached. Both buttons need a network.
-- **Analytics.** `checkout_started`, `portal_opened`.
+- **Proposed analytics events.** `checkout_started`, `portal_opened`.
 
 ### Settings
 
@@ -485,11 +530,11 @@ one line for line, so the transport is spelled out.
 - **Content.** Profile, the personal space, theme, and sign out.
 - **Navigation.** Not a tab. Header on web, profile row on native.
 - **Components.** Web form. iOS `Form`. Android `PreferenceScreen`.
-- **String keys.** `settings.theme.system`, `settings.theme.light`,
+- **Proposed string keys.** `settings.theme.system`, `settings.theme.light`,
   `settings.theme.dark`, `settings.signOut`, `settings.signOutAll`.
 - **Permissions.** None.
 - **Offline and refresh.** Readable offline. Changes need a network.
-- **Analytics.** `theme_changed`, `signed_out`.
+- **Proposed analytics events.** `theme_changed`, `signed_out`.
 
 ## Parity rules
 

@@ -15,6 +15,9 @@ Hybrid retrieval. Two arms, merged with reciprocal rank fusion:
    with GIN. Queries go through `websearch_to_tsquery` and rank with
    `ts_rank_cd`.
 
+Both columns and both indexes are declared in
+`supabase/schemas/31_chunks.sql:11-23`.
+
 Both arms live in one function, `public.search()`, declared in
 `supabase/schemas/80_functions.sql`:
 
@@ -60,7 +63,7 @@ see, because RLS still applies underneath it.
 ### How the two arms are merged
 
 Each arm is ordered independently and truncated to `greatest(match_count * 4,
-40)` rows. That over-fetch exists because reciprocal rank fusion only reorders
+40)` rows (`supabase/schemas/80_functions.sql:101`). That over-fetch exists because reciprocal rank fusion only reorders
 what it is given, so a candidate that neither arm returned cannot be recovered by
 fusion.
 
@@ -71,7 +74,9 @@ chunk scores:
 score = 1 / (60 + semantic_rank) + 1 / (60 + lexical_rank)
 ```
 
-with a missing rank contributing zero. The constant k = 60 is the value from the
+written out at `supabase/schemas/80_functions.sql:140`, with a missing rank
+contributing zero because the full outer join leaves the absent side null and
+`coalesce` turns that term into 0. The constant k = 60 is the value from the
 original reciprocal rank fusion paper. It damps the contribution of low-ranked
 hits without needing a per-corpus tuning pass, and it lets the two arms be
 combined without normalizing a cosine distance against a `ts_rank_cd` score,
@@ -97,39 +102,122 @@ This class of question is common in a knowledge base: ticket numbers, error
 codes, person names, product SKUs, dates, version strings. It also fails
 visibly, which is why it would happen on stage.
 
+## The one client path
+
+`searchChunks` in `web/lib/search/search.ts:38` is the only code in the
+repository that calls the `search` RPC. It is wired into the chat pipeline by the `search` dependency at
+`web/lib/chat/deps.ts:22`.
+
+Four things it does that matter to a reader of the SQL:
+
+- It goes through the caller's Supabase client rather than the service client
+  (`deps.supabase.rpc('search')`, `search.ts:48`), which is what makes `security invoker` mean anything. A
+  service client here would run the function as `service_role` and every RLS
+  predicate would pass.
+- It returns an empty array for a blank query without calling the model or the
+  database (`queryText === ''`, `search.ts:43`).
+- It sends the embedding as a bracketed string, because PostgREST passes the
+  parameter as text and pgvector parses it back (`serializeEmbedding`,
+  `search.ts:29`).
+- It omits `space_filter` from the request entirely when the caller passes null
+  (`search.ts:52`), so the SQL default of null applies and RLS alone decides
+  what is visible.
+
+Match counts are declared twice. `DEFAULT_MATCH_COUNT` is 12 at `search.ts:26`
+and nothing imports it. The chat path declares its own `MATCH_COUNT = 12` at
+`web/lib/chat/answer.ts:40` and passes it as `matchCount` at `answer.ts:70`. The SQL default of
+20 (`supabase/schemas/80_functions.sql:84`) is reached only by a caller that
+omits the argument, which no code in this repository does.
+
+Execute is revoked from `public` and `anon` and granted to `authenticated` and
+`service_role` (`supabase/schemas/80_functions.sql:172-174`).
+
 ## Chunking
 
-**Status: implemented.** `supabase/functions/_shared/chunking.ts` matches every
-value below. If the implementation changes, this section changes in the same
-commit.
+`supabase/functions/_shared/chunking.ts` is the only chunker. `chunkText` runs
+with no options from the ingest job at
+`supabase/functions/_shared/jobs/ingest.ts:238` and from the dream digest job at
+`supabase/functions/_shared/jobs/dream_digest.ts:73`, so the two defaults the
+module declares are the values every chunk in the corpus was cut with.
 
-| Property           | Value        | Reason                                                                                                                                                         |
-| ------------------ | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Target chunk size  | 800 tokens   | Large enough that a paragraph keeps its context, small enough that a 20-chunk answer stays well inside the chat model's window with room for the conversation. |
-| Overlap            | 100 tokens   | A sentence split across a boundary appears whole in one of the two chunks, so a fact that straddles a boundary is still retrievable.                           |
-| Minimum chunk size | 100 tokens   | Fragments below this are merged into the previous chunk. A 12-token chunk embeds to noise and pollutes the semantic arm.                                       |
-| Maximum chunk size | 1,200 tokens | A hard ceiling for the case where no boundary rule fires, so a single pathological paragraph cannot produce a chunk that dominates a result set.               |
+| Property           | Value                | Where it comes from                                                                                                              |
+| ------------------ | -------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Target chunk size  | 800 estimated tokens | `DEFAULT_TARGET_TOKENS`, `chunking.ts:8`                                                                                         |
+| Overlap            | 100 estimated tokens | `DEFAULT_OVERLAP_TOKENS`, `chunking.ts:16`                                                                                       |
+| Minimum chunk size | none                 | No merge rule exists. Whatever is left at the end of a document is emitted as a chunk at `chunking.ts:156`, however short it is. |
+| Maximum chunk size | the target           | `chunkText` flushes before adding a unit that would take the running estimate past the target, `chunking.ts:150`.                |
 
-Boundary rules, applied in order, splitting at the first rule that produces a
-chunk inside the size band:
+### Token counts are character counts divided by four
 
-1. Markdown heading, at the highest heading level available.
-2. Blank line, meaning a paragraph break.
-3. Sentence end.
-4. Whitespace, as the last resort before the hard ceiling.
+`estimateTokens` at `chunking.ts:38` is `Math.max(1, Math.ceil(text.length / 4))`.
+The comment above it says it is not a real tokenizer, and gives the reason:
+carrying one into the edge runtime costs a megabyte and a cold start to make a
+boundary decision that is already approximate. Every token number in this
+section is that estimate, including the `chunks.token_count` column written at
+`ingest.ts:187`.
 
-Two rules that follow from the data model rather than from retrieval quality:
+The counts that billing and limits read come from the models themselves and land
+in `model_calls.input_tokens` and `model_calls.output_tokens`
+(`supabase/schemas/70_usage_events.sql:29`).
 
-- Chunk ordinals are contiguous from zero within a document. `chunks` has a
-  `unique (document_id, ordinal)` constraint, and citation rendering depends on
+### Boundary rules
+
+`splitUnits` at `chunking.ts:85` cuts the text into pieces, each at most one
+target's worth on its own, trying three boundaries in order:
+
+1. Blank line, meaning a paragraph break. `splitParagraphs`, `chunking.ts:43`.
+2. Sentence end, a `.`, `!` or `?` followed by whitespace. `splitSentences`,
+   `chunking.ts:51`.
+3. Whitespace between words, as the last resort. `splitWords`, `chunking.ts:59`.
+
+Markdown headings are ordinary text to this code. Nothing reads `#` or prefers a
+heading level as a cut. A heading line usually ends up as its own unit only
+because most documents put a blank line after it.
+
+`chunkText` at `chunking.ts:129` packs those units in order, joining them with a
+blank line, and flushes when the next unit would take the chunk past the target,
+so a chunk always holds a whole number of units. The join inserts two characters
+per boundary, which is why a finished chunk's estimate can sit a few tokens above
+the target.
+
+Overlap is carried the same way. `tailWithin` at `chunking.ts:106` walks back
+from the end of the flushed chunk taking whole units while they fit in the
+100-token budget, and it always leaves at least one unit behind, because
+repeating the whole previous chunk turns packing into a loop.
+
+### Two properties the data model depends on
+
+- Chunk ordinals are contiguous from zero within a document, assigned from the
+  output array's length at `chunking.ts:143` and `chunking.ts:158`. `chunks`
+  carries `unique (document_id, ordinal)`
+  (`supabase/schemas/31_chunks.sql:15`) and citation rendering depends on
   ordinal order.
-- Chunking is deterministic. The same input produces the same chunks, so a
-  re-ingest of an unchanged document produces the same `content_hash` and does
-  not churn citations in old conversations.
+- Chunking is deterministic. `chunkText` reads no clock, no network and no
+  database, so the same text produces the same chunks. Ingest hashes the
+  extracted text and returns early when the hash matches
+  `documents.content_hash` (`ingest.ts:231`), so a re-import of an unchanged
+  document leaves the existing chunks and their ids alone.
 
-Token counts use the same tokenizer as the embedding model. Counting characters
-and dividing is close enough to be wrong on code, tables and non-English text,
-which the corpus contains.
+### Not built
+
+An earlier version of this section described these four rules as implemented.
+None of them is in the code. Anything reasoning about chunk size from this
+document should treat them as absent.
+
+- **A minimum chunk size with a merge.** A fragment below some floor would be
+  merged into the previous chunk. A 12-token chunk embeds to noise and pollutes
+  the semantic arm, and today one can come out of a short document or off the
+  end of a long one.
+- **A hard ceiling above the target.** A separate maximum, higher than 800,
+  would give a boundary rule room to overshoot rather than cut mid paragraph.
+  The 800-token target is the only bound in the code.
+- **A markdown heading rule.** Splitting at the highest available heading level
+  before falling back to paragraphs would keep a section together and keep its
+  title attached to its body.
+- **Real tokenization.** The character estimate is close enough on English prose
+  and wrong on code, tables and non-English text, all of which the corpus
+  contains. Every size in the table above is off by whatever that error is for a
+  given document.
 
 ## The known risk
 
@@ -157,12 +245,11 @@ rows survive the filter:
 `hnsw.max_scan_tuples` bounds the work so a query against a filter matching
 nothing cannot walk the entire index.
 
-### Measured, and settled
+### Measured once, and partly under test
 
-This is no longer hypothetical. pgTAP measured it on 2026-09-09 with a thousand
-chunks in a space the caller cannot see, every one ranking nearer the query than
-the five that are theirs, and query text matching nothing so the lexical arm
-could not rescue the result:
+pgTAP measured this on 2026-09-09 with a thousand chunks in a space the caller
+cannot see, every one ranking nearer the query than the five that are theirs,
+and query text matching nothing so the lexical arm could not rescue the result:
 
 | Configuration                    | Rows the caller gets, of 5 | Rows leaked |
 | -------------------------------- | -------------------------- | ----------- |
@@ -185,6 +272,21 @@ The third row is why this needed measuring rather than reasoning about. At
 test-corpus size the planner picks a sequential scan, which filters perfectly, so
 any version of this test written without forcing the index passes forever and
 proves nothing.
+
+**Only one of those three rows is still asserted.**
+`supabase/tests/20_search.test.sql` forces the index scan with
+`enable_seqscan = off` and checks that no row from the invisible space comes back
+(`20_search.test.sql:214`), that `public.search` carries
+`hnsw.iterative_scan=relaxed_order` in its `proconfig`
+(`20_search.test.sql:240`), and that the function is security invoker
+(`20_search.test.sql:252`). The assertion that the caller still gets all five of
+their own chunks was taken out. A pgTAP file is one transaction that rolls back,
+so those thousand rows are queried while uncommitted, which is a question an
+approximate index does not answer: it failed about one run in three inside the
+full gate while passing every time in isolation. The reasoning is written out at
+`supabase/tests/20_search.test.sql:222`. The recall half of the table above is
+therefore a development observation, and the measurement below is what would put
+it back under test.
 
 `public.search` therefore ships with the setting on the function itself:
 
