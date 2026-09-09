@@ -17,10 +17,19 @@ export default defineConfig({
         '**/*.test.{ts,tsx}',
         'lib/database.types.ts',
         '**/*.d.ts',
+        // Async server components. Vitest has no RSC runtime, so a test here
+        // could only assert that a function returns a promise. The Playwright
+        // journeys render these for real against a real database, which is the
+        // tier that can actually answer whether a page works.
+        'app/**/page.tsx',
         'app/**/layout.tsx',
         'app/**/error.tsx',
         'app/**/loading.tsx',
         'app/**/not-found.tsx',
+        // Vendored shadcn primitives. They carry no logic of ours: the parts we
+        // changed are the token classes, and the check that those are right is
+        // scripts/check-raw-color.mjs, not a render assertion.
+        'components/ui/**',
       ],
       thresholds: {
         statements: 95,
