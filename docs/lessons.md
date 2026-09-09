@@ -208,3 +208,39 @@ to the code being tested.
 applied ask for it rather than running the reset themselves, and a suite that
 reports a whole file as dubious should check `select count(*) from
 information_schema.tables` before anyone reads the diff.
+
+## An assertion that cannot run and one that cannot fail look identical
+
+Three of these turned up in one evening, in different costumes, and none was
+found by reading the test.
+
+**A fixture that makes the assertion unfalsifiable.** `31_ingest.test.sql`
+asserted that a claim still inside its window is left alone, with the fixture
+setting `claimed_at = now()`. `now()` is the transaction timestamp and does not
+move inside a test, so `claimed_at < now()` is false at every interval including
+zero. Rebuilding the function with `interval '0 seconds'` produced no failure at
+all. The assertion existed to catch a window that steals jobs from healthy
+workers and would have passed for a window of any width.
+
+**A fixture too small to reach the code path.** `20_search.test.sql` measures
+recall under an RLS filter. At test-corpus size the planner picks a sequential
+scan, which filters perfectly, so the assertion passes whatever
+`hnsw.iterative_scan` is set to. It needs `set local enable_seqscan = off` to
+test anything.
+
+**A missing precondition reported as a failure.** `storage.buckets` was empty, so
+every object insert in `50_storage.test.sql` failed a foreign key and the file
+aborted having run zero of its thirteen assertions. The runner reported a
+failure, the total read 196 instead of 209, and the only thing that caught it
+was somebody knowing what the number should be.
+
+**Rule.** An assertion is not trusted until it has been watched to fail. Break
+the thing underneath, in a transaction that rolls back, and confirm the
+assertion names the break. Where a suite has a known total, check the total: a
+file that runs zero assertions and a file that passes them all are the same
+green from a distance.
+
+A file that depends on infrastructure the migrations do not create should build
+that infrastructure itself. The storage bucket comes from `config.toml` through
+the CLI, not from a migration, so a reset whose storage step does not finish
+leaves a database that looks correct with no bucket in it.

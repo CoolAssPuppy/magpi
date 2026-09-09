@@ -41,6 +41,16 @@ values
   ('50000000-0000-4000-8000-00000000000c', 'c0000000-0000-4000-8000-000000000003',
    '2026-01-02 00:00:00+00');
 
+-- The bucket is declared in config.toml and created by the CLI, not by a
+-- migration, so it is infrastructure this file would otherwise depend on
+-- silently. When it is absent every object insert below fails the bucket foreign
+-- key and the whole file aborts having run no assertions, which reads as a test
+-- failure rather than a missing precondition. Creating it here costs nothing
+-- when it already exists and makes the file self-sufficient.
+insert into storage.buckets (id, name, public)
+values ('documents', 'documents', false)
+on conflict (id) do nothing;
+
 insert into storage.objects (id, bucket_id, name, owner, owner_id, metadata, version,
                              created_at, updated_at, last_accessed_at)
 values
