@@ -17,7 +17,7 @@ const SPACES: readonly SpaceOption[] = [
 
 type EnqueueInput = {
   spaceId: string;
-  storagePath: string;
+  objectName: string;
   title: string;
   mimeType: string;
 };
@@ -146,7 +146,7 @@ describe('choosing where an upload lands', () => {
 });
 
 describe('what happens when a file finishes uploading', () => {
-  it('files it under the chosen space, with that space as the first path segment', async () => {
+  it('sends the name and the space, and lets the server build the path', async () => {
     const { rerender } = render(<UploadPanel spaces={SPACES} />);
     await chooseSpace('Engineering');
 
@@ -157,13 +157,39 @@ describe('what happens when a file finishes uploading', () => {
     await waitFor(() => expect(actionState.calls).toHaveLength(1));
     expect(actionState.calls[0]).toEqual({
       spaceId: ENGINEERING_ID,
-      storagePath: `${ENGINEERING_ID}/notes.md`,
+      objectName: 'notes.md',
       title: 'notes.md',
       mimeType: 'text/markdown',
     });
     // The storage policy reads that first segment back, so the object and the
     // record have to name the same space.
     expect(hookState.options?.path).toBe(ENGINEERING_ID);
+  });
+
+  // Browsers report an empty type for .md on several platforms, so trusting
+  // file.type alone would refuse the format the product is mostly used for.
+  it('works out the type from the name when the browser does not report one', async () => {
+    const { rerender } = render(<UploadPanel spaces={SPACES} />);
+
+    hookState.files = [uploaded('notes.md', '')];
+    hookState.successes = ['notes.md'];
+    rerender(<UploadPanel spaces={SPACES} />);
+
+    await waitFor(() => expect(actionState.calls).toHaveLength(1));
+    expect(actionState.calls[0].mimeType).toBe('text/markdown');
+  });
+
+  it('says so on screen rather than queuing a file nothing can read', async () => {
+    const { rerender } = render(<UploadPanel spaces={SPACES} />);
+
+    hookState.files = [uploaded('logo.png', 'image/png')];
+    hookState.successes = ['logo.png'];
+    rerender(<UploadPanel spaces={SPACES} />);
+
+    expect(
+      await screen.findByText('logo.png is not a kind of file that can be read.'),
+    ).toBeVisible();
+    expect(actionState.calls).toEqual([]);
   });
 
   it('files an upload once, and not again when the space is changed afterwards', async () => {
@@ -192,25 +218,29 @@ describe('what happens when a file finishes uploading', () => {
     expect(actionState.calls.map((call) => call.title)).toEqual(['one.md', 'two.md']);
   });
 
-  it('sends a generic type for a file the browser would not name', async () => {
+  it('refuses a file with no type and no extension to work one out from', async () => {
     const { rerender } = render(<UploadPanel spaces={SPACES} />);
 
     hookState.files = [uploaded('archive', '')];
     hookState.successes = ['archive'];
     rerender(<UploadPanel spaces={SPACES} />);
 
-    await waitFor(() => expect(actionState.calls).toHaveLength(1));
-    expect(actionState.calls[0].mimeType).toBe('application/octet-stream');
+    expect(
+      await screen.findByText('archive is not a kind of file that can be read.'),
+    ).toBeVisible();
+    expect(actionState.calls).toEqual([]);
   });
 
-  it('sends a generic type for an object the file list no longer holds', async () => {
+  // The name survives in `successes` after the file itself has left the list,
+  // so the extension is the only thing left to go on and it is enough.
+  it('still works out the type for an object the file list no longer holds', async () => {
     const { rerender } = render(<UploadPanel spaces={SPACES} />);
 
     hookState.successes = ['gone.md'];
     rerender(<UploadPanel spaces={SPACES} />);
 
     await waitFor(() => expect(actionState.calls).toHaveLength(1));
-    expect(actionState.calls[0].mimeType).toBe('application/octet-stream');
+    expect(actionState.calls[0].mimeType).toBe('text/markdown');
   });
 
   it('shows the reason the server refused the upload rather than an upload that looks done', async () => {

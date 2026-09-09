@@ -90,13 +90,23 @@ vi.mock('@/lib/supabase/service', () => ({
 
 const { deleteDreamDocument, enqueueUploadedDocument } = await import('./actions');
 
-const upload = (overrides: Partial<Parameters<typeof enqueueUploadedDocument>[0]> = {}) => ({
+type Upload = Parameters<typeof enqueueUploadedDocument>[0];
+
+const upload = (overrides: Partial<Upload> = {}): Upload => ({
   spaceId: SPACE_ID,
-  storagePath: `${SPACE_ID}/quarterly-plan.pdf`,
+  objectName: 'quarterly-plan.pdf',
   title: 'quarterly-plan.pdf',
   mimeType: 'application/pdf',
   ...overrides,
 });
+
+/**
+ * A server action's argument arrives off the wire. The type on its signature
+ * describes the client this repo ships, not what the action can be sent, and
+ * the input worth testing is the input a typed caller cannot express.
+ */
+const fromTheWire = (input: Record<string, unknown>) =>
+  enqueueUploadedDocument(input as unknown as Upload);
 
 const writesTo = (table: string) => dbState.writes.filter((write) => write.table === table);
 
@@ -186,9 +196,7 @@ describe('recording an uploaded file as a document', () => {
   });
 
   it("files the document in the chosen space, under the uploader's organization", async () => {
-    await enqueueUploadedDocument(
-      upload({ title: 'Q3 platform notes', storagePath: `${SPACE_ID}/q3.pdf` }),
-    );
+    await enqueueUploadedDocument(upload({ title: 'Q3 platform notes', objectName: 'q3.pdf' }));
 
     expect(writesTo('documents')[0].values).toEqual({
       org_id: ORG_ID,
@@ -210,6 +218,33 @@ describe('recording an uploaded file as a document', () => {
       stage: 'extract',
     });
     expect(state).toEqual({ status: 'success', data: { documentId: DOCUMENT_ID } });
+  });
+
+  // The path was an input for the whole build, validated as z.string().min(1)
+  // and written by the service client, which skips RLS. A caller posting
+  // `<another space>/board-minutes.pdf` had that object read and indexed into a
+  // space they are a member of, and the citation then renders its text.
+  it('reads only the space it just checked, whatever path the caller asks for', async () => {
+    await enqueueUploadedDocument(upload({ objectName: '../other-space/board-minutes.pdf' }));
+
+    expect(writesTo('documents')).toEqual([]);
+  });
+
+  it('refuses a name that reaches out of its own folder', async () => {
+    const state = await enqueueUploadedDocument(upload({ objectName: 'nested/report.pdf' }));
+
+    expect(state).toEqual({ status: 'error', message: 'That upload could not be recorded.' });
+    expect(dbState.writes).toEqual([]);
+  });
+
+  // The extractor answers 415 for anything outside its table, so a document
+  // recorded with a type nothing can read is queued only to fail three jobs
+  // later. The upload surface is where that is knowable.
+  it('refuses a type nothing downstream can read', async () => {
+    const state = await fromTheWire({ ...upload(), mimeType: 'image/png' });
+
+    expect(state).toEqual({ status: 'error', message: 'That upload could not be recorded.' });
+    expect(dbState.writes).toEqual([]);
   });
 
   it('counts the document against what the organization has used', async () => {

@@ -33,7 +33,8 @@
     "prepare": "husky",
     "format:check:functions": "deno fmt --config supabase/functions/deno.json --check supabase/functions",
     "check:colors": "node scripts/check-raw-color.mjs",
-    "check:cron": "node scripts/check-cron-routes.mjs"
+    "check:cron": "node scripts/check-cron-routes.mjs",
+    "check:upload-types": "node scripts/check-upload-types.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",

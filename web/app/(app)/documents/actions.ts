@@ -3,14 +3,26 @@
 import { z } from 'zod';
 
 import { errorState, successState, type ActionState } from '@/lib/actions/state';
+import { ACCEPTED_MIME_TYPES, storagePathFor } from '@/lib/documents/uploads';
 import { withSession } from '@/lib/actions/with-session';
 import { createServiceClient } from '@/lib/supabase/service';
 
 const enqueueSchema = z.object({
   spaceId: z.uuid(),
-  storagePath: z.string().min(1),
+  // The name of the object inside the space's own folder, not a path. The
+  // caller used to send the whole path, which the service client wrote and the
+  // ingest worker read back with no space check of its own, so naming another
+  // space's object had that object indexed and quoted into a space the caller
+  // could see. A slash is refused rather than stripped: a name containing one
+  // did not come from the dropzone.
+  objectName: z
+    .string()
+    .trim()
+    .min(1)
+    .max(255)
+    .refine((name) => !name.includes('/'), 'the object name is a name, not a path'),
   title: z.string().trim().min(1).max(500),
-  mimeType: z.string().min(1).max(200),
+  mimeType: z.enum(ACCEPTED_MIME_TYPES),
 });
 
 /**
@@ -26,7 +38,7 @@ export async function enqueueUploadedDocument(
     const parsed = enqueueSchema.safeParse(input);
     if (!parsed.success) return errorState('That upload could not be recorded.');
 
-    const { spaceId, storagePath, title, mimeType } = parsed.data;
+    const { spaceId, objectName, title, mimeType } = parsed.data;
 
     // The caller's own client, so RLS proves they are in this space before the
     // service role touches anything.
@@ -53,7 +65,7 @@ export async function enqueueUploadedDocument(
         space_id: spaceId,
         title,
         mime_type: mimeType,
-        storage_path: storagePath,
+        storage_path: storagePathFor(spaceId, objectName),
         origin: 'upload',
       })
       .select('id')

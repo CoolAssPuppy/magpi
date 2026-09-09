@@ -14,19 +14,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useSupabaseUpload } from '@/hooks/use-supabase-upload';
+import { ACCEPTED_MIME_TYPES, acceptedTypeFor, MAX_UPLOAD_BYTES } from '@/lib/documents/uploads';
 import type { SpaceOption } from '@/lib/spaces/spaces';
-
-const ALLOWED_MIME_TYPES = [
-  'application/pdf',
-  'text/plain',
-  'text/markdown',
-  'text/csv',
-  'text/html',
-  'application/json',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-];
-
-const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 /**
  * The space selector and the dropzone are on one screen because choosing the
@@ -46,8 +35,8 @@ export function UploadPanel({ spaces }: { spaces: readonly SpaceOption[] }) {
     // The first path segment is the permission decision. The storage policy
     // reads it back and checks it against the caller's visible spaces.
     path: spaceId,
-    allowedMimeTypes: ALLOWED_MIME_TYPES,
-    maxFileSize: MAX_FILE_SIZE,
+    allowedMimeTypes: [...ACCEPTED_MIME_TYPES],
+    maxFileSize: MAX_UPLOAD_BYTES,
     maxFiles: 10,
   });
 
@@ -60,14 +49,17 @@ export function UploadPanel({ spaces }: { spaces: readonly SpaceOption[] }) {
     for (const name of pending) {
       recorded.current.add(name);
       const file = files.find((candidate) => candidate.name === name);
-      void enqueueUploadedDocument({
-        spaceId,
-        storagePath: `${spaceId}/${name}`,
-        title: name,
-        mimeType: file?.type || 'application/octet-stream',
-      }).then((state) => {
-        if (state.status === 'error') setError(state.message);
-      });
+      const mimeType = acceptedTypeFor(file?.type ?? '', name);
+      if (!mimeType) {
+        setError(`${name} is not a kind of file that can be read.`);
+        continue;
+      }
+
+      void enqueueUploadedDocument({ spaceId, objectName: name, title: name, mimeType }).then(
+        (state) => {
+          if (state.status === 'error') setError(state.message);
+        },
+      );
     }
   }, [successes, files, spaceId]);
 
