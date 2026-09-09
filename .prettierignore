@@ -9,3 +9,4 @@ docs/fixtures
 test-results
 playwright-report
 supabase/functions
+web/next-env.d.ts
