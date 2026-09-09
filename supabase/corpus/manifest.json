@@ -1,0 +1,632 @@
+[
+  {
+    "path": "everyone/billing-rebuild-decision-record.md",
+    "title": "Billing rebuild: decision record",
+    "space": "everyone",
+    "source": "notion",
+    "externalId": "notion-page-0001",
+    "url": "https://www.notion.so/alderwick/billing-rebuild-decision-record-0001",
+    "updatedAt": "2026-03-11T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/company-handbook-how-we-work.md",
+    "title": "How we work at Alderwick",
+    "space": "everyone",
+    "source": "notion",
+    "externalId": "notion-page-0002",
+    "url": "https://www.notion.so/alderwick/how-we-work-at-alderwick-0002",
+    "updatedAt": "2026-01-20T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/customer-advisory-call-notes-may.md",
+    "title": "Customer advisory call, 14 May 2026",
+    "space": "everyone",
+    "source": "notion",
+    "externalId": "notion-page-0003",
+    "url": "https://www.notion.so/alderwick/customer-advisory-call-14-may-2026-0003",
+    "updatedAt": "2026-05-21T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/drive-billing-platform-review-slides.md",
+    "title": "Billing platform review",
+    "space": "everyone",
+    "source": "drive",
+    "externalId": "drive-file-0001",
+    "url": "https://drive.google.com/file/d/drive-file-0001/view",
+    "updatedAt": "2026-02-24T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/drive-brand-guidelines-export.md",
+    "title": "Alderwick brand guidelines",
+    "space": "everyone",
+    "source": "drive",
+    "externalId": "drive-file-0002",
+    "url": "https://drive.google.com/file/d/drive-file-0002/view",
+    "updatedAt": "2026-01-08T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/drive-customer-interview-marchetti-transcript.md",
+    "title": "Customer interview, Marchetti Freight, 28 April 2026",
+    "space": "everyone",
+    "source": "drive",
+    "externalId": "drive-file-0003",
+    "url": "https://drive.google.com/file/d/drive-file-0003/view",
+    "updatedAt": "2026-04-28T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/drive-glossary-of-freight-terms.md",
+    "title": "Freight and EDI glossary",
+    "space": "everyone",
+    "source": "drive",
+    "externalId": "drive-file-0004",
+    "url": "https://drive.google.com/file/d/drive-file-0004/view",
+    "updatedAt": "2026-02-11T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/drive-portside-one-pager.md",
+    "title": "Portside one pager",
+    "space": "everyone",
+    "source": "drive",
+    "externalId": "drive-file-0005",
+    "url": "https://drive.google.com/file/d/drive-file-0005/view",
+    "updatedAt": "2026-01-15T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/drive-q2-all-hands-slides.md",
+    "title": "Q2 all hands",
+    "space": "everyone",
+    "source": "drive",
+    "externalId": "drive-file-0006",
+    "url": "https://drive.google.com/file/d/drive-file-0006/view",
+    "updatedAt": "2026-07-01T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/drive-search-relevance-review-slides.md",
+    "title": "Search relevance review",
+    "space": "everyone",
+    "source": "drive",
+    "externalId": "drive-file-0007",
+    "url": "https://drive.google.com/file/d/drive-file-0007/view",
+    "updatedAt": "2026-05-27T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/drive-vendor-security-questionnaire.md",
+    "title": "Vendor security questionnaire, completed",
+    "space": "everyone",
+    "source": "drive",
+    "externalId": "drive-file-0008",
+    "url": "https://drive.google.com/file/d/drive-file-0008/view",
+    "updatedAt": "2026-04-02T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/eu-region-plan.md",
+    "title": "EU region plan",
+    "space": "everyone",
+    "source": "notion",
+    "externalId": "notion-page-0004",
+    "url": "https://www.notion.so/alderwick/eu-region-plan-0004",
+    "updatedAt": "2026-04-14T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/mobile-app-scope.md",
+    "title": "Mobile app, first release scope",
+    "space": "everyone",
+    "source": "notion",
+    "externalId": "notion-page-0005",
+    "url": "https://www.notion.so/alderwick/mobile-app-first-release-scope-0005",
+    "updatedAt": "2026-06-16T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/onboarding-checklist-new-engineers.md",
+    "title": "Onboarding checklist, new engineers",
+    "space": "everyone",
+    "source": "notion",
+    "externalId": "notion-page-0006",
+    "url": "https://www.notion.so/alderwick/onboarding-checklist-new-engineers-0006",
+    "updatedAt": "2026-07-07T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/portside-product-overview.md",
+    "title": "Portside: what it is and who buys it",
+    "space": "everyone",
+    "source": "notion",
+    "externalId": "notion-page-0007",
+    "url": "https://www.notion.so/alderwick/portside-what-it-is-and-who-buys-it-0007",
+    "updatedAt": "2026-02-03T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/pricing-faq-for-the-team.md",
+    "title": "Pricing: what to say and what not to say",
+    "space": "everyone",
+    "source": "notion",
+    "externalId": "notion-page-0008",
+    "url": "https://www.notion.so/alderwick/pricing-what-to-say-and-what-not-to-say-0008",
+    "updatedAt": "2026-08-24T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/q3-planning.md",
+    "title": "Q3 2026 plan",
+    "space": "everyone",
+    "source": "notion",
+    "externalId": "notion-page-0009",
+    "url": "https://www.notion.so/alderwick/q3-2026-plan-0009",
+    "updatedAt": "2026-06-29T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/search-relevance-plan.md",
+    "title": "Search relevance work, 2026",
+    "space": "everyone",
+    "source": "notion",
+    "externalId": "notion-page-0010",
+    "url": "https://www.notion.so/alderwick/search-relevance-work-2026-0010",
+    "updatedAt": "2026-05-05T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/slack-billing-2026-06-08-reversal.md",
+    "title": "#billing, 8 June 2026",
+    "space": "everyone",
+    "source": "slack",
+    "externalId": "slack-billing-1780909200.000100",
+    "url": "https://alderwick.slack.com/archives/C04BILLING/p1780909200000100",
+    "updatedAt": "2026-06-08T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/slack-design-2026-04-22-archive-vs-close.md",
+    "title": "#design, 22 April 2026",
+    "space": "everyone",
+    "source": "slack",
+    "externalId": "slack-design-1776848400.000100",
+    "url": "https://alderwick.slack.com/archives/C05DESIGN/p1776848400000100",
+    "updatedAt": "2026-04-22T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/slack-general-2026-02-19-plant-watering-rota.md",
+    "title": "#general, 19 February 2026",
+    "space": "everyone",
+    "source": "slack",
+    "externalId": "slack-general-1771491600.000100",
+    "url": "https://alderwick.slack.com/archives/C01GENERAL/p1771491600000100",
+    "updatedAt": "2026-02-19T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/slack-general-2026-03-17-coffee-machine.md",
+    "title": "#general, 17 March 2026",
+    "space": "everyone",
+    "source": "slack",
+    "externalId": "slack-general-1773738000.000100",
+    "url": "https://alderwick.slack.com/archives/C01GENERAL/p1773738000000100",
+    "updatedAt": "2026-03-17T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/slack-general-2026-07-02-offsite-logistics.md",
+    "title": "#general, 2 July 2026",
+    "space": "everyone",
+    "source": "slack",
+    "externalId": "slack-general-1782982800.000100",
+    "url": "https://alderwick.slack.com/archives/C01GENERAL/p1782982800000100",
+    "updatedAt": "2026-07-02T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/slack-general-2026-08-05-office-move.md",
+    "title": "#general, 5 August 2026",
+    "space": "everyone",
+    "source": "slack",
+    "externalId": "slack-general-1785920400.000100",
+    "url": "https://alderwick.slack.com/archives/C01GENERAL/p1785920400000100",
+    "updatedAt": "2026-08-05T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/slack-product-2026-05-12-search-complaints.md",
+    "title": "#product, 12 May 2026",
+    "space": "everyone",
+    "source": "slack",
+    "externalId": "slack-product-1778576400.000100",
+    "url": "https://alderwick.slack.com/archives/C02PRODUCT/p1778576400000100",
+    "updatedAt": "2026-05-12T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/slack-product-2026-08-11-mobile-offline-drafts.md",
+    "title": "#product, 11 August 2026",
+    "space": "everyone",
+    "source": "slack",
+    "externalId": "slack-product-1786438800.000100",
+    "url": "https://alderwick.slack.com/archives/C02PRODUCT/p1786438800000100",
+    "updatedAt": "2026-08-11T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/slack-product-2026-09-01-q4-shortlist.md",
+    "title": "#product, 1 September 2026",
+    "space": "everyone",
+    "source": "slack",
+    "externalId": "slack-product-1788253200.000100",
+    "url": "https://alderwick.slack.com/archives/C02PRODUCT/p1788253200000100",
+    "updatedAt": "2026-09-01T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/slack-sales-2026-07-28-pricing-questions.md",
+    "title": "#sales, 28 July 2026",
+    "space": "everyone",
+    "source": "slack",
+    "externalId": "slack-sales-1785229200.000100",
+    "url": "https://alderwick.slack.com/archives/C07SALES/p1785229200000100",
+    "updatedAt": "2026-07-28T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/slack-support-2026-06-25-eu-customer-asks.md",
+    "title": "#support, 25 June 2026",
+    "space": "everyone",
+    "source": "slack",
+    "externalId": "slack-support-1782378000.000100",
+    "url": "https://alderwick.slack.com/archives/C06SUPPORT/p1782378000000100",
+    "updatedAt": "2026-06-25T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/support-escalation-process.md",
+    "title": "Support escalation process",
+    "space": "everyone",
+    "source": "notion",
+    "externalId": "notion-page-0011",
+    "url": "https://www.notion.so/alderwick/support-escalation-process-0011",
+    "updatedAt": "2026-03-30T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/upload-competitor-teardown-notes.md",
+    "title": "Harbourline teardown notes",
+    "space": "everyone",
+    "source": "upload",
+    "externalId": "upload-0001",
+    "url": null,
+    "updatedAt": "2026-05-08T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/upload-conference-notes-shipwright.md",
+    "title": "Notes from Shipwright 2026",
+    "space": "everyone",
+    "source": "upload",
+    "externalId": "upload-0002",
+    "url": null,
+    "updatedAt": "2026-06-03T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/upload-edi-214-field-notes.md",
+    "title": "EDI 214 field notes",
+    "space": "everyone",
+    "source": "upload",
+    "externalId": "upload-0003",
+    "url": null,
+    "updatedAt": "2026-03-05T09:00:00.000Z"
+  },
+  {
+    "path": "everyone/weekly-product-sync-2026-07-15.md",
+    "title": "Weekly product sync, 15 July 2026",
+    "space": "everyone",
+    "source": "notion",
+    "externalId": "notion-page-0012",
+    "url": "https://www.notion.so/alderwick/weekly-product-sync-15-july-2026-0012",
+    "updatedAt": "2026-07-15T09:00:00.000Z"
+  },
+  {
+    "path": "engineering/architecture-overview.md",
+    "title": "Portside architecture overview",
+    "space": "engineering",
+    "source": "notion",
+    "externalId": "notion-page-0013",
+    "url": "https://www.notion.so/alderwick/portside-architecture-overview-0013",
+    "updatedAt": "2026-01-27T09:00:00.000Z"
+  },
+  {
+    "path": "engineering/bil-204-proration-mid-cycle.md",
+    "title": "BIL-204 Proration produces wrong mid-cycle totals on downgrade",
+    "space": "engineering",
+    "source": "linear",
+    "externalId": "BIL-204",
+    "url": "https://linear.app/alderwick/issue/BIL-204",
+    "updatedAt": "2026-05-19T09:00:00.000Z"
+  },
+  {
+    "path": "engineering/bil-233-trueup-error-code.md",
+    "title": "BIL-233 Trueup job aborts with ERR_TRUEUP_4471 on accounts with a zero allowance",
+    "space": "engineering",
+    "source": "linear",
+    "externalId": "BIL-233",
+    "url": "https://linear.app/alderwick/issue/BIL-233",
+    "updatedAt": "2026-06-30T09:00:00.000Z"
+  },
+  {
+    "path": "engineering/bil-241-stripe-billing-migration.md",
+    "title": "BIL-241 Move plan fees and seat counts to Stripe subscriptions",
+    "space": "engineering",
+    "source": "linear",
+    "externalId": "BIL-241",
+    "url": "https://linear.app/alderwick/issue/BIL-241",
+    "updatedAt": "2026-07-06T09:00:00.000Z"
+  },
+  {
+    "path": "engineering/edi-77-214-parser-timeouts.md",
+    "title": "EDI-77 Legacy 214 parser times out on two accounts",
+    "space": "engineering",
+    "source": "linear",
+    "externalId": "EDI-77",
+    "url": "https://linear.app/alderwick/issue/EDI-77",
+    "updatedAt": "2026-04-17T09:00:00.000Z"
+  },
+  {
+    "path": "engineering/edi-81-retire-legacy-parser.md",
+    "title": "EDI-81 Retire the legacy 214 parser",
+    "space": "engineering",
+    "source": "linear",
+    "externalId": "EDI-81",
+    "url": "https://linear.app/alderwick/issue/EDI-81",
+    "updatedAt": "2026-08-03T09:00:00.000Z"
+  },
+  {
+    "path": "engineering/inf-311-eu-region.md",
+    "title": "INF-311 EU region: Frankfurt deployment",
+    "space": "engineering",
+    "source": "linear",
+    "externalId": "INF-311",
+    "url": "https://linear.app/alderwick/issue/INF-311",
+    "updatedAt": "2026-06-22T09:00:00.000Z"
+  },
+  {
+    "path": "engineering/inf-318-audit-log-writer.md",
+    "title": "INF-318 Audit log writer must take a region scoped connection pool",
+    "space": "engineering",
+    "source": "linear",
+    "externalId": "INF-318",
+    "url": "https://linear.app/alderwick/issue/INF-318",
+    "updatedAt": "2026-07-09T09:00:00.000Z"
+  },
+  {
+    "path": "engineering/inf-322-postgres-upgrade.md",
+    "title": "INF-322 Postgres major version upgrade",
+    "space": "engineering",
+    "source": "linear",
+    "externalId": "INF-322",
+    "url": "https://linear.app/alderwick/issue/INF-322",
+    "updatedAt": "2026-08-10T09:00:00.000Z"
+  },
+  {
+    "path": "engineering/mob-30-offline-drafts.md",
+    "title": "MOB-30 Offline drafts in the mobile app",
+    "space": "engineering",
+    "source": "linear",
+    "externalId": "MOB-30",
+    "url": "https://linear.app/alderwick/issue/MOB-30",
+    "updatedAt": "2026-07-20T09:00:00.000Z"
+  },
+  {
+    "path": "engineering/mob-34-push-token-churn.md",
+    "title": "MOB-34 Push tokens go stale and notifications stop silently",
+    "space": "engineering",
+    "source": "linear",
+    "externalId": "MOB-34",
+    "url": "https://linear.app/alderwick/issue/MOB-34",
+    "updatedAt": "2026-08-18T09:00:00.000Z"
+  },
+  {
+    "path": "engineering/oncall-runbook.md",
+    "title": "On call runbook",
+    "space": "engineering",
+    "source": "notion",
+    "externalId": "notion-page-0014",
+    "url": "https://www.notion.so/alderwick/on-call-runbook-0014",
+    "updatedAt": "2026-03-23T09:00:00.000Z"
+  },
+  {
+    "path": "engineering/postmortem-thread-list-slowdown.md",
+    "title": "Postmortem: thread list slow for four hours on 16 June",
+    "space": "engineering",
+    "source": "notion",
+    "externalId": "notion-page-0015",
+    "url": "https://www.notion.so/alderwick/postmortem-thread-list-slow-for-four-hours-on-16-june-0015",
+    "updatedAt": "2026-06-18T09:00:00.000Z"
+  },
+  {
+    "path": "engineering/search-index-design-note.md",
+    "title": "Search index: how it works today",
+    "space": "engineering",
+    "source": "notion",
+    "externalId": "notion-page-0016",
+    "url": "https://www.notion.so/alderwick/search-index-how-it-works-today-0016",
+    "updatedAt": "2026-05-11T09:00:00.000Z"
+  },
+  {
+    "path": "engineering/slack-eng-2026-07-14-trueup-handover.md",
+    "title": "#eng, 14 July 2026",
+    "space": "engineering",
+    "source": "slack",
+    "externalId": "slack-eng-1784019600.000100",
+    "url": "https://alderwick.slack.com/archives/C03ENG/p1784019600000100",
+    "updatedAt": "2026-07-14T09:00:00.000Z"
+  },
+  {
+    "path": "engineering/slack-eng-2026-08-20-postgres-upgrade-window.md",
+    "title": "#eng, 20 August 2026",
+    "space": "engineering",
+    "source": "slack",
+    "externalId": "slack-eng-1787216400.000100",
+    "url": "https://alderwick.slack.com/archives/C03ENG/p1787216400000100",
+    "updatedAt": "2026-08-20T09:00:00.000Z"
+  },
+  {
+    "path": "engineering/srch-101-synonym-list.md",
+    "title": "SRCH-101 Synonym list for freight terms in search",
+    "space": "engineering",
+    "source": "linear",
+    "externalId": "SRCH-101",
+    "url": "https://linear.app/alderwick/issue/SRCH-101",
+    "updatedAt": "2026-07-30T09:00:00.000Z"
+  },
+  {
+    "path": "engineering/srch-88-search-rewrite.md",
+    "title": "SRCH-88 Replace the thread search index",
+    "space": "engineering",
+    "source": "linear",
+    "externalId": "SRCH-88",
+    "url": "https://linear.app/alderwick/issue/SRCH-88",
+    "updatedAt": "2026-05-04T09:00:00.000Z"
+  },
+  {
+    "path": "engineering/srch-95-thread-title-weighting.md",
+    "title": "SRCH-95 Thread subject should outrank body text in ranking",
+    "space": "engineering",
+    "source": "linear",
+    "externalId": "SRCH-95",
+    "url": "https://linear.app/alderwick/issue/SRCH-95",
+    "updatedAt": "2026-06-11T09:00:00.000Z"
+  },
+  {
+    "path": "engineering/web-142-close-vs-archive-mobile.md",
+    "title": "WEB-142 Archive and Close do the same thing in the narrow header",
+    "space": "engineering",
+    "source": "linear",
+    "externalId": "WEB-142",
+    "url": "https://linear.app/alderwick/issue/WEB-142",
+    "updatedAt": "2026-05-06T09:00:00.000Z"
+  },
+  {
+    "path": "engineering/web-150-thread-list-pagination.md",
+    "title": "WEB-150 Thread list loses scroll position on page two",
+    "space": "engineering",
+    "source": "linear",
+    "externalId": "WEB-150",
+    "url": "https://linear.app/alderwick/issue/WEB-150",
+    "updatedAt": "2026-06-02T09:00:00.000Z"
+  },
+  {
+    "path": "engineering/web-161-attachment-preview.md",
+    "title": "WEB-161 Preview attachments without downloading them",
+    "space": "engineering",
+    "source": "linear",
+    "externalId": "WEB-161",
+    "url": "https://linear.app/alderwick/issue/WEB-161",
+    "updatedAt": "2026-08-26T09:00:00.000Z"
+  },
+  {
+    "path": "leadership/board-update-q2.md",
+    "title": "Board update Q2 2026",
+    "space": "leadership",
+    "source": "drive",
+    "externalId": "drive-file-0009",
+    "url": "https://drive.google.com/file/d/drive-file-0009/view",
+    "updatedAt": "2026-07-10T09:00:00.000Z"
+  },
+  {
+    "path": "leadership/budget-review-h2.md",
+    "title": "Budget review, second half of 2026",
+    "space": "leadership",
+    "source": "notion",
+    "externalId": "notion-page-0017",
+    "url": "https://www.notion.so/alderwick/budget-review-second-half-of-2026-0017",
+    "updatedAt": "2026-06-12T09:00:00.000Z"
+  },
+  {
+    "path": "leadership/compensation-review-2026.md",
+    "title": "Compensation review 2026",
+    "space": "leadership",
+    "source": "notion",
+    "externalId": "notion-page-0018",
+    "url": "https://www.notion.so/alderwick/compensation-review-2026-0018",
+    "updatedAt": "2026-07-22T09:00:00.000Z"
+  },
+  {
+    "path": "leadership/hiring-plan-h2-2026.md",
+    "title": "Hiring plan, second half of 2026",
+    "space": "leadership",
+    "source": "notion",
+    "externalId": "notion-page-0019",
+    "url": "https://www.notion.so/alderwick/hiring-plan-second-half-of-2026-0019",
+    "updatedAt": "2026-06-05T09:00:00.000Z"
+  },
+  {
+    "path": "leadership/pricing-change-2026-decision.md",
+    "title": "Pricing change, October 2026: decision",
+    "space": "leadership",
+    "source": "notion",
+    "externalId": "notion-page-0020",
+    "url": "https://www.notion.so/alderwick/pricing-change-october-2026-decision-0020",
+    "updatedAt": "2026-08-27T09:00:00.000Z"
+  },
+  {
+    "path": "leadership/slack-leads-2026-06-09-billing-reversal-costs.md",
+    "title": "#leads, 9 June 2026",
+    "space": "leadership",
+    "source": "slack",
+    "externalId": "slack-leads-1780995600.000100",
+    "url": "https://alderwick.slack.com/archives/C08LEADS/p1780995600000100",
+    "updatedAt": "2026-06-09T09:00:00.000Z"
+  },
+  {
+    "path": "leadership/slack-leads-2026-08-28-pricing-rollout.md",
+    "title": "#leads, 28 August 2026",
+    "space": "leadership",
+    "source": "slack",
+    "externalId": "slack-leads-1787907600.000100",
+    "url": "https://alderwick.slack.com/archives/C08LEADS/p1787907600000100",
+    "updatedAt": "2026-08-28T09:00:00.000Z"
+  },
+  {
+    "path": "leadership/upload-renewal-risk-list.md",
+    "title": "Renewal risk list",
+    "space": "leadership",
+    "source": "upload",
+    "externalId": "upload-0004",
+    "url": null,
+    "updatedAt": "2026-08-14T09:00:00.000Z"
+  },
+  {
+    "path": "personal-a/interview-debrief-scratch.md",
+    "title": "Interview notes, backend candidate, 16 July",
+    "space": "personal-a",
+    "source": "upload",
+    "externalId": "upload-0005",
+    "url": null,
+    "updatedAt": "2026-07-16T09:00:00.000Z"
+  },
+  {
+    "path": "personal-a/reading-list.md",
+    "title": "Reading list",
+    "space": "personal-a",
+    "source": "upload",
+    "externalId": "upload-0006",
+    "url": null,
+    "updatedAt": "2026-05-30T09:00:00.000Z"
+  },
+  {
+    "path": "personal-a/weekly-notes-2026-08-31.md",
+    "title": "Week of 31 August",
+    "space": "personal-a",
+    "source": "upload",
+    "externalId": "upload-0007",
+    "url": null,
+    "updatedAt": "2026-08-31T09:00:00.000Z"
+  },
+  {
+    "path": "personal-b/conference-talk-outline.md",
+    "title": "Talk outline, draft 3",
+    "space": "personal-b",
+    "source": "upload",
+    "externalId": "upload-0008",
+    "url": null,
+    "updatedAt": "2026-08-07T09:00:00.000Z"
+  },
+  {
+    "path": "personal-b/one-on-one-notes.md",
+    "title": "1:1 notes, Marcus",
+    "space": "personal-b",
+    "source": "upload",
+    "externalId": "upload-0009",
+    "url": null,
+    "updatedAt": "2026-09-02T09:00:00.000Z"
+  },
+  {
+    "path": "personal-b/search-experiments-log.md",
+    "title": "Search experiments, running log",
+    "space": "personal-b",
+    "source": "upload",
+    "externalId": "upload-0010",
+    "url": null,
+    "updatedAt": "2026-06-27T09:00:00.000Z"
+  }
+]

@@ -3,8 +3,9 @@
 The repository is public and MIT licensed, so every document in the sample
 corpus is published. Assume a stranger reads all of it, because one will.
 
-The corpus does not exist yet. This file is the contract for building it, and it
-becomes the manifest as documents land.
+This file was the contract for building the corpus and is now also its manifest.
+Seventy documents landed on 2026-09-09. The rule below still governs anything
+added after that.
 
 ## The rule
 
@@ -27,12 +28,97 @@ below, the file does not go in the corpus.
 
 ## The manifest
 
-Empty as of 2026-09-09. One row per file. The example row shows the expected
-format and is not part of the corpus.
+Seventy documents as of 2026-09-09, one row per file. Every file lives under
+`supabase/corpus/` and is listed here. The company, the people and the events
+are invented. Alderwick does not exist and none of the people named in the
+corpus are real.
 
-| File                                      | Source                                                       | Licence                     | Why it is in the corpus                                                                                                                                                                                 |
-| ----------------------------------------- | ------------------------------------------------------------ | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `corpus/example/northwind-q3-planning.md` | Synthetic, written for Recall by the Recall team, 2026-09-09 | MIT, same as the repository | EXAMPLE ROW, NOT A REAL FILE. Shows the format: a simulated Notion planning doc that names the same project as the Linear issue and the Slack thread, so the entities dream kind has something to link. |
+`supabase/corpus/COMPANY.md` is the reference the documents are consistent
+with: what the fictional company does, who works there, and what it is arguing
+about this quarter. Read it before adding a document.
+
+`supabase/corpus/manifest.json` is the machine readable version of this table
+and the only thing the loader reads. The markdown files carry no frontmatter,
+so a document is a document and its metadata lives in one place.
+
+Counts against the target shape below: Notion 20, Linear 16, Slack 15, Google
+Drive 9, direct upload 10. Everyone 34, Engineering 22, Leadership 8, and 3 in
+each of the two personal spaces.
+
+| File                                                                 | Source                                                                                                           | Licence                     | Why it is in the corpus                                                                                                                                                                                                |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `corpus/COMPANY.md`                                                  | Synthetic, written for Recall by the Recall team, 2026-09-09. Reference document, not loaded into any space.     | MIT, same as the repository | The fictional company: what it does, who works there, what it is arguing about this quarter. Every other file is consistent with this one.                                                                             |
+| `corpus/manifest.json`                                               | Synthetic, written for Recall by the Recall team, 2026-09-09. Machine readable index, not loaded into any space. | MIT, same as the repository | Title, space, source, external id, url and a fixed `updatedAt` per document. The only file `scripts/seed-corpus.mjs` reads.                                                                                            |
+| `corpus/everyone/billing-rebuild-decision-record.md`                 | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Notion page.                             | MIT, same as the repository | The decision that changed, part one of three. March: build billing in house, do not use Stripe Billing, with all three reasons written down so the June reversal can be checked against them.                          |
+| `corpus/everyone/company-handbook-how-we-work.md`                    | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Notion page.                             | MIT, same as the repository | General company context. Establishes which tool is used for what, which is what makes the same project appearing in four sources plausible.                                                                            |
+| `corpus/everyone/customer-advisory-call-notes-may.md`                | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Notion page.                             | MIT, same as the repository | Names the customer accounts that recur across billing, search and the EU region documents, so entity extraction has repeated names to canonicalize.                                                                    |
+| `corpus/everyone/drive-billing-platform-review-slides.md`            | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Google Drive export.                     | MIT, same as the repository | The billing migration seen from Drive: the build versus buy deck that preceded the March decision. Fourth naming of the same project, and an awkward extraction case.                                                  |
+| `corpus/everyone/drive-brand-guidelines-export.md`                   | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Google Drive export.                     | MIT, same as the repository | Dead content. Irrelevant to every demo question, so the admin dead content panel has a real row.                                                                                                                       |
+| `corpus/everyone/drive-customer-interview-marchetti-transcript.md`   | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Google Drive export.                     | MIT, same as the repository | An auto transcript with speaker labels, timestamps and mis-transcriptions. The hardest extraction case in the corpus that still has to answer questions.                                                               |
+| `corpus/everyone/drive-glossary-of-freight-terms.md`                 | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Google Drive export.                     | MIT, same as the repository | A two column PDF table that collapsed in extraction. Tests chunking against text with no sentence structure.                                                                                                           |
+| `corpus/everyone/drive-portside-one-pager.md`                        | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Google Drive export.                     | MIT, same as the repository | Carries the current prices in a public facing register, which is the wrong answer to the pricing question and therefore a useful distractor.                                                                           |
+| `corpus/everyone/drive-q2-all-hands-slides.md`                       | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Google Drive export.                     | MIT, same as the repository | The billing reversal told to the whole company. A fourth account of the decision that changed, in a different register from the other three.                                                                           |
+| `corpus/everyone/drive-search-relevance-review-slides.md`            | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Google Drive export.                     | MIT, same as the repository | The search project seen from Drive. Slide export with orphaned bullets and collapsed columns.                                                                                                                          |
+| `corpus/everyone/drive-vendor-security-questionnaire.md`             | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Google Drive export.                     | MIT, same as the repository | Dead content. A completed form export, irrelevant to every demo question.                                                                                                                                              |
+| `corpus/everyone/eu-region-plan.md`                                  | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Notion page.                             | MIT, same as the repository | The EU region named in prose, written before the slip. Pairs with INF-311 and with the Slack thread that calls it Frankfurt.                                                                                           |
+| `corpus/everyone/mobile-app-scope.md`                                | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Notion page.                             | MIT, same as the repository | Where offline drafts were cut and why. Overlaps MOB-30 and the August Slack thread under three different names.                                                                                                        |
+| `corpus/everyone/onboarding-checklist-new-engineers.md`              | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Notion page.                             | MIT, same as the repository | Ordinary company document. Mentions repositories the architecture note also names, which gives entity extraction a second attestation.                                                                                 |
+| `corpus/everyone/portside-product-overview.md`                       | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Notion page.                             | MIT, same as the repository | Defines the product, the plans and the current prices. Every other document assumes this one.                                                                                                                          |
+| `corpus/everyone/pricing-faq-for-the-team.md`                        | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Notion page.                             | MIT, same as the repository | The Everyone half of the two user permission demo. Answers the shared pricing question vaguely and on purpose.                                                                                                         |
+| `corpus/everyone/q3-planning.md`                                     | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Notion page.                             | MIT, same as the repository | Holds the dates for both combination questions: the EU region target and the legacy parser switch off. Neither reason is in this file.                                                                                 |
+| `corpus/everyone/search-relevance-plan.md`                           | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Notion page.                             | MIT, same as the repository | The search project named in prose. Sets out the Sofia and Nadia disagreement that SRCH-88 and the Slack threads continue.                                                                                              |
+| `corpus/everyone/slack-billing-2026-06-08-reversal.md`               | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Slack thread.                            | MIT, same as the repository | The decision that changed, part three of three. June: the reversal happens in a Slack thread, with the reasoning, which is where decisions actually get made.                                                          |
+| `corpus/everyone/slack-design-2026-04-22-archive-vs-close.md`        | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Slack thread.                            | MIT, same as the repository | One half of the unlinked pair. Same subject as WEB-142, different vocabulary, no reference in either direction.                                                                                                        |
+| `corpus/everyone/slack-general-2026-02-19-plant-watering-rota.md`    | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Slack thread.                            | MIT, same as the repository | Dead content.                                                                                                                                                                                                          |
+| `corpus/everyone/slack-general-2026-03-17-coffee-machine.md`         | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Slack thread.                            | MIT, same as the repository | Dead content.                                                                                                                                                                                                          |
+| `corpus/everyone/slack-general-2026-07-02-offsite-logistics.md`      | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Slack thread.                            | MIT, same as the repository | Dead content.                                                                                                                                                                                                          |
+| `corpus/everyone/slack-general-2026-08-05-office-move.md`            | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Slack thread.                            | MIT, same as the repository | Dead content.                                                                                                                                                                                                          |
+| `corpus/everyone/slack-product-2026-05-12-search-complaints.md`      | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Slack thread.                            | MIT, same as the repository | The search project seen from Slack, called both the search rewrite and the fuzzy search thing in one thread. Third naming of the same project.                                                                         |
+| `corpus/everyone/slack-product-2026-08-11-mobile-offline-drafts.md`  | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Slack thread.                            | MIT, same as the repository | The mobile cut argued out after the fact. Overlaps MOB-30 and the scope document.                                                                                                                                      |
+| `corpus/everyone/slack-product-2026-09-01-q4-shortlist.md`           | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Slack thread.                            | MIT, same as the repository | Picks up the Archive and Close problem without citing the Linear issue, which keeps the unlinked pair unlinked.                                                                                                        |
+| `corpus/everyone/slack-sales-2026-07-28-pricing-questions.md`        | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Slack thread.                            | MIT, same as the repository | A distractor for the permission demo. Everything about the pricing change except a number.                                                                                                                             |
+| `corpus/everyone/slack-support-2026-06-25-eu-customer-asks.md`       | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Slack thread.                            | MIT, same as the repository | The EU region seen from Slack, where it is called Frankfurt. Deliberately carries no date.                                                                                                                             |
+| `corpus/everyone/support-escalation-process.md`                      | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Notion page.                             | MIT, same as the repository | Ordinary process document. Names the rule about billing escalations that the on call runbook restates from the engineering side.                                                                                       |
+| `corpus/everyone/upload-competitor-teardown-notes.md`                | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated direct upload.                           | MIT, same as the repository | A direct upload with a personal voice and no house style, about a fictional competitor.                                                                                                                                |
+| `corpus/everyone/upload-conference-notes-shipwright.md`              | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated direct upload.                           | MIT, same as the repository | Dead content.                                                                                                                                                                                                          |
+| `corpus/everyone/upload-edi-214-field-notes.md`                      | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated direct upload.                           | MIT, same as the repository | The longest document in the corpus, around 2,200 words, so chunking has a real multi chunk case. Dense technical notes with code blocks.                                                                               |
+| `corpus/everyone/weekly-product-sync-2026-07-15.md`                  | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Notion page.                             | MIT, same as the repository | A short, uneven meeting note with an unfinished bullet. Realism, and a low signal document that search has to rank below better answers.                                                                               |
+| `corpus/engineering/architecture-overview.md`                        | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Notion page.                             | MIT, same as the repository | Names the services, tables and repositories that the Linear issues refer to in shorthand.                                                                                                                              |
+| `corpus/engineering/bil-204-proration-mid-cycle.md`                  | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Linear issue.                            | MIT, same as the repository | The decision that changed, part two of three. May: the March decision is questioned in a comment thread, with the reasoning, in a different source from parts one and three.                                           |
+| `corpus/engineering/bil-233-trueup-error-code.md`                    | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Linear issue.                            | MIT, same as the repository | The exact match target. `ERR_TRUEUP_4471` appears in this document and nowhere else in the corpus, which is the query that proves the lexical arm of hybrid search is doing something.                                 |
+| `corpus/engineering/bil-241-stripe-billing-migration.md`             | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Linear issue.                            | MIT, same as the repository | The billing migration named by its Linear identifier. Same project as the Notion decision record, the Slack thread and the Drive deck.                                                                                 |
+| `corpus/engineering/edi-77-214-parser-timeouts.md`                   | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Linear issue.                            | MIT, same as the repository | The parser timeouts that make EDI-81 necessary. Overlaps the EDI 214 field notes upload.                                                                                                                               |
+| `corpus/engineering/edi-81-retire-legacy-parser.md`                  | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Linear issue.                            | MIT, same as the repository | Holds the reason for demo question two: the ninety day contractual notice and the renewal collision. The date is not in this file.                                                                                     |
+| `corpus/engineering/inf-311-eu-region.md`                            | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Linear issue.                            | MIT, same as the repository | Holds the reason for demo question one: the audit log writer assumes a single primary. The new date is not in this file.                                                                                               |
+| `corpus/engineering/inf-318-audit-log-writer.md`                     | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Linear issue.                            | MIT, same as the repository | The blocking work itself. Gives the EU region delay a second technical account without repeating the date.                                                                                                             |
+| `corpus/engineering/inf-322-postgres-upgrade.md`                     | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Linear issue.                            | MIT, same as the repository | Ordinary infrastructure work. Scheduled around the billing cutover, which ties two otherwise unrelated projects together.                                                                                              |
+| `corpus/engineering/mob-30-offline-drafts.md`                        | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Linear issue.                            | MIT, same as the repository | The mobile cut named by identifier. Third naming of the same thing after the scope document and the Slack thread.                                                                                                      |
+| `corpus/engineering/mob-34-push-token-churn.md`                      | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Linear issue.                            | MIT, same as the repository | Ordinary issue with a technical fix. Fills out the Linear count.                                                                                                                                                       |
+| `corpus/engineering/oncall-runbook.md`                               | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Notion page.                             | MIT, same as the repository | Operational document. Restates the billing escalation rule from the engineering side, so a question about it has two sources that agree.                                                                               |
+| `corpus/engineering/postmortem-thread-list-slowdown.md`              | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Notion page.                             | MIT, same as the repository | An undramatic incident write up, on purpose. No invented statistics anybody could quote.                                                                                                                               |
+| `corpus/engineering/search-index-design-note.md`                     | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Notion page.                             | MIT, same as the repository | The technical half of the search argument. Explains why title matches lose, which SRCH-88 and SRCH-95 both assume.                                                                                                     |
+| `corpus/engineering/slack-eng-2026-07-14-trueup-handover.md`         | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Slack thread.                            | MIT, same as the repository | The handover that the June reversal called for. Names the owner without naming a start date, which keeps the planning document doing that job.                                                                         |
+| `corpus/engineering/slack-eng-2026-08-20-postgres-upgrade-window.md` | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Slack thread.                            | MIT, same as the repository | Scheduling conversation. A realistic low value thread that search has to rank below better answers.                                                                                                                    |
+| `corpus/engineering/srch-101-synonym-list.md`                        | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Linear issue.                            | MIT, same as the repository | Small search issue. Overlaps the freight glossary Drive export.                                                                                                                                                        |
+| `corpus/engineering/srch-88-search-rewrite.md`                       | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Linear issue.                            | MIT, same as the repository | The search project named by identifier. Same project as the Notion plan, the Slack threads and the Drive deck.                                                                                                         |
+| `corpus/engineering/srch-95-thread-title-weighting.md`               | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Linear issue.                            | MIT, same as the repository | The ranking change that shipped instead of SRCH-88.                                                                                                                                                                    |
+| `corpus/engineering/web-142-close-vs-archive-mobile.md`              | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Linear issue.                            | MIT, same as the repository | The other half of the unlinked pair. High similarity to the April design thread, no reference between them, which is the entire input to the connections dream kind.                                                   |
+| `corpus/engineering/web-150-thread-list-pagination.md`               | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Linear issue.                            | MIT, same as the repository | Ordinary bug. Fills out the Linear count.                                                                                                                                                                              |
+| `corpus/engineering/web-161-attachment-preview.md`                   | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Linear issue.                            | MIT, same as the repository | A wish that keeps getting deferred. Near dead content.                                                                                                                                                                 |
+| `corpus/leadership/board-update-q2.md`                               | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Google Drive export.                     | MIT, same as the repository | Leadership content in an extraction format. Explains the billing reversal and the EU slip to an outside audience.                                                                                                      |
+| `corpus/leadership/budget-review-h2.md`                              | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Notion page.                             | MIT, same as the repository | Leadership content: what the billing reversal costs, and the rejected vendor quotes.                                                                                                                                   |
+| `corpus/leadership/compensation-review-2026.md`                      | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Notion page.                             | MIT, same as the repository | Leadership content that is obviously sensitive, so a personal space or team space leak would be visible.                                                                                                               |
+| `corpus/leadership/hiring-plan-h2-2026.md`                           | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Notion page.                             | MIT, same as the repository | Leadership content. Ties the billing headcount gap back to Jonah moving to the search team.                                                                                                                            |
+| `corpus/leadership/pricing-change-2026-decision.md`                  | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Notion page.                             | MIT, same as the repository | The Leadership half of the two user permission demo. Answers the shared pricing question with exact numbers, dates and named accounts, so the difference between the two responses is visible from the back of a room. |
+| `corpus/leadership/slack-leads-2026-06-09-billing-reversal-costs.md` | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Slack thread.                            | MIT, same as the repository | The reversal from the leadership side, the morning after. Fourth source on the decision that changed.                                                                                                                  |
+| `corpus/leadership/slack-leads-2026-08-28-pricing-rollout.md`        | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated Slack thread.                            | MIT, same as the repository | The second place the new prices appear, so the Leadership answer has corroboration rather than a single source.                                                                                                        |
+| `corpus/leadership/upload-renewal-risk-list.md`                      | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated direct upload.                           | MIT, same as the repository | A spreadsheet exported to text. Gives the pricing decision a visible cause, and is a hard extraction case.                                                                                                             |
+| `corpus/personal-a/interview-debrief-scratch.md`                     | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated direct upload.                           | MIT, same as the repository | Personal space content that should never appear in another user answer. Proves a personal space stays personal.                                                                                                        |
+| `corpus/personal-a/reading-list.md`                                  | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated direct upload.                           | MIT, same as the repository | Dead content, and personal.                                                                                                                                                                                            |
+| `corpus/personal-a/weekly-notes-2026-08-31.md`                       | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated direct upload.                           | MIT, same as the repository | Personal space content with opinions its author would phrase differently in public. Proves a personal space stays personal.                                                                                            |
+| `corpus/personal-b/conference-talk-outline.md`                       | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated direct upload.                           | MIT, same as the repository | Dead content, and personal.                                                                                                                                                                                            |
+| `corpus/personal-b/one-on-one-notes.md`                              | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated direct upload.                           | MIT, same as the repository | Personal space content. Contains the search disagreement from one side only, which no other document has.                                                                                                              |
+| `corpus/personal-b/search-experiments-log.md`                        | Synthetic, written for Recall by the Recall team, 2026-09-09. Simulated direct upload.                           | MIT, same as the repository | Personal space content. A running technical log with the conclusion its author left out of the planning document.                                                                                                      |
 
 Source records where the bytes came from, in enough detail to check: "synthetic,
 written for Recall" with a date, or a project name plus a URL plus the date it
@@ -132,6 +218,194 @@ citation list is a correct result and a failed demonstration.
 The corpus is seeded through `supabase/seed.sql` and the files themselves live in
 the repository, so a fresh clone plus `supabase start` reproduces the demo
 without a network call to anything except the embedding model.
+
+## Demo questions and their correct answers
+
+These are the questions asked on stage. Each answer was checked by hand against
+the corpus on 2026-09-09. Changing any document named here means re-checking the
+answer before the next rehearsal.
+
+Two users, both members of the seeded organization. `scripts/seed-corpus.mjs`
+puts the first org member in Everyone, Engineering and Leadership, and the
+second in Everyone and Engineering only. Each has their own personal space.
+
+### The two user permission demo
+
+**The question, asked by both users, word for word:**
+
+> Are we changing our prices, and what are the new numbers?
+
+**The second user, who is not in Leadership, gets an answer built from
+`everyone/pricing-faq-for-the-team.md`:**
+
+> Yes, pricing is changing. Leadership is finalising it and the numbers are not
+> being shared yet. The change lands in the autumn and customers will be told
+> directly before anything takes effect. Nobody should quote a number or confirm
+> a direction to a customer, and account questions go to Elena Vargas.
+
+No numbers, no dates. That is the correct answer for a user who cannot see the
+Leadership space.
+
+**The first user, who is in Leadership, gets an answer built from
+`leadership/pricing-change-2026-decision.md`, with
+`leadership/slack-leads-2026-08-28-pricing-rollout.md` as a second source:**
+
+> Yes. Effective 1 October 2026 the Standard plan goes from $340 to $395 per
+> month, the Growth plan goes from $890 to $990, and the shipment overage rate
+> goes from $0.11 to $0.09 per shipment. Additional seats stay at $28. New
+> customers pay the new prices from 1 October and existing customers move at
+> their next renewal with at least sixty days notice. The announcement goes out
+> on 22 September 2026. Three accounts are held at current pricing for twelve
+> months: Bergstrom Logistik, Marchetti Freight and Halvorsen Carriers.
+
+Neither user sees an error and neither sees a permission dialog. The difference
+between the two answers is five numbers and three dates, which is legible from
+the back of a room.
+
+### Questions whose answer exists only by combining two documents
+
+**Question one. Asker needs Everyone and Engineering.**
+
+> When is the legacy EDI 214 parser being switched off, and why can it not
+> happen sooner?
+
+Correct answer:
+
+> It is switched off on 1 December 2026. The delay is contractual. All seven
+> affected accounts are on the pre-2024 master services agreement, and clause
+> 7.2 of that agreement requires ninety days written notice before Alderwick
+> changes how it processes a data feed the customer sends. The notice cannot go
+> out yet either, because two of the seven, Marchetti Freight and Halvorsen
+> Carriers, renew in the October window and leadership is sending a pricing note
+> to every account in late September. Elena Vargas does not want a customer to
+> receive a price change and a data processing change in the same fortnight.
+
+| Fact                                            | Only document that has it                    |
+| ----------------------------------------------- | -------------------------------------------- |
+| The switch off date, 1 December                 | `everyone/q3-planning.md`                    |
+| The ninety day notice and the renewal collision | `engineering/edi-81-retire-legacy-parser.md` |
+
+`engineering/edi-77-214-parser-timeouts.md` names clause 7.2 and points at
+EDI-81 for the reasoning, so it narrows the question without answering it.
+
+**Question two. Asker needs Everyone and Engineering.**
+
+> Why did Kenji's April estimate for the EU region turn out to be wrong, and
+> what is the new target date?
+
+Correct answer:
+
+> He estimated the Frankfurt work in April without reading the audit log writer,
+> because he assumed it took a connection string like everything else in the
+> system. It does not. The writer holds a connection to a single primary
+> database through a module level constant, and three other consumers import the
+> same helper, including a compliance export that would silently return half the
+> records in a two region deployment. Rewriting it is INF-318, about three weeks
+> of work, and Frankfurt is blocked behind it. The new target date is 2 November 2026.
+
+| Fact                                                                    | Only document that has it          |
+| ----------------------------------------------------------------------- | ---------------------------------- |
+| The estimate was made without reading the writer, and why that mattered | `engineering/inf-311-eu-region.md` |
+| The new target date, 2 November 2026                                    | `everyone/q3-planning.md`          |
+
+`everyone/q3-planning.md` names the audit log writer rewrite as its own Q3 item
+and gives the EU date, and it never says one caused the other. Ask for the
+reason and the date together and both documents are needed.
+
+### The exact match target
+
+`ERR_TRUEUP_4471`.
+
+It appears in `engineering/bil-233-trueup-error-code.md` and nowhere else in the
+corpus, three times within the first two hundred words, so it lands in one
+chunk. The string `4471` appears in no other document either, which was checked
+after the corpus was written.
+
+Ask for it on its own and the lexical arm of hybrid search has to be the thing
+that finds it, because there is no semantic neighbourhood around a code with no
+words in it. The document explains what the error is: a guard that refused to
+divide by a shipment allowance of zero, written as fatal when zero was
+impossible, which then aborted the whole June trueup run over one trial account.
+
+### The decision that changed
+
+Decided in March, questioned in May, reversed in June, in three different
+simulated sources, with the reasoning present in all three.
+
+| When     | Document                                        | Source | What it says                                                                                                                                            |
+| -------- | ----------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 11 March | `everyone/billing-rebuild-decision-record.md`   | Notion | Keep the billing service and rebuild it. Do not move to Stripe Billing. Three reasons, written down.                                                    |
+| 19 May   | `engineering/bil-204-proration-mid-cycle.md`    | Linear | The third proration bug in a cycle. Marcus and Priya re-read the March record in the comments and say the constraint was narrower than they remembered. |
+| 8 June   | `everyone/slack-billing-2026-06-08-reversal.md` | Slack  | The reversal. All three March reasons have moved, and the thread says which and why.                                                                    |
+
+Two further accounts of the same decision exist for corroboration:
+`leadership/slack-leads-2026-06-09-billing-reversal-costs.md` the morning after,
+and `everyone/drive-q2-all-hands-slides.md` told to the whole company.
+
+A summary that averages the three is wrong. A summary that orders them is the
+thing worth putting on a slide.
+
+### The pair that is never linked
+
+`everyone/slack-design-2026-04-22-archive-vs-close.md` and
+`engineering/web-142-close-vs-archive-mobile.md`.
+
+Ruth watched support calls in April and concluded the words Archive and Close
+describe the wrong things. Kenji filed a bug in May because the two controls
+share a handler in the collapsed header. Same underlying problem, different
+vocabulary, different source, different month, and neither document mentions the
+other. `everyone/slack-product-2026-09-01-q4-shortlist.md` raises the naming
+question again in September without citing the Linear issue.
+
+This is the input to the connections dream kind. If it starts citing them
+together, that came from the model rather than from the corpus.
+
+### Dead content
+
+Eight documents are irrelevant to every question above, so the admin analytics
+dead content panel has real rows instead of an empty state:
+
+- `everyone/slack-general-2026-02-19-plant-watering-rota.md`
+- `everyone/slack-general-2026-03-17-coffee-machine.md`
+- `everyone/slack-general-2026-07-02-offsite-logistics.md`
+- `everyone/slack-general-2026-08-05-office-move.md`
+- `everyone/drive-brand-guidelines-export.md`
+- `everyone/drive-vendor-security-questionnaire.md`
+- `everyone/upload-conference-notes-shipwright.md`
+- `personal-b/conference-talk-outline.md`
+
+`everyone/upload-conference-notes-shipwright.md` and
+`personal-a/reading-list.md` sit closest to the line, because both mention
+colleagues by name.
+
+### The same project under different names
+
+Three projects appear in four sources each, named differently in every one. A
+search for any of the names should find all of them.
+
+| Project           | Prose name                | Linear                           | In Slack                                   |
+| ----------------- | ------------------------- | -------------------------------- | ------------------------------------------ |
+| Billing           | the billing migration     | `BIL-204`, `BIL-233`, `BIL-241`  | the Stripe thing                           |
+| Search            | the search relevance work | `SRCH-88`, `SRCH-95`, `SRCH-101` | the search rewrite, the fuzzy search thing |
+| EU data residency | the EU region             | `INF-311`, `INF-318`             | Frankfurt                                  |
+
+### Loading it
+
+```
+doppler run -- node scripts/seed-corpus.mjs --org-slug <slug>
+```
+
+`--org-slug` is optional when the database holds exactly one organization. The
+script needs `NEXT_PUBLIC_SUPABASE_URL` and `SB_SERVICE_ROLE_KEY`, and the
+organization needs at least two members, because two of the five spaces are
+personal ones.
+
+It writes a `documents` row, a storage object and a queued `ingest_jobs` row per
+manifest entry, and stops there. Chunking and embedding belong to the ingest
+worker, so a corpus loaded this way goes through the same pipeline a real Notion
+page does. Running it a second time creates nothing, which also keeps every
+`updated_at` at its fixed value, since the touch trigger on `documents` rewrites
+that column on update.
 
 ## Building it
 
