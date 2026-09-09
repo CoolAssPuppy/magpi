@@ -287,6 +287,14 @@ failures" is not, and it is what nearly ended the first. A check whose failure
 mode is indistinguishable from success is the thing to avoid; grep is only the
 most common way to build one.
 
+It happened three times in one evening in three disguises, and all three
+reported success: a grep that could not match because of colour codes, a flag
+set to its own default so the run proved nothing either way, and an
+`alter function` silently refused on a permission error so the thing being
+broken was never broken. A fourth nearly went unnoticed while writing this file
+up, when a grep for a phrase in these very notes returned zero because the
+phrase wraps across a line break.
+
 ## What a message writer needs from its renderer is whether anything goes in front of it
 
 Four columns bit us in one evening, each in a different way, and all four were
@@ -322,30 +330,42 @@ side. Fixed copy sitting next to a wrong value stays quiet forever. A sentence
 assembled from the data fails loudly when the data is wrong, which is the
 argument for building copy out of measured values rather than asserting them.
 
-## Do not assert an exact count against an approximate index
+## Do not ask an approximate index a question in a rolled-back transaction
 
-`20_search.test.sql` asserted that a caller gets exactly five of their own rows
-back once `hnsw.iterative_scan` is on. It failed twice in eight full-gate runs
-and passed every time it was run alone, which is the worst shape a test can
+`20_search.test.sql` asserted that a caller gets their own rows back once
+`hnsw.iterative_scan` is on. It failed about one run in three inside the full
+gate and passed every time it was run alone, which is the worst shape a test can
 have: green when you investigate it, red when you are trying to ship.
 
-The fixture is fully deterministic, so the fixture was not the problem. HNSW
-assigns every element a random level as it is inserted, so the graph is a
-different shape on each build and how far a scan walks before it has enough
-results is not fixed. The test was asking an approximate index for an exact
-answer.
+Two fixes were tried and only the second was right.
 
-**Rule.** Assert the property, not the number. Without the setting the caller
-gets nothing at all, which is a total failure rather than a degraded one, and
-that is both the bug that was found and the thing worth pinning. `> 0` catches
-the regression and does not depend on which way a graph happened to build.
+The first weakened the assertion from exactly five rows to more than zero, on
+the theory that HNSW assigns every element a random level as it is inserted, so
+the graph is a different shape on each build and a test demanding an exact count
+was asking an approximate index for an exact answer. That reasoning is sound and
+it was not the cause: the weaker assertion still failed.
 
-Verified both directions, which is the only reason to trust the weaker
-assertion: with the setting removed from the function, assertion 11 fails; with
-it restored, it passes. Removing it needs a vector operation in the same session
-first, or the `alter function ... reset` is refused with "permission denied to
-set parameter" and the break silently does not happen. That refusal is easy to
-read as the test passing.
+The cause is the tier. A pgTAP file is one transaction that rolls back, so the
+thousand rows were inserted and queried without ever being committed, which is
+not how the index is used in production. Asking an approximate index for a
+guarantee about uncommitted entries is a question it does not answer at all.
+
+**Rule.** A property that needs committed data does not belong in a rolled-back
+transaction. That is the same argument the suite already accepted for not
+testing the ingest worker's timeout path from pgTAP, and it applies to anything
+whose behavior depends on an index rather than on a constraint.
+
+What replaced it is deterministic and catches the regression that matters:
+`public.search` carries `hnsw.iterative_scan` in its `proconfig`. Four
+consecutive full-gate runs, no failures. The behavioral numbers belong in
+`docs/retrieval.md` against a committed corpus, which was already a named task.
+
+**One trap in verifying it, and it is the third instance tonight of a check that
+could not tell a pass from a failure.** Removing the setting to prove the
+assertion catches its absence needs a vector operation in the same session
+first, or `alter function ... reset` is refused with a permission error on the
+parameter and the break silently does not happen. A test that then passes looks
+like a test that works.
 
 ## The observation was fine; the explanation attached to it was wrong
 
