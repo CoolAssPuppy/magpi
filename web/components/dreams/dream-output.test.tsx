@@ -33,15 +33,10 @@ describe('a dream output', () => {
     expect(screen.getByText('Linear: billing migration')).toBeInTheDocument();
   });
 
-  it('says a run produced nothing when its output cites no source', () => {
+  it('says a run produced nothing when it cited no source at all', () => {
     render(
       <DreamOutput
-        output={{
-          kind: 'unsourced',
-          documentId: 'doc-1',
-          title: 'Engineering digest',
-          reason: 'no-citations',
-        }}
+        output={{ kind: 'uncited', documentId: 'doc-1', title: 'Engineering digest' }}
         onDelete={onDelete()}
       />,
     );
@@ -49,36 +44,67 @@ describe('a dream output', () => {
     expect(screen.getByText(/produced nothing/i)).toBeInTheDocument();
   });
 
-  it('says the sources are gone rather than blaming the run that wrote them', () => {
+  it('shows no synthesis at all when the run cited nothing to back it up', () => {
     render(
       <DreamOutput
-        output={{
-          kind: 'unsourced',
-          documentId: 'doc-1',
-          title: 'Engineering digest',
-          reason: 'sources-unreadable',
-        }}
-        onDelete={onDelete()}
-      />,
-    );
-
-    expect(screen.getByText(/no longer be read/i)).toBeInTheDocument();
-  });
-
-  it('shows no synthesis at all when there is nothing to back it up', () => {
-    render(
-      <DreamOutput
-        output={{
-          kind: 'unsourced',
-          documentId: 'doc-1',
-          title: 'Engineering digest',
-          reason: 'sources-unreadable',
-        }}
+        output={{ kind: 'uncited', documentId: 'doc-1', title: 'Engineering digest' }}
         onDelete={onDelete()}
       />,
     );
 
     expect(screen.queryByText(/billing slipped/i)).not.toBeInTheDocument();
+  });
+
+  it('tells a reader who can open none of the sources that they exist, and how many', () => {
+    render(
+      <DreamOutput
+        output={{
+          kind: 'sources-hidden',
+          documentId: 'doc-1',
+          title: 'Engineering digest',
+          body: 'Billing slipped a week.',
+          citedCount: 4,
+        }}
+        onDelete={onDelete()}
+      />,
+    );
+
+    expect(screen.getByText(/cites 4 sources/i)).toBeInTheDocument();
+    expect(screen.getByText(/not available to you/i)).toBeInTheDocument();
+  });
+
+  it('still shows the text to that reader, so it does not read as invented', () => {
+    render(
+      <DreamOutput
+        output={{
+          kind: 'sources-hidden',
+          documentId: 'doc-1',
+          title: 'Engineering digest',
+          body: 'Billing slipped a week.',
+          citedCount: 4,
+        }}
+        onDelete={onDelete()}
+      />,
+    );
+
+    expect(screen.getByText(/billing slipped a week/i)).toBeInTheDocument();
+  });
+
+  it('never tells that reader the run produced nothing, which would be a lie about the run', () => {
+    render(
+      <DreamOutput
+        output={{
+          kind: 'sources-hidden',
+          documentId: 'doc-1',
+          title: 'Engineering digest',
+          body: 'Billing slipped a week.',
+          citedCount: 4,
+        }}
+        onDelete={onDelete()}
+      />,
+    );
+
+    expect(screen.queryByText(/produced nothing/i)).not.toBeInTheDocument();
   });
 
   it('says plainly when a run wrote no document', () => {

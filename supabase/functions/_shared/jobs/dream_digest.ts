@@ -30,9 +30,15 @@ const MARKER = /\[\[chunk:[^\]]*\]\]/g;
  * cannot cite a chunk that was never read. The client resolves these through RLS
  * on read, the same rule chat citations follow, so a reader who lost access to a
  * space sees the digest without the citation.
+ *
+ * Read order, not sorted: the client numbers these, and the order chunks were
+ * read in is the order they were written in, so source 1 is the oldest thing the
+ * digest drew on. Sorting by id would number them at random. A Set keeps first
+ * insertion, which is what makes the list stable for every reader even when RLS
+ * hides different parts of it from each.
  */
 function citedChunkIds(chunks: SpaceChunkRow[]): string[] {
-  return [...new Set(chunks.map((chunk) => chunk.id))].sort();
+  return [...new Set(chunks.map((chunk) => chunk.id))];
 }
 
 /**

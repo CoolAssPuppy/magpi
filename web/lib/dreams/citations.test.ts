@@ -33,22 +33,29 @@ describe('what a dream run produced', () => {
     const output = describeDreamOutput(getOutput({ sourceChunkIds: [], visibleChunkIds: [] }));
 
     expect(output).toEqual({
-      kind: 'unsourced',
+      kind: 'uncited',
       documentId: 'doc-1',
       title: 'Engineering digest, 9 September',
-      reason: 'no-citations',
     });
   });
 
-  it('refuses to show a document whose every source has become unreadable', () => {
+  it('separates a reader who can see no source from a run that had none', () => {
     const output = describeDreamOutput(getOutput({ visibleChunkIds: [] }));
 
     expect(output).toEqual({
-      kind: 'unsourced',
+      kind: 'sources-hidden',
       documentId: 'doc-1',
       title: 'Engineering digest, 9 September',
-      reason: 'sources-unreadable',
+      citedCount: 2,
     });
+  });
+
+  it('counts what the run cited, not what this reader can open', () => {
+    const output = describeDreamOutput(
+      getOutput({ sourceChunkIds: [CHUNK_A, CHUNK_B], visibleChunkIds: [] }),
+    );
+
+    expect(output.kind === 'sources-hidden' && output.citedCount).toBe(2);
   });
 
   it('shows a document whose sources are only partly readable, with the rest dropped', () => {

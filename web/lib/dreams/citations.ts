@@ -6,16 +6,21 @@
  */
 export type DreamOutput =
   | { readonly kind: 'none' }
+  /**
+   * The run cited nothing. A fact about the run, and it should be unreachable:
+   * a digest that read zero chunks writes no document at all.
+   */
+  | { readonly kind: 'uncited'; readonly documentId: string; readonly title: string }
+  /**
+   * The run cited sources this reader cannot open. A fact about the reader, not
+   * about the run, and it has to read as one: a reader told only "no sources"
+   * concludes the synthesis was invented.
+   */
   | {
-      readonly kind: 'unsourced';
+      readonly kind: 'sources-hidden';
       readonly documentId: string;
       readonly title: string;
-      /**
-       * `no-citations` should be unreachable: a digest that read nothing writes
-       * no document. `sources-unreadable` is the real one, and means every
-       * source has been deleted or has left the reader's visible set.
-       */
-      readonly reason: 'no-citations' | 'sources-unreadable';
+      readonly citedCount: number;
     }
   | {
       readonly kind: 'cited';
@@ -24,12 +29,6 @@ export type DreamOutput =
       readonly chunkIds: readonly string[];
     };
 
-/**
- * `visibleChunkIds` is what came back through RLS, so a source the reader cannot
- * open is dropped from the numbering. If that leaves nothing, the run reads as
- * having produced nothing and the prose is never rendered: there is no uncited
- * synthesis, and a claim whose every source is gone is the same thing.
- */
 export function describeDreamOutput({
   documentId,
   title,
@@ -45,7 +44,7 @@ export function describeDreamOutput({
 
   const resolvedTitle = title ?? 'Untitled';
   if (sourceChunkIds.length === 0) {
-    return { kind: 'unsourced', documentId, title: resolvedTitle, reason: 'no-citations' };
+    return { kind: 'uncited', documentId, title: resolvedTitle };
   }
 
   const visible = new Set(visibleChunkIds);
@@ -54,7 +53,12 @@ export function describeDreamOutput({
   const chunkIds = sourceChunkIds.filter((id) => visible.has(id));
 
   if (chunkIds.length === 0) {
-    return { kind: 'unsourced', documentId, title: resolvedTitle, reason: 'sources-unreadable' };
+    return {
+      kind: 'sources-hidden',
+      documentId,
+      title: resolvedTitle,
+      citedCount: sourceChunkIds.length,
+    };
   }
 
   return { kind: 'cited', documentId, title: resolvedTitle, chunkIds };

@@ -543,3 +543,35 @@ Deno.test('an empty space succeeds with nothing produced', async () => {
     await stub.close();
   }
 });
+
+Deno.test('citations are listed in the order the digest read them', async () => {
+  // The client numbers these, so id order would number the sources at random.
+  // Read order is write order, which makes source 1 the oldest thing it drew on.
+  const reversed = [
+    {
+      id: CHUNK_B,
+      document_id: DOC_B,
+      ordinal: 0,
+      content: 'b',
+      created_at: '2026-09-09T09:00:00.000Z',
+    },
+    {
+      id: CHUNK_A,
+      document_id: DOC_A,
+      ordinal: 0,
+      content: 'a',
+      created_at: '2026-09-09T10:00:00.000Z',
+    },
+  ];
+  const stub = stubDb(replies({ chunks: reversed }));
+  try {
+    const result = await runDreamJob(dreamRun('digest'), jobDeps(stub, fakeModels(answerFor)));
+    assert(result.kind === 'succeeded');
+
+    const documents = writtenBodies(stub, 'documents');
+    assert(isRecord(documents[0]));
+    assertEquals(documents[0].source_chunk_ids, [CHUNK_B, CHUNK_A]);
+  } finally {
+    await stub.close();
+  }
+});

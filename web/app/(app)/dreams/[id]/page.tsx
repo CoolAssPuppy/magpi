@@ -4,6 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import { StatusPill } from '@/components/app/status-pill';
 import { DreamOutput } from '@/components/dreams/dream-output';
 import { LinkCandidates } from '@/components/dreams/link-candidates';
+import { RunFailure } from '@/components/dreams/run-failure';
 import { loadDreamRun } from '@/lib/dreams/queries';
 import { getSessionContext } from '@/lib/supabase/context';
 
@@ -41,6 +42,8 @@ export default async function DreamRunPage({ params }: { params: Promise<{ id: s
           Read {run.inputSummary} &middot; {run.duration}
         </p>
       </section>
+
+      <RunFailure status={run.status} inputSummary={run.inputSummary} />
 
       <section className="flex flex-col gap-3">
         <h2 className="font-heading text-sm font-medium text-foreground">What it wrote</h2>

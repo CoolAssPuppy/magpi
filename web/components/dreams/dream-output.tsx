@@ -90,7 +90,7 @@ export function DreamOutput({
         </p>
       );
 
-    case 'unsourced':
+    case 'uncited':
       return (
         <div className="flex flex-col items-start gap-3">
           <div
@@ -98,12 +98,36 @@ export function DreamOutput({
             className="rounded-[var(--radius-panel)] border border-border-warning bg-warning-200 px-4 py-3"
           >
             <p className="max-w-[var(--measure-prose)] text-sm text-warning-600">
-              {output.reason === 'no-citations'
-                ? 'This run produced nothing. It wrote a document that cites no source, and Recall does not show synthesis it cannot trace back to a chunk.'
-                : 'The sources this document was written from can no longer be read, so its text is not shown. Recall does not show synthesis it cannot trace back to a chunk.'}
+              This run produced nothing. It wrote a document that cites no source, and Recall does
+              not show synthesis it cannot trace back to a chunk.
             </p>
           </div>
           <DeleteOutput documentId={output.documentId} onDelete={onDelete} />
+        </div>
+      );
+
+    case 'sources-hidden':
+      return (
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="font-heading text-base font-medium text-foreground">{output.title}</h2>
+            <DeleteOutput documentId={output.documentId} onDelete={onDelete} />
+          </div>
+
+          <p className="max-w-[var(--measure-prose)] text-sm leading-relaxed whitespace-pre-wrap text-foreground">
+            {output.body}
+          </p>
+
+          <div
+            role="status"
+            className="rounded-[var(--radius-panel)] border border-border bg-background-surface-100 px-4 py-3"
+          >
+            <p className="max-w-[var(--measure-prose)] text-sm text-foreground-light">
+              This document cites {output.citedCount} source
+              {output.citedCount === 1 ? '' : 's'} that are not available to you. The run cited them
+              when it wrote this, and someone who can open them sees them listed here.
+            </p>
+          </div>
         </div>
       );
 

@@ -54,11 +54,13 @@ export type DreamSource = {
 
 export type DreamOutputView =
   | { readonly kind: 'none' }
+  | { readonly kind: 'uncited'; readonly documentId: string; readonly title: string }
   | {
-      readonly kind: 'unsourced';
+      readonly kind: 'sources-hidden';
       readonly documentId: string;
       readonly title: string;
-      readonly reason: 'no-citations' | 'sources-unreadable';
+      readonly body: string;
+      readonly citedCount: number;
     }
   | {
       readonly kind: 'cited';
@@ -123,7 +125,22 @@ async function loadOutput(
     visibleChunkIds: visible.map((chunk) => chunk.id),
   });
 
-  if (described.kind !== 'cited') return described;
+  const body = (bodyChunks ?? []).map((chunk) => chunk.content).join('\n\n');
+
+  if (described.kind === 'none' || described.kind === 'uncited') return described;
+
+  // A reader who can open none of the sources still sees the digest, the way an
+  // old conversation shows its answer with the citation dropped. Withholding the
+  // text here would read as the run having invented it.
+  if (described.kind === 'sources-hidden') {
+    return {
+      kind: 'sources-hidden',
+      documentId: described.documentId,
+      title: described.title,
+      body,
+      citedCount: described.citedCount,
+    };
+  }
 
   const byId = new Map(visible.map((chunk) => [chunk.id, chunk]));
 
@@ -131,7 +148,7 @@ async function loadOutput(
     kind: 'cited',
     documentId: described.documentId,
     title: described.title,
-    body: (bodyChunks ?? []).map((chunk) => chunk.content).join('\n\n'),
+    body,
     sources: described.chunkIds.flatMap((chunkId, index) => {
       const chunk = byId.get(chunkId);
       if (!chunk) return [];

@@ -121,19 +121,19 @@ pgTAP carries the security tests. Every table has an assertion proving a member 
 
 Secrets use an `SB_` prefix. Supabase reserves `SUPABASE_`, and a secrets manager syncing into a project cannot write one.
 
-| Variable                               | Required        | What it is                                 |
-| -------------------------------------- | --------------- | ------------------------------------------ |
-| `NEXT_PUBLIC_SUPABASE_URL`             | yes             | From `supabase start`                      |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | yes             | From `supabase start`                      |
-| `SB_SERVICE_ROLE_KEY`                  | yes             | From `supabase start`                      |
-| `OPENAI_API_KEY`                       | yes             | Embeddings and chat                        |
-| `SB_TOKEN_ENC_KEY`                     | for connections | 32 bytes base64, `openssl rand -base64 32` |
-| `SB_NOTION_CLIENT_ID` / `_SECRET`      | for Notion      | An OAuth app you register                  |
-| `SB_LINEAR_CLIENT_ID` / `_SECRET`      | for Linear      | An OAuth app you register                  |
-| `SB_SLACK_CLIENT_ID` / `_SECRET`       | for Slack       | An OAuth app you register                  |
-| `SB_GOOGLE_CLIENT_ID` / `_SECRET`      | for Drive       | An OAuth app you register                  |
-| `SB_STRIPE_SECRET_KEY`                 | for billing     | Test mode is enough                        |
-| `SB_STRIPE_WEBHOOK_SECRET`             | for billing     | From the Stripe CLI or dashboard           |
+| Variable                                | Required        | What it is                                 |
+| --------------------------------------- | --------------- | ------------------------------------------ |
+| `NEXT_PUBLIC_SUPABASE_URL`              | yes             | From `supabase start`                      |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`  | yes             | From `supabase start`                      |
+| `SB_SERVICE_ROLE_KEY`                   | yes             | From `supabase start`                      |
+| `OPENAI_API_KEY`                        | yes             | Embeddings and chat                        |
+| `SB_TOKEN_ENC_KEY`                      | for connections | 32 bytes base64, `openssl rand -base64 32` |
+| `SB_NOTION_CLIENT_ID` / `_SECRET`       | for Notion      | An OAuth app you register                  |
+| `SB_LINEAR_CLIENT_ID` / `_SECRET`       | for Linear      | An OAuth app you register                  |
+| `SB_SLACK_CLIENT_ID` / `_SECRET`        | for Slack       | An OAuth app you register                  |
+| `SB_GOOGLE_DRIVE_CLIENT_ID` / `_SECRET` | for Drive       | An OAuth app you register                  |
+| `SB_STRIPE_SECRET_KEY`                  | for billing     | Test mode is enough                        |
+| `SB_STRIPE_WEBHOOK_SECRET`              | for billing     | From the Stripe CLI or dashboard           |
 
 Upload, search and chat work with only the first four. Every provider driver has passing unit tests against recorded fixtures, so you can read and change the connection code without registering anything.
 
