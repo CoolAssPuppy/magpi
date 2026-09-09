@@ -6,19 +6,22 @@ import { cn } from '@/lib/utils';
 
 /**
  * shadcn's Button, rewritten onto the Supabase semantic tokens. Radii come from
- * --radius-panel, colors from --color-brand-* and --color-border-*, and there is
- * no shadow paired with a border on the same element.
+ * --radius-panel, colors from --color-brand-* and the semantic surface scale, and
+ * there is no shadow paired with a border on the same element.
+ *
+ * The muted fill is written as bg-(--muted) here and in the other primitives.
+ * Tailwind's bg-muted utility resolves through --background-muted, an alias
+ * declared in compat.css, which upstream has marked for deletion.
  */
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[var(--radius-panel)] text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-strong focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-panel text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-input focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
   {
     variants: {
       variant: {
         default: 'bg-brand-600 text-background hover:bg-brand-500',
-        outline:
-          'border border-border-strong bg-transparent text-foreground hover:bg-background-surface-200',
-        secondary: 'bg-background-surface-200 text-foreground hover:bg-background-surface-300',
-        ghost: 'text-foreground-light hover:bg-background-surface-200 hover:text-foreground',
+        outline: 'border border-input bg-transparent text-foreground hover:bg-(--muted)',
+        secondary: 'bg-(--muted) text-foreground hover:bg-secondary',
+        ghost: 'text-muted-foreground hover:bg-(--muted) hover:text-foreground',
         destructive: 'bg-destructive-500 text-background hover:bg-destructive-400',
         link: 'text-brand-link underline-offset-4 hover:underline',
       },
