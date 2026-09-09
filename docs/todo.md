@@ -38,14 +38,16 @@ test, and is committed.
 
 ## Phase 4: Upload and ingest
 
-- [ ] `dropzone-nextjs` to Storage
-- [ ] Extract, chunk, embed, write chunks
-- [ ] Realtime progress and visible failures
+- [x] `dropzone-nextjs` to Storage
+- [x] Extract, chunk, embed, write chunks
+- [x] Realtime progress and visible failures
+- [x] Jobs claimed atomically, attempts capped, stale claims taken back
 - [ ] Edge Function ceiling measured, written into `docs/limits.md`
 
 ## Phase 5: Search
 
 - [x] Hybrid search RPC
+- [x] `hnsw.iterative_scan` on the function, measured 0 of 5 against 5 of 5
 - [ ] Recall measured at 10k, 100k, 1M with a 1 percent filter, in `docs/retrieval.md`
 
 ## Phase 6: Chat
@@ -57,27 +59,28 @@ test, and is committed.
 
 ## Phase 7: Connections
 
-- [ ] magpi OAuth flow ported: begin, callback, claim
-- [ ] Notion end to end
+- [x] magpi OAuth flow ported: begin, callback, claim
+- [x] Notion end to end, against recorded fixtures
 
 ## Phase 8: Remaining providers
 
-- [ ] Linear
-- [ ] Slack
-- [ ] Google Drive
+- [x] Linear
+- [x] Slack
+- [x] Google Drive, with the registry pinned to `seed.sql`
 
 ## Phase 9: Token refresh and incremental sync
 
-- [ ] `refresh()` called, tested against an expired token
-- [ ] Cursors per provider
-- [ ] Connection status visible in the UI
+- [x] `refresh()` called, tested against an expired token
+- [x] Cursors per provider
+- [x] Connection status visible, with a display name rather than a slug
 
 ## Phase 10: Dreaming
 
-- [ ] Entities
-- [ ] Digest
-- [ ] Connections
-- [ ] Per space, cited, visible, switchable off
+- [x] Entities
+- [x] Digest
+- [x] Connections
+- [x] Per space, enforced by composite foreign keys rather than convention
+- [x] Cited through `source_chunk_ids`, visible, switchable off
 
 ## Phase 11: Admin analytics
 
@@ -88,36 +91,38 @@ test, and is committed.
 
 - [x] Checkout and portal as route handlers
 - [x] Plan limits enforced in the database
-- [ ] Webhook: price id is never read, so every paying subscription becomes Team
-- [ ] Webhook: three schemas stricter than Stripe's real payloads, each a permanent 400
+- [x] Webhook: price id read, intent first through `metadata.plan`, then price
+- [x] Webhook: schemas widened to Stripe's real payload shapes
 
 ## Phase 13: MCP stub
 
-- [ ] `supabase/functions/mcp-server/` with `whoami`, `docs/mcp.md`
+- [x] `supabase/functions/mcp-server/` with `whoami`, `docs/mcp.md`
 
 ## Phase 14: Polish
 
-- [ ] Sample corpus
-- [ ] Deploy button
-- [ ] README
-- [ ] Five-minute clone-to-answer path
+- [x] Sample corpus, 70 documents across five sources and five spaces
+- [x] Deploy config and cron entries
+- [x] README
+- [x] Five-minute clone-to-answer path, `scripts/seed-demo.mjs`
 
 ## Blockers
 
-**The Stripe webhook does not read the price id.** `supabase/functions/_shared/billing.ts`
-maps any paying status to the Team plan, and `SB_STRIPE_PRICE_TEAM` appears
-nowhere under `supabase/functions/`. Three further schema fields are stricter
-than Stripe's real payloads and turn a recoverable event into a permanent 400:
-`customer` and `subscription` reject an expanded object, `checkout.session.completed`
-ignores `client_reference_id`, and `quantity` is required where Stripe omits it
-on metered items. With the edge-functions workstream.
+**Two measurements, and both are keynote slides.** Neither can be done tonight
+and neither is guessable.
 
-**The Edge Function ceiling is unmeasured.** Every row in the table in
-`docs/limits.md` reads `not measured`. It needs the real runtime and a real
-corpus, and it is a keynote slide.
+The Edge Function ceiling. Every row in the table in `docs/limits.md` reads
+`not measured`. It needs the real runtime and a real corpus, and the local
+runtime does not enforce the same budgets. The product is built to hit this
+wall visibly: a timed-out job names the stage it died in, the run page leads
+with it, and the copy says a space this size is expected to fail. What is
+missing is the number.
 
-**Recall at scale is unmeasured.** `docs/retrieval.md` has the method written
-down and no numbers. No latency claim goes on a slide before it does.
+Recall at scale. `docs/retrieval.md` has the method written down and no
+numbers, at 10k, 100k and 1M chunks with a filter matching 1 percent of rows.
+What is settled is the correctness: `hnsw.iterative_scan` is on the function
+because with it off a caller got zero of their own five rows. What is not
+settled is the cost. No latency claim goes on a slide before that table has
+values in it.
 
 ## Known gaps, recorded rather than discovered later
 
