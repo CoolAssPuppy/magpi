@@ -56,3 +56,32 @@ policy in the repo was unreachable because `supabase db diff` had stripped the
 DML grants, and that every security-definer function was executable by PUBLIC
 because the diff emits grants and never revokes. Both are written up in
 `docs/lessons.md`.
+
+## Phases 4 to 12, in parallel
+
+Six workstreams ran at once against a shared tree, partitioned by directory.
+That worked, and the two things that went wrong were both mine: a `git add -A`
+that swept three workstreams into one commit, and `typedRoutes`, which broke
+every dynamic href across three of them at once.
+
+**Shipped.** Upload and ingest with visible failures. Hybrid search. Streaming
+chat with citations resolved on read. Connections and dreams surfaces. Admin
+analytics with five panels. Checkout, portal and plan limits. The MCP stub. 436
+web tests, 183 pgTAP assertions, 7 integration assertions, 3 browser journeys.
+
+**Did not ship.** The Stripe webhook has four parsing bugs, one of which puts
+every paying subscription on the Team plan. The sample corpus is being written.
+Nothing is measured yet.
+
+**Needs a human.** Real OAuth credentials, a Stripe account, and the two
+measurements: the Edge Function ceiling and recall at scale.
+
+**Notes.** pgTAP earned its place four times. It found that every policy was
+unreachable, that every security definer function was executable by anon, that a
+dream run could write into a space it did not own, and that the fix for the
+third broke deleting a dream output. The fourth is the one worth remembering:
+the assertions that caught the regression were written before the bug existed.
+
+The database now reports no drift. `supabase db diff` on a clean tree says "No
+schema changes found", which took moving four hand-written migrations back into
+`supabase/schemas/` so the shadow database matches the real one.

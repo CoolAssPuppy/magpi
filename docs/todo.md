@@ -27,7 +27,7 @@ test, and is committed.
 - [x] `password-based-auth-nextjs` and `social-auth-nextjs` blocks
 - [x] Sign up, sign in, callback, sign out
 - [x] Org and personal space created by a trigger on signup
-- [ ] Invite and accept
+- [x] Invite and accept
 - [x] Auth lifecycle journey in Playwright
 
 ## Phase 3: Spaces
@@ -45,14 +45,15 @@ test, and is committed.
 
 ## Phase 5: Search
 
-- [ ] Hybrid search RPC
+- [x] Hybrid search RPC
 - [ ] Recall measured at 10k, 100k, 1M with a 1 percent filter, in `docs/retrieval.md`
 
 ## Phase 6: Chat
 
-- [ ] Streaming route handler, citations resolved on read
-- [ ] Question condensing, conversation titling, history sidebar
-- [ ] Two-user permission lifecycle journey
+- [x] Streaming route handler, citations resolved on read
+- [x] Question condensing, conversation titling, history sidebar
+- [x] Two-user permission lifecycle journey
+- [x] Dropped-connection test: the question survives, no orphaned answer
 
 ## Phase 7: Connections
 
@@ -80,11 +81,15 @@ test, and is committed.
 
 ## Phase 11: Admin analytics
 
-- [ ] Ingest health, search volume and latency, top questions, dead content, usage
+- [x] Ingest health, search volume and latency, top questions, dead content, usage
+- [x] Storage metered through usage_events rather than a scan
 
 ## Phase 12: Billing
 
-- [ ] Checkout, portal, webhook, plan limits in the database
+- [x] Checkout and portal as route handlers
+- [x] Plan limits enforced in the database
+- [ ] Webhook: price id is never read, so every paying subscription becomes Team
+- [ ] Webhook: three schemas stricter than Stripe's real payloads, each a permanent 400
 
 ## Phase 13: MCP stub
 
@@ -99,7 +104,20 @@ test, and is committed.
 
 ## Blockers
 
-None yet.
+**The Stripe webhook does not read the price id.** `supabase/functions/_shared/billing.ts`
+maps any paying status to the Team plan, and `SB_STRIPE_PRICE_TEAM` appears
+nowhere under `supabase/functions/`. Three further schema fields are stricter
+than Stripe's real payloads and turn a recoverable event into a permanent 400:
+`customer` and `subscription` reject an expanded object, `checkout.session.completed`
+ignores `client_reference_id`, and `quantity` is required where Stripe omits it
+on metered items. With the edge-functions workstream.
+
+**The Edge Function ceiling is unmeasured.** Every row in the table in
+`docs/limits.md` reads `not measured`. It needs the real runtime and a real
+corpus, and it is a keynote slide.
+
+**Recall at scale is unmeasured.** `docs/retrieval.md` has the method written
+down and no numbers. No latency claim goes on a slide before it does.
 
 ## Post-demo
 
