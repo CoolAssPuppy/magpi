@@ -109,8 +109,9 @@ integration               e2e and lifecycle
 ```
 
 905 web tests, 426 function tests, 209 pgTAP assertions, 10 integration
-assertions, 3 browser journeys. Coverage 95.4 statements, 90.2 branches, 96.1
-functions, 95.6 lines. `supabase db diff` reports no schema changes.
+assertions, 3 browser journeys. Coverage 97.12 statements, 93.14 branches,
+98.96 functions, 97.9 lines, read from `coverage-summary.json` rather than from
+the text table, which omits rows. `supabase db diff` reports no schema changes.
 
 **What needs a human, and it is the same two things it was at midnight.** The
 Edge Function ceiling and recall at scale. Both are keynote slides, both need
