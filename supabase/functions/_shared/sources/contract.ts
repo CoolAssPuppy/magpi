@@ -79,6 +79,15 @@ export type RefreshOutcome =
 
 export interface SourceDriver {
   readonly provider: string;
+  /**
+   * What a person calls this source.
+   *
+   * Separate from the slug because the slug is a database key and reaches a URL,
+   * and every message a driver writes ends up in connections.status_detail,
+   * which a user reads. "google_drive refused to renew this connection" is what
+   * happens without this.
+   */
+  readonly displayName: string;
   readonly scopeSelectionKind: ScopeSelectionKind | null;
 
   /**

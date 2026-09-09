@@ -160,3 +160,44 @@ Deno.test('a provider row with no driver behind it says so', () => {
   assertEquals(hasDriver('dropbox'), false);
   assertEquals(apiErrorFrom(() => driverFor('dropbox')).code, 'unknown_provider');
 });
+
+/**
+ * A database key must never reach a person.
+ *
+ * Every SourceError message and every failed RefreshOutcome detail is written
+ * into connections.status_detail, which the connections page shows to whoever
+ * owns the connection. A slug is a database key that also reaches a URL, and
+ * "google_drive refused to renew this connection" is what shipping one looks
+ * like. The drivers carry a display name for exactly this; these tests are what
+ * keep the two from being confused again.
+ */
+
+const SLUG_SHAPED = /\b[a-z]+_[a-z]+\b/;
+
+for (const provider of SOURCE_PROVIDERS) {
+  Deno.test(`${provider} names itself the way a person would, not by its slug`, async () => {
+    const driver = driverFor(provider);
+    for (const call of CALLS) {
+      const surface = await surfaceOf(call, driver, depsAnswering(401));
+      const spoken = surface.replace(/https?:\/\/\S+/g, '');
+      assert(
+        !SLUG_SHAPED.test(spoken),
+        `${provider}.${call.name} put something slug-shaped in front of a user: ${spoken}`,
+      );
+    }
+  });
+
+  Deno.test(`${provider} has a display name that is not its slug`, () => {
+    const driver = driverFor(provider);
+    assert(driver.displayName.length > 0, `${provider} has no display name`);
+    assert(
+      !SLUG_SHAPED.test(driver.displayName),
+      `${provider} uses its slug as a display name: ${driver.displayName}`,
+    );
+    // Capitalised, because it is a product name and it opens a sentence.
+    assert(
+      /^[A-Z]/.test(driver.displayName),
+      `${provider} display name does not start with a capital: ${driver.displayName}`,
+    );
+  });
+}

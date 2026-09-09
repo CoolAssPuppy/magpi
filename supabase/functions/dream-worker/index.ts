@@ -7,7 +7,7 @@ import { jsonResponse } from '../_shared/errors.ts';
 import { serveFunction } from '../_shared/http.ts';
 import { parseBody, workerBatchSchema } from '../_shared/validate.ts';
 import { type DreamResult, type DreamRunRecord, runDreamJob } from '../_shared/jobs/dream.ts';
-import { claimQueuedRow } from '../_shared/jobs/claim.ts';
+import { claimQueuedRow, retireAbandoned } from '../_shared/jobs/claim.ts';
 import { jobDepsFromEnv, requireWorkerCaller } from '../_shared/jobs/runtime.ts';
 
 // Dreaming is the heaviest thing this project does: many sequential model calls
@@ -19,6 +19,16 @@ serveFunction('dream-worker', async (core) => {
   requireWorkerCaller(core.headers);
   const input = parseBody(workerBatchSchema, core.body ?? {});
   const deps = jobDepsFromEnv();
+
+  // A dream run holds many sequential model calls, so it is the likeliest thing
+  // here to be killed part way through. Nothing else would ever move it off
+  // running, and the space page would show it working for good.
+  const retired = await retireAbandoned(deps.db, {
+    table: 'dream_runs',
+    startedColumn: 'started_at',
+    finishedColumn: 'finished_at',
+    error: 'the run was interrupted and did not finish',
+  }, deps.http.now());
 
   const { data, error } = await deps.db
     .from('dream_runs')
@@ -46,5 +56,5 @@ serveFunction('dream-worker', async (core) => {
     results.push({ run_id: run.id, ...(await runDreamJob(run, deps)) });
   }
 
-  return jsonResponse({ claimed: results.length, contended, results });
+  return jsonResponse({ claimed: results.length, contended, retired, results });
 });

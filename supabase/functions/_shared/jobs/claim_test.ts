@@ -1,10 +1,20 @@
 import { assert, assertEquals } from '@std/assert';
 
-import { claimConnectionForSync, claimQueuedRow, STALE_CLAIM_MS } from './claim.ts';
+import {
+  ABANDONED_AFTER_MS,
+  claimConnectionForSync,
+  claimQueuedRow,
+  retireAbandoned,
+  STALE_CLAIM_MS,
+} from './claim.ts';
 import { type StubDb, stubDb } from '../testing/stub_db.ts';
 
 const NOW = new Date('2026-09-09T12:00:00.000Z');
 const RUN = '55555555-5555-4555-8555-555555555555';
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
 
 /** PostgREST answers a filtered update with the rows it matched, or none. */
 function matching(rows: unknown[]): StubDb {
@@ -80,4 +90,80 @@ Deno.test('a connection abandoned by a dead worker can be claimed again', async 
 Deno.test('the staleness window is longer than any pass the budget allows', () => {
   // A pass that could outlive it would be claimed a second time while running.
   assert(STALE_CLAIM_MS > 60_000);
+});
+
+Deno.test('a job left running by a killed isolate is retired, not left spinning', async () => {
+  // The budget writes a timeout for a job that runs long. Nothing of ours runs
+  // after the isolate is killed, so only this moves the row.
+  const stub = matching([{ id: 'job-1' }, { id: 'job-2' }]);
+  try {
+    const retired = await retireAbandoned(stub.db, {
+      table: 'ingest_jobs',
+      startedColumn: 'claimed_at',
+      error: 'the import was interrupted and did not finish',
+    }, NOW);
+
+    assertEquals(retired, 2);
+    const request = stub.requests[0];
+    assertEquals(request.method, 'PATCH');
+    assert(request.query.includes('status=eq.running'), request.query);
+    assert(request.query.includes('claimed_at=lt.'), request.query);
+  } finally {
+    await stub.close();
+  }
+});
+
+Deno.test('a retired row carries the reason the table requires of a terminal one', async () => {
+  // ingest_jobs_terminal_has_error refuses a timeout with no error, so a sweep
+  // that forgot the message would fail rather than write a silent row.
+  const stub = matching([{ id: 'job-1' }]);
+  try {
+    await retireAbandoned(stub.db, {
+      table: 'ingest_jobs',
+      startedColumn: 'claimed_at',
+      error: 'the import was interrupted and did not finish',
+    }, NOW);
+
+    const body = stub.requests[0].body;
+    assert(isRecord(body));
+    assertEquals(body.status, 'timeout');
+    assertEquals(body.error, 'the import was interrupted and did not finish');
+  } finally {
+    await stub.close();
+  }
+});
+
+Deno.test('a run records when it was given up on, a job has nowhere to put it', async () => {
+  const runs = matching([{ id: 'run-1' }]);
+  try {
+    await retireAbandoned(runs.db, {
+      table: 'dream_runs',
+      startedColumn: 'started_at',
+      finishedColumn: 'finished_at',
+      error: 'the run was interrupted and did not finish',
+    }, NOW);
+    const body = runs.requests[0].body;
+    assert(isRecord(body));
+    assertEquals(body.finished_at, NOW.toISOString());
+  } finally {
+    await runs.close();
+  }
+});
+
+Deno.test('a healthy run is well inside the window it would be retired at', () => {
+  assert(ABANDONED_AFTER_MS > 10 * 60_000);
+});
+
+Deno.test('a sweep that fails does not stop the batch it runs before', async () => {
+  const stub = stubDb(() => ({ status: 500, body: { message: 'boom' } }));
+  try {
+    const retired = await retireAbandoned(stub.db, {
+      table: 'ingest_jobs',
+      startedColumn: 'claimed_at',
+      error: 'the import was interrupted and did not finish',
+    }, NOW);
+    assertEquals(retired, 0);
+  } finally {
+    await stub.close();
+  }
 });

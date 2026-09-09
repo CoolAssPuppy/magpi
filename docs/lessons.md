@@ -244,3 +244,16 @@ A file that depends on infrastructure the migrations do not create should build
 that infrastructure itself. The storage bucket comes from `config.toml` through
 the CLI, not from a migration, so a reset whose storage step does not finish
 leaves a database that looks correct with no bucket in it.
+
+## An explicit glob bypasses `.prettierignore`
+
+`.prettierignore` lists `supabase/functions`, because those are Deno files
+formatted by `deno fmt` with different rules. Running
+`npx prettier --write "supabase/functions/**/*.ts"` reformatted all of them
+anyway: an explicitly named path is not filtered by the ignore file, only a
+discovered one is. The next `deno fmt --check` failed on four files and the two
+formatters would have fought over them indefinitely.
+
+**Rule.** Sweep formatting with the repo's own scripts, `pnpm format`, which
+runs each formatter over the paths it owns. Reach for an explicit glob only for
+a single file, and never for a directory another tool formats.

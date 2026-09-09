@@ -29,6 +29,7 @@ import {
 } from './common.ts';
 
 const PROVIDER = 'linear';
+const DISPLAY_NAME = 'Linear';
 const ENDPOINT = 'https://api.linear.app/graphql';
 const PAGE_SIZE = 50;
 const TEAM_PAGE_SIZE = 100;
@@ -37,8 +38,8 @@ const API_KEY_PREFIX = 'lin_api_';
 /** An error code naming the credential rather than the request. */
 const CREDENTIAL_CODE = /auth|forbidden|permission/i;
 
-const RECONNECT_MESSAGE = 'Linear refused this connection, reconnect it';
-const FAILURE_MESSAGE = 'Linear could not be read, try again in a few minutes';
+const RECONNECT_MESSAGE = `${DISPLAY_NAME} refused this connection, reconnect it`;
+const FAILURE_MESSAGE = `${DISPLAY_NAME} could not be read, the next sync will try again`;
 
 const CHANGES_QUERY = `query RecallChanges($first: Int!, $filter: IssueFilter) {
   issues(first: $first, filter: $filter, orderBy: updatedAt) {
@@ -187,6 +188,7 @@ function issueText(issue: Record<string, unknown>): string {
 
 export const linearDriver: SourceDriver = {
   provider: PROVIDER,
+  displayName: DISPLAY_NAME,
   scopeSelectionKind: 'workspace',
 
   async listChanges(
@@ -246,6 +248,6 @@ export const linearDriver: SourceDriver = {
   },
 
   refresh(deps: SourceDeps, input: RefreshInput): Promise<RefreshOutcome> {
-    return refreshWithTokenEndpoint(PROVIDER, deps, input);
+    return refreshWithTokenEndpoint(DISPLAY_NAME, deps, input);
   },
 };

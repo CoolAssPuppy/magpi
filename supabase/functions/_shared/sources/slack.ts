@@ -18,6 +18,7 @@ import {
 import { asArray, asRecord, asString, firstLine, requestJson } from './common.ts';
 
 const PROVIDER = 'slack';
+const DISPLAY_NAME = 'Slack';
 const API_BASE = 'https://slack.com/api';
 const HISTORY_LIMIT = 200;
 const SCOPE_PAGE_LIMIT = 200;
@@ -33,8 +34,8 @@ const MAX_SCOPE_PAGES = 5;
  */
 const MAX_CHANNELS_PER_PASS = 20;
 
-const RECONNECT_MESSAGE = 'Slack refused this connection, reconnect it';
-const FAILURE_MESSAGE = 'Slack could not be read just now, the next sync will try again';
+const RECONNECT_MESSAGE = `${DISPLAY_NAME} refused this connection, reconnect it`;
+const FAILURE_MESSAGE = `${DISPLAY_NAME} could not be read, the next sync will try again`;
 
 /** Slack error codes where reconnecting is the only fix the user has. */
 const RECONNECT_ERRORS = new Set([
@@ -194,6 +195,7 @@ function splitExternalId(externalId: string): { channel: string; ts: string } {
 
 export const slackDriver: SourceDriver = {
   provider: PROVIDER,
+  displayName: DISPLAY_NAME,
   scopeSelectionKind: 'channel',
 
   async listChanges(

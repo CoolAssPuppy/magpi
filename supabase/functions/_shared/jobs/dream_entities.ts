@@ -6,7 +6,7 @@ import { z } from 'zod';
 import {
   ask,
   chunkPrompt,
-  documentCount,
+  counted,
   type DreamOutcome,
   enter,
   MAX_INPUT_CHUNKS,
@@ -34,7 +34,7 @@ const ENTITY_SYSTEM =
 export async function dreamEntities(pass: Pass): Promise<DreamOutcome> {
   const { deps, db } = pass;
   enter(pass, 'collect');
-  const chunks = await db.recentChunks(sinceIso(deps), MAX_INPUT_CHUNKS);
+  const chunks = counted(pass, await db.recentChunks(sinceIso(deps), MAX_INPUT_CHUNKS));
   if (chunks.length === 0) return NOTHING;
 
   enter(pass, 'synthesize');
@@ -61,5 +61,5 @@ export async function dreamEntities(pass: Pass): Promise<DreamOutcome> {
     }));
   }
 
-  return { ...NOTHING, inputDocumentCount: documentCount(chunks), produced: drafts.length };
+  return { ...NOTHING, inputDocumentCount: pass.inputDocumentCount, produced: drafts.length };
 }

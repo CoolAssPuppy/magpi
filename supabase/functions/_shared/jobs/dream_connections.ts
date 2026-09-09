@@ -98,6 +98,7 @@ export async function dreamConnections(pass: Pass): Promise<DreamOutcome> {
   const { run, deps, db } = pass;
   enter(pass, 'collect');
   const documents = await db.recentDocuments(sinceIso(deps), MAX_COMPARED_DOCUMENTS);
+  pass.inputDocumentCount = documents.length;
   if (documents.length === 0) return NOTHING;
 
   const candidates = await candidatePairs(pass, documents);

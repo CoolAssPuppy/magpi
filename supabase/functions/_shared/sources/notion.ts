@@ -17,6 +17,7 @@ import { SourceError } from './contract.ts';
 import { asArray, asRecord, asString, isoStamp, parseInstant, requestJson } from './common.ts';
 
 const PROVIDER = 'notion';
+const DISPLAY_NAME = 'Notion';
 const API = 'https://api.notion.com/v1';
 const MIME = 'text/markdown';
 const PAGE_SIZE = 100;
@@ -32,8 +33,8 @@ const NOTION_VERSION = '2022-06-28';
 // whole history to prove it.
 const MAX_REQUESTS = 5;
 
-const RECONNECT_MESSAGE = 'Notion refused this connection, reconnect it';
-const FAILURE_MESSAGE = 'Notion could not be read, the next sync will try again';
+const RECONNECT_MESSAGE = `${DISPLAY_NAME} refused this connection, reconnect it`;
+const FAILURE_MESSAGE = `${DISPLAY_NAME} could not be read, the next sync will try again`;
 
 /** Notion error codes that mean the credential, not the moment, is the problem. */
 const RECONNECT_CODES = /unauthorized|restricted|invalid_token/;
@@ -280,6 +281,7 @@ async function listScopeOptions(
 
 export const notionDriver: SourceDriver = {
   provider: PROVIDER,
+  displayName: DISPLAY_NAME,
   scopeSelectionKind: 'workspace',
   listChanges,
   fetchDocument,

@@ -11,6 +11,7 @@ import { jsonResponse } from '../_shared/errors.ts';
 import { serveFunction } from '../_shared/http.ts';
 import { parseBody, workerBatchSchema } from '../_shared/validate.ts';
 import { type IngestResult, runIngestJob } from '../_shared/jobs/ingest.ts';
+import { retireAbandoned } from '../_shared/jobs/claim.ts';
 import { jobDepsFromEnv, requireWorkerCaller } from '../_shared/jobs/runtime.ts';
 
 const DEFAULT_BATCH = 5;
@@ -28,6 +29,16 @@ serveFunction('ingest-worker', async (core) => {
   requireWorkerCaller(core.headers);
   const input = parseBody(workerBatchSchema, core.body ?? {});
   const deps = jobDepsFromEnv();
+
+  // Before claiming anything, retire what a killed isolate left behind. The
+  // budget writes a timeout for a job that runs long; only this catches one that
+  // was interrupted, and claim_ingest_jobs takes queued rows so it would never
+  // come back on its own.
+  const retired = await retireAbandoned(deps.db, {
+    table: 'ingest_jobs',
+    startedColumn: 'claimed_at',
+    error: 'the import was interrupted and did not finish',
+  }, deps.http.now());
 
   // claim_ingest_jobs, not a select: it marks the rows running behind
   // `for update skip locked` in one statement, so two overlapping invocations
@@ -47,5 +58,5 @@ serveFunction('ingest-worker', async (core) => {
     results.push({ job_id: job.id, ...(await runIngestJob(job, deps)) });
   }
 
-  return jsonResponse({ claimed: results.length, results });
+  return jsonResponse({ claimed: results.length, retired, results });
 });

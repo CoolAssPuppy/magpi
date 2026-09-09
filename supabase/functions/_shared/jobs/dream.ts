@@ -86,6 +86,11 @@ function withStage(stage: DreamStage, message: string): string {
   return `${stage}: ${message}`;
 }
 
+/** What a run that stopped early got through, rather than the zero it finished with. */
+function reached(pass: Pass): DreamOutcome {
+  return { ...NOTHING, inputDocumentCount: pass.inputDocumentCount };
+}
+
 export async function runDreamJob(run: DreamRunRecord, deps: JobDeps): Promise<DreamResult> {
   const pass: Pass = {
     run,
@@ -93,6 +98,7 @@ export async function runDreamJob(run: DreamRunRecord, deps: JobDeps): Promise<D
     db: spaceScoped(deps.db, { orgId: run.org_id, spaceId: run.space_id }),
     budget: startBudget(deps.http, deps.budgetMs ?? DEFAULT_BUDGET_MS),
     stage: 'collect',
+    inputDocumentCount: 0,
   };
   await updateRun(run, deps, { status: 'running', started_at: deps.http.now().toISOString() });
 
@@ -104,12 +110,12 @@ export async function runDreamJob(run: DreamRunRecord, deps: JobDeps): Promise<D
   } catch (err) {
     if (err instanceof StageTimeout) {
       console.error('a dream run ran out of time', run.id, err.message);
-      await finish(pass, 'timeout', NOTHING, withStage(pass.stage, err.message));
+      await finish(pass, 'timeout', reached(pass), withStage(pass.stage, err.message));
       return { kind: 'timeout', stage: err.stage };
     }
     const detail = readableDetail(err);
     console.error('a dream run failed', run.id, err);
-    await finish(pass, 'failed', NOTHING, withStage(pass.stage, detail));
+    await finish(pass, 'failed', reached(pass), withStage(pass.stage, detail));
     return { kind: 'failed', detail };
   }
 }

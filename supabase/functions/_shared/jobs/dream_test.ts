@@ -575,3 +575,58 @@ Deno.test('citations are listed in the order the digest read them', async () => 
     await stub.close();
   }
 });
+
+Deno.test('a run that stopped early records the documents it had reached', async () => {
+  // The size is the whole reason a run times out, so recording zero would erase
+  // the evidence on exactly the run where it matters. The client renders this
+  // number in the sentence explaining why the run did not finish.
+  const stopped: number[] = [];
+
+  for (const kind of ['entities', 'digest', 'connections'] as const) {
+    for (let ticks = 1; ticks <= 30; ticks += 1) {
+      const stub = stubDb(replies());
+      try {
+        const result = await runDreamJob(
+          dreamRun(kind),
+          jobDeps(stub, fakeModels(answerFor), 1_000, jumpingClock(ticks)),
+        );
+        if (result.kind !== 'timeout') continue;
+
+        const terminal = runUpdates(stub)[1];
+        assertEquals(terminal.status, 'timeout');
+        const count = terminal.input_document_count;
+        assert(typeof count === 'number', 'a timed out run recorded no document count');
+        stopped.push(count);
+      } finally {
+        await stub.close();
+      }
+    }
+  }
+
+  assert(stopped.length > 0, 'no kind timed out, so nothing was measured');
+  // A run stopped before its first read honestly reached nothing; one stopped
+  // after has to say what it got through.
+  assert(
+    stopped.some((count) => count > 0),
+    'every timed out run claimed to have read zero documents',
+  );
+});
+
+Deno.test('a failure records what it had reached too, not a zero', async () => {
+  const stub = stubDb(replies());
+  try {
+    // The model answers something that will not parse, which fails the entities
+    // pass after the chunks have already been read.
+    const result = await runDreamJob(
+      dreamRun('entities'),
+      jobDeps(stub, fakeModels(() => 'not json at all')),
+    );
+
+    assertEquals(result.kind, 'failed');
+    const terminal = runUpdates(stub)[1];
+    assertEquals(terminal.status, 'failed');
+    assertEquals(terminal.input_document_count, 2);
+  } finally {
+    await stub.close();
+  }
+});

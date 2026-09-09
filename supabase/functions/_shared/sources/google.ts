@@ -29,6 +29,7 @@ import {
 // Matches the slug seeded into `providers`. The registry row is the authority
 // and sources_registry_test pins the two together.
 const PROVIDER = 'google_drive';
+const DISPLAY_NAME = 'Google Drive';
 const API = 'https://www.googleapis.com/drive/v3';
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
 const PAGE_SIZE = 100;
@@ -41,8 +42,8 @@ const PAGE_SIZE = 100;
  */
 const MAX_PAGES = 10;
 
-const RECONNECT_MESSAGE = 'google drive refused this connection, reconnect it';
-const FAILURE_MESSAGE = 'google drive could not be read, the next sync will try again';
+const RECONNECT_MESSAGE = `${DISPLAY_NAME} refused this connection, reconnect it`;
+const FAILURE_MESSAGE = `${DISPLAY_NAME} could not be read, the next sync will try again`;
 
 const CHANGE_FIELDS = 'nextPageToken,newStartPageToken,changes(fileId,removed,' +
   'file(id,name,mimeType,modifiedTime,webViewLink,trashed,parents))';
@@ -212,6 +213,7 @@ async function walkFolders(creds: SourceCredentials, deps: SourceDeps): Promise<
 
 export const googleDriver: SourceDriver = {
   provider: PROVIDER,
+  displayName: DISPLAY_NAME,
   scopeSelectionKind: 'folder',
 
   listChanges(
@@ -249,6 +251,6 @@ export const googleDriver: SourceDriver = {
   },
 
   refresh(deps: SourceDeps, input: RefreshInput): Promise<RefreshOutcome> {
-    return refreshWithTokenEndpoint(PROVIDER, deps, input);
+    return refreshWithTokenEndpoint(DISPLAY_NAME, deps, input);
   },
 };

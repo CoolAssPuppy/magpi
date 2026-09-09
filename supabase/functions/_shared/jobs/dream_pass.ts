@@ -47,6 +47,21 @@ export interface Pass {
    * or the run row cannot say where the work stopped.
    */
   stage: DreamStage;
+  /**
+   * How many documents the pass had read when it stopped.
+   *
+   * Kept on the pass for the same reason as the stage: a run that times out is
+   * the one whose size mattered, and NOTHING would record it as having read
+   * zero. That number is the evidence the space was too large, so a timeout has
+   * to carry the count it reached rather than the count it finished with.
+   */
+  inputDocumentCount: number;
+}
+
+/** Records what the pass has read, so a terminal row can report it. */
+export function counted(pass: Pass, chunks: SpaceChunkRow[]): SpaceChunkRow[] {
+  pass.inputDocumentCount = documentCount(chunks);
+  return chunks;
 }
 
 /** Enter a stage: leave the trail, then check the clock. */

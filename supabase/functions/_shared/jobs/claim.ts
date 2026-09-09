@@ -24,6 +24,61 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 export const STALE_CLAIM_MS = 15 * 60 * 1000;
 
 /**
+ * How long a row may sit `running` before it is treated as abandoned.
+ *
+ * The wall-clock budget is under a minute, so anything past this was not slow,
+ * it was interrupted.
+ */
+export const ABANDONED_AFTER_MS = 15 * 60 * 1000;
+
+export interface AbandonedSweep {
+  table: string;
+  /** When the row was picked up: claimed_at on a job, started_at on a run. */
+  startedColumn: string;
+  /** Written alongside the terminal status, which the table requires. */
+  error: string;
+  /** Set on a table that records when work stopped. */
+  finishedColumn?: string;
+}
+
+/**
+ * Retires rows left `running` by a worker that never came back.
+ *
+ * The budget in budget.ts catches a job that runs long: it stops, writes
+ * `timeout`, and names the stage. It cannot catch a job whose isolate is killed
+ * outright, because nothing of ours runs afterwards. That row stays `running`
+ * for good, is never reclaimed, and shows the user a spinner that never
+ * resolves, which is the one outcome the spec rules out.
+ *
+ * A sweep on the way into each batch is enough. It costs one statement and the
+ * window is wide enough that a healthy run is never caught by it.
+ */
+export async function retireAbandoned(
+  db: SupabaseClient,
+  sweep: AbandonedSweep,
+  now: Date,
+): Promise<number> {
+  const cutoff = new Date(now.getTime() - ABANDONED_AFTER_MS).toISOString();
+  const patch: Record<string, unknown> = { status: 'timeout', error: sweep.error };
+  if (sweep.finishedColumn) patch[sweep.finishedColumn] = now.toISOString();
+
+  const { data, error } = await db
+    .from(sweep.table)
+    .update(patch)
+    .eq('status', 'running')
+    .lt(sweep.startedColumn, cutoff)
+    .select('id')
+    .returns<{ id: string }[]>();
+
+  // Housekeeping must never fail the batch it runs before.
+  if (error) {
+    console.error('abandoned sweep failed', sweep.table, error.message);
+    return 0;
+  }
+  return (data ?? []).length;
+}
+
+/**
  * Moves one row out of `queued` and reports whether this caller was the one who
  * moved it.
  *

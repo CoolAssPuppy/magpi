@@ -85,13 +85,18 @@ export async function resolveCredentials(
     return await expire(
       deps,
       connection,
-      `${connection.provider} did not issue a renewal token, connect it again`,
+      `${driverFor(connection.provider).displayName} did not issue a renewal token, ` +
+        'connect it again',
     );
   }
 
   const provider = await loadProvider(deps.db, connection.provider);
   if (!provider) {
-    return await expire(deps, connection, `${connection.provider} is no longer available`);
+    return await expire(
+      deps,
+      connection,
+      `${driverFor(connection.provider).displayName} is no longer available`,
+    );
   }
 
   const outcome = await driverFor(connection.provider).refresh(deps.http, {

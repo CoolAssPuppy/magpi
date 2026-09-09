@@ -258,8 +258,11 @@ Deno.test('a job that runs out of time says which stage it died in', async () =>
 
     const final = writes(h.stub, 'ingest_jobs').at(-1);
     assertEquals(final?.status, 'timeout');
+    // The stage lives in its own column, so the message says what the column
+    // cannot: how long it ran and what the budget was.
     assertEquals(final?.stage, 'extract');
-    assert(String(final?.error).includes('extract'));
+    assert(!String(final?.error).includes('extract'), 'the message repeats the stage column');
+    assert(String(final?.error).includes('budget'), String(final?.error));
   } finally {
     await h.stub.close();
   }

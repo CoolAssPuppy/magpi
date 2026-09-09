@@ -6,7 +6,7 @@ import { ApiError } from '../errors.ts';
 import {
   ask,
   chunkPrompt,
-  documentCount,
+  counted,
   type DreamOutcome,
   enter,
   MAX_INPUT_CHUNKS,
@@ -52,7 +52,7 @@ function prose(summary: string): string {
 export async function dreamDigest(pass: Pass): Promise<DreamOutcome> {
   const { run, deps, db } = pass;
   enter(pass, 'collect');
-  const chunks = await db.recentChunks(sinceIso(deps), MAX_INPUT_CHUNKS);
+  const chunks = counted(pass, await db.recentChunks(sinceIso(deps), MAX_INPUT_CHUNKS));
   // A digest of nothing would be a document with no citations, which the client
   // reads as a run that produced nothing. Better to produce nothing.
   if (chunks.length === 0) return NOTHING;
@@ -86,7 +86,7 @@ export async function dreamDigest(pass: Pass): Promise<DreamOutcome> {
     pieces.map((piece, index) => ({ ...piece, embedding: vectors[index] })),
   );
   return {
-    inputDocumentCount: documentCount(chunks),
+    inputDocumentCount: pass.inputDocumentCount,
     outputDocumentId: documentId,
     produced: pieces.length,
   };
