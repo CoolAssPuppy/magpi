@@ -44,9 +44,7 @@ describe('the scope picker', () => {
   });
 
   it('counts the selection as it stands', () => {
-    render(
-      <ScopePicker selection={getSelection()} selected={['C1', 'C2']} onChange={vi.fn()} />,
-    );
+    render(<ScopePicker selection={getSelection()} selected={['C1', 'C2']} onChange={vi.fn()} />);
 
     expect(screen.getByText('2 of 3 channels')).toBeInTheDocument();
   });

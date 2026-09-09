@@ -39,7 +39,9 @@ export function ChartTable({ caption, columns, rows }: ChartTableProps) {
                 {row.map((cell, index) => (
                   <TableCell
                     key={columns[index]}
-                    className={index === 0 ? 'text-foreground' : 'tabular-nums text-foreground-light'}
+                    className={
+                      index === 0 ? 'text-foreground' : 'text-foreground-light tabular-nums'
+                    }
                   >
                     {cell}
                   </TableCell>

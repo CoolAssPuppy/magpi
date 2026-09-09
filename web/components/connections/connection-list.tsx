@@ -31,11 +31,7 @@ function ConnectionRow({
         </p>
       </div>
 
-      <ConnectionActions
-        connection={connection}
-        onResync={onResync}
-        onDisconnect={onDisconnect}
-      />
+      <ConnectionActions connection={connection} onResync={onResync} onDisconnect={onDisconnect} />
     </li>
   );
 }

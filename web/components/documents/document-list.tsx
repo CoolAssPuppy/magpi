@@ -4,7 +4,7 @@ import { describeIngest, describeOrigin, type DocumentSummary } from '@/lib/docu
 
 export function DocumentList({ documents }: { documents: readonly DocumentSummary[] }) {
   return (
-    <ul className="border-border divide-border divide-y rounded-[var(--radius-panel)] border">
+    <ul className="divide-y divide-border rounded-[var(--radius-panel)] border border-border">
       {documents.map((document) => {
         const problem = describeIngest(document.ingest);
         const isFailure =
@@ -15,24 +15,28 @@ export function DocumentList({ documents }: { documents: readonly DocumentSummar
             <div className="flex items-baseline justify-between gap-4">
               <Link
                 href={`/documents/${document.id}`}
-                className="text-foreground truncate text-sm font-medium underline-offset-4 hover:underline"
+                className="truncate text-sm font-medium text-foreground underline-offset-4 hover:underline"
               >
                 {document.title}
               </Link>
               <time
-                className="text-foreground-lighter shrink-0 text-xs"
+                className="shrink-0 text-xs text-foreground-lighter"
                 dateTime={document.updatedAt}
               >
                 {document.updatedAt.slice(0, 10)}
               </time>
             </div>
 
-            <p className="text-foreground-lighter text-xs">
+            <p className="text-xs text-foreground-lighter">
               {describeOrigin(document.origin)} into {document.spaceName}
             </p>
 
             {problem ? (
-              <p className={isFailure ? 'text-destructive-600 text-xs' : 'text-foreground-light text-xs'}>
+              <p
+                className={
+                  isFailure ? 'text-xs text-destructive-600' : 'text-xs text-foreground-light'
+                }
+              >
                 {problem}
               </p>
             ) : null}

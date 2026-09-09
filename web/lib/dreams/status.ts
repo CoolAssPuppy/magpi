@@ -54,7 +54,8 @@ export type DreamStatusView = {
 };
 
 function failureDetail(failure: DreamFailure, verb: string): string {
-  if (failure.stage && failure.message) return `${verb} during ${failure.stage}. ${failure.message}`;
+  if (failure.stage && failure.message)
+    return `${verb} during ${failure.stage}. ${failure.message}`;
   if (failure.stage) return `${verb} during ${failure.stage}.`;
   if (failure.message) return `${verb}. ${failure.message}`;
   return `${verb}. The stage it died in was not recorded.`;

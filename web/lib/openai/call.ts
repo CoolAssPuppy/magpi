@@ -32,10 +32,9 @@ export type ModelCallInput<T> = {
 
 type UsageKind = Database['public']['Enums']['usage_kind'];
 
-export function usageKindFor(purpose: ModelPurpose): Extract<
-  UsageKind,
-  'embedding_tokens' | 'chat_tokens'
-> {
+export function usageKindFor(
+  purpose: ModelPurpose,
+): Extract<UsageKind, 'embedding_tokens' | 'chat_tokens'> {
   switch (purpose) {
     case 'embedding':
       return 'embedding_tokens';

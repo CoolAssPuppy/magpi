@@ -27,10 +27,7 @@ export type AssistantMessageInput = {
 };
 
 export type ConversationStore = {
-  readonly addUserMessage: (input: {
-    conversationId: string;
-    content: string;
-  }) => Promise<string>;
+  readonly addUserMessage: (input: { conversationId: string; content: string }) => Promise<string>;
   readonly addAssistantMessage: (input: AssistantMessageInput) => Promise<string>;
   readonly setCondensedQuery: (messageId: string, text: string) => Promise<void>;
   readonly setTitle: (conversationId: string, title: string) => Promise<void>;

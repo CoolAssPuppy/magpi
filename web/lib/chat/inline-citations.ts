@@ -12,7 +12,10 @@ const MARKER = /\[(\d+)\]/g;
  * true. This runs on a partial answer while it streams, so it never assumes the
  * text is complete.
  */
-export function splitAnswer(text: string, citations: readonly Citation[]): readonly AnswerSegment[] {
+export function splitAnswer(
+  text: string,
+  citations: readonly Citation[],
+): readonly AnswerSegment[] {
   if (text === '') return [];
 
   const segments: AnswerSegment[] = [];

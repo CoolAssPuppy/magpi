@@ -29,14 +29,10 @@ export function SyncActivity({ spaceIds }: { spaceIds: readonly string[] }) {
     const supabase = createClient();
     const channel = supabase
       .channel('connections-activity')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'ingest_jobs' },
-        (payload) => {
-          const job = parseIngestJobEvent(payload.new);
-          if (job) setJobs((current) => applyJobEvent(current, job, spaceIds));
-        },
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ingest_jobs' }, (payload) => {
+        const job = parseIngestJobEvent(payload.new);
+        if (job) setJobs((current) => applyJobEvent(current, job, spaceIds));
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'connections' }, () => {
         router.refresh();
       })

@@ -38,12 +38,12 @@ export default async function DocumentPage({ params }: { params: Promise<{ id: s
         description={`${describeOrigin(document.origin)} into ${document.spaces?.name ?? 'a space'}.`}
       />
 
-      {problem ? <p className="text-foreground-light text-sm">{problem}</p> : null}
+      {problem ? <p className="text-sm text-foreground-light">{problem}</p> : null}
 
       {document.url ? (
         <a
           href={document.url}
-          className="text-brand-link w-fit text-sm underline-offset-4 hover:underline"
+          className="w-fit text-sm text-brand-link underline-offset-4 hover:underline"
         >
           Open the original
         </a>
@@ -54,7 +54,7 @@ export default async function DocumentPage({ params }: { params: Promise<{ id: s
           <p
             key={chunk.id}
             id={`chunk-${chunk.id}`}
-            className="text-foreground-light text-sm leading-relaxed target:bg-brand-200"
+            className="text-sm leading-relaxed text-foreground-light target:bg-brand-200"
           >
             {chunk.content}
           </p>

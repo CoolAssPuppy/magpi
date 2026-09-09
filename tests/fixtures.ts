@@ -49,7 +49,8 @@ export async function deleteUser(userId: string) {
 export async function signedInClient(email: string, password: string): Promise<SupabaseClient> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'http://127.0.0.1:55321';
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  if (!key) throw new Error('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY is required for the e2e fixtures');
+  if (!key)
+    throw new Error('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY is required for the e2e fixtures');
 
   const client = createClient(url, key, { auth: { persistSession: false } });
   const { error } = await client.auth.signInWithPassword({ email, password });

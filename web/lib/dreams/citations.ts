@@ -5,7 +5,8 @@
  * the run is read, never when it is written. A reader who has lost access to a
  * source sees the text with the reference dropped.
  */
-const CITATION_MARKER = /\[\[chunk:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\]\]/gi;
+const CITATION_MARKER =
+  /\[\[chunk:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\]\]/gi;
 
 export function extractChunkCitations(chunkTexts: readonly string[]): readonly string[] {
   const found = new Set<string>();

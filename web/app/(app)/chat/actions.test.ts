@@ -45,7 +45,7 @@ function fakeSupabase() {
 }
 
 vi.mock('@/lib/actions/with-session', () => ({
-  withSession: async <T,>(
+  withSession: async <T>(
     run: (context: SessionContext) => Promise<ActionState<T>>,
     revalidate: string,
   ): Promise<ActionState<T>> => {

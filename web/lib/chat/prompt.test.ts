@@ -64,7 +64,11 @@ describe('buildAnswerMessages', () => {
   });
 
   it('tells the model to say so when nothing was retrieved', () => {
-    const messages = buildAnswerMessages({ question: 'What is blocking SSO?', chunks: [], history: [] });
+    const messages = buildAnswerMessages({
+      question: 'What is blocking SSO?',
+      chunks: [],
+      history: [],
+    });
 
     expect(messages[0].role).toBe('system');
     expect(messages.some((message) => message.content.includes('No passages'))).toBe(true);

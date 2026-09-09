@@ -49,7 +49,9 @@ export function describeActivity(summary: ActivitySummary): string | null {
   }
   if (summary.queued > 0) parts.push(`${summary.queued} waiting`);
   if (summary.failures.length > 0) {
-    parts.push(`${summary.failures.length} import${summary.failures.length === 1 ? '' : 's'} failed`);
+    parts.push(
+      `${summary.failures.length} import${summary.failures.length === 1 ? '' : 's'} failed`,
+    );
   }
 
   return parts.length > 0 ? parts.join(', ') : null;

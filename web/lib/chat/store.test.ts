@@ -91,7 +91,9 @@ describe('createConversationStore', () => {
   });
 
   it('surfaces a refused write rather than pretending it landed', async () => {
-    const { supabase } = recordingClient({ error: { message: 'new row violates row-level security' } });
+    const { supabase } = recordingClient({
+      error: { message: 'new row violates row-level security' },
+    });
 
     await expect(
       createConversationStore(supabase).addUserMessage({
@@ -140,7 +142,10 @@ describe('loadMessages', () => {
 
 describe('toTurns', () => {
   it('reduces stored messages to what a prompt needs', () => {
-    const turns = toTurns([storedMessage(), storedMessage({ role: 'assistant', content: 'Answer' })]);
+    const turns = toTurns([
+      storedMessage(),
+      storedMessage({ role: 'assistant', content: 'Answer' }),
+    ]);
 
     expect(turns).toEqual([
       { role: 'user', content: 'What is blocking SSO?' },

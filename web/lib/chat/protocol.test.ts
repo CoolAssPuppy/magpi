@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  chatRequestSchema,
-  decodeEvents,
-  encodeEvent,
-  type ChatEvent,
-} from './protocol';
+import { chatRequestSchema, decodeEvents, encodeEvent, type ChatEvent } from './protocol';
 
 const CONVERSATION_ID = '44444444-4444-4444-8444-444444444444';
 

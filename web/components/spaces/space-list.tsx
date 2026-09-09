@@ -8,20 +8,20 @@ import { describeKind, type Space } from '@/lib/spaces/spaces';
  */
 export function SpaceList({ spaces }: { spaces: readonly Space[] }) {
   return (
-    <ul className="border-border divide-border divide-y rounded-[var(--radius-panel)] border">
+    <ul className="divide-y divide-border rounded-[var(--radius-panel)] border border-border">
       {spaces.map((space) => (
         <li key={space.id} className="flex items-baseline justify-between gap-4 px-4 py-3">
           <div className="min-w-0">
             <Link
               href={`/spaces/${space.id}`}
-              className="text-foreground text-sm font-medium underline-offset-4 hover:underline"
+              className="text-sm font-medium text-foreground underline-offset-4 hover:underline"
             >
               {space.name}
             </Link>
-            <p className="text-foreground-lighter mt-0.5 text-xs">{describeKind(space.kind)}</p>
+            <p className="mt-0.5 text-xs text-foreground-lighter">{describeKind(space.kind)}</p>
           </div>
 
-          <dl className="text-foreground-lighter flex shrink-0 gap-5 text-xs">
+          <dl className="flex shrink-0 gap-5 text-xs text-foreground-lighter">
             <div className="text-right">
               <dt className="sr-only">Documents</dt>
               <dd className="text-foreground-light tabular-nums">{space.documentCount}</dd>

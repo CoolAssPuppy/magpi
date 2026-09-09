@@ -78,11 +78,16 @@ function createFake({
     update: (values: unknown) => {
       const builder = {
         eq: (_column: string, id: unknown) => {
-          writes.push({ table: 'organizations', op: 'update', values: { id, ...(values as object) } });
+          writes.push({
+            table: 'organizations',
+            op: 'update',
+            values: { id, ...(values as object) },
+          });
           return builder;
         },
         select: () => {
-          if (failUpdate) return Promise.resolve({ data: null, error: { message: 'update failed' } });
+          if (failUpdate)
+            return Promise.resolve({ data: null, error: { message: 'update failed' } });
           return Promise.resolve({ data: [{ id: ORG }], error: null });
         },
       };

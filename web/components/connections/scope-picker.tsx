@@ -29,7 +29,8 @@ export function ScopePicker({
   if (selection.selectionKind === 'workspace') {
     return (
       <p className="max-w-[var(--measure-prose)] text-sm text-foreground-lighter">
-        This connection reads the whole workspace: {selection.available.map((i) => i.name).join(', ')}.
+        This connection reads the whole workspace:{' '}
+        {selection.available.map((i) => i.name).join(', ')}.
       </p>
     );
   }

@@ -328,7 +328,10 @@ describe('usage against plan', () => {
         },
       ],
       org_members: [{ count: 3 }],
-      usage_events: [{ data: [{ kind: 'document_ingested', sum: 88 }] }, { data: [{ kind: 'query', sum: 140 }] }],
+      usage_events: [
+        { data: [{ kind: 'document_ingested', sum: 88 }] },
+        { data: [{ kind: 'query', sum: 140 }] },
+      ],
       plan_document_limit: [{ data: 200 }],
       plan_monthly_query_limit: [{ data: 500 }],
     });
@@ -349,7 +352,14 @@ describe('usage against plan', () => {
   it('counts queries from the start of the current month', async () => {
     const stub = createStub({
       organizations: [
-        { data: { plan: 'team', seats: 5, stripe_customer_id: 'cus_1', stripe_subscription_id: 'sub_1' } },
+        {
+          data: {
+            plan: 'team',
+            seats: 5,
+            stripe_customer_id: 'cus_1',
+            stripe_subscription_id: 'sub_1',
+          },
+        },
       ],
       org_members: [{ count: 5 }],
       usage_events: [{ data: [] }, { data: [] }],

@@ -17,10 +17,7 @@ const RECENT_FAILURE_SAMPLE = 200;
 /** Same cap, for the two message-derived panels. */
 const MESSAGE_SAMPLE = 1000;
 
-function unwrap<T>(result: {
-  data: T | null;
-  error: { message: string } | null;
-}): T {
+function unwrap<T>(result: { data: T | null; error: { message: string } | null }): T {
   if (result.error) throw new Error(result.error.message);
   if (result.data === null) throw new Error('query returned no rows');
   return result.data;

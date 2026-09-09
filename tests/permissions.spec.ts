@@ -51,7 +51,10 @@ test('two people in different spaces get different answers to the same question'
     const insiderRows = await asInsider.from('chunks').select('id').eq('document_id', document.id);
 
     const asOutsider = await signedInClient(outsider.email, outsider.password);
-    const outsiderRows = await asOutsider.from('chunks').select('id').eq('document_id', document.id);
+    const outsiderRows = await asOutsider
+      .from('chunks')
+      .select('id')
+      .eq('document_id', document.id);
 
     expect(insiderRows.data).toHaveLength(1);
     // No error, no permission dialog. Just fewer rows.

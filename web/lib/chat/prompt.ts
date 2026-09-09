@@ -31,9 +31,7 @@ export function buildAnswerMessages(input: AnswerPromptInput): readonly ChatMess
 function contextBlock(chunks: readonly RetrievedChunk[]): string {
   if (chunks.length === 0) return 'No passages were retrieved for this question.';
 
-  const passages = chunks
-    .map((chunk, index) => `[${index + 1}] ${chunk.content}`)
-    .join('\n\n');
+  const passages = chunks.map((chunk, index) => `[${index + 1}] ${chunk.content}`).join('\n\n');
 
   return `Passages:\n\n${passages}`;
 }

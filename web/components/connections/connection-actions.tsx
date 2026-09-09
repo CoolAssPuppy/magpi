@@ -54,12 +54,7 @@ export function ConnectionActions({
         ) : null}
 
         {recovery.kind === 'resync' ? (
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={isPending}
-            onClick={() => run(onResync)}
-          >
+          <Button variant="outline" size="sm" disabled={isPending} onClick={() => run(onResync)}>
             {recovery.label}
           </Button>
         ) : null}

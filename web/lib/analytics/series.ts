@@ -85,7 +85,11 @@ export function bucketByDay(
 }
 
 export function normalizeQuestion(text: string): string {
-  return text.trim().toLowerCase().replace(/\s+/g, ' ').replace(/[?.!]+$/, '');
+  return text
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .replace(/[?.!]+$/, '');
 }
 
 /**

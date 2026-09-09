@@ -2,7 +2,10 @@ import type { Enums, Tables } from '@/lib/database.types';
 
 export type EntityKind = Enums<'entity_kind'>;
 
-export type EntityRecord = Pick<Tables<'entities'>, 'id' | 'kind' | 'name' | 'summary' | 'space_id'>;
+export type EntityRecord = Pick<
+  Tables<'entities'>,
+  'id' | 'kind' | 'name' | 'summary' | 'space_id'
+>;
 
 export type EntityMentionRecord = Pick<Tables<'entity_mentions'>, 'entity_id' | 'document_id'>;
 

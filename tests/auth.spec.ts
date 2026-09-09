@@ -3,7 +3,9 @@ import { expect, test } from '@playwright/test';
 import { createConfirmedUser, deleteUser } from './fixtures';
 
 test.describe('signing in', () => {
-  test('a new account lands in chat with a personal and an organization space', async ({ page }) => {
+  test('a new account lands in chat with a personal and an organization space', async ({
+    page,
+  }) => {
     const user = await createConfirmedUser('auth');
 
     try {

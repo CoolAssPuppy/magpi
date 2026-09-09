@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  describeConnectionStatus,
-  formatLastSynced,
-  type ConnectionStatusInput,
-} from './status';
+import { describeConnectionStatus, formatLastSynced, type ConnectionStatusInput } from './status';
 
 const getConnectionStatus = (
   overrides?: Partial<ConnectionStatusInput>,
@@ -35,7 +31,10 @@ describe('connection status', () => {
 
   it('gives a revoked connection a real reason and a reconnect action', () => {
     const view = describeConnectionStatus(
-      getConnectionStatus({ status: 'revoked', statusDetail: 'The workspace owner removed Recall.' }),
+      getConnectionStatus({
+        status: 'revoked',
+        statusDetail: 'The workspace owner removed Recall.',
+      }),
     );
 
     expect(view.reason).toBe('The workspace owner removed Recall.');

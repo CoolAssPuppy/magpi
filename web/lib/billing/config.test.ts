@@ -2,11 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { billingConfig } from './config';
 
-const KEYS = [
-  'SB_STRIPE_SECRET_KEY',
-  'SB_STRIPE_WEBHOOK_SECRET',
-  'SB_STRIPE_PRICE_TEAM',
-] as const;
+const KEYS = ['SB_STRIPE_SECRET_KEY', 'SB_STRIPE_WEBHOOK_SECRET', 'SB_STRIPE_PRICE_TEAM'] as const;
 
 function withStripeEnv(values: Partial<Record<(typeof KEYS)[number], string>>) {
   for (const key of KEYS) {

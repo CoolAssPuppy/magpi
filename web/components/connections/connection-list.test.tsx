@@ -46,7 +46,10 @@ describe('the connections list', () => {
   it('names every provider and offers a way in', () => {
     render(
       <ConnectionList
-        listings={[getListing(), getListing({ slug: 'slack', displayName: 'Slack', connections: [] })]}
+        listings={[
+          getListing(),
+          getListing({ slug: 'slack', displayName: 'Slack', connections: [] }),
+        ]}
         {...getActions()}
       />,
     );

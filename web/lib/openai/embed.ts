@@ -42,7 +42,11 @@ export async function embed(
       purpose: 'embedding',
       orgId,
       run: async (model) => {
-        const response = await embeddings({ model, input: texts, dimensions: EMBEDDING_DIMENSIONS });
+        const response = await embeddings({
+          model,
+          input: texts,
+          dimensions: EMBEDDING_DIMENSIONS,
+        });
         const ordered = [...response.data].sort((a, b) => a.index - b.index);
 
         return {

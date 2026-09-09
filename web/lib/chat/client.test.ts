@@ -74,9 +74,7 @@ describe('askChat', () => {
         ),
     });
 
-    expect(seen).toEqual([
-      { type: 'error', message: 'You are asking faster than we can answer.' },
-    ]);
+    expect(seen).toEqual([{ type: 'error', message: 'You are asking faster than we can answer.' }]);
   });
 
   it('still says something when a refusal carries no reason', async () => {
@@ -86,6 +84,8 @@ describe('askChat', () => {
       fetch: async () => new Response('gateway timeout', { status: 504 }),
     });
 
-    expect(seen).toEqual([{ type: 'error', message: 'The answer could not be reached. Ask again.' }]);
+    expect(seen).toEqual([
+      { type: 'error', message: 'The answer could not be reached. Ask again.' },
+    ]);
   });
 });

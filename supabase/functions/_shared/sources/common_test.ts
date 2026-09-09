@@ -59,13 +59,16 @@ Deno.test('a body that is not json reads as an empty answer', async () => {
 });
 
 Deno.test('a successful refresh carries an expiry measured from the injected clock', async () => {
-  const outcome = await refreshWithTokenEndpoint('google', deps(() =>
-    json({ access_token: 'at_2', expires_in: 3600 })), {
-    refreshToken: 'rt_1',
-    clientId: 'id',
-    clientSecret: 'secret',
-    tokenUrl: 'https://oauth2.googleapis.com/token',
-  });
+  const outcome = await refreshWithTokenEndpoint(
+    'google',
+    deps(() => json({ access_token: 'at_2', expires_in: 3600 })),
+    {
+      refreshToken: 'rt_1',
+      clientId: 'id',
+      clientSecret: 'secret',
+      tokenUrl: 'https://oauth2.googleapis.com/token',
+    },
+  );
 
   assertEquals(outcome.kind, 'refreshed');
   if (outcome.kind !== 'refreshed') return;

@@ -93,7 +93,12 @@ export async function advanceCursor(
 ): Promise<void> {
   const { error } = await db
     .from('connections')
-    .update({ cursor, last_synced_at: syncedAt.toISOString(), status: 'active', status_detail: null })
+    .update({
+      cursor,
+      last_synced_at: syncedAt.toISOString(),
+      status: 'active',
+      status_detail: null,
+    })
     .eq('id', connectionId);
   if (error) throw new ApiError(500, 'internal', 'cursor update failed');
 }

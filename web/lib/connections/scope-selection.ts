@@ -12,7 +12,10 @@ import { err, ok, type Result } from '@/lib/result';
 const scopeItemSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  url: z.url().nullish().transform((value) => value ?? null),
+  url: z
+    .url()
+    .nullish()
+    .transform((value) => value ?? null),
 });
 
 const populatedSchema = z.object({

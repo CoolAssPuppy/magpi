@@ -95,7 +95,11 @@ const CALLS: DriverCall[] = [
  * holding the request URL leaks just as well. A RefreshOutcome is included
  * because `failed` carries a detail string straight onto the connection.
  */
-async function surfaceOf(call: DriverCall, driver: SourceDriver, deps: SourceDeps): Promise<string> {
+async function surfaceOf(
+  call: DriverCall,
+  driver: SourceDriver,
+  deps: SourceDeps,
+): Promise<string> {
   try {
     return JSON.stringify(await call.run(driver, deps));
   } catch (error) {

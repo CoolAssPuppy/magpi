@@ -18,9 +18,7 @@ function fakeEmbeddings(
       calls.push(params);
       return {
         // Returned out of order on purpose: the API does not promise ordering.
-        data: vectors
-          .map((embedding, index) => ({ index, embedding: [...embedding] }))
-          .reverse(),
+        data: vectors.map((embedding, index) => ({ index, embedding: [...embedding] })).reverse(),
         usage: { prompt_tokens: promptTokens },
       };
     },

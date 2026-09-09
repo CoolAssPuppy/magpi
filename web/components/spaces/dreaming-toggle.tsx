@@ -22,10 +22,10 @@ export function DreamingToggle({ spaceId, enabled }: { spaceId: string; enabled:
   }
 
   return (
-    <div className="border-border flex items-start justify-between gap-6 rounded-[var(--radius-panel)] border p-4">
+    <div className="flex items-start justify-between gap-6 rounded-[var(--radius-panel)] border border-border p-4">
       <div className="max-w-[var(--measure-prose)]">
-        <h2 className="font-heading text-foreground text-sm font-medium">Dreaming</h2>
-        <p className="text-foreground-lighter mt-1 text-sm">
+        <h2 className="font-heading text-sm font-medium text-foreground">Dreaming</h2>
+        <p className="mt-1 text-sm text-foreground-lighter">
           Once a night Recall re-reads what came into this space that day, extracts the people and
           projects it mentions, links documents that are about the same thing, and writes a digest
           back into the space. Everything it writes cites its sources.

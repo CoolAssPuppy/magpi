@@ -1,20 +1,28 @@
 import type { Json, Tables } from '@/lib/database.types';
 
 import { describeScopeSelection, parseScopeSelection } from './scope-selection';
-import {
-  describeConnectionStatus,
-  formatLastSynced,
-  type ConnectionStatusView,
-} from './status';
+import { describeConnectionStatus, formatLastSynced, type ConnectionStatusView } from './status';
 
 export type ProviderRecord = Pick<
   Tables<'providers'>,
-  'slug' | 'display_name' | 'description' | 'docs_url' | 'enabled' | 'position' | 'scope_selection_kind'
+  | 'slug'
+  | 'display_name'
+  | 'description'
+  | 'docs_url'
+  | 'enabled'
+  | 'position'
+  | 'scope_selection_kind'
 >;
 
 export type ConnectionRecord = Pick<
   Tables<'connections'>,
-  'id' | 'provider' | 'space_id' | 'external_account_id' | 'status' | 'status_detail' | 'last_synced_at'
+  | 'id'
+  | 'provider'
+  | 'space_id'
+  | 'external_account_id'
+  | 'status'
+  | 'status_detail'
+  | 'last_synced_at'
 > & { readonly scope_selection: Json };
 
 export type SpaceRecord = Pick<Tables<'spaces'>, 'id' | 'name' | 'kind'>;
@@ -44,11 +52,7 @@ function summarizeScope(scopeSelection: Json): string {
   return parsed.ok ? describeScopeSelection(parsed.data) : 'Scope could not be read';
 }
 
-function toSummary(
-  connection: ConnectionRecord,
-  spaceName: string,
-  now: Date,
-): ConnectionSummary {
+function toSummary(connection: ConnectionRecord, spaceName: string, now: Date): ConnectionSummary {
   return {
     id: connection.id,
     provider: connection.provider,

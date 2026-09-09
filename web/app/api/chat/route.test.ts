@@ -171,7 +171,9 @@ describe('POST /api/chat', () => {
       ],
     });
 
-    await POST(ask({ conversationId: CONVERSATION_ID, message: 'What about Q1?' })).then(readEvents);
+    await POST(ask({ conversationId: CONVERSATION_ID, message: 'What about Q1?' })).then(
+      readEvents,
+    );
 
     expect(answerState.seenInput).toMatchObject({
       history: [{ role: 'user', content: 'How did revenue look in Q2?' }],

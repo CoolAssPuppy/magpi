@@ -34,7 +34,10 @@ function ScopeEditor({
   onSaveScope,
 }: {
   connection: ConnectionScope;
-  onSaveScope: (connectionId: string, selected: readonly string[]) => Promise<ActionState<undefined>>;
+  onSaveScope: (
+    connectionId: string,
+    selected: readonly string[],
+  ) => Promise<ActionState<undefined>>;
 }) {
   const initial = connection.selection.kind === 'set' ? connection.selection.selected : [];
   const [selected, setSelected] = useState<readonly string[]>(initial);
@@ -105,7 +108,10 @@ export function ConnectPanel({
   connections: readonly ConnectionScope[];
   initialSpaceId: string;
   onBegin: (spaceId: string) => Promise<ActionState<undefined>>;
-  onSaveScope: (connectionId: string, selected: readonly string[]) => Promise<ActionState<undefined>>;
+  onSaveScope: (
+    connectionId: string,
+    selected: readonly string[],
+  ) => Promise<ActionState<undefined>>;
 }) {
   const spaceFieldId = useId();
   const [spaceId, setSpaceId] = useState(initialSpaceId);
@@ -123,7 +129,10 @@ export function ConnectPanel({
   return (
     <div className="flex flex-col gap-8">
       <section aria-labelledby={`${spaceFieldId}-heading`} className="flex flex-col gap-3">
-        <h2 id={`${spaceFieldId}-heading`} className="font-heading text-sm font-medium text-foreground">
+        <h2
+          id={`${spaceFieldId}-heading`}
+          className="font-heading text-sm font-medium text-foreground"
+        >
           Add a connection
         </h2>
 

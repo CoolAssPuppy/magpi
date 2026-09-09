@@ -10,7 +10,11 @@ import { ApiError } from './errors.ts';
 import { randomToken, sha256Base64Url } from './crypto.ts';
 import { denoEnv, type EnvSource, functionsBaseUrl } from './env.ts';
 import { type HttpDeps, liveHttp } from './deps.ts';
-import { type OAuthProviderRecord, type ProviderRecord, requireOAuthProvider } from './providers.ts';
+import {
+  type OAuthProviderRecord,
+  type ProviderRecord,
+  requireOAuthProvider,
+} from './providers.ts';
 
 export const STATE_TTL_SECONDS = 600;
 
@@ -305,8 +309,7 @@ export function oauthDriverFor(record: ProviderRecord, deps: HttpDeps = liveHttp
         refreshToken: typeof payload.refresh_token === 'string' ? payload.refresh_token : null,
         expiresAt: expiresAtFrom(payload.expires_in),
         scopes: splitScopes(payload.scope),
-        externalAccountId:
-          (await quirks.accountFromExchange?.(deps, payload, accessToken)) ?? null,
+        externalAccountId: (await quirks.accountFromExchange?.(deps, payload, accessToken)) ?? null,
       };
     },
 

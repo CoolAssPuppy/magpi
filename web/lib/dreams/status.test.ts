@@ -112,7 +112,9 @@ describe('dream kinds', () => {
 
 describe('run duration', () => {
   it('measures a finished run', () => {
-    expect(formatRunDuration('2026-09-09T02:00:00.000Z', '2026-09-09T02:01:30.000Z')).toBe('1m 30s');
+    expect(formatRunDuration('2026-09-09T02:00:00.000Z', '2026-09-09T02:01:30.000Z')).toBe(
+      '1m 30s',
+    );
   });
 
   it('measures a short run in seconds', () => {

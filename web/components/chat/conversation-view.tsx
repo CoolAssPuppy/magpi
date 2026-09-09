@@ -1,0 +1,69 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useReducer, useRef } from 'react';
+
+import { askChat } from '@/lib/chat/client';
+import { chatReducer, initialChatState, type ChatTurn } from '@/lib/chat/turns';
+
+import { Composer } from './composer';
+import { MessageList } from './message-list';
+
+export type ConversationViewProps = {
+  readonly conversationId: string;
+  readonly initialTurns: readonly ChatTurn[];
+  readonly initialTitle: string | null;
+  /** Carried over from the screen where the conversation was opened. */
+  readonly pendingQuestion: string | null;
+};
+
+export function ConversationView({
+  conversationId,
+  initialTurns,
+  initialTitle,
+  pendingQuestion,
+}: ConversationViewProps) {
+  const router = useRouter();
+  const [state, dispatch] = useReducer(chatReducer, initialChatState(initialTurns, initialTitle));
+  const foot = useRef<HTMLDivElement>(null);
+  const started = useRef(false);
+
+  const ask = useCallback(
+    async (question: string) => {
+      dispatch({ type: 'ask', question, turnId: crypto.randomUUID() });
+      await askChat({ conversationId, message: question }, (event) =>
+        dispatch({ type: 'event', event }),
+      );
+      // The history sidebar is server rendered, so a new title reaches it here.
+      router.refresh();
+    },
+    [conversationId, router],
+  );
+
+  useEffect(() => {
+    if (started.current || pendingQuestion === null) return;
+
+    started.current = true;
+    router.replace(`/chat/${conversationId}`, { scroll: false });
+    void ask(pendingQuestion);
+  }, [ask, conversationId, pendingQuestion, router]);
+
+  useEffect(() => {
+    foot.current?.scrollIntoView({ block: 'end' });
+  }, [state.turns]);
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-6">
+      <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+        <MessageList turns={state.turns} />
+        <div ref={foot} />
+      </div>
+
+      <Composer
+        onAsk={(question) => void ask(question)}
+        busy={state.asking}
+        placeholder="Ask a follow-up"
+      />
+    </div>
+  );
+}
