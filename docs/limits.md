@@ -167,58 +167,45 @@ time. A signed-in user's JWT gets a 403, which is deliberate: a worker is
 machinery, and anyone reaching one directly is either confused or making the
 platform do unpaid work.
 
-That means the scheduler has to send the key. Three Vercel crons do, through
-three routes under `web/app/api/cron/` that hold the key and forward it:
+That means the scheduler has to send the key. `pg_cron` holds the schedule and
+`pg_net` makes the call, both declared in `supabase/schemas/00_extensions.sql`.
 
-| Worker          | Route              | Schedule      | Batch |
-| --------------- | ------------------ | ------------- | ----- |
-| `ingest-worker` | `/api/cron/ingest` | `*/2 * * * *` | 25    |
-| `sync-worker`   | `/api/cron/sync`   | `0 * * * *`   | 10    |
-| `dream-worker`  | `/api/cron/dream`  | `0 2 * * *`   | 5     |
+| Worker          | Schedule      | Batch |
+| --------------- | ------------- | ----- |
+| `ingest-worker` | `*/2 * * * *` | 25    |
+| `sync-worker`   | `0 * * * *`   | 10    |
+| `dream-worker`  | `0 2 * * *`   | 5     |
 
-The schedules live in `vercel.json` and the batch sizes in the routes. Vercel
-signs a cron invocation with `CRON_SECRET`, and a route checks that signature
-before it spends anything. A deployment with no `CRON_SECRET` set answers 403 to
-every tick, so the variable belongs in the Vercel project next to the Supabase
-URL and the service role key.
+The schedule is `public.schedule_workers()` in
+`supabase/schemas/96_schedules.sql`, applied by a migration. Each job calls
+`public.invoke_worker`, which reads two Vault secrets at fire time:
 
-`token-refresh` runs on no schedule. The sync path renews a token on its way
-past, which covers every connection an hourly tick touches. A connection nobody
-syncs for long enough that the refresh token itself lapses is the case left
-open, and it shows up as a failed sync the next time a person asks for one.
-Scheduling it is a fourth entry in `vercel.json` and a fourth route, and the
-demo does not need one.
+| Secret               | Value                                                     |
+| -------------------- | --------------------------------------------------------- |
+| `worker_base_url`    | The project's functions origin, without a trailing slash. |
+| `worker_service_key` | The service role key.                                     |
 
-A deployment that is not on Vercel schedules the workers in the database
-instead. `pg_cron` and `pg_net` are installed by
-`supabase/schemas/00_extensions.sql`, so the statement is:
-
-```sql
-select cron.schedule(
-  'ingest-worker',
-  '*/2 * * * *',
-  $$
-  select net.http_post(
-    url := 'https://<project-ref>.supabase.co/functions/v1/ingest-worker',
-    headers := jsonb_build_object(
-      'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || current_setting('app.service_role_key')
-    ),
-    body := '{"batch": 25}'::jsonb
-  );
-  $$
-);
-```
+A database with neither set ticks and does nothing. Set them for a local stack
+with `doppler run -- node scripts/configure-schedules.mjs`, which points them at
+`http://host.docker.internal:55321`, since `127.0.0.1` inside Postgres is
+Postgres. For a hosted project, set the same two secrets once in the SQL editor.
 
 The key must not be pasted into the schedule. `cron.job` is readable by anyone
 who can read the catalog, and a literal there is a service role key in a table.
-Set it once as a database setting and read it with `current_setting`, or use
-Vault.
+A pgTAP assertion checks that no schedule's command carries one.
 
-Match the intervals in the table above, and add `token-refresh` hourly. The
-dream worker staggers by organization id itself, so every tenant does not wake
-on the same minute of 02:00 UTC.
+Each tick allows two minutes. `pg_net` defaults to five seconds, which is
+shorter than any batch with work in it. A tick that times out has still done its
+work: the function keeps running after `pg_net` hangs up. The row in
+`net._http_response` is diagnostics.
 
+`token-refresh` runs on no schedule. The sync path renews a token on its way
+past, which covers every connection the hourly tick touches. A connection nobody
+syncs for long enough that the refresh token itself lapses is the case left
+open, and it shows up as a failed sync the next time a person asks for one.
+
+The dream worker staggers by organization id itself, so every tenant does not
+wake on the same minute of 02:00 UTC.
 `ingest-worker` claims through `claim_ingest_jobs()`, which marks rows running
 behind `for update skip locked`, so two overlapping invocations take different
 jobs. That matters as soon as a batch runs longer than its interval, which is

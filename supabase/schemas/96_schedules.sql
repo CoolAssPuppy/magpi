@@ -42,13 +42,22 @@ begin
     return;
   end if;
 
+  -- Two minutes, against a pg_net default of five seconds. A batch of 25 takes
+  -- longer than five seconds whenever there is anything to do, so the default
+  -- wrote a timeout row for every tick that did work.
+  --
+  -- The request timing out does not stop the work: the function keeps running
+  -- after pg_net hangs up, measured here at 51 of 70 seeded jobs finishing
+  -- across three timed-out ticks. The response row is diagnostics, and this is
+  -- what makes it worth reading.
   perform net.http_post(
     url := rtrim(v_base, '/') || '/functions/v1/' || p_worker,
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
       'Authorization', 'Bearer ' || v_key
     ),
-    body := jsonb_build_object('batch', p_batch)
+    body := jsonb_build_object('batch', p_batch),
+    timeout_milliseconds := 120000
   );
 end;
 $$;

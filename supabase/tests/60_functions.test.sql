@@ -9,7 +9,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(42);
+select plan(45);
 
 insert into auth.users (id, email, instance_id, aud, role)
 values
@@ -520,6 +520,28 @@ select ok(
   not has_column_privilege('authenticated', 'public.spaces', 'org_id', 'update')
     and not has_column_privilege('authenticated', 'public.spaces', 'kind', 'update'),
   'but never move it between organizations or change what kind of space it is'
+);
+
+-- The schedule. Three jobs, in the database rather than in a hosting provider's
+-- configuration file, which is the point of moving them.
+select is(
+  (select count(*)::int from cron.job
+   where jobname in ('ingest-worker', 'sync-worker', 'dream-worker')),
+  3, 'the three workers are scheduled'
+);
+
+select is(
+  (select schedule from cron.job where jobname = 'ingest-worker'),
+  '*/2 * * * *',
+  'ingest runs every two minutes, which is what claim_ingest_jobs reasons its reclaim window from'
+);
+
+-- cron.job.command is readable by anyone who can read the catalog. A key pasted
+-- into a schedule is a key in a table, so the command names a function and the
+-- secrets stay in Vault.
+select is(
+  (select count(*)::int from cron.job where command like '%eyJ%' or command like '%secret%'),
+  0, 'no schedule carries a credential in its command'
 );
 
 select * from finish();

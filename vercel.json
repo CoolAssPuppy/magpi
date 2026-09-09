@@ -3,10 +3,5 @@
   "buildCommand": "pnpm --dir web build",
   "installCommand": "pnpm install",
   "outputDirectory": "web/.next",
-  "framework": "nextjs",
-  "crons": [
-    { "path": "/api/cron/ingest", "schedule": "*/2 * * * *" },
-    { "path": "/api/cron/sync", "schedule": "0 * * * *" },
-    { "path": "/api/cron/dream", "schedule": "0 2 * * *" }
-  ]
+  "framework": "nextjs"
 }

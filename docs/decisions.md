@@ -124,3 +124,20 @@ The cost is that `verify_jwt = false` has to be set for that function in
 stranger and the billing tables. That check is tested against recorded Stripe
 payloads in `supabase/functions/_shared/billing_test.ts`, including a replayed
 event and one signed with a different secret.
+
+**The workers are scheduled by `pg_cron`, not by Vercel crons.**
+Three Vercel crons called three Next.js routes that held the service role key
+and forwarded it to an Edge Function. That worked, and it made the schedule a
+property of one hosting provider. A deployment anywhere else, or a clone with no
+Vercel account, had ingest, sync and dreaming never run, and nothing on any
+screen said so.
+
+The schedule now lives in `supabase/schemas/96_schedules.sql` and the three
+routes are gone. Someone who clones this repo and runs `supabase start` gets the
+same background work as the deployed project, with two Vault secrets to fill in.
+
+The cost is that a tick is harder to watch. A Vercel cron shows up in a
+deployment's logs; a `pg_cron` tick shows up in `cron.job_run_details` and
+`net._http_response`, which nobody opens by habit. `pg_net` also defaults to a
+five second timeout, shorter than any batch with work in it, so the call sets
+two minutes explicitly.

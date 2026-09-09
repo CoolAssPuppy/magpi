@@ -314,8 +314,10 @@ recorded here so nobody acts on them later.
 3. **F002, narrow or correct.** The regex is one line. Deriving the path
    server-side is correct but requires agreeing a naming scheme with a vendored
    hook, and forces a decision between versioning and collision on re-upload.
-4. **Vercel crons or pg_cron.** Now implemented as Vercel crons. pg_cron keeps
-   scheduling inside Supabase, which is the keynote's own argument and works for
-   a stranger cloning the repo with no Vercel account.
+4. **Vercel crons or pg_cron.** Answered: `pg_cron`. The three Vercel crons and
+   the three routes behind them are gone, and the schedule is
+   `supabase/schemas/96_schedules.sql`. Scheduling stays inside Supabase, which
+   is the keynote's own argument and works for a stranger cloning the repo with
+   no Vercel account.
 5. **F017, the admin N+1.** A security-definer function returning id and email
    for an org is the clean fix but puts auth data behind a `public` function.
