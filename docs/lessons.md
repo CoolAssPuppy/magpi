@@ -257,3 +257,18 @@ formatters would have fought over them indefinitely.
 **Rule.** Sweep formatting with the repo's own scripts, `pnpm format`, which
 runs each formatter over the paths it owns. Reach for an explicit glob only for
 a single file, and never for a directory another tool formats.
+
+## The check that verifies a check can be vacuous too
+
+An agent proving a new guard worked reverted the thing it guards and grepped the
+output for failures. The grep reported zero and the guard looked broken. The
+pattern was `FAILED (`, and the real output carries ANSI colour codes between
+the word and the bracket, so it could never have matched anything on any run.
+
+The verification command could not distinguish a pass from a failure. That is
+the vacuous-assertion problem one level up: not the test that cannot fail, but
+the thing checking whether the test failed.
+
+**Rule.** Verify with exit codes, not by grepping output. A grep that matches
+nothing and a run with nothing to match look identical, and coloured output has
+invisible characters in the middle of the words you are matching on.

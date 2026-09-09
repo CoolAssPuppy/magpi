@@ -174,16 +174,36 @@ Deno.test('a provider row with no driver behind it says so', () => {
 
 const SLUG_SHAPED = /\b[a-z]+_[a-z]+\b/;
 
+/**
+ * Only what reaches connections.status_detail, which is the message and nothing
+ * else. The stack is full of file names and never reaches a person, so checking
+ * the whole surface the way the token tests do would fail on http_stub.ts.
+ */
+async function userFacingText(
+  call: DriverCall,
+  driver: SourceDriver,
+  deps: SourceDeps,
+): Promise<string> {
+  try {
+    const outcome = await call.run(driver, deps);
+    const failed = outcome as { kind?: string; detail?: unknown };
+    return failed?.kind === 'failed' && typeof failed.detail === 'string' ? failed.detail : '';
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error);
+  }
+}
+
 for (const provider of SOURCE_PROVIDERS) {
   Deno.test(`${provider} names itself the way a person would, not by its slug`, async () => {
     const driver = driverFor(provider);
     for (const call of CALLS) {
-      const surface = await surfaceOf(call, driver, depsAnswering(401));
-      const spoken = surface.replace(/https?:\/\/\S+/g, '');
-      assert(
-        !SLUG_SHAPED.test(spoken),
-        `${provider}.${call.name} put something slug-shaped in front of a user: ${spoken}`,
-      );
+      for (const status of [401, 500]) {
+        const spoken = await userFacingText(call, driver, depsAnswering(status));
+        assert(
+          !SLUG_SHAPED.test(spoken),
+          `${provider}.${call.name} put something slug-shaped in front of a user: ${spoken}`,
+        );
+      }
     }
   });
 
