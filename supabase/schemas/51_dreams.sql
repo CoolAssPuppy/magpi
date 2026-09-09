@@ -28,10 +28,26 @@ create table public.dream_runs (
 --
 -- MATCH SIMPLE, the default, because output_document_id is nullable and a run
 -- with no output yet must still be insertable.
+--
+-- The column list on the delete action is required, not decorative. A bare
+-- `on delete set null` nulls every referencing column, so deleting a dream
+-- output would try to null dream_runs.space_id, which is not null, and the
+-- delete fails outright. A user must be able to delete a dream output.
 alter table public.dream_runs
   add constraint dream_runs_output_in_space
   foreign key (output_document_id, space_id)
-  references public.documents (id, space_id) on delete set null;
+  references public.documents (id, space_id)
+  on delete set null (output_document_id);
+
+-- The target for anything that has to stay inside a run's own space.
+alter table public.dream_runs add constraint dream_runs_id_space_key unique (id, space_id);
+
+-- A document tagged with a run from another space would attribute a digest to
+-- work it never read.
+alter table public.documents
+  add constraint documents_dream_run_in_space
+  foreign key (dream_run_id, space_id) references public.dream_runs (id, space_id)
+  on delete set null (dream_run_id);
 
 create index dream_runs_space_created_idx on public.dream_runs (space_id, created_at desc);
 
@@ -39,7 +55,7 @@ create index dream_runs_space_created_idx on public.dream_runs (space_id, create
 -- sources, that look like they are about the same thing. Surfaced for a human.
 create table public.dream_links (
   id uuid primary key default gen_random_uuid(),
-  dream_run_id uuid not null references public.dream_runs (id) on delete cascade,
+  dream_run_id uuid not null,
   space_id uuid not null references public.spaces (id) on delete cascade,
   document_a uuid not null,
   document_b uuid not null,
@@ -57,6 +73,9 @@ create table public.dream_links (
 -- filed in. A link naming a document from another space would hand that space a
 -- written summary of something nobody there can open.
 alter table public.dream_links
+  add constraint dream_links_run_in_space
+    foreign key (dream_run_id, space_id) references public.dream_runs (id, space_id)
+    on delete cascade,
   add constraint dream_links_document_a_in_space
     foreign key (document_a, space_id) references public.documents (id, space_id)
     on delete cascade,

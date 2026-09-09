@@ -13,11 +13,13 @@ create table public.entities (
   unique (space_id, kind, canonical_name)
 );
 
+alter table public.entities add constraint entities_id_space_key unique (id, space_id);
+
 create index entities_space_id_idx on public.entities (space_id);
 
 create table public.entity_mentions (
   id uuid primary key default gen_random_uuid(),
-  entity_id uuid not null references public.entities (id) on delete cascade,
+  entity_id uuid not null,
   document_id uuid not null,
   chunk_id uuid not null,
   space_id uuid not null references public.spaces (id) on delete cascade,
@@ -28,6 +30,9 @@ create table public.entity_mentions (
 -- space_id is denormalized here, so without these it can name a chunk from
 -- anywhere. Same reason as dream_links.
 alter table public.entity_mentions
+  add constraint entity_mentions_entity_in_space
+    foreign key (entity_id, space_id) references public.entities (id, space_id)
+    on delete cascade,
   add constraint entity_mentions_document_in_space
     foreign key (document_id, space_id) references public.documents (id, space_id)
     on delete cascade,

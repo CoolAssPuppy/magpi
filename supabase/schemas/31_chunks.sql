@@ -5,7 +5,7 @@ create table public.chunks (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references public.organizations (id) on delete cascade,
   space_id uuid not null references public.spaces (id) on delete cascade,
-  document_id uuid not null references public.documents (id) on delete cascade,
+  document_id uuid not null,
   ordinal integer not null,
   content text not null,
   embedding extensions.vector(1536),
@@ -22,6 +22,16 @@ create index chunks_embedding_idx
 
 create index chunks_tsv_idx on public.chunks using gin (tsv);
 alter table public.chunks add constraint chunks_id_space_key unique (id, space_id);
+
+-- The one that matters most. Chunks carry the text and RLS on chunks is what
+-- public.search filters, so a chunk filed against a document in another space
+-- makes that document searchable and readable in full. Every writer of chunks
+-- reaches this, the ingest pipeline included: a batch loop reusing one space_id
+-- across documents produces it directly.
+alter table public.chunks
+  add constraint chunks_document_in_space
+  foreign key (document_id, space_id) references public.documents (id, space_id)
+  on delete cascade;
 
 create index chunks_space_id_idx on public.chunks (space_id);
 create index chunks_document_id_idx on public.chunks (document_id);

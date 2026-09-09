@@ -141,3 +141,33 @@ turns destructive.
 `supabase db diff` printing "No schema changes found" on a clean tree is the
 check that this holds, and it is worth running deliberately rather than only
 when generating a migration.
+
+## `on delete set null` on a composite foreign key nulls every column
+
+A composite foreign key added to keep a dream run inside its own space made
+deleting a dream output impossible:
+
+```
+23502: null value in column "space_id" of relation "dream_runs"
+       violates not-null constraint
+```
+
+`on delete set null` with no column list nulls the whole referencing key, so
+deleting the output document tried to null `dream_runs.space_id` as well. That
+column is not null, so the delete failed outright, and "a user can delete a
+dream output" went from working to impossible.
+
+Postgres 15 added the column list that says which column to null:
+
+```sql
+on delete set null (output_document_id)
+```
+
+**Rule.** A composite foreign key with a `set null` action names the column.
+Only `cascade` is safe without one, because cascade removes the whole row and
+there is no partial state to get wrong.
+
+The wider lesson is that adding a constraint is a behavior change on the delete
+path as much as the insert path, and only the insert path was being thought
+about when this went in. The existing assertions caught it, which is the whole
+argument for having them.
