@@ -1,0 +1,11 @@
+{
+  "data": {
+    "teams": {
+      "nodes": [
+        { "id": "8d1f6c40-3b72-4e95-9a08-51cd7e2b6a37", "name": "Knowledge Base" },
+        { "id": "a5e2b719-6c84-4f13-8d70-2b96e0af4c58", "name": "Platform" },
+        { "id": "f9c30d64-1a58-42b7-b6e1-73da8f5c0912", "name": "Support Content" }
+      ]
+    }
+  }
+}

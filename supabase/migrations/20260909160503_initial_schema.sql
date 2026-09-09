@@ -532,9 +532,9 @@ ALTER TABLE public.chunks
 
 GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.chunks TO anon;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.chunks TO authenticated;
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE ON public.chunks TO authenticated;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.chunks TO service_role;
+GRANT ALL ON public.chunks TO service_role;
 
 CREATE INDEX chunks_document_id_idx ON public.chunks (document_id);
 
@@ -587,9 +587,9 @@ ALTER TABLE public.connections
 
 GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.connections TO anon;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.connections TO authenticated;
+GRANT DELETE, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE ON public.connections TO authenticated;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.connections TO service_role;
+GRANT ALL ON public.connections TO service_role;
 
 CREATE INDEX connections_space_id_idx ON public.connections (space_id);
 
@@ -636,9 +636,9 @@ ALTER TABLE public.conversations
 
 GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.conversations TO anon;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.conversations TO authenticated;
+GRANT ALL ON public.conversations TO authenticated;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.conversations TO service_role;
+GRANT ALL ON public.conversations TO service_role;
 
 CREATE INDEX conversations_user_created_idx ON public.conversations (user_id, created_at DESC);
 
@@ -705,9 +705,9 @@ ALTER TABLE public.chunks
 
 GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.documents TO anon;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.documents TO authenticated;
+GRANT DELETE, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE ON public.documents TO authenticated;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.documents TO service_role;
+GRANT ALL ON public.documents TO service_role;
 
 CREATE INDEX documents_org_id_idx ON public.documents (org_id);
 
@@ -771,9 +771,9 @@ ALTER TABLE public.dream_links
 
 GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.dream_links TO anon;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.dream_links TO authenticated;
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON public.dream_links TO authenticated;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.dream_links TO service_role;
+GRANT ALL ON public.dream_links TO service_role;
 
 CREATE INDEX dream_links_space_idx ON public.dream_links (space_id, created_at DESC);
 
@@ -823,9 +823,9 @@ ALTER TABLE public.dream_runs
 
 GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.dream_runs TO anon;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.dream_runs TO authenticated;
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE ON public.dream_runs TO authenticated;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.dream_runs TO service_role;
+GRANT ALL ON public.dream_runs TO service_role;
 
 CREATE INDEX dream_runs_space_created_idx ON public.dream_runs (space_id, created_at DESC);
 
@@ -860,9 +860,9 @@ ALTER TABLE public.entities
 
 GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.entities TO anon;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.entities TO authenticated;
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE ON public.entities TO authenticated;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.entities TO service_role;
+GRANT ALL ON public.entities TO service_role;
 
 CREATE INDEX entities_space_id_idx ON public.entities (space_id);
 
@@ -903,9 +903,9 @@ ALTER TABLE public.entity_mentions
 
 GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.entity_mentions TO anon;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.entity_mentions TO authenticated;
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE ON public.entity_mentions TO authenticated;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.entity_mentions TO service_role;
+GRANT ALL ON public.entity_mentions TO service_role;
 
 CREATE INDEX entity_mentions_document_idx ON public.entity_mentions (document_id);
 
@@ -948,9 +948,9 @@ ALTER TABLE public.ingest_jobs
 
 GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.ingest_jobs TO anon;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.ingest_jobs TO authenticated;
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE ON public.ingest_jobs TO authenticated;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.ingest_jobs TO service_role;
+GRANT ALL ON public.ingest_jobs TO service_role;
 
 CREATE INDEX ingest_jobs_document_idx ON public.ingest_jobs (document_id);
 
@@ -998,9 +998,9 @@ ALTER TABLE public.messages
 
 GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.messages TO anon;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.messages TO authenticated;
+GRANT INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE ON public.messages TO authenticated;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.messages TO service_role;
+GRANT ALL ON public.messages TO service_role;
 
 CREATE INDEX messages_conversation_created_idx ON public.messages (conversation_id, created_at);
 
@@ -1041,9 +1041,9 @@ ALTER TABLE public.model_calls
 
 GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.model_calls TO anon;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.model_calls TO authenticated;
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE ON public.model_calls TO authenticated;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.model_calls TO service_role;
+GRANT ALL ON public.model_calls TO service_role;
 
 CREATE INDEX model_calls_org_occurred_idx ON public.model_calls (org_id, occurred_at);
 
@@ -1115,9 +1115,9 @@ ALTER TABLE public.org_invites
 
 GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.org_invites TO anon;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.org_invites TO authenticated;
+GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE ON public.org_invites TO authenticated;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.org_invites TO service_role;
+GRANT ALL ON public.org_invites TO service_role;
 
 CREATE UNIQUE INDEX org_invites_pending_idx ON public.org_invites (org_id, lower(email))
   WHERE accepted_at IS NULL;
@@ -1158,9 +1158,9 @@ ALTER TABLE public.org_members
 
 GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.org_members TO anon;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.org_members TO authenticated;
+GRANT DELETE, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE ON public.org_members TO authenticated;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.org_members TO service_role;
+GRANT ALL ON public.org_members TO service_role;
 
 CREATE INDEX org_members_user_id_idx ON public.org_members (user_id);
 
@@ -1249,9 +1249,9 @@ ALTER TABLE public.organizations
 
 GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.organizations TO anon;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.organizations TO authenticated;
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON public.organizations TO authenticated;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.organizations TO service_role;
+GRANT ALL ON public.organizations TO service_role;
 
 CREATE POLICY organizations_select_member ON public.organizations
   FOR SELECT
@@ -1342,9 +1342,9 @@ ALTER TABLE public.providers
 
 GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.providers TO anon;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.providers TO authenticated;
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE ON public.providers TO authenticated;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.providers TO service_role;
+GRANT ALL ON public.providers TO service_role;
 
 CREATE POLICY providers_select_authenticated ON public.providers
   FOR SELECT
@@ -1392,9 +1392,9 @@ ALTER TABLE public.space_members
 
 GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.space_members TO anon;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.space_members TO authenticated;
+GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE ON public.space_members TO authenticated;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.space_members TO service_role;
+GRANT ALL ON public.space_members TO service_role;
 
 CREATE INDEX space_members_user_id_idx ON public.space_members (user_id);
 
@@ -1485,9 +1485,9 @@ ALTER TABLE public.space_members
 
 GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.spaces TO anon;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.spaces TO authenticated;
+GRANT ALL ON public.spaces TO authenticated;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.spaces TO service_role;
+GRANT ALL ON public.spaces TO service_role;
 
 CREATE UNIQUE INDEX spaces_org_kind_idx ON public.spaces (org_id)
   WHERE kind = 'org'::public.space_kind;
@@ -1561,9 +1561,9 @@ ALTER TABLE public.usage_events
 
 GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.usage_events TO anon;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.usage_events TO authenticated;
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE ON public.usage_events TO authenticated;
 
-GRANT MAINTAIN, REFERENCES, TRIGGER, TRUNCATE ON public.usage_events TO service_role;
+GRANT ALL ON public.usage_events TO service_role;
 
 CREATE INDEX usage_events_org_occurred_idx ON public.usage_events (org_id, occurred_at);
 

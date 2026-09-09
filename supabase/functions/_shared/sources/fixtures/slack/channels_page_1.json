@@ -1,0 +1,48 @@
+{
+  "ok": true,
+  "channels": [
+    {
+      "id": "C0KB1AURORA",
+      "name": "knowledge-base",
+      "is_channel": true,
+      "is_private": false,
+      "is_archived": false,
+      "created": 1756300800,
+      "creator": "U04MERIDIAN1",
+      "num_members": 42,
+      "topic": {
+        "value": "Where the handbook gets argued about",
+        "creator": "U04MERIDIAN1",
+        "last_set": 1756300900
+      },
+      "purpose": {
+        "value": "Team knowledge base upkeep",
+        "creator": "U04MERIDIAN1",
+        "last_set": 1756300900
+      }
+    },
+    {
+      "id": "C0KB2BEACON",
+      "name": "docs-guild",
+      "is_channel": true,
+      "is_private": false,
+      "is_archived": false,
+      "created": 1756387200,
+      "creator": "U04MERIDIAN5",
+      "num_members": 17,
+      "topic": {
+        "value": "Style guide and review rota",
+        "creator": "U04MERIDIAN5",
+        "last_set": 1756387300
+      },
+      "purpose": {
+        "value": "Documentation guild",
+        "creator": "U04MERIDIAN5",
+        "last_set": 1756387300
+      }
+    }
+  ],
+  "response_metadata": {
+    "next_cursor": "dGVhbTpDMEtCM0NJTkRFUg=="
+  }
+}

@@ -40,8 +40,11 @@ export async function enforceRateLimits(
       })
       .single<ConsumeResult>();
 
-    // Must not fail open: a database blip would lift every limit at once.
-    if (error || !data) throw new ApiError(503, 'unavailable', 'rate limiter unavailable');
+    // Must not fail open: a database blip, or a result that is not the shape
+    // the function promises, would otherwise lift every limit at once.
+    if (error || typeof data?.allowed !== 'boolean') {
+      throw new ApiError(503, 'unavailable', 'rate limiter unavailable');
+    }
     if (!data.allowed) worstRetry = Math.max(worstRetry, data.retry_after_s);
   }
 

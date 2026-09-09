@@ -1,0 +1,56 @@
+{
+  "ok": true,
+  "messages": [
+    {
+      "type": "message",
+      "user": "U04MERIDIAN1",
+      "text": "Reindex runbook is written up at last.\nStep one is draining the ingest queue, everything else follows from that.",
+      "ts": "1788954450.000200",
+      "team": "T04MERIDIAN",
+      "thread_ts": "1788954450.000200",
+      "reply_count": 2,
+      "reply_users_count": 2,
+      "latest_reply": "1788954980.000900"
+    },
+    {
+      "type": "message",
+      "subtype": "file_share",
+      "user": "U04MERIDIAN7",
+      "text": "",
+      "ts": "1788952600.000600",
+      "team": "T04MERIDIAN",
+      "files": [
+        {
+          "id": "F04KBDIAGRAM",
+          "name": "ingest-topology.png",
+          "mimetype": "image/png"
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "user": "U04MERIDIAN3",
+      "text": "Moved the onboarding checklist into the knowledge base so new folks stop asking in DMs.",
+      "ts": "1788951909.000700",
+      "team": "T04MERIDIAN"
+    },
+    {
+      "type": "message",
+      "subtype": "channel_join",
+      "user": "U04MERIDIAN9",
+      "text": "<@U04MERIDIAN9> has joined the channel",
+      "ts": "1788946245.000300"
+    },
+    {
+      "type": "message",
+      "user": "U04MERIDIAN1",
+      "text": "Weekly digest: 14 pages edited, 3 archived, 1 page still has no owner.",
+      "ts": "1788940931.000100",
+      "team": "T04MERIDIAN"
+    }
+  ],
+  "has_more": false,
+  "pin_count": 2,
+  "channel_actions_ts": null,
+  "channel_actions_count": 0
+}

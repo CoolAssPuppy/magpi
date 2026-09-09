@@ -1,0 +1,7 @@
+{
+  "access_token": "lin_oauth_9f31c07a4b6d48e2b5c1",
+  "refresh_token": "lin_refresh_2c84f6a1d09b47e3a7f5",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "scope": "read issues:read"
+}

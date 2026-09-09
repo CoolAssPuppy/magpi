@@ -1,0 +1,218 @@
+import { assert, assertEquals } from '@std/assert';
+
+import type { SourceCredentials } from './contract.ts';
+import { SourceError } from './contract.ts';
+import { asArray, asRecord, asString } from './common.ts';
+import { linearDriver } from './linear.ts';
+import { loadFixture, type StubCall, stubSource } from './testing/http_stub.ts';
+
+const ENDPOINT = 'https://api.linear.app/graphql';
+const API_KEY = 'lin_api_7b4c2f90e1a84d63b0f5';
+const OAUTH_TOKEN = 'lin_oauth_9f31c07a4b6d48e2b5c1';
+
+const KNOWLEDGE_BASE_TEAM = '8d1f6c40-3b72-4e95-9a08-51cd7e2b6a37';
+
+function creds(overrides: Partial<SourceCredentials> = {}): SourceCredentials {
+  return { accessToken: API_KEY, scopeSelection: { ids: [] }, ...overrides };
+}
+
+/** Reads the outgoing request the way the driver reads an incoming one. */
+function variablesOf(call: StubCall): Record<string, unknown> {
+  return asRecord(asRecord(JSON.parse(call.body ?? 'null')).variables);
+}
+
+function filterOf(call: StubCall): Record<string, unknown> {
+  return asRecord(variablesOf(call).filter);
+}
+
+function answering(body: unknown) {
+  return stubSource([{ when: () => true, body }]);
+}
+
+Deno.test('a first pass asks for everything, with no updatedAt clause', async () => {
+  const deps = answering(await loadFixture('linear', 'changes_first'));
+
+  const page = await linearDriver.listChanges(creds(), deps, { cursor: null });
+
+  assertEquals(deps.calls[0].url, ENDPOINT);
+  assertEquals(deps.calls[0].method, 'POST');
+  assertEquals(variablesOf(deps.calls[0]).filter, null);
+  assertEquals(variablesOf(deps.calls[0]).first, 50);
+  assertEquals(page.documents.length, 3);
+  assertEquals(page.hasMore, true);
+});
+
+Deno.test('an incremental pass filters on the cursor it was handed', async () => {
+  const deps = answering(await loadFixture('linear', 'changes_incremental'));
+  const cursor = '2026-09-08T16:41:05.902Z';
+
+  await linearDriver.listChanges(creds(), deps, { cursor });
+
+  assertEquals(asRecord(filterOf(deps.calls[0]).updatedAt).gt, cursor);
+});
+
+Deno.test('a citation carries the issue identifier and the issue url', async () => {
+  const deps = answering(await loadFixture('linear', 'changes_first'));
+
+  const page = await linearDriver.listChanges(creds(), deps, { cursor: null });
+
+  assertEquals(page.documents[0].externalId, '3f8c1a92-5d47-4c1b-9f0e-2a6b71d4c803');
+  assertEquals(
+    page.documents[0].title,
+    'KB-118 Search returns stale titles after a page is renamed',
+  );
+  assertEquals(page.documents[0].mimeType, 'text/markdown');
+  assert(
+    asString(page.documents[0].url).endsWith(
+      '/KB-118/search-returns-stale-titles-after-a-page-is-renamed',
+    ),
+  );
+});
+
+Deno.test('the next pass resumes from the newest updatedAt in the page', async () => {
+  const deps = answering(await loadFixture('linear', 'changes_incremental'));
+
+  const page = await linearDriver.listChanges(creds(), deps, {
+    cursor: '2026-09-08T16:41:05.902Z',
+  });
+
+  assertEquals(page.cursor, '2026-09-09T11:18:07.556Z');
+  assertEquals(page.hasMore, false);
+});
+
+Deno.test('a quiet connection keeps the cursor it came in with', async () => {
+  const deps = answering(await loadFixture('linear', 'changes_empty'));
+  const cursor = '2026-09-09T11:18:07.556Z';
+
+  const page = await linearDriver.listChanges(creds(), deps, { cursor });
+
+  assertEquals(page.documents, []);
+  assertEquals(page.cursor, cursor);
+});
+
+Deno.test('a connection reads only the teams it selected', async () => {
+  const selected = answering(await loadFixture('linear', 'changes_first'));
+  await linearDriver.listChanges(
+    creds({ scopeSelection: { ids: [KNOWLEDGE_BASE_TEAM] } }),
+    selected,
+    { cursor: null },
+  );
+  assertEquals(asArray(asRecord(asRecord(filterOf(selected.calls[0]).team).id).in), [
+    KNOWLEDGE_BASE_TEAM,
+  ]);
+
+  const unselected = answering(await loadFixture('linear', 'changes_first'));
+  await linearDriver.listChanges(creds(), unselected, { cursor: '2026-09-01T00:00:00.000Z' });
+  assertEquals(filterOf(unselected.calls[0]).team, undefined);
+});
+
+Deno.test('a personal api key is sent as the whole authorization header', async () => {
+  const deps = answering(await loadFixture('linear', 'teams'));
+
+  await linearDriver.listScopeOptions(creds(), deps);
+
+  assertEquals(deps.calls[0].headers.authorization, API_KEY);
+});
+
+Deno.test('an oauth token is sent as a bearer credential', async () => {
+  const deps = answering(await loadFixture('linear', 'teams'));
+
+  await linearDriver.listScopeOptions(creds({ accessToken: OAUTH_TOKEN }), deps);
+
+  assertEquals(deps.calls[0].headers.authorization, `Bearer ${OAUTH_TOKEN}`);
+});
+
+Deno.test('a document is the description followed by each named comment', async () => {
+  const deps = answering(await loadFixture('linear', 'issue'));
+
+  const document = await linearDriver.fetchDocument(
+    creds(),
+    deps,
+    'b21d4e07-8c3a-49f6-a5d2-6e91f0c7ab54',
+  );
+
+  assertEquals(document.title, 'KB-121 Write the retention policy for archived handbook pages');
+  assertEquals(document.mimeType, 'text/markdown');
+  assert(document.text.startsWith('Archived handbook pages stay in the index forever'));
+  const nadia = document.text.indexOf('\n\nNadia Okonkwo: Legal wants two years');
+  const tomas = document.text.indexOf('\n\nTomas Ferreira: Ninety days works');
+  assert(nadia > 0, 'the first comment is missing');
+  assert(tomas > nadia, 'the comments are out of order');
+});
+
+Deno.test('an issue that is gone does not ask for a needless reconnect', async () => {
+  const deps = answering(await loadFixture('linear', 'issue_missing'));
+
+  try {
+    await linearDriver.fetchDocument(creds(), deps, 'deleted-issue');
+    throw new Error('did not raise');
+  } catch (err) {
+    assert(err instanceof SourceError);
+    assertEquals(err.needsReconnect, false);
+  }
+});
+
+Deno.test('a credential error inside a 200 still asks for a reconnect', async () => {
+  const deps = answering(await loadFixture('linear', 'error_authentication'));
+
+  try {
+    await linearDriver.listChanges(creds(), deps, { cursor: null });
+    throw new Error('did not raise');
+  } catch (err) {
+    assert(err instanceof SourceError);
+    assertEquals(err.needsReconnect, true);
+    // Linear's own wording quotes the request, and the request carries the token.
+    assert(!err.message.includes('Authentication required'));
+  }
+});
+
+Deno.test('a rate limit inside a 200 leaves the connection alone', async () => {
+  const deps = answering(await loadFixture('linear', 'error_rate_limited'));
+
+  try {
+    await linearDriver.listChanges(creds(), deps, { cursor: null });
+    throw new Error('did not raise');
+  } catch (err) {
+    assert(err instanceof SourceError);
+    assertEquals(err.needsReconnect, false);
+  }
+});
+
+Deno.test('the scope picker offers the workspace teams', async () => {
+  const deps = answering(await loadFixture('linear', 'teams'));
+
+  const options = await linearDriver.listScopeOptions(creds(), deps);
+
+  assertEquals(options.length, 3);
+  assertEquals(options[0], {
+    id: KNOWLEDGE_BASE_TEAM,
+    name: 'Knowledge Base',
+    kind: 'workspace',
+  });
+  assertEquals(variablesOf(deps.calls[0]).first, 100);
+});
+
+Deno.test('a refresh goes to the token endpoint it was handed', async () => {
+  const deps = answering(await loadFixture('linear', 'token_refreshed'));
+  const tokenUrl = 'https://api.linear.app/oauth/token';
+
+  const outcome = await linearDriver.refresh(deps, {
+    refreshToken: 'lin_refresh_old',
+    clientId: 'client_1',
+    clientSecret: 'secret_1',
+    tokenUrl,
+  });
+
+  assertEquals(deps.calls[0].url, tokenUrl);
+  assertEquals(outcome.kind, 'refreshed');
+  if (outcome.kind !== 'refreshed') return;
+  assertEquals(outcome.accessToken, OAUTH_TOKEN);
+  // Linear rotates the refresh token on every renewal, so the new one is stored.
+  assertEquals(outcome.refreshToken, 'lin_refresh_2c84f6a1d09b47e3a7f5');
+  assertEquals(outcome.expiresAt, '2026-09-09T13:00:00.000Z');
+});
+
+Deno.test('the driver names itself for the registry', () => {
+  assertEquals(linearDriver.provider, 'linear');
+  assertEquals(linearDriver.scopeSelectionKind, 'workspace');
+});

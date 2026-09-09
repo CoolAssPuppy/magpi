@@ -20,3 +20,33 @@ comes from `.next/types`, which does not exist until a build has run, so a cold
 
 **Rule.** Type layout and page props explicitly. The generated types are a
 convenience for an already-built tree, not something a gate can depend on.
+
+## `supabase db diff` silently strips the DML grants
+
+Every policy in `90_policies.sql` was unreachable after the first migration. A
+signed-in user could not read a single row and neither could the service role.
+`information_schema.role_table_grants` showed `authenticated` and `service_role`
+holding only `REFERENCES, TRIGGER, TRUNCATE` on every table.
+
+A stock Supabase project's default privileges for new tables in `public` give
+those roles nothing but those four, so RLS was doing its job and the outer gate
+was shut. The tables that worked were the three where the ported magpi schema
+happened to carry an explicit `grant ... to service_role` line.
+
+**Rule.** Table privileges are declared, in `supabase/schemas/95_grants.sql`,
+never inherited. A new table gets its grants in the same commit as its policies,
+and a policy with no matching grant is a policy that does nothing.
+
+## A hand-written migration makes the next generated one destructive
+
+Adding `95_grants.sql` and running `supabase db diff` produced a migration that
+dropped and recreated three tables, dropped twenty indexes, dropped nine
+policies, and removed every table from the realtime publication. The diff
+compares the schema files against the migrations, and the realtime and storage
+migrations are hand-written, so from the diff's point of view they are drift.
+
+**Rule.** Read every generated migration before committing it, and when the
+diff proposes a drop of something a hand-written migration created, regenerate
+from an empty database instead of accepting it. That is only safe while nothing
+is deployed, so hand-written migrations that the diff cannot see are worth
+keeping to the two the spec already names.

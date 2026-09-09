@@ -1,0 +1,26 @@
+{
+  "data": {
+    "issue": {
+      "id": "b21d4e07-8c3a-49f6-a5d2-6e91f0c7ab54",
+      "identifier": "KB-121",
+      "title": "Write the retention policy for archived handbook pages",
+      "url": "https://linear.app/atlas-knowledge/issue/KB-121/write-the-retention-policy-for-archived-handbook-pages",
+      "updatedAt": "2026-09-08T16:41:05.902Z",
+      "description": "Archived handbook pages stay in the index forever, so a search for \"expenses\" still returns the 2023 policy above the current one.\n\nWe need a written rule for how long an archived page stays searchable and what happens to it after that.",
+      "comments": {
+        "nodes": [
+          {
+            "body": "Legal wants two years for anything that was ever a published policy. Everything else can drop out of search after ninety days.",
+            "createdAt": "2026-09-08T10:22:31.004Z",
+            "user": { "name": "Nadia Okonkwo" }
+          },
+          {
+            "body": "Ninety days works for the index. Deleting the page itself is a separate decision and I would rather not bundle them.",
+            "createdAt": "2026-09-08T16:40:12.771Z",
+            "user": { "name": "Tomas Ferreira" }
+          }
+        ]
+      }
+    }
+  }
+}

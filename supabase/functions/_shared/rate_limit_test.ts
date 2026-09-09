@@ -5,11 +5,11 @@ import { stubDb } from './testing/stub_db.ts';
 import { asyncApiErrorFrom } from './testing/assertions.ts';
 
 function allowing(remaining: number) {
-  return { body: [{ allowed: true, remaining, retry_after_s: 30 }] };
+  return { body: { allowed: true, remaining, retry_after_s: 30 } };
 }
 
 function refusing(retryAfter: number) {
-  return { body: [{ allowed: false, remaining: 0, retry_after_s: retryAfter }] };
+  return { body: { allowed: false, remaining: 0, retry_after_s: retryAfter } };
 }
 
 Deno.test('a rule under its limit lets the call through', async () => {
@@ -29,7 +29,7 @@ Deno.test('a rule under its limit lets the call through', async () => {
 
 Deno.test('an exhausted rule is a 429 carrying the longest retry', async () => {
   const stub = stubDb((request) =>
-    String(request.body).includes('ip') ? refusing(42) : refusing(7)
+    JSON.stringify(request.body).includes(':ip:') ? refusing(42) : refusing(7)
   );
   try {
     const err = await asyncApiErrorFrom(() =>

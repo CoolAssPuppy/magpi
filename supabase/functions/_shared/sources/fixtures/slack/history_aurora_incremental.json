@@ -1,0 +1,16 @@
+{
+  "ok": true,
+  "messages": [
+    {
+      "type": "message",
+      "user": "U04MERIDIAN3",
+      "text": "Runbook reviewed and merged. Owner is the platform rota from Monday.",
+      "ts": "1788955080.000500",
+      "team": "T04MERIDIAN"
+    }
+  ],
+  "has_more": false,
+  "pin_count": 2,
+  "channel_actions_ts": null,
+  "channel_actions_count": 0
+}

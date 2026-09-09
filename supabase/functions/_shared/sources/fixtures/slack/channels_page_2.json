@@ -1,0 +1,28 @@
+{
+  "ok": true,
+  "channels": [
+    {
+      "id": "C0KB3CINDER",
+      "name": "architecture-notes",
+      "is_channel": true,
+      "is_private": true,
+      "is_archived": false,
+      "created": 1756473600,
+      "creator": "U04MERIDIAN3",
+      "num_members": 9,
+      "topic": {
+        "value": "Decisions and their reasons",
+        "creator": "U04MERIDIAN3",
+        "last_set": 1756473700
+      },
+      "purpose": {
+        "value": "Architecture record",
+        "creator": "U04MERIDIAN3",
+        "last_set": 1756473700
+      }
+    }
+  ],
+  "response_metadata": {
+    "next_cursor": ""
+  }
+}

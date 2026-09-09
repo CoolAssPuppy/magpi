@@ -1,0 +1,64 @@
+{
+  "kind": "drive#changeList",
+  "newStartPageToken": "18461",
+  "changes": [
+    {
+      "kind": "drive#change",
+      "changeType": "file",
+      "time": "2026-09-08T11:02:44.517Z",
+      "removed": true,
+      "fileId": "1Wv9zXdeletedDraftPq4nHs"
+    },
+    {
+      "kind": "drive#change",
+      "changeType": "file",
+      "time": "2026-09-08T11:05:10.221Z",
+      "removed": false,
+      "fileId": "1Ld2kFtrashedRetroNotesR8",
+      "file": {
+        "kind": "drive#file",
+        "id": "1Ld2kFtrashedRetroNotesR8",
+        "name": "Retro notes (old)",
+        "mimeType": "application/vnd.google-apps.document",
+        "modifiedTime": "2026-09-08T11:05:04.900Z",
+        "webViewLink": "https://docs.google.com/document/d/1Ld2kFtrashedRetroNotesR8/edit?usp=drivesdk",
+        "trashed": true,
+        "parents": ["0AJhandbookFolderUk9PVA"]
+      }
+    },
+    {
+      "kind": "drive#change",
+      "changeType": "file",
+      "time": "2026-09-08T11:07:31.045Z",
+      "removed": false,
+      "fileId": "0AJarchiveFolderYnJhbQ",
+      "file": {
+        "kind": "drive#file",
+        "id": "0AJarchiveFolderYnJhbQ",
+        "name": "Archive 2025",
+        "mimeType": "application/vnd.google-apps.folder",
+        "modifiedTime": "2026-09-08T11:07:28.660Z",
+        "webViewLink": "https://drive.google.com/drive/folders/0AJarchiveFolderYnJhbQ",
+        "trashed": false,
+        "parents": ["0AJhandbookFolderUk9PVA"]
+      }
+    },
+    {
+      "kind": "drive#change",
+      "changeType": "file",
+      "time": "2026-09-08T11:44:09.712Z",
+      "removed": false,
+      "fileId": "1Qk7vNhandbookOnboard2fXpLa",
+      "file": {
+        "kind": "drive#file",
+        "id": "1Qk7vNhandbookOnboard2fXpLa",
+        "name": "Onboarding runbook",
+        "mimeType": "application/vnd.google-apps.document",
+        "modifiedTime": "2026-09-08T11:44:02.480Z",
+        "webViewLink": "https://docs.google.com/document/d/1Qk7vNhandbookOnboard2fXpLa/edit?usp=drivesdk",
+        "trashed": false,
+        "parents": ["0AJhandbookFolderUk9PVA"]
+      }
+    }
+  ]
+}

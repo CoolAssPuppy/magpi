@@ -48,3 +48,23 @@ chat and dreaming, `gpt-4.1-mini-2025-04-14` for condensing and titling,
 `text-embedding-3-small` for embeddings. The keynote lands the week after
 OpenAI Dev Day, so at least one of these changes; it changes in
 `web/lib/models.ts` and nowhere else.
+
+**Table privileges are declared in `supabase/schemas/95_grants.sql`.** The first
+generated migration left `authenticated` and `service_role` with no DML
+privilege on any table, which made every policy unreachable. See
+`docs/lessons.md`.
+
+**The initial migration was regenerated from an empty database.** Adding the
+grants file made the next diff propose dropping three tables, twenty indexes and
+the whole realtime publication, because the hand-written realtime and storage
+migrations read as drift. Nothing is deployed, so regenerating was safe and
+cheaper than hand-editing a fifteen-hundred-line migration.
+
+**Marketing route group ships, minimally.** Open question 3 in the spec. A
+landing page and a pricing page exist because the repo is public and a stranger
+cloning it lands on `/` before they land on `/sign-in`. It is one screen of
+brand register, not a marketing site.
+
+**Playwright fixtures create confirmed users through the admin API.** A journey
+that is not testing signup should not have to walk the mail inbox to get a user.
+Signup itself is covered separately.

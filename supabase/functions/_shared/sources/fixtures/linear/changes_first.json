@@ -1,0 +1,33 @@
+{
+  "data": {
+    "issues": {
+      "nodes": [
+        {
+          "id": "3f8c1a92-5d47-4c1b-9f0e-2a6b71d4c803",
+          "identifier": "KB-118",
+          "title": "Search returns stale titles after a page is renamed",
+          "url": "https://linear.app/atlas-knowledge/issue/KB-118/search-returns-stale-titles-after-a-page-is-renamed",
+          "updatedAt": "2026-09-07T09:14:22.418Z"
+        },
+        {
+          "id": "b21d4e07-8c3a-49f6-a5d2-6e91f0c7ab54",
+          "identifier": "KB-121",
+          "title": "Write the retention policy for archived handbook pages",
+          "url": "https://linear.app/atlas-knowledge/issue/KB-121/write-the-retention-policy-for-archived-handbook-pages",
+          "updatedAt": "2026-09-08T16:41:05.902Z"
+        },
+        {
+          "id": "c7a90b13-2f65-4d88-b1c4-90de5a2f7611",
+          "identifier": "PLT-64",
+          "title": "Index rebuild job times out on workspaces over 40k pages",
+          "url": "https://linear.app/atlas-knowledge/issue/PLT-64/index-rebuild-job-times-out-on-workspaces-over-40k-pages",
+          "updatedAt": "2026-09-09T07:02:44.130Z"
+        }
+      ],
+      "pageInfo": {
+        "hasNextPage": true,
+        "endCursor": "eyJvZmZzZXQiOjN9"
+      }
+    }
+  }
+}
