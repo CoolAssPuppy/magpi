@@ -5,7 +5,7 @@ measured against the real runtime, or marked `not measured`. Nothing here is an
 estimate, because these numbers go on a keynote slide.
 
 A row that says `not measured` is correct and useful. A row with a plausible
-number nobody ran is a lie with a table around it.
+number that nobody ran is worse than an empty one, because it gets quoted.
 
 ## Models
 
@@ -39,8 +39,7 @@ these ids will change before then. When it does, `web/lib/models.ts` and this
 table change in the same commit.
 
 Actual spend per call comes from `usage_events`, which every model call writes
-through the shared wrapper. This table is the price list. `usage_events` is the
-bill.
+through the shared wrapper. This table is the list price.
 
 ## The Edge Function ceiling
 
@@ -51,7 +50,7 @@ protocol. A single document import runs as one job.
 
 At some input size the function exceeds its CPU and wall-clock budget and the
 job fails with `ingest_jobs.status = 'timeout'` and the stage it died in.
-Finding the exact point where that happens is a deliverable, not an accident.
+Finding the exact point where that happens is a deliverable of this build.
 
 `stage` is one of `fetch`, `extract`, `chunk`, `embed`, `store`, from the
 `public.ingest_stage` enum. `outcome` is `completed` or the terminal
@@ -130,9 +129,10 @@ them requires this kind of review for the scopes Recall asks for.
 
 ## Post-demo, explicitly out of scope
 
-Feature complete, not production hardened. Every path in the spec works end to
-end, with tests, against real data. These are deliberately outside that bar and
-are recorded here so they are not rediscovered later as gaps:
+The bar is feature complete rather than production hardened. Every path in the
+spec works end to end, with tests, against real data. These are deliberately
+outside that bar and are recorded here so they are not rediscovered later as
+gaps:
 
 - Penetration testing
 - SOC 2 controls

@@ -53,7 +53,7 @@ function. A second search implementation anywhere in the repository is a bug,
 because a second implementation is a second place for the permission boundary to
 be wrong.
 
-**`space_filter` is a narrowing, not a widening.** Passing an array of space ids
+**`space_filter` only ever narrows.** Passing an array of space ids
 restricts the search further. It cannot add a space the caller could not already
 see, because RLS still applies underneath it.
 
@@ -77,8 +77,7 @@ hits without needing a per-corpus tuning pass, and it lets the two arms be
 combined without normalizing a cosine distance against a `ts_rank_cd` score,
 which are not comparable quantities.
 
-A chunk that both arms rank highly beats a chunk that only one arm found. That
-is the whole behavior.
+A chunk that both arms rank highly beats a chunk that only one arm found.
 
 ### Why pure vector search is not enough
 
@@ -161,7 +160,7 @@ rows survive the filter:
 `hnsw.max_scan_tuples` bounds the work so a query against a filter matching
 nothing cannot walk the entire index.
 
-Which setting Recall ships with is a measurement, not a preference. The table
+Which setting Recall ships with is decided by measurement. The table
 below is where that measurement goes.
 
 ## Recall measurement
@@ -210,7 +209,7 @@ size and the result is cached to disk.
 
 The filter used for ground truth is the same predicate the indexed query uses.
 Comparing an index scan under a permission filter against an exhaustive scan
-without one measures the filter, not the index.
+without one measures the filter rather than the index.
 
 ### recall@10
 
@@ -245,9 +244,9 @@ tenant has been idle.
 with the index resident in shared buffers. It is the number the demo will show.
 
 Latency is measured server side from `explain (analyze, buffers)` execution
-time, not from the client, so network time and connection setup stay out of the
-figure. Each query runs five times at each setting and the median of the five is
-the sample; p50 and p95 are then computed across the 200 samples.
+time rather than from the client, so network time and connection setup stay out
+of the figure. Each query runs five times at each setting and the median of the
+five is the sample; p50 and p95 are then computed across the 200 samples.
 
 ### What gets recorded
 

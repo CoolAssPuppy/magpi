@@ -10,8 +10,8 @@ skill. This file is the token-level record: what is in
 ## Where the tokens come from
 
 Recall uses the Supabase design system itself, vendored out of the public
-`supabase/supabase` repository. Not a reinterpretation of it, and not a set of
-values copied by eye.
+`supabase/supabase` repository. The actual token files, copied byte for byte out
+of the repository the Supabase design team already maintains.
 
 That repository is a pnpm monorepo on Tailwind v4, CSS first, with no
 `tailwind.config.js`. Its shared packages are private, unpublished, and

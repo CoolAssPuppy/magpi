@@ -38,7 +38,7 @@ Source records where the bytes came from, in enough detail to check: "synthetic,
 written for Recall" with a date, or a project name plus a URL plus the date it
 was retrieved.
 
-Licence records the actual licence name, not a description of one. `CC BY 4.0`,
+Licence records the actual name of the licence. `CC BY 4.0`,
 `Apache 2.0`, `public domain, US federal government work`, `MIT, same as the
 repository`. "Freely available" is not a licence and does not go in that column.
 
@@ -49,8 +49,8 @@ corpus is a pile of unrelated public-domain documents, that digest is a list of
 summaries and it reads as filler. If the corpus has structure, the same digest
 reads as insight, because there was something to work out.
 
-This is a writing job, not a scraping job. The number of documents matters far
-less than what is true across them.
+That makes it a writing job rather than a scraping job. The number of documents
+matters far less than what is true across them.
 
 Four properties, concretely:
 

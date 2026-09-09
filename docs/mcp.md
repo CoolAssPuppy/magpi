@@ -49,7 +49,7 @@ database through the caller's own JWT with row level security enabled, so the
 MCP server has no permission model of its own to keep in sync.
 
 The pattern that makes this work is worth stating once. A caller with no access
-to a space sees a smaller result, not a different one. There is no permission
+to a space sees a smaller result of the same shape. There is no permission
 error, no partial-result warning, and no field saying something was withheld,
 because a count of hidden rows is itself a disclosure about their existence.
 
@@ -272,5 +272,3 @@ The Supabase Library blocks `mcp-server` and `oauth-consent-nextjs` are the
 starting point. The consent screen block matters as much as the server block,
 because these tools reach a user's private knowledge base and the authorization
 step is where the user decides which client gets to do that.
-
-Until then, the stub keeps the shape visible without spending time on it.
