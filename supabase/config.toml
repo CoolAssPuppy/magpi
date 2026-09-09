@@ -442,3 +442,21 @@ enabled = true
 # declarative_schema_path = "./database"
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
+
+# Per-function settings.
+#
+# verify_jwt defaults to true, and the gateway enforces it before the function
+# runs, so a public endpoint without an entry here answers 401 to the very
+# callers it exists for. Both of these say so in their own first line and both
+# would have failed silently on a deploy.
+
+[functions.connections-callback]
+# The provider redirects the user's browser here with no Authorization header.
+# The flow is protected by the PKCE verifier held server-side in oauth_states
+# and by connections-claim, which runs with the caller's verified JWT and
+# commits only when the session matches.
+verify_jwt = false
+
+[functions.stripe-webhook]
+# Stripe sends no JWT. The signature check in _shared/billing.ts is the auth.
+verify_jwt = false

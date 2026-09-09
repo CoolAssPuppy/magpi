@@ -2,14 +2,9 @@
 
 import { ErrorState } from '@/components/app/error-state';
 import { Button } from '@/components/ui/button';
+import type { ErrorBoundaryProps } from '@/components/app/error-boundary-props';
 
-export default function ConnectionsError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
+export default function ConnectionsError({ error, reset }: ErrorBoundaryProps) {
   return (
     <div className="flex flex-col items-start gap-3">
       <ErrorState
