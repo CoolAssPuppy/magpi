@@ -119,6 +119,27 @@ corpus, and it is a keynote slide.
 **Recall at scale is unmeasured.** `docs/retrieval.md` has the method written
 down and no numbers. No latency claim goes on a slide before it does.
 
+## Known gaps, recorded rather than discovered later
+
+**Page components have only browser coverage.** `app/**/page.tsx` and
+`layout.tsx` are excluded from the coverage report because vitest has no RSC
+runtime and a test there could only assert that a function returns a promise.
+Their real coverage is three Playwright journeys across fourteen routes, which
+is thin. A green coverage gate does not mean the pages are tested.
+
+**Entry-point wrappers under `supabase/functions/*/index.ts` have no direct
+tests.** The job bodies they call are tested thoroughly without a server, which
+is the split section 7 asks for, but the wrappers themselves are not. The three
+newest, `connections-scopes`, `connections-sync` and `dream-run`, carry more
+branching than the earlier ones.
+
+**Google Drive does not index binary files.** The driver exports Google-native
+documents and downloads text types; a PDF in Drive raises "that file type is not
+indexed yet". `extract.ts` already handles PDFs on the upload path, so wiring
+Drive into it is a small follow-up rather than new work.
+
+**Four function files are over 300 lines.**
+
 ## Post-demo
 
 Things deliberately out of scope for "done", recorded so they are not
