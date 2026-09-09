@@ -5,7 +5,7 @@ import { encryptProviderToken } from '../provider_tokens.ts';
 import { envSource } from '../testing/assertions.ts';
 import { type StubDb, stubDb, type StubRequest } from '../testing/stub_db.ts';
 import { type IngestJobRecord, runIngestJob } from './ingest.ts';
-import { fakeModel, fakeUploads, steppingClock } from './testing.ts';
+import { capturedErrors, fakeModel, fakeUploads, jumpingClock, steppingClock } from './testing.ts';
 import type { JobDeps } from './types.ts';
 
 const NOW = new Date('2026-09-09T12:00:00.000Z');
@@ -19,6 +19,9 @@ const ENV = envSource({
   SB_NOTION_CLIENT_ID: 'notion-client',
   SB_NOTION_CLIENT_SECRET: 'notion-secret',
 });
+
+/** The five stages a job can stop in, in the order it reaches them. */
+const INGEST_STAGES = ['fetch', 'extract', 'chunk', 'embed', 'store'];
 
 const JOB: IngestJobRecord = {
   id: 'job-1',
@@ -295,27 +298,59 @@ Deno.test('a file type that cannot be read fails at extract, not at store', asyn
   }
 });
 
-Deno.test('a job that runs out of time says which stage it died in', async () => {
-  // The clock jumps a full budget on its second read, so the first checkpoint
-  // after the fetch is already over.
+Deno.test('a job killed while it was downloading says fetch, not extract', async () => {
+  // The fetch is the stage most likely to run long, and it is the one stage
+  // with no checkpoint of its own after it. Reporting the next stage tells a
+  // user their file failed being read when it never finished arriving.
   const h = harness({ clock: steppingClock(NOW, 60_000), budgetMs: 1000 });
   try {
     const result = await runIngestJob(JOB, h.deps);
 
     assertEquals(result.kind, 'timeout');
     if (result.kind !== 'timeout') return;
-    assertEquals(result.stage, 'extract');
-
-    const final = writes(h.stub, 'ingest_jobs').at(-1);
-    assertEquals(final?.status, 'timeout');
-    // The stage lives in its own column, so the message says what the column
-    // cannot: how long it ran and what the budget was.
-    assertEquals(final?.stage, 'extract');
-    assert(!String(final?.error).includes('extract'), 'the message repeats the stage column');
-    assert(String(final?.error).includes('budget'), String(final?.error));
+    assertEquals(result.stage, 'fetch');
+    assertEquals(writes(h.stub, 'ingest_jobs').at(-1)?.stage, 'fetch');
   } finally {
     await h.stub.close();
   }
+});
+
+Deno.test('a job that runs out of time says which stage it died in', async () => {
+  // Walking the jump forward one reading at a time stops the job at each
+  // checkpoint in turn, so this reads the stages off real rows rather than off
+  // the one checkpoint a clock that jumps immediately can reach.
+  const stages = new Set<string>();
+
+  for (let ticks = 1; ticks <= 20; ticks += 1) {
+    const h = harness({ clock: jumpingClock(NOW, ticks), budgetMs: 1_000 });
+    try {
+      const result = await runIngestJob(JOB, h.deps);
+      if (result.kind !== 'timeout') continue;
+      stages.add(result.stage);
+
+      const final = writes(h.stub, 'ingest_jobs').at(-1);
+      assertEquals(final?.status, 'timeout');
+      // The column and the result have to agree, or the page and the caller
+      // name different stages for the same job.
+      assertEquals(final?.stage, result.stage);
+      // The stage lives in its own column, so the message says what the column
+      // cannot: how long it ran and what the budget was.
+      assert(
+        !String(final?.error).includes(result.stage),
+        'the message repeats the stage column',
+      );
+      assert(String(final?.error).includes('budget'), String(final?.error));
+    } finally {
+      await h.stub.close();
+    }
+  }
+
+  for (const stage of stages) {
+    assert(INGEST_STAGES.includes(stage), `a job named a stage nothing else knows: ${stage}`);
+  }
+  // Not vacuous: a job that only ever died at its first checkpoint would prove
+  // nothing about the stages after it.
+  assert(stages.size > 1, `only one stage was ever reached: ${[...stages].join(', ')}`);
 });
 
 Deno.test('a timed out job stores no chunks', async () => {
@@ -535,6 +570,27 @@ Deno.test('a requeued job does not touch the claim columns', async () => {
     const final = writes(h.stub, 'ingest_jobs').at(-1);
     assertEquals(final?.attempts, undefined);
     assertEquals(final?.claimed_at, undefined);
+  } finally {
+    await h.stub.close();
+  }
+});
+
+Deno.test('a terminal write the database refused is not swallowed', async () => {
+  // The row stays running and claim_ingest_jobs takes it back after the stale
+  // window, so the import is not lost. What is lost, if this write is ignored,
+  // is any record of why a finished job was run a second time.
+  const h = harness({
+    reply: (request) =>
+      request.table === 'ingest_jobs' && request.method === 'PATCH'
+        ? { status: 500, body: { message: 'boom' } }
+        : undefined,
+  });
+  try {
+    const logged = await capturedErrors(() => runIngestJob(JOB, h.deps));
+    assert(
+      logged.some((line) => line.includes('succeeded') && line.includes(JOB.id)),
+      `nothing was logged about the terminal write: ${logged.join(' | ')}`,
+    );
   } finally {
     await h.stub.close();
   }

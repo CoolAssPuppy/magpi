@@ -252,9 +252,9 @@ Deno.test('scope options follow the next cursor across pages', async () => {
   assertEquals(paramOf(stub.calls[0], 'exclude_archived'), 'true');
   assertEquals(paramOf(stub.calls[1], 'cursor'), 'dGVhbTpDMEtCM0NJTkRFUg==');
   assertEquals(options, [
-    { id: AURORA, name: '#knowledge-base', kind: 'channel' },
-    { id: BEACON, name: '#docs-guild', kind: 'channel' },
-    { id: 'C0KB3CINDER', name: '#architecture-notes', kind: 'channel' },
+    { id: AURORA, name: '#knowledge-base' },
+    { id: BEACON, name: '#docs-guild' },
+    { id: 'C0KB3CINDER', name: '#architecture-notes' },
   ]);
 });
 

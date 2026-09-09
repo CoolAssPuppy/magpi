@@ -14,6 +14,10 @@
 // two callers cannot both match.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { z } from 'zod';
+
+import { ApiError } from '../errors.ts';
+import type { IngestJobRecord } from './ingest.ts';
 
 /**
  * A connection left `syncing` by a worker that died is invisible to every later
@@ -108,6 +112,52 @@ export async function claimQueuedRow(
   return data !== null;
 }
 
+// The rpc returns whole ingest_jobs rows; the job body reads five of the columns.
+const claimedJobsSchema = z.array(z.object({
+  id: z.uuid(),
+  org_id: z.uuid(),
+  space_id: z.uuid(),
+  document_id: z.uuid(),
+  connection_id: z.uuid().nullable(),
+}));
+
+/**
+ * Takes a batch of queued ingest jobs, marking them running in the same
+ * statement that selects them.
+ *
+ * claim_ingest_jobs, not a select: it marks the rows behind `for update skip
+ * locked` in one statement, so two overlapping invocations take different jobs
+ * instead of both importing the same document. A plain select and a later update
+ * cannot do that, and the scheduler will overlap the moment a batch runs longer
+ * than its interval.
+ *
+ * It also takes back a claim whose worker never came back, putting the row on
+ * the queue rather than retiring it, and gives up on one that has spent its three
+ * attempts. A sweep in the worker would reach those rows first and settle them
+ * the other way, so the reclaim inside the function would never match one.
+ *
+ * Both failures answer the same way and differ in the log. Neither the database's
+ * words nor a parser's are the caller's to read, and the caller is the scheduler,
+ * which can only retry either way.
+ */
+export async function claimIngestJobs(
+  db: SupabaseClient,
+  limit: number,
+): Promise<IngestJobRecord[]> {
+  const { data, error } = await db.rpc('claim_ingest_jobs', { p_limit: limit });
+  if (error) {
+    console.error('claiming ingest jobs failed', error.message);
+    throw new ApiError(500, 'internal', 'the ingest queue could not be claimed');
+  }
+
+  const claimed = claimedJobsSchema.safeParse(data ?? []);
+  if (!claimed.success) {
+    console.error('claim_ingest_jobs returned rows this worker cannot read', claimed.error.message);
+    throw new ApiError(500, 'internal', 'the ingest queue could not be claimed');
+  }
+  return claimed.data;
+}
+
 /**
  * Claims a connection for a sync pass.
  *
@@ -115,6 +165,10 @@ export async function claimQueuedRow(
  * state to leave it in. `syncing` is therefore both the claim and the status the
  * page shows, and the staleness window is what stops a crashed worker retiring a
  * connection permanently.
+ *
+ * The reason the last pass left goes with it. It belongs to the status this
+ * write replaces, and clearing it here rather than from the job body is one
+ * write and one realtime broadcast instead of two.
  */
 export async function claimConnectionForSync(
   db: SupabaseClient,
@@ -125,7 +179,7 @@ export async function claimConnectionForSync(
 
   const { data, error } = await db
     .from('connections')
-    .update({ status: 'syncing' })
+    .update({ status: 'syncing', status_detail: null })
     .eq('id', connectionId)
     .or(`status.neq.syncing,updated_at.lt.${staleBefore}`)
     .select('id')

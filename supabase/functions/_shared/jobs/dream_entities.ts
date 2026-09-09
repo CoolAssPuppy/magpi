@@ -47,19 +47,23 @@ export async function dreamEntities(pass: Pass): Promise<DreamOutcome> {
   // either fails the foreign key or names a row in somebody else's space.
   const known = new Map(chunks.map((chunk) => [chunk.id, chunk.document_id]));
 
-  for (const draft of drafts) {
-    enter(pass, 'write');
-    const entityId = await db.upsertEntity({
-      kind: draft.kind,
-      name: draft.name,
-      canonicalName: draft.canonicalName,
-      summary: draft.summary ?? null,
-    });
-    await db.insertMentions(draft.chunkIds.flatMap((chunkId) => {
+  // Two statements for the whole answer, not two per entity: a hundred entities
+  // a round trip at a time is two hundred of them inside a budget of well under
+  // a minute, and both writes already take a batch.
+  enter(pass, 'write');
+  const entityIds = await db.upsertEntities(drafts.map((draft) => ({
+    kind: draft.kind,
+    name: draft.name,
+    canonicalName: draft.canonicalName,
+    summary: draft.summary ?? null,
+  })));
+
+  await db.insertMentions(drafts.flatMap((draft, index) =>
+    draft.chunkIds.flatMap((chunkId) => {
       const documentId = known.get(chunkId);
-      return documentId ? [{ entityId, documentId, chunkId }] : [];
-    }));
-  }
+      return documentId ? [{ entityId: entityIds[index], documentId, chunkId }] : [];
+    })
+  ));
 
   return { ...NOTHING, inputDocumentCount: pass.inputDocumentCount, produced: drafts.length };
 }

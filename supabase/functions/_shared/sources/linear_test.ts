@@ -255,7 +255,6 @@ Deno.test('the scope picker offers the workspace teams', async () => {
   assertEquals(options[0], {
     id: KNOWLEDGE_BASE_TEAM,
     name: 'Knowledge Base',
-    kind: 'workspace',
   });
   assertEquals(variablesOf(deps.calls[0]).first, 100);
 });

@@ -17,7 +17,6 @@ import type { ScopeSelectionKind } from './providers.ts';
 export const scopeOptionSchema = z.object({
   id: z.string().min(1).max(200),
   name: z.string().min(1).max(300),
-  url: z.string().max(2048).optional(),
 });
 
 export const storedScopeSelectionSchema = z.object({

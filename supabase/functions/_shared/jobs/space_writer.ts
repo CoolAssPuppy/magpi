@@ -28,6 +28,12 @@ export interface SpaceChunkRow {
   created_at: string;
 }
 
+/** What the similarity pass reads of a document: its opening chunk. */
+export interface SpaceOpeningChunk {
+  id: string;
+  content: string;
+}
+
 export interface SpaceDocumentRow {
   id: string;
   title: string;
@@ -71,16 +77,22 @@ export interface SpaceScopedDb {
   recentChunks(sinceIso: string, limit: number): Promise<SpaceChunkRow[]>;
   documentsByIds(ids: string[]): Promise<SpaceDocumentRow[]>;
   recentDocuments(sinceIso: string, limit: number): Promise<SpaceDocumentRow[]>;
-  /** Chunk ids and their embeddings, for the similarity pass. */
-  firstChunkOf(documentId: string): Promise<{ id: string; content: string } | null>;
+  /** The opening chunk of each document, keyed by document, for the similarity pass. */
+  firstChunksOf(documentIds: string[]): Promise<Map<string, SpaceOpeningChunk>>;
   insertDreamDocument(draft: DreamDocumentDraft): Promise<string>;
   insertChunks(
     documentId: string,
     chunks: { ordinal: number; content: string; tokenCount: number; embedding: number[] }[],
   ): Promise<void>;
-  upsertEntity(draft: EntityDraft): Promise<string>;
+  /** Files a batch of entities and answers with an id per draft, in draft order. */
+  upsertEntities(drafts: EntityDraft[]): Promise<string[]>;
   insertMentions(drafts: MentionDraft[]): Promise<void>;
   insertLinks(drafts: LinkDraft[]): Promise<void>;
+}
+
+/** The conflict key entities are filed under, within one space. */
+function entityKey(kind: string, canonicalName: string): string {
+  return `${kind}:${canonicalName}`;
 }
 
 function failed(what: string, detail: string): ApiError {
@@ -140,17 +152,24 @@ export function spaceScoped(db: SupabaseClient, scope: SpaceScope): SpaceScopedD
       return data ?? [];
     },
 
-    async firstChunkOf(documentId) {
+    async firstChunksOf(documentIds) {
+      if (documentIds.length === 0) return new Map();
       const { data, error } = await db
         .from('chunks')
-        .select('id, content')
+        .select('id, document_id, content')
         .eq('space_id', scope.spaceId)
-        .eq('document_id', documentId)
-        .order('ordinal', { ascending: true })
-        .limit(1)
-        .maybeSingle<{ id: string; content: string }>();
-      if (error) throw failed('reading a chunk', error.message);
-      return data;
+        .in('document_id', documentIds)
+        // A document's chunks are written in one statement starting at zero and
+        // replaced the same way, so the opening chunk is the row at ordinal
+        // zero. Reading it by ordinal is what makes this one round trip for a
+        // whole pass rather than one per document.
+        .eq('ordinal', 0)
+        .returns<{ id: string; document_id: string; content: string }[]>();
+      if (error) throw failed('reading chunks', error.message);
+
+      return new Map(
+        (data ?? []).map((row) => [row.document_id, { id: row.id, content: row.content }]),
+      );
     },
 
     async insertDreamDocument(draft) {
@@ -188,22 +207,43 @@ export function spaceScoped(db: SupabaseClient, scope: SpaceScope): SpaceScopedD
       if (error) throw failed('writing chunks', error.message);
     },
 
-    async upsertEntity(draft) {
+    async upsertEntities(drafts) {
+      if (drafts.length === 0) return [];
+
+      // Deduplicated on the conflict key, because a statement may not write the
+      // same row twice, and a model asked for a hundred entities will name one
+      // of them twice. The last draft wins, which is what a run of single
+      // upserts left behind anyway.
+      const byKey = new Map(
+        drafts.map((draft) => [entityKey(draft.kind, draft.canonicalName), draft]),
+      );
+
       const { data, error } = await db
         .from('entities')
         .upsert(
-          stamped({
-            kind: draft.kind,
-            name: draft.name,
-            canonical_name: draft.canonicalName,
-            summary: draft.summary,
-          }),
+          [...byKey.values()].map((draft) =>
+            stamped({
+              kind: draft.kind,
+              name: draft.name,
+              canonical_name: draft.canonicalName,
+              summary: draft.summary,
+            })
+          ),
           { onConflict: 'space_id,kind,canonical_name' },
         )
-        .select('id')
-        .single<{ id: string }>();
-      if (error || !data) throw failed('writing an entity', error?.message ?? 'no row');
-      return data.id;
+        .select('id, kind, canonical_name')
+        .returns<{ id: string; kind: string; canonical_name: string }[]>();
+      if (error || !data) throw failed('writing entities', error?.message ?? 'no rows');
+
+      // Matched on the conflict key rather than on position: the order rows come
+      // back in is the database's business, and a mention filed against the
+      // wrong id is a claim about the wrong person.
+      const ids = new Map(data.map((row) => [entityKey(row.kind, row.canonical_name), row.id]));
+      return drafts.map((draft) => {
+        const id = ids.get(entityKey(draft.kind, draft.canonicalName));
+        if (!id) throw failed('writing entities', `no row came back for ${draft.canonicalName}`);
+        return id;
+      });
     },
 
     async insertMentions(drafts) {

@@ -225,7 +225,6 @@ Deno.test('the scope picker offers the one workspace the token reaches', async (
   assertEquals(options, [{
     id: '7c4d2ea1-9f36-4b58-8d0a-2e5f1c9b7d44',
     name: 'Lumen Labs Handbook',
-    kind: 'workspace',
   }]);
   assertEquals(notionDriver.scopeSelectionKind, 'workspace');
 });

@@ -214,7 +214,7 @@ Deno.test('the scope picker is offered every folder across pages', async () => {
     'Finance',
     'Archive 2025',
   ]);
-  assertEquals(options[0], { id: HANDBOOK, name: 'Team handbook', kind: 'folder' });
+  assertEquals(options[0], { id: HANDBOOK, name: 'Team handbook' });
 });
 
 Deno.test('refresh delegates to the shared token endpoint grant', async () => {

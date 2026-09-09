@@ -68,17 +68,29 @@ async function candidatePairs(pass: Pass, documents: SpaceDocumentRow[]): Promis
   const { run, deps, db } = pass;
   const found = new Map<string, { sourceId: string; otherId: string; similarity: number }>();
 
-  // Reading one document at a time and asking the space what it looks like is
-  // how this pass pulls structure out of what it read, so the whole scan is one
-  // stage however many round trips it takes.
-  for (const document of documents) {
-    if (found.size >= MAX_LINKS) break;
-    enter(pass, 'extract');
-    const chunk = await db.firstChunkOf(document.id);
-    if (!chunk) continue;
+  // The opening chunks in one read and their vectors in one model call. A
+  // document at a time is three round trips each, sixty for a full pass, and the
+  // searches below are the only part of that which cannot be asked for at once.
+  enter(pass, 'extract');
+  const openings = await db.firstChunksOf(documents.map((document) => document.id));
+  const readable = documents.flatMap((document) => {
+    const chunk = openings.get(document.id);
+    return chunk ? [{ document, chunk }] : [];
+  });
+  if (readable.length === 0) return [];
 
-    enter(pass, 'extract');
-    const [embedding] = await deps.models.embed({ orgId: run.org_id, texts: [chunk.content] });
+  enter(pass, 'extract');
+  const embeddings = await deps.models.embed({
+    orgId: run.org_id,
+    texts: readable.map(({ chunk }) => chunk.content),
+  });
+
+  // Asking the space what one document looks like is how this pass pulls
+  // structure out of what it read, so the whole scan is one stage however many
+  // round trips it takes.
+  for (const [index, { document, chunk }] of readable.entries()) {
+    if (found.size >= MAX_LINKS) break;
+    const embedding = embeddings[index];
     if (!embedding) continue;
 
     enter(pass, 'extract');

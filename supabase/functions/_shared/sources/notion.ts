@@ -287,7 +287,7 @@ async function listScopeOptions(
   const name = asString(bot.workspace_name) || botId;
   if (id.length === 0 || name.length === 0) return [];
 
-  return [{ id, name, kind: 'workspace' }];
+  return [{ id, name }];
 }
 
 export const notionDriver: SourceDriver = {

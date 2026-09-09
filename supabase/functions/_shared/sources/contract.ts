@@ -55,10 +55,14 @@ export interface FetchedDocument extends SourceDocumentRef {
   text: string;
 }
 
+/**
+ * One thing the picker can offer. The kind of thing they all are is a property
+ * of the driver, named once on `scopeSelectionKind`, rather than repeated on
+ * every option in a listing that cannot mix two.
+ */
 export interface ScopeOption {
   id: string;
   name: string;
-  kind: ScopeSelectionKind;
 }
 
 export interface RefreshInput {

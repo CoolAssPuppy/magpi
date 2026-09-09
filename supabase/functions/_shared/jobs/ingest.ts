@@ -90,15 +90,33 @@ async function loadDocument(db: SupabaseClient, documentId: string): Promise<Doc
   return data;
 }
 
-/** Progress the browser watches through Realtime, so a stalled stage is visible. */
+/**
+ * Moves the job on to its next stage, and returns the stage it is now in.
+ *
+ * The budget is checked against the stage that just ran rather than the one
+ * about to start. The fetch is the stage most likely to run long and the only
+ * one with no checkpoint inside it, so checking against `next` reports a job
+ * killed mid-download as having died extracting, which is the one stage it never
+ * reached.
+ *
+ * The write itself is progress the browser watches through Realtime, so a
+ * stalled stage is visible. Losing it costs a spinner that sits on the previous
+ * stage, which is not worth failing an import over.
+ */
 async function enterStage(
   deps: JobDeps,
   job: IngestJobRecord,
-  stage: IngestStage,
   budget: Budget,
-): Promise<void> {
-  budget.checkpoint(stage);
-  await deps.db.from('ingest_jobs').update({ stage, status: 'running' }).eq('id', job.id);
+  ran: IngestStage,
+  next: IngestStage,
+): Promise<IngestStage> {
+  budget.checkpoint(ran);
+  const { error } = await deps.db
+    .from('ingest_jobs')
+    .update({ stage: next, status: 'running' })
+    .eq('id', job.id);
+  if (error) console.error('an ingest stage could not be recorded', job.id, next, error.message);
+  return next;
 }
 
 /**
@@ -192,12 +210,22 @@ async function storeChunks(
   }
 }
 
+/**
+ * Writes the status the job ended in.
+ *
+ * A refused write here leaves the row `running`, which claim_ingest_jobs takes
+ * back once the claim goes stale, so the document is imported again rather than
+ * lost. That retry is the only trace of the failure unless this says so.
+ */
 async function finish(
   deps: JobDeps,
   job: IngestJobRecord,
   patch: { status: string; stage: IngestStage; error: string | null },
 ): Promise<void> {
-  await deps.db.from('ingest_jobs').update(patch).eq('id', job.id);
+  const { error } = await deps.db.from('ingest_jobs').update(patch).eq('id', job.id);
+  if (error) {
+    console.error('an ingest job could not be recorded as', patch.status, job.id, error.message);
+  }
 }
 
 function detailOf(err: unknown): string {
@@ -222,8 +250,7 @@ export async function runIngestJob(job: IngestJobRecord, deps: JobDeps): Promise
     const document = await loadDocument(deps.db, job.document_id);
     const source = await readSource(document, deps);
 
-    stage = 'extract';
-    await enterStage(deps, job, stage, budget);
+    stage = await enterStage(deps, job, budget, stage, 'extract');
     const contentHash = await sha256Hex(source.text);
 
     // Re-embedding text that has not changed spends the budget and the model
@@ -233,12 +260,10 @@ export async function runIngestJob(job: IngestJobRecord, deps: JobDeps): Promise
       return { kind: 'unchanged' };
     }
 
-    stage = 'chunk';
-    await enterStage(deps, job, stage, budget);
+    stage = await enterStage(deps, job, budget, stage, 'chunk');
     const chunks = chunkText(source.text);
 
-    stage = 'embed';
-    await enterStage(deps, job, stage, budget);
+    stage = await enterStage(deps, job, budget, stage, 'embed');
     const embeddings: number[][] = [];
     for (let start = 0; start < chunks.length; start += EMBED_BATCH) {
       budget.checkpoint(stage);
@@ -251,8 +276,7 @@ export async function runIngestJob(job: IngestJobRecord, deps: JobDeps): Promise
       );
     }
 
-    stage = 'store';
-    await enterStage(deps, job, stage, budget);
+    stage = await enterStage(deps, job, budget, stage, 'store');
     await storeChunks(deps, document, chunks, embeddings);
 
     const { error: documentError } = await deps.db

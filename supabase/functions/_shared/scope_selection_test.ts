@@ -3,8 +3,8 @@ import { assertEquals } from '@std/assert';
 import { buildScopeSelection, selectedIdsOf, storedSelectionOf } from './scope_selection.ts';
 
 const CHANNELS = [
-  { id: 'C01', name: '#aurora', kind: 'channel' as const },
-  { id: 'C02', name: '#beacon', kind: 'channel' as const },
+  { id: 'C01', name: '#aurora' },
+  { id: 'C02', name: '#beacon' },
 ];
 
 Deno.test('a column the picker has never populated reads as no selection', () => {
@@ -41,9 +41,22 @@ Deno.test('a selection of the wrong shape reads as none rather than raising', ()
 Deno.test('an empty selection is a real answer, not a missing one', () => {
   const stored = buildScopeSelection(
     'folder',
-    [{ id: 'F1', name: 'Runbooks', kind: 'folder' }],
+    [{ id: 'F1', name: 'Runbooks' }],
     [],
   );
   assertEquals(stored.selected, []);
   assertEquals(storedSelectionOf(stored)?.available.length, 1);
+});
+
+Deno.test('a stored option carries an id and a name and nothing else', () => {
+  // The column is jsonb, so whatever was written stays readable forever. An
+  // option field the picker never renders is one the schema should not keep
+  // alive on the way back out.
+  const stored = storedSelectionOf({
+    kind: 'channel',
+    available: [{ id: 'C01', name: '#aurora', url: 'https://slack.example/C01' }],
+    selected: ['C01'],
+  });
+
+  assertEquals(stored?.available, [{ id: 'C01', name: '#aurora' }]);
 });

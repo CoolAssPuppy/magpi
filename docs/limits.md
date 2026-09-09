@@ -158,13 +158,36 @@ time. A signed-in user's JWT gets a 403, which is deliberate: a worker is
 machinery, and anyone reaching one directly is either confused or making the
 platform do unpaid work.
 
-That means the scheduler has to send the key. With `pg_cron` and `pg_net`, the
-statement is:
+That means the scheduler has to send the key. Three Vercel crons do, through
+three routes under `web/app/api/cron/` that hold the key and forward it:
+
+| Worker          | Route              | Schedule      | Batch |
+| --------------- | ------------------ | ------------- | ----- |
+| `ingest-worker` | `/api/cron/ingest` | `*/2 * * * *` | 25    |
+| `sync-worker`   | `/api/cron/sync`   | `0 * * * *`   | 10    |
+| `dream-worker`  | `/api/cron/dream`  | `0 2 * * *`   | 5     |
+
+The schedules live in `vercel.json` and the batch sizes in the routes. Vercel
+signs a cron invocation with `CRON_SECRET`, and a route checks that signature
+before it spends anything. A deployment with no `CRON_SECRET` set answers 403 to
+every tick, so the variable belongs in the Vercel project next to the Supabase
+URL and the service role key.
+
+`token-refresh` runs on no schedule. The sync path renews a token on its way
+past, which covers every connection an hourly tick touches. A connection nobody
+syncs for long enough that the refresh token itself lapses is the case left
+open, and it shows up as a failed sync the next time a person asks for one.
+Scheduling it is a fourth entry in `vercel.json` and a fourth route, and the
+demo does not need one.
+
+A deployment that is not on Vercel schedules the workers in the database
+instead. `pg_cron` and `pg_net` are installed by
+`supabase/schemas/00_extensions.sql`, so the statement is:
 
 ```sql
 select cron.schedule(
   'ingest-worker',
-  '* * * * *',
+  '*/2 * * * *',
   $$
   select net.http_post(
     url := 'https://<project-ref>.supabase.co/functions/v1/ingest-worker',
@@ -172,7 +195,7 @@ select cron.schedule(
       'Content-Type', 'application/json',
       'Authorization', 'Bearer ' || current_setting('app.service_role_key')
     ),
-    body := '{"batch": 5}'::jsonb
+    body := '{"batch": 25}'::jsonb
   );
   $$
 );
@@ -183,9 +206,9 @@ who can read the catalog, and a literal there is a service role key in a table.
 Set it once as a database setting and read it with `current_setting`, or use
 Vault.
 
-Suggested intervals: `ingest-worker` every minute, `sync-worker` every fifteen,
-`token-refresh` hourly, `dream-worker` nightly and staggered by organization id
-so every tenant does not wake at midnight UTC together.
+Match the intervals in the table above, and add `token-refresh` hourly. The
+dream worker staggers by organization id itself, so every tenant does not wake
+on the same minute of 02:00 UTC.
 
 `ingest-worker` claims through `claim_ingest_jobs()`, which marks rows running
 behind `for update skip locked`, so two overlapping invocations take different

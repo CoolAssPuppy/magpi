@@ -201,7 +201,7 @@ async function walkFolders(creds: SourceCredentials, deps: SourceDeps): Promise<
       const folder = asRecord(entry);
       const id = asString(folder.id);
       if (id.length === 0) continue;
-      options.push({ id, name: asString(folder.name, 'Untitled folder'), kind: 'folder' });
+      options.push({ id, name: asString(folder.name, 'Untitled folder') });
     }
 
     pageToken = asString(payload.nextPageToken);
@@ -251,6 +251,6 @@ export const googleDriver: SourceDriver = {
   },
 
   refresh(deps: SourceDeps, input: RefreshInput): Promise<RefreshOutcome> {
-    return refreshWithTokenEndpoint(DISPLAY_NAME, deps, input);
+    return refreshWithTokenEndpoint(PROVIDER, DISPLAY_NAME, deps, input);
   },
 };

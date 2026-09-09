@@ -4,10 +4,12 @@ import {
   ABANDONED_AFTER_MS,
   type AbandonedSweep,
   claimConnectionForSync,
+  claimIngestJobs,
   claimQueuedRow,
   retireAbandoned,
   STALE_CLAIM_MS,
 } from './claim.ts';
+import { asyncApiErrorFrom } from '../testing/assertions.ts';
 import { type StubDb, stubDb } from '../testing/stub_db.ts';
 
 const NOW = new Date('2026-09-09T12:00:00.000Z');
@@ -99,6 +101,24 @@ Deno.test('a connection abandoned by a dead worker can be claimed again', async 
   }
 });
 
+Deno.test('a claim clears the reason the last pass left on the row', async () => {
+  // The connection row is the one the page renders. A claim that leaves the old
+  // error under a syncing status shows a connection that is working and broken
+  // at once, and clearing it from the job body afterwards is a second write and
+  // a second realtime broadcast for a column this statement already has open.
+  const stub = matching([{ id: 'connection-1' }]);
+  try {
+    await claimConnectionForSync(stub.db, 'connection-1', NOW);
+
+    const body = stub.requests[0].body;
+    assert(isRecord(body));
+    assertEquals(body.status, 'syncing');
+    assertEquals(body.status_detail, null);
+  } finally {
+    await stub.close();
+  }
+});
+
 Deno.test('the staleness window is longer than any pass the budget allows', () => {
   // A pass that could outlive it would be claimed a second time while running.
   assert(STALE_CLAIM_MS > 60_000);
@@ -165,6 +185,60 @@ Deno.test('a sweep that fails does not stop the batch it runs before', async () 
   const stub = stubDb(() => ({ status: 500, body: { message: 'boom' } }));
   try {
     assertEquals(await retireAbandoned(stub.db, dreamSweep(), NOW), 0);
+  } finally {
+    await stub.close();
+  }
+});
+
+/** One row shaped the way claim_ingest_jobs returns them. */
+function claimedRow(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    id: '66666666-6666-4666-8666-666666666666',
+    org_id: '44444444-4444-4444-8444-444444444444',
+    space_id: '33333333-3333-4333-8333-333333333333',
+    document_id: '77777777-7777-4777-8777-777777777777',
+    connection_id: null,
+    // The rpc returns whole rows; a worker reading five columns must not care.
+    attempts: 1,
+    ...overrides,
+  };
+}
+
+Deno.test('claiming asks the function for a batch and hands back what it took', async () => {
+  const stub = stubDb(() => ({ body: [claimedRow()] }));
+  try {
+    const jobs = await claimIngestJobs(stub.db, 5);
+
+    assertEquals(jobs.length, 1);
+    assertEquals(jobs[0].document_id, '77777777-7777-4777-8777-777777777777');
+    assertEquals(stub.requests[0].table, 'rpc/claim_ingest_jobs');
+    assertEquals(stub.requests[0].body, { p_limit: 5 });
+  } finally {
+    await stub.close();
+  }
+});
+
+Deno.test('a queue the database refused answers in the error envelope', async () => {
+  // A raw PostgrestError thrown out of a worker becomes a generic 500 with
+  // whatever the database said in it, which is neither legible nor ours to show.
+  const stub = stubDb(() => ({ status: 500, body: { message: 'relation does not exist' } }));
+  try {
+    const err = await asyncApiErrorFrom(() => claimIngestJobs(stub.db, 5));
+    assertEquals(err.status, 500);
+    assertEquals(err.code, 'internal');
+    assert(!err.message.includes('relation'), err.message);
+  } finally {
+    await stub.close();
+  }
+});
+
+Deno.test('a claimed row the worker cannot read is an error it can answer with', async () => {
+  // A ZodError escaping the handler is the same generic 500 with a stack in it.
+  const stub = stubDb(() => ({ body: [claimedRow({ document_id: 'not-a-uuid' })] }));
+  try {
+    const err = await asyncApiErrorFrom(() => claimIngestJobs(stub.db, 5));
+    assertEquals(err.status, 500);
+    assertEquals(err.code, 'internal');
   } finally {
     await stub.close();
   }

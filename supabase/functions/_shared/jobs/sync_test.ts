@@ -5,13 +5,16 @@ import { encryptProviderToken } from '../provider_tokens.ts';
 import { envSource } from '../testing/assertions.ts';
 import { type StubDb, stubDb, type StubRequest } from '../testing/stub_db.ts';
 import { runSyncJob } from './sync.ts';
-import { fakeModel, fakeUploads, steppingClock } from './testing.ts';
+import { fakeModel, fakeUploads, jumpingClock, steppingClock } from './testing.ts';
 import type { JobDeps } from './types.ts';
 
 const NOW = new Date('2026-09-09T12:00:00.000Z');
 const ORG = '44444444-4444-4444-8444-444444444444';
 const SPACE = '33333333-3333-4333-8333-333333333333';
 const USER = '11111111-1111-4111-8111-111111111111';
+
+/** The four checkpoints a pass passes through, in the order it reaches them. */
+const SYNC_STAGES = ['credentials', 'list', 'file', 'enqueue'];
 
 const ENV = envSource({
   SB_TOKEN_ENC_KEY: 'AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=',
@@ -195,6 +198,28 @@ Deno.test('sync never reads document text itself', async () => {
   }
 });
 
+/** A documents row as the sync pass reads it back. */
+function filedDocument(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    id: 'document-existing',
+    external_id: 'issue-1',
+    title: 'ENG-1 Issue 1',
+    url: 'https://linear.app/ENG-1',
+    ...overrides,
+  };
+}
+
+/** Every write to documents that was not a plain insert of new rows. */
+function documentUpserts(stub: StubDb): Record<string, unknown>[] {
+  return stub.requests
+    .filter((request) =>
+      request.table === 'documents' && request.method === 'POST' &&
+      request.query.includes('on_conflict=id')
+    )
+    .flatMap((request) => (Array.isArray(request.body) ? request.body : [request.body]))
+    .filter((row): row is Record<string, unknown> => typeof row === 'object' && row !== null);
+}
+
 Deno.test('a document already filed is relabelled rather than duplicated', async () => {
   const h = harness({
     page: issuesPage([
@@ -207,15 +232,80 @@ Deno.test('a document already filed is relabelled rather than duplicated', async
     ]),
     reply: (request) =>
       request.table === 'documents' && request.method === 'GET'
-        ? { body: [{ id: 'document-existing', external_id: 'issue-1' }] }
+        ? { body: [filedDocument()] }
         : undefined,
   });
   try {
     await runSyncJob(await connection(), h.deps);
 
-    assertEquals(rowsInserted(h.stub, 'documents').length, 0);
-    assertEquals(patches(h.stub, 'documents')[0].title, 'ENG-1 Renamed');
+    const relabelled = documentUpserts(h.stub);
+    assertEquals(relabelled.length, 1);
+    assertEquals(relabelled[0].id, 'document-existing');
+    assertEquals(relabelled[0].title, 'ENG-1 Renamed');
+    // A second row for the same issue would double every answer it can give.
+    assertEquals(
+      rowsInserted(h.stub, 'documents').filter((row) => row.id === undefined).length,
+      0,
+    );
     assertEquals(rowsInserted(h.stub, 'ingest_jobs')[0].document_id, 'document-existing');
+  } finally {
+    await h.stub.close();
+  }
+});
+
+Deno.test('a document the provider did not rename is not written at all', async () => {
+  // Every pass sees the documents the last pass filed. Writing each of them back
+  // with the values already on the row is a round trip per document, on every
+  // pass, to change nothing.
+  const h = harness({
+    page: issuesPage([issue(1)]),
+    reply: (request) =>
+      request.table === 'documents' && request.method === 'GET'
+        ? { body: [filedDocument()] }
+        : undefined,
+  });
+  try {
+    await runSyncJob(await connection(), h.deps);
+
+    assertEquals(documentUpserts(h.stub).length, 0);
+    assertEquals(patches(h.stub, 'documents').length, 0);
+    // The ingest job is still queued: whether the text changed is its business.
+    assertEquals(rowsInserted(h.stub, 'ingest_jobs').length, 1);
+  } finally {
+    await h.stub.close();
+  }
+});
+
+Deno.test('a page of renamed documents is relabelled in one write', async () => {
+  const renamed = [1, 2, 3].map((n) => ({ ...issue(n), title: `Renamed ${n}` }));
+  const h = harness({
+    page: issuesPage(renamed),
+    reply: (request) =>
+      request.table === 'documents' && request.method === 'GET'
+        ? {
+          body: renamed.map((node, index) =>
+            filedDocument({
+              id: `document-${index + 1}`,
+              external_id: node.id,
+              title: `ENG-${index + 1} Issue ${index + 1}`,
+              url: `https://linear.app/ENG-${index + 1}`,
+            })
+          ),
+        }
+        : undefined,
+  });
+  try {
+    await runSyncJob(await connection(), h.deps);
+
+    const writes = h.stub.requests.filter((request) =>
+      request.table === 'documents' && request.method !== 'GET'
+    );
+    assertEquals(writes.length, 1, 'the relabel took a round trip per document');
+    assertEquals(documentUpserts(h.stub).map((row) => row.title), [
+      'ENG-1 Renamed 1',
+      'ENG-2 Renamed 2',
+      'ENG-3 Renamed 3',
+    ]);
   } finally {
     await h.stub.close();
   }
@@ -263,12 +353,15 @@ Deno.test('a pass with nothing new still advances last_synced_at', async () => {
   }
 });
 
-Deno.test('a connection marked syncing while it runs settles back to active', async () => {
+Deno.test('a pass settles the connection back to active without rewriting its claim', async () => {
+  // claimConnectionForSync moved the row to syncing in the statement that took
+  // it, and cleared the old reason with it. Writing syncing again here is a
+  // round trip and a realtime broadcast that tell a watching page nothing.
   const h = harness({ page: issuesPage([]) });
   try {
     await runSyncJob(await connection(), h.deps);
     const statuses = patches(h.stub, 'connections').map((row) => row.status);
-    assertEquals(statuses, ['syncing', 'active']);
+    assertEquals(statuses, ['active']);
   } finally {
     await h.stub.close();
   }
@@ -339,18 +432,46 @@ Deno.test('a connection whose token cannot be renewed is skipped, not retried', 
   }
 });
 
-Deno.test('a pass that runs out of time leaves the cursor where it was', async () => {
-  const h = harness({ clock: steppingClock(NOW, 60_000), budgetMs: 1000, page: issuesPage([]) });
-  try {
-    const result = await runSyncJob(await connection({ cursor: 'keep-me' }), h.deps);
+Deno.test('a pass that runs out of time names the stage and leaves the cursor where it was', async () => {
+  // A clock that jumps on its second reading stops every run at the first
+  // checkpoint, before the driver is ever asked, so it cannot tell a cursor left
+  // alone from a cursor never reached. Walking the jump forward one reading at a
+  // time stops the pass at each checkpoint in turn.
+  const stages = new Set<string>();
 
-    assertEquals(result.kind, 'timeout');
-    for (const patch of patches(h.stub, 'connections')) {
-      assertEquals(patch.cursor, undefined, 'a timed out pass moved the cursor');
+  for (let ticks = 1; ticks <= 20; ticks += 1) {
+    const h = harness({
+      page: issuesPage([issue(1)], 'page-2'),
+      clock: jumpingClock(NOW, ticks),
+      budgetMs: 1_000,
+    });
+    try {
+      const result = await runSyncJob(await connection({ cursor: 'keep-me' }), h.deps);
+      if (result.kind !== 'timeout') continue;
+      stages.add(result.stage);
+
+      for (const patch of patches(h.stub, 'connections')) {
+        assertEquals(
+          patch.cursor,
+          undefined,
+          `a pass that died at ${result.stage} moved the cursor`,
+        );
+      }
+      assertEquals(patches(h.stub, 'connections').at(-1)?.status, 'error');
+    } finally {
+      await h.stub.close();
     }
-  } finally {
-    await h.stub.close();
   }
+
+  for (const stage of stages) {
+    assert(SYNC_STAGES.includes(stage), `a pass named a stage nothing else knows: ${stage}`);
+  }
+  // Not vacuous: the run that matters is the one that read a page of changes and
+  // then ran out, because that is the run with a cursor it could have written.
+  assert(
+    stages.has('file') || stages.has('enqueue'),
+    `no run reached the driver, so nothing was proved: ${[...stages].join(', ')}`,
+  );
 });
 
 Deno.test('a backlog the driver could not finish in one call is walked in the same run', async () => {

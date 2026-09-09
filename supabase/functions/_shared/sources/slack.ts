@@ -283,7 +283,7 @@ export const slackDriver: SourceDriver = {
         const channel = asRecord(raw);
         const id = asString(channel.id);
         if (id.length === 0) continue;
-        options.push({ id, name: `#${asString(channel.name, id)}`, kind: 'channel' });
+        options.push({ id, name: `#${asString(channel.name, id)}` });
       }
 
       pageCursor = asString(asRecord(body.response_metadata).next_cursor);

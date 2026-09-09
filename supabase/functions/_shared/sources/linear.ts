@@ -259,7 +259,6 @@ export const linearDriver: SourceDriver = {
       .map((team) => ({
         id: asString(team.id),
         name: asString(team.name, asString(team.id)),
-        kind: 'workspace' as const,
       }));
   },
 

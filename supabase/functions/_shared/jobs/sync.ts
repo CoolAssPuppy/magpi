@@ -43,25 +43,73 @@ const MAX_PASSES = 20;
 interface ExistingDocument {
   id: string;
   external_id: string;
+  /** Read back so a pass can tell a document that moved from one that did not. */
+  title: string;
+  url: string | null;
 }
+
+const FILED_COLUMNS = 'id, external_id, title, url';
 
 /** Documents this connection has already filed, for the external ids in this page. */
 async function existingDocuments(
   db: SupabaseClient,
   connectionId: string,
   externalIds: string[],
-): Promise<Map<string, string>> {
+): Promise<Map<string, ExistingDocument>> {
   if (externalIds.length === 0) return new Map();
 
   const { data, error } = await db
     .from('documents')
-    .select('id, external_id')
+    .select(FILED_COLUMNS)
     .eq('connection_id', connectionId)
     .in('external_id', externalIds)
     .returns<ExistingDocument[]>();
   if (error) throw new ApiError(500, 'internal', 'document lookup failed');
 
-  return new Map((data ?? []).map((row) => [row.external_id, row.id]));
+  return new Map((data ?? []).map((row) => [row.external_id, row]));
+}
+
+/**
+ * Writes back the documents the provider relabelled, and nothing else.
+ *
+ * Every pass sees the documents the last pass filed, so writing each of them
+ * back costs a round trip per document to store the values already on the row.
+ * The ones that really moved go in a single upsert, because PostgREST has no way
+ * to give a different value per row in one patch. A document the provider
+ * renamed keeps its row and its chunks; only the label moves. Re-reading its
+ * text is the ingest job's business.
+ */
+async function relabelDocuments(
+  deps: JobDeps,
+  connection: ConnectionRow,
+  refs: SourceDocumentRef[],
+  known: Map<string, ExistingDocument>,
+): Promise<void> {
+  // Keyed by id: a page naming the same document twice would otherwise ask one
+  // statement to write the same row twice, which Postgres refuses outright.
+  const moved = new Map<string, Record<string, unknown>>();
+  for (const ref of refs) {
+    const row = known.get(ref.externalId);
+    if (!row || (row.title === ref.title && row.url === (ref.url ?? null))) continue;
+    moved.set(row.id, {
+      id: row.id,
+      org_id: connection.org_id,
+      space_id: connection.space_id,
+      connection_id: connection.id,
+      external_id: ref.externalId,
+      title: ref.title,
+      url: ref.url,
+      // Not null, so the upsert has to name it. A row matched by connection and
+      // external id was filed by a sync pass and by nothing else.
+      origin: 'sync',
+    });
+  }
+  if (moved.size === 0) return;
+
+  const { error } = await deps.db
+    .from('documents')
+    .upsert([...moved.values()], { onConflict: 'id' });
+  if (error) throw new ApiError(500, 'internal', 'the renamed documents could not be filed');
 }
 
 /**
@@ -99,25 +147,18 @@ async function fileDocuments(
           origin: 'sync',
         })),
       )
-      .select('id, external_id')
+      .select(FILED_COLUMNS)
       .returns<ExistingDocument[]>();
     if (error) throw new ApiError(500, 'internal', 'the changed documents could not be filed');
-    for (const row of data ?? []) known.set(row.external_id, row.id);
+    for (const row of data ?? []) known.set(row.external_id, row);
   }
 
-  // A document the provider renamed keeps its row and its chunks; only the
-  // label moves. Re-reading its text is the ingest job's business.
-  for (const ref of refs) {
-    const id = known.get(ref.externalId);
-    if (!id || fresh.includes(ref)) continue;
-    await deps.db
-      .from('documents')
-      .update({ title: ref.title, url: ref.url })
-      .eq('id', id);
-  }
+  // The rows just inserted carry what the provider said, so they never look
+  // renamed and this walks only the ones the last pass filed.
+  await relabelDocuments(deps, connection, refs, known);
 
   return refs
-    .map((ref) => known.get(ref.externalId))
+    .map((ref) => known.get(ref.externalId)?.id)
     .filter((id): id is string => typeof id === 'string');
 }
 
@@ -162,7 +203,8 @@ export async function runSyncJob(connection: ConnectionRow, deps: JobDeps): Prom
     // connections page can say what to do about it.
     if (outcome.kind === 'expired') return { kind: 'expired', detail: outcome.detail };
 
-    await markConnectionStatus(deps.db, connection.id, 'syncing', null);
+    // The row is already syncing with its old reason cleared: both callers claim
+    // it in one statement before this body runs.
     const driver = driverFor(connection.provider);
 
     for (let pass = 0; pass < MAX_PASSES; pass++) {

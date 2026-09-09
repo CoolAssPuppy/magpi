@@ -43,7 +43,7 @@ export interface Budget {
   /** Raises a StageTimeout when the budget is spent. Call before each unit of work. */
   checkpoint(stage: string): void;
   elapsedMs(): number;
-  remainingMs(): number;
+  /** Whether the next unit of work would start with the budget already gone. */
   isSpent(): boolean;
 }
 
@@ -53,7 +53,6 @@ export function startBudget(deps: ClockDeps, budgetMs: number = DEFAULT_BUDGET_M
 
   return {
     elapsedMs,
-    remainingMs: () => Math.max(0, budgetMs - elapsedMs()),
     isSpent: () => elapsedMs() >= budgetMs,
     checkpoint(stage: string) {
       const elapsed = elapsedMs();

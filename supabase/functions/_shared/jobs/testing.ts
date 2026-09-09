@@ -50,8 +50,38 @@ export function fakeUploads(files: Record<string, string>): UploadStore {
   };
 }
 
+/**
+ * The lines `run` wrote to console.error.
+ *
+ * A write a job body is right not to fail over still has to leave a trace, and
+ * the log is the only place that trace can be asserted from.
+ */
+export async function capturedErrors(run: () => Promise<unknown>): Promise<string[]> {
+  const lines: string[] = [];
+  const original = console.error;
+  console.error = (...args: unknown[]) => lines.push(args.map((arg) => String(arg)).join(' '));
+  try {
+    await run();
+  } finally {
+    console.error = original;
+  }
+  return lines;
+}
+
 /** A clock that jumps by a fixed step on every read, for driving the budget. */
 export function steppingClock(start: Date, stepMs: number): { now(): Date } {
   let reads = 0;
   return { now: () => new Date(start.getTime() + stepMs * reads++) };
+}
+
+/**
+ * A clock that stands still for `ticks` readings and then jumps past any budget.
+ *
+ * A clock that jumps on its second reading always stops a job at its first
+ * checkpoint, which is the one checkpoint that proves nothing about the work
+ * after it. Walking `ticks` up stops the same job at each checkpoint in turn.
+ */
+export function jumpingClock(start: Date, ticks: number, jumpMs = 60_000): { now(): Date } {
+  let reads = 0;
+  return { now: () => new Date(start.getTime() + (++reads > ticks ? jumpMs : 0)) };
 }
