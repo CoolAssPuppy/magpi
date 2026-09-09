@@ -12,7 +12,7 @@ import {
 } from '@/lib/connections/activity';
 import { createClient } from '@/lib/supabase/client';
 
-import { StatusPill } from './status-pill';
+import { StatusPill } from '@/components/app/status-pill';
 
 /**
  * Live import progress and live failures, straight off the replication stream.

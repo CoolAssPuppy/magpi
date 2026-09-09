@@ -8,7 +8,7 @@ import type { ScopeSelection } from '@/lib/connections/scope-selection';
 import type { ConnectionStatusView } from '@/lib/connections/status';
 
 import { ScopePicker } from './scope-picker';
-import { StatusPill } from './status-pill';
+import { StatusPill } from '@/components/app/status-pill';
 
 export type ConnectionScope = {
   readonly id: string;

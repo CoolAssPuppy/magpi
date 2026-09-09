@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import type { ConnectionSummary, ProviderListing } from '@/lib/connections/view-model';
 
 import { ConnectionActions, type ConnectionAction } from './connection-actions';
-import { StatusPill } from './status-pill';
+import { StatusPill } from '@/components/app/status-pill';
 
 function ConnectionRow({
   connection,
