@@ -50,12 +50,48 @@ async function ensurePerson(client, person) {
 
   if (!error) return { ...person, id: data.user.id, created: true };
 
-  // Already there from a previous run. The admin API has no get-by-email, so
-  // the listing is the only route to the id.
-  const { data: page } = await client.auth.admin.listUsers({ perPage: 1000 });
-  const existing = page.users.find((user) => user.email === person.email);
-  if (!existing) throw new Error(`could not create or find ${person.email}: ${error.message}`);
+  // Only "already registered" falls through to the lookup. Every other refusal
+  // is raised as itself: a bad service key and a rate limit used to arrive here
+  // too, walk the listing, find nothing, and report "could not create or find"
+  // with the real cause buried at the end of the sentence.
+  if (!isAlreadyRegistered(error)) {
+    throw new Error(`could not create ${person.email}: ${error.message}`);
+  }
+
+  const existing = await findByEmail(client, person.email);
+  if (!existing) {
+    throw new Error(
+      `${person.email} is registered but is not in the first pages of the directory. ` +
+        'Reset the local database, or delete the account by hand.',
+    );
+  }
   return { ...person, id: existing.id, created: false };
+}
+
+/** GoTrue reports an existing address by code on newer versions and by message on older ones. */
+function isAlreadyRegistered(error) {
+  return (
+    error.code === 'email_exists' ||
+    error.status === 422 ||
+    /already (been )?registered|already exists/i.test(error.message ?? '')
+  );
+}
+
+/**
+ * The admin API has no get-by-email, so the listing is the only route to an id.
+ * It pages: reading only the first thousand meant a long-lived local database
+ * reported the account missing rather than finding it.
+ */
+async function findByEmail(client, email) {
+  for (let page = 1; page <= 20; page += 1) {
+    const { data, error } = await client.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error) throw new Error(`could not read the user directory: ${error.message}`);
+
+    const found = data.users.find((user) => user.email === email);
+    if (found) return found;
+    if (data.users.length < 1000) return null;
+  }
+  return null;
 }
 
 /**

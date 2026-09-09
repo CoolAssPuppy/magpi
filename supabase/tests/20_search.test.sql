@@ -209,6 +209,14 @@ set local request.jwt.claims to '{"sub":"a0000000-0000-4000-8000-000000000001","
 -- At a thousand rows the planner would choose a sequential scan, which filters
 -- perfectly and would make all three of these pass while proving nothing about
 -- production. Forcing the index is what puts the real plan under test.
+--
+-- The thousand rows and this setting stay even though the recall assertion they
+-- were written for has gone. A reader has already proposed deleting them on the
+-- grounds that the count below duplicates the one at line 106. It does not: that
+-- one runs on the small fixture, where the planner picks a sequential scan and
+-- filters perfectly, so it says nothing about the index path. Confirmed with
+-- `explain` under exactly this setup, which reports
+-- `Index Scan using chunks_embedding_idx`.
 set local enable_seqscan = off;
 
 select is(

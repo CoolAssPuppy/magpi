@@ -1,8 +1,12 @@
 name: light gate
 
+# Push on the default branch, and pull_request everywhere else. Listening for
+# both on every branch ran the gate twice for each push to a PR branch, and the
+# concurrency group below cannot dedupe them because the two events carry
+# different refs.
 on:
   push:
-    branches: ['**']
+    branches: [main]
   pull_request:
 
 concurrency:

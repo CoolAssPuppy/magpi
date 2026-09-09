@@ -127,8 +127,10 @@ function main() {
       lines.forEach((line, index) => {
         for (const rule of RULES) {
           rule.pattern.lastIndex = 0;
-          const match = rule.pattern.exec(line);
-          if (match) {
+          // Every match on the line, not the first. `exec` returned one, so a
+          // class list carrying two raw colors was reported once and the
+          // printed count was short by the difference.
+          for (const match of line.matchAll(rule.pattern)) {
             findings.push({
               file: relativePath,
               line: index + 1,

@@ -17,5 +17,12 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
+      # Fails on purpose. There is no ios/ or android/ directory in this repo,
+      # and a job that prints a sentence about wiring that does not exist and
+      # then goes green is worse than no job: it answers "is the native build
+      # working" with yes.
       - name: build
-        run: echo "native build for ${{ inputs.platform }} is wired in /ios and /android"
+        run: |
+          echo "No native client in this repo yet: ${{ inputs.platform }}/ does not exist."
+          echo "docs/mobile-spec.md is the contract a client would be built against."
+          exit 1
