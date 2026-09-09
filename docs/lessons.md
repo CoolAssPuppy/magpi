@@ -346,3 +346,32 @@ it restored, it passes. Removing it needs a vector operation in the same session
 first, or the `alter function ... reset` is refused with "permission denied to
 set parameter" and the break silently does not happen. That refusal is easy to
 read as the test passing.
+
+## The observation was fine; the explanation attached to it was wrong
+
+An agent investigating why the vitest text coverage table omits rows made three
+corrections in a row, and named the pattern itself, which is the useful part.
+
+1. It matched a truncated row to the wrong file, while documenting that
+   truncated rows cannot be matched to files.
+2. It stated a rule before checking it. The rule happened to be true.
+3. It called a mechanism disproved on a test that could not have disproved it:
+   passing `--coverage.skipFull=false` and seeing no change, when `false` is
+   that option's default.
+
+Its own summary: every one was a claim about _why_, layered on an observation
+that was fine on its own. The observation never needed the explanation to be
+useful, and the added part was wrong every time.
+
+The second is the worst of the three and the reason this is written down. A
+claim that is true but unchecked looks exactly like a claim that is true and
+checked. Nothing about it reads wrong, so nobody goes and looks, and it gets
+built on.
+
+**Rule.** Report what you measured. If you want to say why, measure that too, or
+mark it as a guess in the same sentence. "The table prints a row only for files
+below 100 in at least one metric, 46 against 46 out of 137" is worth having.
+"Because of `skipFull`" was not established and was not needed.
+
+The discriminating test is the one that would come out differently if the belief
+were false. Setting a flag to its own default cannot be one.
