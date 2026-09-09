@@ -1,18 +1,22 @@
+import { redirect } from 'next/navigation';
+
 import { EmptyState } from '@/components/app/empty-state';
 import { PageHeader } from '@/components/app/page-header';
 import { DocumentList } from '@/components/documents/document-list';
 import { UploadPanel } from '@/components/documents/upload-panel';
 import { listDocuments } from '@/lib/documents/documents';
 import { listSpaceOptions } from '@/lib/spaces/spaces';
-import { createClient } from '@/lib/supabase/server';
+import { getSessionContext } from '@/lib/supabase/context';
 
 export const metadata = { title: 'Documents' };
 
 export default async function DocumentsPage() {
-  const supabase = await createClient();
+  const context = await getSessionContext();
+  if (!context) redirect('/sign-in');
+
   const [documents, spaces] = await Promise.all([
-    listDocuments(supabase),
-    listSpaceOptions(supabase),
+    listDocuments(context.supabase),
+    listSpaceOptions(context.supabase),
   ]);
 
   return (

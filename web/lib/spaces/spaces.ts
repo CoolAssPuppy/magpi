@@ -2,7 +2,6 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { Database } from '@/lib/database.types';
 
-type SpaceRow = Database['public']['Tables']['spaces']['Row'];
 export type SpaceKind = Database['public']['Enums']['space_kind'];
 
 export type Space = {
@@ -44,11 +43,6 @@ export function sortSpaces<T extends { kind: SpaceKind; name: string }>(spaces: 
   );
 }
 
-type SpaceQueryRow = Pick<SpaceRow, 'id' | 'name' | 'kind' | 'dreaming_enabled'> & {
-  space_members: { count: number }[];
-  documents: { count: number }[];
-};
-
 function countOf(rows: { count: number }[] | null | undefined): number {
   return rows?.[0]?.count ?? 0;
 }
@@ -63,9 +57,8 @@ export async function listVisibleSpaces(
 
   if (error) throw new Error(error.message);
 
-  const spaces = (data as SpaceQueryRow[] | null) ?? [];
   return sortSpaces(
-    spaces.map((row) => ({
+    (data ?? []).map((row) => ({
       id: row.id,
       name: row.name,
       kind: row.kind,

@@ -5,6 +5,27 @@ import type { Database } from '@/lib/database.types';
 
 vi.mock('server-only', () => ({}));
 
+/**
+ * React's cache() only memoizes inside a server request, and the react build
+ * vitest loads is the client one, where it is a pass-through. This stands in for
+ * the request scope a page render provides, and the scope id is what makes one
+ * test's request end before the next one begins.
+ */
+const cacheScope = vi.hoisted(() => ({ id: 0 }));
+
+vi.mock('react', () => ({
+  cache: <Args extends unknown[], Result>(fn: (...args: Args) => Result) => {
+    let memo: { readonly id: number; readonly value: Result } | null = null;
+
+    return (...args: Args): Result => {
+      if (memo && memo.id === cacheScope.id) return memo.value;
+      const value = fn(...args);
+      memo = { id: cacheScope.id, value };
+      return value;
+    };
+  },
+}));
+
 const USER_ID = '77777777-7777-4777-8777-777777777777';
 const ORG_ID = '11111111-1111-4111-8111-111111111111';
 const OTHER_ORG_ID = '22222222-2222-4222-8222-222222222222';
@@ -26,6 +47,7 @@ type RecordedCall = readonly [string, ...unknown[]];
 const clientState = {
   chain: [] as RecordedCall[],
   client: null as SupabaseClient<Database> | null,
+  accountReads: 0,
 };
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -64,7 +86,10 @@ function signedInAs(reader: Account): SupabaseClient<Database> {
 
   const client = {
     auth: {
-      getUser: async () => ({ data: { user: reader.user }, error: null }),
+      getUser: async () => {
+        clientState.accountReads += 1;
+        return { data: { user: reader.user }, error: null };
+      },
     },
     from: (table: string) => {
       chain.push(['from', table]);
@@ -79,6 +104,8 @@ function signedInAs(reader: Account): SupabaseClient<Database> {
 beforeEach(() => {
   clientState.chain = [];
   clientState.client = null;
+  clientState.accountReads = 0;
+  cacheScope.id += 1;
 });
 
 describe('resolving the caller and the organization they are acting in', () => {
@@ -123,6 +150,18 @@ describe('resolving the caller and the organization they are acting in', () => {
       ['eq', 'user_id', USER_ID],
       ['order', 'created_at', { ascending: true }],
       ['limit', 1],
+    ]);
+  });
+
+  it('reads the account once when one page render resolves the session more than once', async () => {
+    signedInAs(account());
+
+    const [first, second] = await Promise.all([getSessionContext(), getSessionContext()]);
+
+    expect(second).toBe(first);
+    expect(clientState.accountReads).toBe(1);
+    expect(clientState.chain.filter(([method]) => method === 'from')).toEqual([
+      ['from', 'org_members'],
     ]);
   });
 

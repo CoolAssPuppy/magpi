@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  CONVERSATION_WINDOW,
   createConversationStore,
   loadConversation,
   loadMessages,
@@ -125,18 +126,40 @@ describe('loadConversation', () => {
 });
 
 describe('loadMessages', () => {
-  it('reads the turns oldest first', async () => {
+  it('hands the turns back oldest first, though it reads the newest end of the conversation', async () => {
     const { supabase, reads } = recordingClient({
       rows: [
-        { ...toRow(storedMessage()) },
-        { ...toRow(storedMessage({ role: 'assistant', content: 'Blocked on ENG-4417 [1].' })) },
+        toRow(
+          storedMessage({
+            role: 'assistant',
+            content: 'Blocked on ENG-4417 [1].',
+            createdAt: '2026-09-09T10:01:00Z',
+          }),
+        ),
+        toRow(storedMessage({ createdAt: '2026-09-09T10:00:00Z' })),
       ],
     });
 
     const messages = await loadMessages(supabase, CONVERSATION_ID);
 
     expect(messages.map((message) => message.role)).toEqual(['user', 'assistant']);
-    expect(reads[0]).toMatchObject({ table: 'messages', order: ['created_at', true] });
+    expect(reads[0]).toMatchObject({ table: 'messages', order: ['created_at', false] });
+  });
+
+  it('reads a window off the end of the conversation rather than every message in it', async () => {
+    const { supabase, reads } = recordingClient({ rows: [] });
+
+    await loadMessages(supabase, CONVERSATION_ID);
+
+    expect(reads[0]).toMatchObject({ limit: CONVERSATION_WINDOW });
+  });
+
+  it('reads only the few turns the answer path asks for', async () => {
+    const { supabase, reads } = recordingClient({ rows: [] });
+
+    await loadMessages(supabase, CONVERSATION_ID, { limit: 8 });
+
+    expect(reads[0]).toMatchObject({ limit: 8 });
   });
 });
 

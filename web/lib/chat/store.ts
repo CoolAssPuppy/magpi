@@ -106,25 +106,39 @@ export async function loadConversation(
   return { id: data.id, spaceFilter: data.space_filter, title: data.title };
 }
 
+/**
+ * How many messages one read takes when the caller names no number of its own.
+ * A conversation has no upper bound and nothing reads all of it: a screen shows
+ * the end of it, and the answer path uses the last PROMPT_HISTORY_TURNS.
+ */
+export const CONVERSATION_WINDOW = 200;
+
 export async function loadMessages(
   supabase: Client,
   conversationId: string,
+  options: { limit?: number } = {},
 ): Promise<readonly StoredMessage[]> {
+  // Newest first is what puts the window on the end of the conversation, which
+  // is the end everything here cares about. The reverse hands it back in
+  // reading order, which is the order a prompt and a screen both want.
   const { data, error } = await supabase
     .from('messages')
     .select('id, role, content, citations, created_at')
     .eq('conversation_id', conversationId)
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: false })
+    .limit(options.limit ?? CONVERSATION_WINDOW);
 
   if (error) throw new Error(error.message);
 
-  return (data ?? []).map((row) => ({
-    id: row.id,
-    role: row.role,
-    content: row.content,
-    citations: row.citations,
-    createdAt: row.created_at,
-  }));
+  return (data ?? [])
+    .map((row) => ({
+      id: row.id,
+      role: row.role,
+      content: row.content,
+      citations: row.citations,
+      createdAt: row.created_at,
+    }))
+    .reverse();
 }
 
 export function toTurns(messages: readonly StoredMessage[]): readonly ConversationTurn[] {

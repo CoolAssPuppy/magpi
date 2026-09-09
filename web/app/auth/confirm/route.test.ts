@@ -65,6 +65,28 @@ describe('the link in a confirmation email', () => {
     );
   });
 
+  it('accepts every kind of email link Supabase sends', async () => {
+    for (const type of ['signup', 'invite', 'magiclink', 'recovery', 'email_change', 'email']) {
+      const { calls } = goTrue();
+
+      const landing = await follow(`?token_hash=${TOKEN_HASH}&type=${type}`);
+
+      expect(calls).toEqual([{ method: 'verifyOtp', args: [{ type, token_hash: TOKEN_HASH }] }]);
+      expect(landing).toBe(`${ORIGIN}/chat`);
+    }
+  });
+
+  it('refuses a made-up type rather than handing it to the auth server', async () => {
+    const { calls } = goTrue();
+
+    const landing = await follow(`?token_hash=${TOKEN_HASH}&type=sms`);
+
+    expect(calls).toEqual([]);
+    expect(landing).toBe(
+      `${ORIGIN}/auth/error?error=${encodeURIComponent('That confirmation link is not one we recognize.')}`,
+    );
+  });
+
   it('carries what the auth server said onto the error screen when a link has expired', async () => {
     goTrue({ message: 'Email link is invalid or has expired' });
 

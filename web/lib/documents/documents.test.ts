@@ -155,6 +155,19 @@ describe('the documents a reader is shown', () => {
     expect(calls).toContainEqual(['limit', 5]);
   });
 
+  it('reads the newest import job, so the list cannot disagree with the document page', async () => {
+    const { supabase, calls } = documentsTable({ rows: [documentRow()] });
+
+    await listDocuments(supabase);
+
+    expect(calls).toContainEqual([
+      'order',
+      'updated_at',
+      { ascending: false, referencedTable: 'ingest_jobs' },
+    ]);
+    expect(calls).toContainEqual(['limit', 1, { referencedTable: 'ingest_jobs' }]);
+  });
+
   it('narrows to the one space a reader picked', async () => {
     const { supabase, calls } = documentsTable({ rows: [documentRow()] });
 

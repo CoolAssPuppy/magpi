@@ -1,15 +1,19 @@
+import { redirect } from 'next/navigation';
+
 import { EmptyState } from '@/components/app/empty-state';
 import { PageHeader } from '@/components/app/page-header';
 import { CreateSpaceForm } from '@/components/spaces/create-space-form';
 import { SpaceList } from '@/components/spaces/space-list';
 import { listVisibleSpaces } from '@/lib/spaces/spaces';
-import { createClient } from '@/lib/supabase/server';
+import { getSessionContext } from '@/lib/supabase/context';
 
 export const metadata = { title: 'Spaces' };
 
 export default async function SpacesPage() {
-  const supabase = await createClient();
-  const spaces = await listVisibleSpaces(supabase);
+  const context = await getSessionContext();
+  if (!context) redirect('/sign-in');
+
+  const spaces = await listVisibleSpaces(context.supabase);
 
   return (
     <>

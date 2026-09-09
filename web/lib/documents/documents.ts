@@ -2,7 +2,6 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { Database } from '@/lib/database.types';
 
-type DocumentRow = Database['public']['Tables']['documents']['Row'];
 export type DocumentOrigin = Database['public']['Enums']['document_origin'];
 export type IngestStatus = Database['public']['Enums']['ingest_status'];
 export type IngestStage = Database['public']['Enums']['ingest_stage'];
@@ -64,11 +63,6 @@ export function describeIngest(ingest: IngestSummary | null): string | null {
   }
 }
 
-type DocumentQueryRow = Pick<DocumentRow, 'id' | 'title' | 'space_id' | 'origin' | 'updated_at'> & {
-  spaces: { name: string } | null;
-  ingest_jobs: { status: IngestStatus; stage: IngestStage; error: string | null }[];
-};
-
 export async function listDocuments(
   supabase: SupabaseClient<Database>,
   options: { spaceId?: string; limit?: number } = {},
@@ -79,6 +73,11 @@ export async function listDocuments(
       'id, title, space_id, origin, updated_at, spaces(name), ingest_jobs(status, stage, error)',
     )
     .order('updated_at', { ascending: false })
+    // A document can carry several import attempts. Only the newest one says
+    // where it stands, and the document page reads it the same way, so an
+    // unordered embed would let the two screens contradict each other.
+    .order('updated_at', { ascending: false, referencedTable: 'ingest_jobs' })
+    .limit(1, { referencedTable: 'ingest_jobs' })
     .limit(options.limit ?? 50);
 
   if (options.spaceId) query = query.eq('space_id', options.spaceId);
@@ -86,7 +85,7 @@ export async function listDocuments(
   const { data, error } = await query;
   if (error) throw new Error(error.message);
 
-  return ((data as DocumentQueryRow[] | null) ?? []).map((row) => ({
+  return (data ?? []).map((row) => ({
     id: row.id,
     title: row.title,
     spaceId: row.space_id,
