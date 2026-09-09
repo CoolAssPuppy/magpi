@@ -9,7 +9,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(32);
+select plan(34);
 
 insert into auth.users (id, email, instance_id, aud, role)
 values
@@ -266,6 +266,25 @@ select is(
   0, 'every security definer function in public pins a search_path'
 );
 
+-- A revoke never survives `supabase db diff`, so every security definer function
+-- added from here on will arrive in the database carrying the default execute to
+-- PUBLIC, and PostgREST publishes anything in this schema as an RPC. That is how
+-- the anon key came to be able to read a PKCE verifier. Nothing in public should
+-- be executable by PUBLIC; if something ever legitimately is, allowlist it here
+-- by name rather than deleting the assertion.
+--
+-- A null proacl is the default, which is execute to PUBLIC, so it counts too.
+select is_empty(
+  $$ select p.proname::text || '(' || pg_get_function_identity_arguments(p.oid) || ')'
+     from pg_proc p
+     join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public'
+       and (p.proacl is null
+            or exists (select 1 from aclexplode(p.proacl) a
+                       where a.grantee = 0 and a.privilege_type = 'EXECUTE')) $$,
+  'no function in public is executable by PUBLIC'
+);
+
 -- Grants ---------------------------------------------------------------------------
 --
 -- A policy is only reachable if the role also holds the table privilege. These
@@ -289,6 +308,17 @@ select ok(
        from pg_class c join pg_namespace n on n.oid = c.relnamespace
        where n.nspname = 'public' and c.relkind = 'r'),
   'anon holds select on nothing in public'
+);
+
+-- connections is the one table granted by column list rather than whole, because
+-- connections_select_visible would otherwise hand a client the provider tokens
+-- along with the row. A column-level revoke cannot subtract from a table-level
+-- grant, so the table privilege has to be absent in the first place. This is the
+-- assertion that fails if someone reaches for `revoke select (access_token_enc)`
+-- and believes it worked.
+select ok(
+  not has_table_privilege('authenticated', 'public.connections', 'select'),
+  'a client holds no table-wide select on connections, only named columns'
 );
 
 select ok(
