@@ -203,6 +203,7 @@ export type Database = {
           org_id: string
           origin: Database["public"]["Enums"]["document_origin"]
           retrieval_count: number
+          size_bytes: number | null
           space_id: string
           storage_path: string | null
           title: string
@@ -222,6 +223,7 @@ export type Database = {
           org_id: string
           origin: Database["public"]["Enums"]["document_origin"]
           retrieval_count?: number
+          size_bytes?: number | null
           space_id: string
           storage_path?: string | null
           title?: string
@@ -241,6 +243,7 @@ export type Database = {
           org_id?: string
           origin?: Database["public"]["Enums"]["document_origin"]
           retrieval_count?: number
+          size_bytes?: number | null
           space_id?: string
           storage_path?: string | null
           title?: string
@@ -311,18 +314,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "dream_links_document_a_fkey"
-            columns: ["document_a"]
+            foreignKeyName: "dream_links_document_a_in_space"
+            columns: ["document_a", "space_id"]
             isOneToOne: false
             referencedRelation: "documents"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "space_id"]
           },
           {
-            foreignKeyName: "dream_links_document_b_fkey"
-            columns: ["document_b"]
+            foreignKeyName: "dream_links_document_b_in_space"
+            columns: ["document_b", "space_id"]
             isOneToOne: false
             referencedRelation: "documents"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "space_id"]
           },
           {
             foreignKeyName: "dream_links_dream_run_id_fkey"
@@ -392,11 +395,11 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "dream_runs_output_document_id_fkey"
-            columns: ["output_document_id"]
+            foreignKeyName: "dream_runs_output_in_space"
+            columns: ["output_document_id", "space_id"]
             isOneToOne: false
             referencedRelation: "documents"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "space_id"]
           },
           {
             foreignKeyName: "dream_runs_space_id_fkey"
@@ -485,18 +488,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "entity_mentions_chunk_id_fkey"
-            columns: ["chunk_id"]
+            foreignKeyName: "entity_mentions_chunk_in_space"
+            columns: ["chunk_id", "space_id"]
             isOneToOne: false
             referencedRelation: "chunks"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "space_id"]
           },
           {
-            foreignKeyName: "entity_mentions_document_id_fkey"
-            columns: ["document_id"]
+            foreignKeyName: "entity_mentions_document_in_space"
+            columns: ["document_id", "space_id"]
             isOneToOne: false
             referencedRelation: "documents"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "space_id"]
           },
           {
             foreignKeyName: "entity_mentions_entity_id_fkey"
@@ -1160,6 +1163,7 @@ export type Database = {
         | "dream_run"
         | "embedding_tokens"
         | "chat_tokens"
+        | "storage_bytes"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1305,6 +1309,7 @@ export const Constants = {
         "dream_run",
         "embedding_tokens",
         "chat_tokens",
+        "storage_bytes",
       ],
     },
   },

@@ -4,7 +4,8 @@ create type public.usage_kind as enum (
   'query',
   'dream_run',
   'embedding_tokens',
-  'chat_tokens'
+  'chat_tokens',
+  'storage_bytes'
 );
 
 -- What a plan meters. Usage is never computed by scanning documents on a page load.

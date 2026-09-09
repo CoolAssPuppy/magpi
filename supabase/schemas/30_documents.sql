@@ -18,7 +18,8 @@ create table public.documents (
   -- Written by the dream job so a digest can be traced back to its run.
   dream_run_id uuid,
   last_retrieved_at timestamptz,
-  retrieval_count bigint not null default 0
+  retrieval_count bigint not null default 0,
+  size_bytes bigint
 );
 
 -- Incremental sync looks a document up by its source identity on every pass.
