@@ -6,10 +6,12 @@ import type { Database } from '@/lib/database.types';
 import { publicEnv, serverEnv } from '@/lib/env';
 
 /**
- * The service-role client. Bypasses RLS, so it is only ever constructed inside a
- * route handler or a server action that has already established who the caller
- * is and what they may touch. `server-only` makes an import from a client
- * component a build error rather than a leaked key.
+ * The service-role client, on top of the Library's trust-level split. It
+ * bypasses RLS, so it is only ever constructed after the caller and what they
+ * may touch are already established.
+ *
+ * `server-only` turns an import from a client component into a build error
+ * rather than a leaked key.
  */
 export function createServiceClient() {
   return createSupabaseClient<Database>(

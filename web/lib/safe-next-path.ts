@@ -1,12 +1,12 @@
-/**
- * Reduces an untrusted `next` parameter to a same-origin path. A value that is
- * not a plain absolute path becomes '/', so a redirect can never leave the app.
- */
-export function safeNextPath(value: string | null | undefined, fallback = '/'): string {
-  if (!value) return fallback;
-  if (!value.startsWith('/')) return fallback;
-  // Protocol-relative (`//evil.com`) and backslash variants resolve off-origin
-  // in some browsers.
-  if (value.startsWith('//') || value.startsWith('/\\')) return fallback;
-  return value;
+export const safeNextPath = (path: unknown, fallback = '/', origin?: string) => {
+  if (typeof path !== 'string' || !path.startsWith('/')) return fallback
+
+  const currentOrigin = origin ?? window.location.origin
+
+  try {
+    const url = new URL(path, currentOrigin)
+    return url.origin === currentOrigin ? `${url.pathname}${url.search}${url.hash}` : fallback
+  } catch {
+    return fallback
+  }
 }

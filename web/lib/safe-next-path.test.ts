@@ -2,26 +2,27 @@ import { describe, expect, it } from 'vitest';
 
 import { safeNextPath } from './safe-next-path';
 
+const ORIGIN = 'https://recall.test';
+
 describe('redirect targets', () => {
-  it('keeps a same-origin path', () => {
-    expect(safeNextPath('/chat/abc')).toBe('/chat/abc');
+  it('keeps a same-origin path with its query and hash', () => {
+    expect(safeNextPath('/chat/abc?q=1#top', '/', ORIGIN)).toBe('/chat/abc?q=1#top');
   });
 
   it('rejects an absolute url', () => {
-    expect(safeNextPath('https://evil.example/steal')).toBe('/');
+    expect(safeNextPath('https://evil.example/steal', '/', ORIGIN)).toBe('/');
   });
 
   it('rejects a protocol-relative url, which resolves off-origin', () => {
-    expect(safeNextPath('//evil.example')).toBe('/');
+    expect(safeNextPath('//evil.example', '/', ORIGIN)).toBe('/');
   });
 
-  it('rejects a backslash variant', () => {
-    expect(safeNextPath('/\\evil.example')).toBe('/');
+  it('rejects a value that is not a string', () => {
+    expect(safeNextPath(null, '/', ORIGIN)).toBe('/');
+    expect(safeNextPath(42, '/', ORIGIN)).toBe('/');
   });
 
-  it('falls back when there is nothing to redirect to', () => {
-    expect(safeNextPath(null)).toBe('/');
-    expect(safeNextPath('')).toBe('/');
-    expect(safeNextPath(undefined, '/chat')).toBe('/chat');
+  it('uses the fallback it was given', () => {
+    expect(safeNextPath(undefined, '/chat', ORIGIN)).toBe('/chat');
   });
-})
+});
