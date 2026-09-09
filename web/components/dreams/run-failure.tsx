@@ -1,18 +1,24 @@
 import type { DreamStatusView } from '@/lib/dreams/status';
 
 /**
- * Where the Edge Function ceiling becomes visible to a person.
+ * Where a run that did not finish becomes legible to a person.
  *
- * A large space is expected to exceed the CPU and wall-clock budget, so this
- * names the stage the run died in and how much it was reading when it happened.
- * Without the stage, a timeout is a shrug.
+ * The two kinds of timeout want different actions and so get different copy. A
+ * stage prefix means the run detected the failure itself and measured it, which
+ * for a timeout is a genuine budget overflow: retrying fails again at the same
+ * size. No prefix means the platform stopped the run, from a deploy or a memory
+ * kill or an incident, and retrying is exactly what fixes it.
+ *
+ * Telling the second reader their space is too large sends them deleting
+ * documents that were never the problem, which is why the ceiling sentence is
+ * held back for the case that measured one.
  */
 export function RunFailure({
   status,
-  inputSummary,
+  inputDocumentCount,
 }: {
   status: DreamStatusView;
-  inputSummary: string;
+  inputDocumentCount: number;
 }) {
   if (status.status !== 'timeout' && status.status !== 'failed') return null;
 
@@ -32,13 +38,20 @@ export function RunFailure({
           <>{status.label}, and the stage was not recorded</>
         )}
       </p>
+
+      {/* The detail carries the measured numbers, so nothing below asserts them. */}
       <p className="mt-1 max-w-[var(--measure-prose)] text-sm text-foreground-light">
-        {status.detail} It was reading {inputSummary}.
+        {status.detail}{' '}
+        {inputDocumentCount === 0
+          ? 'It had not read anything when it stopped.'
+          : `It was reading ${inputDocumentCount} document${inputDocumentCount === 1 ? '' : 's'}.`}
       </p>
+
       {status.status === 'timeout' ? (
         <p className="mt-1 max-w-[var(--measure-prose)] text-sm text-foreground-light">
-          Synthesis over a whole space does not fit in the budget an Edge Function has. A space this
-          size is expected to hit that ceiling.
+          {status.stage
+            ? 'Retrying will not help at this size. A dream runs inside one Edge Function, so a space this large cannot finish in a single run.'
+            : 'The run stopped before it finished. Try it again, and if it keeps stopping the space may be too large for one run.'}
         </p>
       ) : null}
     </div>

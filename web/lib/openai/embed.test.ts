@@ -1,9 +1,31 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { EMBEDDING_DIMENSIONS, MODELS } from '@/lib/models';
 import type { ModelCallRecord } from './call';
 
 import { embed, type EmbeddingsPort } from './embed';
+
+type ProviderRequest = {
+  readonly model: string;
+  readonly input: readonly string[];
+  readonly dimensions: number;
+};
+
+const provider = { requests: [] as ProviderRequest[] };
+
+vi.mock('./client', () => ({
+  createOpenAIClient: () => ({
+    embeddings: {
+      create: async (request: ProviderRequest) => {
+        provider.requests.push(request);
+        return {
+          data: request.input.map((_text, index) => ({ index, embedding: [0.5, 0.25] })),
+          usage: { prompt_tokens: 7 },
+        };
+      },
+    },
+  }),
+}));
 
 function fakeEmbeddings(
   overrides: Partial<{ vectors: readonly (readonly number[])[]; promptTokens: number }> = {},
@@ -79,6 +101,21 @@ describe('embed', () => {
       usage: { inputTokens: 41, outputTokens: 0 },
       succeeded: true,
     });
+  });
+
+  it('goes to the provider when the caller stands nothing in for it', async () => {
+    const vectors = await embed(
+      { texts: ['hello', 'again'], orgId: 'org-1' },
+      { record: swallowUsage },
+    );
+
+    expect(provider.requests).toEqual([
+      { model: MODELS.embedding, input: ['hello', 'again'], dimensions: EMBEDDING_DIMENSIONS },
+    ]);
+    expect(vectors).toEqual([
+      [0.5, 0.25],
+      [0.5, 0.25],
+    ]);
   });
 
   it('makes no model call for an empty batch', async () => {

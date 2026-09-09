@@ -25,4 +25,12 @@ describe('redirect targets', () => {
   it('uses the fallback it was given', () => {
     expect(safeNextPath(undefined, '/chat', ORIGIN)).toBe('/chat');
   });
+
+  it('measures against the page the reader is on when a client component asks', () => {
+    expect(safeNextPath('/chat/abc?q=1')).toBe('/chat/abc?q=1');
+  });
+
+  it('refuses every redirect when the page has an opaque origin to compare against', () => {
+    expect(safeNextPath('/chat/abc', '/', 'null')).toBe('/');
+  });
 });

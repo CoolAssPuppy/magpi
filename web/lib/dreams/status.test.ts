@@ -54,8 +54,24 @@ describe('dream status', () => {
     );
 
     expect(view.stage).toBe('synthesize');
-    expect(view.detail).toContain('synthesize');
-    expect(view.detail).toContain('148s');
+    expect(view.detail).toBe('Timed out during synthesize. Exceeded the wall clock at 148s.');
+  });
+
+  it('reads a run the platform interrupted, which records no stage to report', () => {
+    const view = describeDreamStatus(
+      getRun({ status: 'timeout', error: 'the run was interrupted and did not finish' }),
+    );
+
+    expect(view.stage).toBeNull();
+    expect(view.detail).toBe('Timed out. The run was interrupted and did not finish.');
+  });
+
+  it('leaves a message that already ends in a full stop alone', () => {
+    const view = describeDreamStatus(
+      getRun({ status: 'failed', error: 'write: the document could not be stored.' }),
+    );
+
+    expect(view.detail).toBe('Failed during write. The document could not be stored.');
   });
 
   it('admits the stage was not recorded rather than inventing one', () => {
@@ -72,7 +88,7 @@ describe('dream status', () => {
 
     expect(view.tone).toBe('destructive');
     expect(view.stage).toBe('extract');
-    expect(view.detail).toContain('the model refused the batch');
+    expect(view.detail).toBe('Failed during extract. The model refused the batch.');
   });
 });
 

@@ -70,6 +70,15 @@ describe('dream run summaries', () => {
     expect(summary.inputSummary).toBe('No documents');
   });
 
+  it('carries the raw count too, so copy can build a sentence rather than splice a phrase', () => {
+    const [summary] = buildRunSummaries({
+      runs: [getRun({ input_document_count: 900 })],
+      spaces: [getSpace()],
+    });
+
+    expect(summary.inputDocumentCount).toBe(900);
+  });
+
   it('drops a run whose space was missing from the same read', () => {
     const summaries = buildRunSummaries({
       runs: [getRun({ space_id: 'space-hidden' })],

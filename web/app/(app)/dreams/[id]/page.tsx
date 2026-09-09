@@ -39,11 +39,11 @@ export default async function DreamRunPage({ params }: { params: Promise<{ id: s
           {run.kindSummary}
         </p>
         <p className="text-xs text-foreground-lighter">
-          Read {run.inputSummary} &middot; {run.duration}
+          {run.inputSummary} read &middot; {run.duration}
         </p>
       </section>
 
-      <RunFailure status={run.status} inputSummary={run.inputSummary} />
+      <RunFailure status={run.status} inputDocumentCount={run.inputDocumentCount} />
 
       <section className="flex flex-col gap-3">
         <h2 className="font-heading text-sm font-medium text-foreground">What it wrote</h2>

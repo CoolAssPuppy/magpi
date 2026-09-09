@@ -53,11 +53,23 @@ export type DreamStatusView = {
   readonly stage: DreamStage | null;
 };
 
+/**
+ * The worker writes its message as a clause, and it lands here after a full
+ * stop. A run the platform interrupted arrives with no stage prefix at all, so
+ * the message is the whole sentence and has to read as one.
+ */
+function asSentence(message: string): string {
+  const trimmed = message.trim();
+  const opened = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+  return opened.endsWith('.') ? opened : `${opened}.`;
+}
+
 function failureDetail(failure: DreamFailure, verb: string): string {
-  if (failure.stage && failure.message)
-    return `${verb} during ${failure.stage}. ${failure.message}`;
+  if (failure.stage && failure.message) {
+    return `${verb} during ${failure.stage}. ${asSentence(failure.message)}`;
+  }
   if (failure.stage) return `${verb} during ${failure.stage}.`;
-  if (failure.message) return `${verb}. ${failure.message}`;
+  if (failure.message) return `${verb}. ${asSentence(failure.message)}`;
   return `${verb}. The stage it died in was not recorded.`;
 }
 

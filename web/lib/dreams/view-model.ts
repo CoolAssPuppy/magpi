@@ -39,6 +39,7 @@ export type DreamRunSummary = {
   readonly kindLabel: string;
   readonly kindSummary: string;
   readonly inputSummary: string;
+  readonly inputDocumentCount: number;
   readonly outputDocumentId: string | null;
   readonly duration: string;
   readonly createdAt: string;
@@ -74,6 +75,7 @@ export function buildRunSummaries({
         kindLabel: kind.label,
         kindSummary: kind.summary,
         inputSummary: summarizeInputs(run.input_document_count),
+        inputDocumentCount: run.input_document_count,
         outputDocumentId: run.output_document_id,
         duration: formatRunDuration(run.started_at, run.finished_at),
         createdAt: run.created_at,

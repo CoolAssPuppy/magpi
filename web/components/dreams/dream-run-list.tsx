@@ -22,7 +22,7 @@ export function DreamRunList({ runs }: { runs: readonly DreamRunSummary[] }) {
               {run.status.detail}
             </p>
             <p className="mt-0.5 text-xs text-foreground-lighter">
-              Read {run.inputSummary} &middot; {run.duration} &middot;{' '}
+              {run.inputSummary} read &middot; {run.duration} &middot;{' '}
               {run.outputDocumentId ? 'Wrote one document' : 'No output document'}
             </p>
           </div>

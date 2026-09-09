@@ -10,6 +10,14 @@ import {
   type UsageRecorder,
 } from './call';
 
+const defaultRecords: ModelCallRecord[] = [];
+
+vi.mock('./usage-recorder', () => ({
+  recordModelCall: async (record: ModelCallRecord) => {
+    defaultRecords.push(record);
+  },
+}));
+
 async function* chunksOf(
   deltas: readonly string[],
   usage: { inputTokens: number; outputTokens: number } | null,
@@ -201,6 +209,26 @@ describe('callModelStreaming', () => {
 
     await expect(drain(stream)).rejects.toThrow('connection reset');
     expect(records[0]).toMatchObject({ succeeded: false });
+  });
+});
+
+describe('the recorder a caller gets for free', () => {
+  it('meters a call that wired nothing up, because every model call is metered', async () => {
+    await callModel({
+      purpose: 'title',
+      orgId: 'org-8',
+      run: async () => ({ value: 'A title', usage: { inputTokens: 6, outputTokens: 2 } }),
+    });
+
+    expect(defaultRecords).toEqual([
+      expect.objectContaining({
+        orgId: 'org-8',
+        purpose: 'title',
+        model: MODELS.title,
+        usage: { inputTokens: 6, outputTokens: 2 },
+        succeeded: true,
+      }),
+    ]);
   });
 });
 

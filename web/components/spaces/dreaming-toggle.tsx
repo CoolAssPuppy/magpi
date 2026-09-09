@@ -16,8 +16,11 @@ export function DreamingToggle({ spaceId, enabled }: { spaceId: string; enabled:
     const formData = new FormData();
     formData.set('spaceId', spaceId);
     formData.set('enabled', String(next));
-    startTransition(() => {
-      void setDreaming(formData);
+    // Awaited inside the transition, so isPending stays true for as long as the
+    // write does. A synchronous callback ends the transition immediately and
+    // leaves the switch live for a second click the first has not answered yet.
+    startTransition(async () => {
+      await setDreaming(formData);
     });
   }
 

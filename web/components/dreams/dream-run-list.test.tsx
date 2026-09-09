@@ -8,6 +8,7 @@ import { DreamRunList } from './dream-run-list';
 const getSummary = (overrides?: Partial<DreamRunSummary>): DreamRunSummary => ({
   id: '11111111-2222-4333-8444-555555555555',
   kind: 'digest',
+  inputDocumentCount: 42,
   spaceId: 'space-1',
   spaceName: 'Engineering',
   kindLabel: 'Digest',
@@ -32,7 +33,7 @@ describe('the list of dream runs', () => {
 
     expect(screen.getByText('Digest')).toBeInTheDocument();
     expect(screen.getByText('Engineering')).toBeInTheDocument();
-    expect(screen.getByText(/42 documents/)).toBeInTheDocument();
+    expect(screen.getByText(/42 documents read/)).toBeInTheDocument();
     expect(screen.getByText('Succeeded')).toBeInTheDocument();
   });
 
@@ -63,6 +64,14 @@ describe('the list of dream runs', () => {
     );
 
     expect(screen.getByText(/timed out during synthesize/i)).toBeInTheDocument();
+  });
+
+  it('reads grammatically when a run read nothing at all', () => {
+    render(
+      <DreamRunList runs={[getSummary({ inputSummary: 'No documents', inputDocumentCount: 0 })]} />,
+    );
+
+    expect(screen.getByText(/No documents read/)).toBeInTheDocument();
   });
 
   it('says a run wrote nothing rather than leaving the column blank', () => {

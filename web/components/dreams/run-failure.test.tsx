@@ -16,21 +16,44 @@ const getStatus = (overrides?: Partial<DreamStatusView>): DreamStatusView => ({
 
 describe('a run that did not finish', () => {
   it('names the stage it died in, which is the whole diagnostic value', () => {
-    render(<RunFailure status={getStatus()} inputSummary="900 documents" />);
+    render(<RunFailure status={getStatus()} inputDocumentCount={900} />);
 
     expect(screen.getByText('synthesize')).toBeInTheDocument();
   });
 
   it('says how much it was reading when it died, so the ceiling is a number', () => {
-    render(<RunFailure status={getStatus()} inputSummary="900 documents" />);
+    render(<RunFailure status={getStatus()} inputDocumentCount={900} />);
 
     expect(screen.getByText(/900 documents/)).toBeInTheDocument();
   });
 
-  it('explains that a large space is expected to hit this, rather than implying a bug', () => {
-    render(<RunFailure status={getStatus()} inputSummary="900 documents" />);
+  it('tells a reader whose run overran its budget that retrying will not help', () => {
+    render(
+      <RunFailure
+        status={getStatus({
+          detail:
+            'Timed out during synthesize. Ran out of time after 148s, past the 45s budget for one run.',
+        })}
+        inputDocumentCount={900}
+      />,
+    );
 
-    expect(screen.getByText(/budget an edge function has/i)).toBeInTheDocument();
+    expect(screen.getByText(/retrying will not help at this size/i)).toBeInTheDocument();
+    expect(screen.queryByText(/try it again/i)).not.toBeInTheDocument();
+  });
+
+  it('carries the measured numbers rather than asserting a ceiling in fixed copy', () => {
+    render(
+      <RunFailure
+        status={getStatus({
+          detail:
+            'Timed out during synthesize. Ran out of time after 148s, past the 45s budget for one run.',
+        })}
+        inputDocumentCount={900}
+      />,
+    );
+
+    expect(screen.getByText(/148s, past the 45s budget/)).toBeInTheDocument();
   });
 
   it('names the stage on a failure too, not only on a timeout', () => {
@@ -43,7 +66,7 @@ describe('a run that did not finish', () => {
           detail: 'Failed during extract. The model refused the batch.',
           stage: 'extract',
         })}
-        inputSummary="12 documents"
+        inputDocumentCount={12}
       />,
     );
 
@@ -58,11 +81,77 @@ describe('a run that did not finish', () => {
           detail: 'Timed out. The stage it died in was not recorded.',
           stage: null,
         })}
-        inputSummary="900 documents"
+        inputDocumentCount={900}
       />,
     );
 
     expect(screen.getByText(/Timed out, and the stage was not recorded/i)).toBeInTheDocument();
+  });
+
+  it('reads a run the platform interrupted without inventing a stage for it', () => {
+    render(
+      <RunFailure
+        status={getStatus({
+          detail: 'Timed out. The run was interrupted and did not finish.',
+          stage: null,
+        })}
+        inputDocumentCount={900}
+      />,
+    );
+
+    expect(screen.getByText(/Timed out, and the stage was not recorded/i)).toBeInTheDocument();
+    expect(screen.getByText(/the run was interrupted and did not finish/i)).toBeInTheDocument();
+  });
+
+  it('tells a reader whose run was interrupted to try again, since that is what fixes it', () => {
+    render(
+      <RunFailure
+        status={getStatus({
+          detail: 'Timed out. The run was interrupted and did not finish.',
+          stage: null,
+        })}
+        inputDocumentCount={900}
+      />,
+    );
+
+    expect(screen.getByText(/try it again/i)).toBeInTheDocument();
+    expect(screen.getByText(/may be too large for one run/i)).toBeInTheDocument();
+  });
+
+  it('never tells an interrupted run that its space is too big, which would send a reader deleting documents', () => {
+    render(
+      <RunFailure
+        status={getStatus({
+          detail: 'Timed out. The run was interrupted and did not finish.',
+          stage: null,
+        })}
+        inputDocumentCount={900}
+      />,
+    );
+
+    expect(screen.queryByText(/expected to hit/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/retrying will not help/i)).not.toBeInTheDocument();
+  });
+
+  it('says it had read nothing when a run was stopped before its first read', () => {
+    render(
+      <RunFailure
+        status={getStatus({
+          detail: 'Timed out. The run was interrupted and did not finish.',
+          stage: null,
+        })}
+        inputDocumentCount={0}
+      />,
+    );
+
+    expect(screen.getByText(/had not read anything when it stopped/i)).toBeInTheDocument();
+    expect(screen.queryByText(/reading No documents/i)).not.toBeInTheDocument();
+  });
+
+  it('reads a single document in the singular', () => {
+    render(<RunFailure status={getStatus()} inputDocumentCount={1} />);
+
+    expect(screen.getByText(/was reading 1 document\./)).toBeInTheDocument();
   });
 
   it('says nothing at all about a run that finished', () => {
@@ -75,7 +164,7 @@ describe('a run that did not finish', () => {
           detail: 'The run finished and wrote its output.',
           stage: null,
         })}
-        inputSummary="42 documents"
+        inputDocumentCount={42}
       />,
     );
 
