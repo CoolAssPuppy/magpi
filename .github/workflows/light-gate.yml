@@ -1,0 +1,39 @@
+name: light gate
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+concurrency:
+  group: light-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: dopplerhq/cli-action@v3
+
+      - name: light gate
+        run: doppler run -- node scripts/gate.mjs --light --strict
+        env:
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN_DEV }}

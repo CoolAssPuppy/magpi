@@ -1,0 +1,21 @@
+name: native builds
+
+# Native toolchains stay behind workflow_dispatch. macOS runners, emulators and
+# release packaging never run on a push.
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Which client to build
+        required: true
+        type: choice
+        options: [ios, android]
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - name: build
+        run: echo "native build for ${{ inputs.platform }} is wired in /ios and /android"
