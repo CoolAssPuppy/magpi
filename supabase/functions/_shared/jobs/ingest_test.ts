@@ -41,6 +41,7 @@ function uploadDocument(overrides: Record<string, unknown> = {}) {
     storage_path: 'uploads/runbook.md',
     content_hash: null,
     version: 1,
+    size_bytes: null,
     ...overrides,
   };
 }
@@ -120,9 +121,26 @@ Deno.test('the job walks every stage so progress is visible while it runs', asyn
   const h = harness({});
   try {
     await runIngestJob(JOB, h.deps);
+    // No 'fetch' write: claim_ingest_jobs set the row running before the body
+    // was handed the record, and the column already defaults to fetch.
     const stages = writes(h.stub, 'ingest_jobs').map((row) => row.stage);
-    assertEquals(stages, ['fetch', 'extract', 'chunk', 'embed', 'store', 'store']);
+    assertEquals(stages, ['extract', 'chunk', 'embed', 'store', 'store']);
     assertEquals(writes(h.stub, 'ingest_jobs').at(-1)?.status, 'succeeded');
+  } finally {
+    await h.stub.close();
+  }
+});
+
+Deno.test('the job body does not rewrite the claim it was handed', async () => {
+  // claimed_at is how long a job has been held. Rewriting it here would reset
+  // that clock to the moment the body started.
+  const h = harness({});
+  try {
+    await runIngestJob(JOB, h.deps);
+    for (const write of writes(h.stub, 'ingest_jobs')) {
+      assertEquals(write.claimed_at, undefined, 'the body overwrote the claim time');
+      assertEquals(write.attempts, undefined, 'the body overwrote the attempt count');
+    }
   } finally {
     await h.stub.close();
   }
@@ -182,7 +200,11 @@ Deno.test('ingesting a document meters what the plan meters', async () => {
   try {
     await runIngestJob(JOB, h.deps);
     const usage = rowsInserted(h.stub, 'usage_events');
-    assertEquals(usage.map((row) => row.kind), ['document_ingested', 'chunk_embedded']);
+    assertEquals(usage.map((row) => row.kind), [
+      'document_ingested',
+      'chunk_embedded',
+      'storage_bytes',
+    ]);
     assertEquals(usage[0].org_id, ORG);
   } finally {
     await h.stub.close();
@@ -341,6 +363,110 @@ Deno.test('a document whose connection was removed fails without a stack trace',
     assertEquals(result.kind, 'failed');
     if (result.kind !== 'failed') return;
     assert(result.detail.includes('connection'));
+  } finally {
+    await h.stub.close();
+  }
+});
+
+Deno.test('an uploaded document records what it weighs and meters the storage', async () => {
+  const h = harness({});
+  try {
+    await runIngestJob(JOB, h.deps);
+    const size = new TextEncoder().encode('# Runbook\n\nRestart it.').byteLength;
+
+    assertEquals(writes(h.stub, 'documents')[0].size_bytes, size);
+    const usage = rowsInserted(h.stub, 'usage_events');
+    assertEquals(usage.map((row) => row.kind), [
+      'document_ingested',
+      'chunk_embedded',
+      'storage_bytes',
+    ]);
+    assertEquals(usage[2].quantity, size);
+  } finally {
+    await h.stub.close();
+  }
+});
+
+Deno.test('a re-import meters only what the file grew by', async () => {
+  // The admin page sums these events, so charging the whole file twice would
+  // report storage nobody is using.
+  const h = harness({
+    document: uploadDocument({ size_bytes: 10 }),
+    files: { 'uploads/runbook.md': '# Runbook\n\nRestart it, twice.' },
+  });
+  try {
+    await runIngestJob(JOB, h.deps);
+    const size = new TextEncoder().encode('# Runbook\n\nRestart it, twice.').byteLength;
+    assertEquals(rowsInserted(h.stub, 'usage_events')[2].quantity, size - 10);
+  } finally {
+    await h.stub.close();
+  }
+});
+
+Deno.test('a synced document weighs its text and meters no storage', async () => {
+  // Nothing from a source occupies a bucket, so metering it would report storage
+  // the organization is not using.
+  const provider = 'notion';
+  const connectionRow = {
+    id: 'connection-1',
+    org_id: ORG,
+    space_id: SPACE,
+    user_id: USER,
+    provider,
+    external_account_id: 'workspace-1',
+    access_token_enc: await encryptProviderToken('ntn_token', { userId: USER, provider }, ENV),
+    refresh_token_enc: null,
+    scopes: [],
+    scope_selection: { ids: [] },
+    status: 'active',
+    status_detail: null,
+    cursor: null,
+    token_expires_at: null,
+    last_synced_at: null,
+  };
+
+  const h = harness({
+    document: uploadDocument({
+      storage_path: null,
+      connection_id: 'connection-1',
+      external_id: 'page-1',
+      mime_type: null,
+    }),
+    reply: (request) =>
+      request.table === 'connections' && request.method === 'GET'
+        ? { body: [connectionRow] }
+        : undefined,
+    fetch: (input: string | URL | Request) => {
+      const body = String(input).includes('/blocks/')
+        ? {
+          results: [
+            { type: 'paragraph', paragraph: { rich_text: [{ plain_text: 'Ship on Tuesday.' }] } },
+          ],
+          has_more: false,
+        }
+        : {
+          object: 'page',
+          id: 'page-1',
+          url: 'https://notion.so/page-1',
+          last_edited_time: '2026-09-08T00:00:00.000Z',
+          properties: { Name: { type: 'title', title: [{ plain_text: 'Launch plan' }] } },
+        };
+      return Promise.resolve(
+        new Response(JSON.stringify(body), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      );
+    },
+  });
+
+  try {
+    await runIngestJob({ ...JOB, connection_id: 'connection-1' }, h.deps);
+    assertEquals(writes(h.stub, 'documents')[0].size_bytes, 'Ship on Tuesday.'.length);
+    assertEquals(
+      rowsInserted(h.stub, 'usage_events').map((row) => row.kind),
+      ['document_ingested', 'chunk_embedded'],
+    );
   } finally {
     await h.stub.close();
   }

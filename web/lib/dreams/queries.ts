@@ -2,7 +2,7 @@ import 'server-only';
 
 import type { SessionContext } from '@/lib/supabase/context';
 
-import { describeDreamOutput, splitCitedText, type CitedSegment } from './citations';
+import { describeDreamOutput } from './citations';
 import { buildEntityGroups, type EntityGroup } from './entities';
 import {
   buildLinkCandidates,
@@ -54,12 +54,17 @@ export type DreamSource = {
 
 export type DreamOutputView =
   | { readonly kind: 'none' }
-  | { readonly kind: 'uncited'; readonly documentId: string; readonly title: string }
+  | {
+      readonly kind: 'unsourced';
+      readonly documentId: string;
+      readonly title: string;
+      readonly reason: 'no-citations' | 'sources-unreadable';
+    }
   | {
       readonly kind: 'cited';
       readonly documentId: string;
       readonly title: string;
-      readonly segments: readonly CitedSegment[];
+      readonly body: string;
       readonly sources: readonly DreamSource[];
     };
 
@@ -87,47 +92,59 @@ async function loadOutput(
 ): Promise<DreamOutputView> {
   if (!outputDocumentId) return { kind: 'none' };
 
-  const [{ data: document }, { data: chunks }] = await Promise.all([
-    context.supabase.from('documents').select('id, title').eq('id', outputDocumentId).maybeSingle(),
+  const [{ data: document }, { data: bodyChunks }] = await Promise.all([
+    context.supabase
+      .from('documents')
+      .select('id, title, source_chunk_ids')
+      .eq('id', outputDocumentId)
+      .maybeSingle(),
     context.supabase
       .from('chunks')
-      .select('id, content, ordinal')
+      .select('content, ordinal')
       .eq('document_id', outputDocumentId)
       .order('ordinal'),
   ]);
 
   if (!document) return { kind: 'none' };
 
-  const body = (chunks ?? []).map((chunk) => chunk.content);
+  // The cited chunks are read separately and under the caller's own RLS, which
+  // is what makes a source the reader lost access to disappear from the list
+  // rather than being resolved at write time and cached forever.
+  const { data: cited } = await context.supabase
+    .from('chunks')
+    .select('id, content, document_id, documents(title)')
+    .in('id', document.source_chunk_ids);
+
+  const visible = cited ?? [];
   const described = describeDreamOutput({
     documentId: document.id,
     title: document.title,
-    chunkTexts: body,
+    sourceChunkIds: document.source_chunk_ids,
+    visibleChunkIds: visible.map((chunk) => chunk.id),
   });
 
   if (described.kind !== 'cited') return described;
 
-  const { data: cited } = await context.supabase
-    .from('chunks')
-    .select('id, content, document_id, documents(title)')
-    .in('id', [...described.chunkIds]);
-
-  const visible = cited ?? [];
-  const visibleIds = visible.map((chunk) => chunk.id);
-  const numbering = new Map(visibleIds.map((id, index) => [id, index + 1]));
+  const byId = new Map(visible.map((chunk) => [chunk.id, chunk]));
 
   return {
     kind: 'cited',
     documentId: described.documentId,
     title: described.title,
-    segments: splitCitedText(body.join('\n\n'), visibleIds),
-    sources: visible.map((chunk) => ({
-      index: numbering.get(chunk.id) ?? 0,
-      chunkId: chunk.id,
-      documentId: chunk.document_id,
-      documentTitle: chunk.documents?.title ?? 'Untitled',
-      excerpt: excerpt(chunk.content),
-    })),
+    body: (bodyChunks ?? []).map((chunk) => chunk.content).join('\n\n'),
+    sources: described.chunkIds.flatMap((chunkId, index) => {
+      const chunk = byId.get(chunkId);
+      if (!chunk) return [];
+      return [
+        {
+          index: index + 1,
+          chunkId: chunk.id,
+          documentId: chunk.document_id,
+          documentTitle: chunk.documents?.title ?? 'Untitled',
+          excerpt: excerpt(chunk.content),
+        },
+      ];
+    }),
   };
 }
 

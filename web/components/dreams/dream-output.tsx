@@ -90,7 +90,7 @@ export function DreamOutput({
         </p>
       );
 
-    case 'uncited':
+    case 'unsourced':
       return (
         <div className="flex flex-col items-start gap-3">
           <div
@@ -98,8 +98,9 @@ export function DreamOutput({
             className="rounded-[var(--radius-panel)] border border-border-warning bg-warning-200 px-4 py-3"
           >
             <p className="max-w-[var(--measure-prose)] text-sm text-warning-600">
-              This run produced nothing. It wrote a document that cites no source, and Recall does
-              not show synthesis it cannot trace back to a chunk.
+              {output.reason === 'no-citations'
+                ? 'This run produced nothing. It wrote a document that cites no source, and Recall does not show synthesis it cannot trace back to a chunk.'
+                : 'The sources this document was written from can no longer be read, so its text is not shown. Recall does not show synthesis it cannot trace back to a chunk.'}
             </p>
           </div>
           <DeleteOutput documentId={output.documentId} onDelete={onDelete} />
@@ -115,19 +116,7 @@ export function DreamOutput({
           </div>
 
           <p className="max-w-[var(--measure-prose)] text-sm leading-relaxed whitespace-pre-wrap text-foreground">
-            {output.segments.map((segment, position) =>
-              segment.kind === 'text' ? (
-                <span key={position}>{segment.value}</span>
-              ) : (
-                <a
-                  key={position}
-                  href={`#source-${segment.index}`}
-                  className="mx-0.5 rounded-sm bg-background-surface-200 px-1 text-xs text-brand-link"
-                >
-                  {segment.index}
-                </a>
-              ),
-            )}
+            {output.body}
           </p>
 
           <div className="flex flex-col gap-2">

@@ -149,6 +149,52 @@ where ours sits in Google's queue.
 Notion, Linear and Slack apps are faster to register than Google and none of
 them requires this kind of review for the scopes Recall asks for.
 
+## Running the background workers
+
+Four functions do background work and none of them is a user surface:
+`ingest-worker`, `sync-worker`, `dream-worker` and `token-refresh`. Each refuses
+any caller whose bearer token is not the service role key, compared in constant
+time. A signed-in user's JWT gets a 403, which is deliberate: a worker is
+machinery, and anyone reaching one directly is either confused or making the
+platform do unpaid work.
+
+That means the scheduler has to send the key. With `pg_cron` and `pg_net`, the
+statement is:
+
+```sql
+select cron.schedule(
+  'ingest-worker',
+  '* * * * *',
+  $$
+  select net.http_post(
+    url := 'https://<project-ref>.supabase.co/functions/v1/ingest-worker',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || current_setting('app.service_role_key')
+    ),
+    body := '{"batch": 5}'::jsonb
+  );
+  $$
+);
+```
+
+The key must not be pasted into the schedule. `cron.job` is readable by anyone
+who can read the catalog, and a literal there is a service role key in a table.
+Set it once as a database setting and read it with `current_setting`, or use
+Vault.
+
+Suggested intervals: `ingest-worker` every minute, `sync-worker` every fifteen,
+`token-refresh` hourly, `dream-worker` nightly and staggered by organization id
+so every tenant does not wake at midnight UTC together.
+
+`ingest-worker` claims through `claim_ingest_jobs()`, which marks rows running
+behind `for update skip locked`, so two overlapping invocations take different
+jobs. That matters as soon as a batch runs longer than its interval, which is
+the normal case for a large document.
+
+A manual run needs no cron: `connections-sync` and `dream-run` do the same work
+from the web app under the caller's own JWT.
+
 ## Post-demo, explicitly out of scope
 
 The bar is feature complete rather than production hardened. Every path in the

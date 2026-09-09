@@ -72,7 +72,7 @@ Deno.test('the authorize url carries pkce, the state and the registry scopes', (
 });
 
 Deno.test('google asks for offline access so a refresh token arrives every time', () => {
-  const url = new URL(oauthDriverFor(record('google')).buildAuthUrl(AUTH_INPUT));
+  const url = new URL(oauthDriverFor(record('google_drive')).buildAuthUrl(AUTH_INPUT));
   assertEquals(url.searchParams.get('access_type'), 'offline');
   assertEquals(url.searchParams.get('prompt'), 'consent');
 });
@@ -176,7 +176,7 @@ Deno.test("the provider's own error text never reaches the response", async () =
 Deno.test('a refresh that omits a new refresh token keeps the old one', async () => {
   // Linear rotates on every refresh; most providers do not.
   const deps = answering({ access_token: 'at_2', expires_in: 3600 });
-  const tokens = await oauthDriverFor(record('google'), deps).refreshTokens({
+  const tokens = await oauthDriverFor(record('google_drive'), deps).refreshTokens({
     clientId: 'id',
     clientSecret: 'secret',
     refreshToken: 'rt_original',

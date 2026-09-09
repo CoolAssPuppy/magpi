@@ -1,0 +1,42 @@
+{
+  "id": "evt_subscription_expanded",
+  "object": "event",
+  "api_version": "2026-08-27",
+  "created": 1789043260,
+  "livemode": false,
+  "type": "customer.subscription.updated",
+  "data": {
+    "object": {
+      "id": "sub_TestTeam01",
+      "object": "subscription",
+      "customer": {
+        "id": "cus_TestTeam01",
+        "object": "customer",
+        "email": "billing@example.test"
+      },
+      "status": "active",
+      "cancel_at_period_end": false,
+      "items": {
+        "object": "list",
+        "data": [
+          {
+            "id": "si_TestTeam01",
+            "object": "subscription_item",
+            "price": {
+              "id": "price_team_test",
+              "object": "price",
+              "recurring": {
+                "interval": "month",
+                "usage_type": "metered"
+              }
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "plan": "team",
+        "org_id": "11111111-1111-4111-8111-111111111111"
+      }
+    }
+  }
+}

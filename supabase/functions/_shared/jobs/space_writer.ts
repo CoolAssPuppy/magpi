@@ -62,6 +62,8 @@ export interface DreamDocumentDraft {
   dreamRunId: string;
   title: string;
   text: string;
+  /** The chunks this synthesis was built from. Never empty. */
+  sourceChunkIds: string[];
 }
 
 export interface SpaceScopedDb {
@@ -161,6 +163,7 @@ export function spaceScoped(db: SupabaseClient, scope: SpaceScope): SpaceScopedD
             dream_run_id: draft.dreamRunId,
             mime_type: 'text/markdown',
             version: 1,
+            source_chunk_ids: draft.sourceChunkIds,
           }),
         )
         .select('id')

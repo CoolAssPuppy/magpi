@@ -2,12 +2,17 @@
 //
 // pdfjs is roughly a megabyte of JavaScript and a cold start we pay on every
 // ingest request. What we actually need is narrower than what pdfjs does: find
-// the content streams, inflate them, and read the text-showing operators. That
-// fits in one file with nothing but the web platform Deno already gives us.
+// the content streams, inflate them, and read the text-showing operators, which
+// needs nothing but the web platform Deno already gives us.
 //
 // The tradeoff is that a PDF built to defeat this (custom encodings, glyph
 // subsets with no readable byte values) extracts as empty or as noise. Empty is
 // the honest answer for those and the caller decides what to do about it.
+//
+// This file walks the raw bytes of the file. Reading the tokens inside a
+// decoded content stream is pdf_content.ts.
+
+import { readShownText } from './pdf_content.ts';
 
 /**
  * PDF text is almost always WinAnsiEncoding, which is what 'latin1' names in
@@ -30,21 +35,7 @@ const MAX_DECODED_BYTES = 16 * 1024 * 1024;
 /** How far back the dictionary that describes a stream can start. */
 const DICT_WINDOW_BYTES = 2048;
 
-/**
- * A TJ adjustment is in thousandths of a text space unit, subtracted from the
- * position. Below this the gap is a word break; above it the writer is
- * tightening letters and no space was intended.
- */
-const WORD_GAP_THRESHOLD = -100;
-
 const IMAGE_FILTERS = ['/DCTDecode', '/JPXDecode', '/CCITTFaxDecode', '/JBIG2Decode'];
-
-type Operand = { kind: 'text'; value: string } | { kind: 'number'; value: number };
-
-interface TextOutput {
-  lines: string[];
-  current: string;
-}
 
 /**
  * Extracted text, one line per text-positioning break.
@@ -202,214 +193,6 @@ function singleChunkStream(bytes: Uint8Array): ReadableStream<BufferSource> {
       controller.close();
     },
   });
-}
-
-function readShownText(content: string): string {
-  const out: TextOutput = { lines: [], current: '' };
-  let operands: Operand[] = [];
-  let i = 0;
-
-  while (i < content.length) {
-    const char = content[i];
-    if (char === '(') {
-      const literal = readLiteral(content, i);
-      operands.push({ kind: 'text', value: literal.value });
-      i = literal.next;
-    } else if (char === '<' && content[i + 1] === '<') {
-      i = skipDictionary(content, i);
-    } else if (char === '<') {
-      const hex = readHexString(content, i);
-      operands.push({ kind: 'text', value: hex.value });
-      i = hex.next;
-    } else if (char === '/') {
-      i = skipRegularRun(content, i + 1);
-    } else if (char === '%') {
-      // A comment can hold an unbalanced '(' that would otherwise open a string
-      // and swallow the rest of the stream.
-      i = skipComment(content, i);
-    } else if (isRegular(char)) {
-      const end = skipRegularRun(content, i);
-      const token = content.slice(i, end);
-      i = end;
-      const value = Number(token);
-      if (Number.isFinite(value) && /^[+\-.\d]/.test(token)) {
-        operands.push({ kind: 'number', value });
-      } else if (token === 'BI') {
-        i = skipInlineImage(content, i);
-        operands = [];
-      } else {
-        applyOperator(token, operands, out);
-        operands = [];
-      }
-    } else {
-      i++;
-    }
-  }
-
-  out.lines.push(out.current);
-  return out.lines.join('\n');
-}
-
-function applyOperator(operator: string, operands: readonly Operand[], out: TextOutput): void {
-  switch (operator) {
-    case 'Tj':
-      showLastString(operands, out);
-      return;
-    case "'":
-    case '"':
-      breakLine(out);
-      showLastString(operands, out);
-      return;
-    case 'TJ':
-      showArray(operands, out);
-      return;
-    case 'Td':
-    case 'TD':
-    case 'T*':
-    case 'ET':
-      breakLine(out);
-      return;
-  }
-}
-
-function showLastString(operands: readonly Operand[], out: TextOutput): void {
-  for (let i = operands.length - 1; i >= 0; i--) {
-    const operand = operands[i];
-    if (operand.kind === 'text') {
-      out.current += operand.value;
-      return;
-    }
-  }
-}
-
-function showArray(operands: readonly Operand[], out: TextOutput): void {
-  for (const operand of operands) {
-    if (operand.kind === 'text') out.current += operand.value;
-    else if (operand.value < WORD_GAP_THRESHOLD) out.current += ' ';
-  }
-}
-
-function breakLine(out: TextOutput): void {
-  out.lines.push(out.current);
-  out.current = '';
-}
-
-const ESCAPES: Readonly<Record<string, string>> = {
-  n: '\n',
-  r: '\r',
-  t: '\t',
-  b: '\b',
-  f: '\f',
-  '(': '(',
-  ')': ')',
-  '\\': '\\',
-};
-
-/** Parentheses nest inside a literal string, so the first ')' is not the end. */
-function readLiteral(content: string, at: number): { value: string; next: number } {
-  let value = '';
-  let depth = 1;
-  let i = at + 1;
-
-  while (i < content.length && depth > 0) {
-    const char = content[i];
-    if (char === '\\') {
-      const escape = readEscape(content, i);
-      value += escape.value;
-      i = escape.next;
-    } else if (char === '(') {
-      depth++;
-      value += char;
-      i++;
-    } else if (char === ')') {
-      depth--;
-      if (depth > 0) value += char;
-      i++;
-    } else {
-      value += char;
-      i++;
-    }
-  }
-  return { value, next: i };
-}
-
-function readEscape(content: string, at: number): { value: string; next: number } {
-  const char = content[at + 1];
-  if (char === undefined) return { value: '', next: at + 1 };
-  // A backslash before a newline continues the string across source lines.
-  if (char === '\n') return { value: '', next: at + 2 };
-  if (char === '\r') return { value: '', next: content[at + 2] === '\n' ? at + 3 : at + 2 };
-
-  if (char >= '0' && char <= '7') {
-    let digits = '';
-    let i = at + 1;
-    while (digits.length < 3 && content[i] >= '0' && content[i] <= '7') {
-      digits += content[i];
-      i++;
-    }
-    return { value: String.fromCharCode(parseInt(digits, 8)), next: i };
-  }
-  return { value: ESCAPES[char] ?? char, next: at + 2 };
-}
-
-function readHexString(content: string, at: number): { value: string; next: number } {
-  const close = content.indexOf('>', at + 1);
-  const end = close < 0 ? content.length : close;
-  const digits = content.slice(at + 1, end).replace(/[^0-9a-fA-F]/g, '');
-  // An odd digit count means the last byte was written with its zero implied.
-  const padded = digits.length % 2 === 1 ? `${digits}0` : digits;
-
-  const bytes = new Uint8Array(padded.length / 2);
-  for (let i = 0; i < bytes.length; i++) {
-    bytes[i] = parseInt(padded.slice(i * 2, i * 2 + 2), 16);
-  }
-  return { value: winAnsi.decode(bytes), next: end + 1 };
-}
-
-function isRegular(char: string): boolean {
-  return !'()<>[]{}/%'.includes(char) && !/\s/.test(char);
-}
-
-function skipRegularRun(content: string, at: number): number {
-  let i = at;
-  while (i < content.length && isRegular(content[i])) i++;
-  return i;
-}
-
-function skipComment(content: string, at: number): number {
-  let i = at;
-  while (i < content.length && content[i] !== '\n' && content[i] !== '\r') i++;
-  return i;
-}
-
-function skipDictionary(content: string, at: number): number {
-  let depth = 0;
-  let i = at;
-  while (i < content.length) {
-    if (content.startsWith('<<', i)) {
-      depth++;
-      i += 2;
-    } else if (content.startsWith('>>', i)) {
-      depth--;
-      i += 2;
-      if (depth === 0) return i;
-    } else {
-      i++;
-    }
-  }
-  return i;
-}
-
-/**
- * Inline image data is raw bytes in the middle of the content stream and would
- * otherwise be parsed as operators. Delimited EI is a heuristic, but a wrong
- * guess costs one image's worth of noise, not a hang.
- */
-function skipInlineImage(content: string, at: number): number {
-  const finder = /\sEI(?=[\s\]/<(]|$)/g;
-  finder.lastIndex = at;
-  const match = finder.exec(content);
-  return match === null ? content.length : match.index + match[0].length;
 }
 
 function normalize(text: string): string {

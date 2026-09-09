@@ -5,17 +5,13 @@ import { err, ok, type Result } from '@/lib/result';
 /**
  * Which channels, folders or workspaces a connection reads.
  *
- * The provider writes `available` after the token exchange, because only a
- * request carrying the token can list them. The user then edits `selected`, and
- * a selection is only ever accepted from what the provider offered.
+ * The list comes from the provider, so it can only be filled in by a request
+ * carrying the token. connections-scopes writes it and is the only thing that
+ * writes it; this module reads it.
  */
 const scopeItemSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  url: z
-    .url()
-    .nullish()
-    .transform((value) => value ?? null),
 });
 
 const populatedSchema = z.object({
@@ -55,27 +51,6 @@ export function parseScopeSelection(value: unknown): Result<ScopeSelection, stri
   });
 }
 
-/**
- * Validates a requested selection against what the provider actually offered, so
- * a forged form cannot widen a connection beyond the channels it was granted.
- */
-export function applySelection(
-  selection: ScopeSelection,
-  requested: readonly string[],
-): Result<readonly string[], string> {
-  if (selection.kind === 'unset') {
-    return err('This connection has not listed what it can read yet.');
-  }
-
-  const offered = new Set(selection.available.map((item) => item.id));
-  const unknown = requested.filter((id) => !offered.has(id));
-  if (unknown.length > 0) {
-    return err(`This connection was never offered: ${unknown.join(', ')}`);
-  }
-
-  return ok(requested);
-}
-
 const NOUNS: Record<ScopeSelectionKind, string> = {
   channel: 'channels',
   folder: 'folders',
@@ -91,17 +66,26 @@ export function describeScopeSelection(selection: ScopeSelection): string {
   return `${selection.selected.length} of ${selection.available.length} ${noun}`;
 }
 
-export function serializeScopeSelection(
-  selection: Extract<ScopeSelection, { kind: 'set' }>,
-  selected: readonly string[],
-) {
-  return {
-    kind: selection.selectionKind,
-    available: selection.available.map((item) => ({
-      id: item.id,
-      name: item.name,
-      url: item.url,
-    })),
-    selected: [...selected],
-  };
+/**
+ * An empty selection means opposite things depending on the source, and the
+ * difference is a support ticket if the picker stays quiet about it. A channel
+ * source reads nothing until channels are picked; a folder source reads
+ * everything until folders narrow it.
+ *
+ * Keyed on the kind rather than the provider slug, so adding a provider stays a
+ * migration and a driver rather than a change here.
+ */
+export function describeEmptySelection(kind: ScopeSelectionKind): string | null {
+  switch (kind) {
+    case 'channel':
+      return 'With no channels selected, Recall reads nothing from this source.';
+    case 'folder':
+      return 'With no folders selected, Recall reads everything this account can see.';
+    case 'workspace':
+      return null;
+    default: {
+      const unhandled: never = kind;
+      throw new Error(`Unhandled scope selection kind: ${String(unhandled)}`);
+    }
+  }
 }

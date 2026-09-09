@@ -29,18 +29,25 @@ export type ProviderSummary = {
 
 export type SpaceOption = { readonly id: string; readonly name: string };
 
+export type SaveScope = (
+  connectionId: string,
+  selected: readonly string[],
+) => Promise<ActionState<ScopeSelection>>;
+
 function ScopeEditor({
   connection,
   onSaveScope,
 }: {
   connection: ConnectionScope;
-  onSaveScope: (
-    connectionId: string,
-    selected: readonly string[],
-  ) => Promise<ActionState<undefined>>;
+  onSaveScope: SaveScope;
 }) {
-  const initial = connection.selection.kind === 'set' ? connection.selection.selected : [];
-  const [selected, setSelected] = useState<readonly string[]>(initial);
+  // The saved selection replaces what is on screen, because connections-scopes
+  // drops an id the provider no longer offers. A tick that was quietly dropped
+  // would otherwise sit there reading as saved.
+  const [selection, setSelection] = useState<ScopeSelection>(connection.selection);
+  const [selected, setSelected] = useState<readonly string[]>(
+    connection.selection.kind === 'set' ? connection.selection.selected : [],
+  );
   const [failure, setFailure] = useState<string | null>(null);
   const [isSaved, setSaved] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -50,8 +57,15 @@ function ScopeEditor({
     setSaved(false);
     startTransition(async () => {
       const result = await onSaveScope(connection.id, selected);
-      if (result.status === 'error') setFailure(result.message);
-      else setSaved(true);
+      if (result.status === 'error') {
+        setFailure(result.message);
+        return;
+      }
+      if (result.status === 'success') {
+        setSelection(result.data);
+        setSelected(result.data.kind === 'set' ? result.data.selected : []);
+        setSaved(true);
+      }
     });
   };
 
@@ -67,13 +81,13 @@ function ScopeEditor({
       </p>
 
       <ScopePicker
-        selection={connection.selection}
+        selection={selection}
         selected={selected}
         onChange={setSelected}
         disabled={isPending}
       />
 
-      {connection.selection.kind === 'set' && connection.selection.selectionKind !== 'workspace' ? (
+      {selection.kind === 'set' && selection.selectionKind !== 'workspace' ? (
         <div className="flex items-center gap-3">
           <Button size="sm" disabled={isPending} onClick={save}>
             Save selection
@@ -108,10 +122,7 @@ export function ConnectPanel({
   connections: readonly ConnectionScope[];
   initialSpaceId: string;
   onBegin: (spaceId: string) => Promise<ActionState<undefined>>;
-  onSaveScope: (
-    connectionId: string,
-    selected: readonly string[],
-  ) => Promise<ActionState<undefined>>;
+  onSaveScope: SaveScope;
 }) {
   const spaceFieldId = useId();
   const [spaceId, setSpaceId] = useState(initialSpaceId);

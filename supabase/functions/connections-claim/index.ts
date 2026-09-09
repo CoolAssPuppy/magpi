@@ -18,6 +18,10 @@ import { requireSpaceMembership, requireUser } from '../_shared/auth.ts';
 import { sha256Hex } from '../_shared/crypto.ts';
 import { claimConnection, type ClaimPort, type PendingConnection } from '../_shared/claim.ts';
 import { connectionsClaimSchema, parseBody } from '../_shared/validate.ts';
+import { liveHttp } from '../_shared/deps.ts';
+import { buildScopeSelection } from '../_shared/scope_selection.ts';
+import { decryptProviderToken } from '../_shared/provider_tokens.ts';
+import { driverFor, hasDriver } from '../_shared/sources/index.ts';
 
 interface PendingRow {
   user_id: string;
@@ -120,5 +124,52 @@ serveFunction('connections-claim', async (core) => {
     audit: (entry) => audit({ ...entry, ip: core.ip }),
   };
 
-  return jsonResponse(await claimConnection(port, user.id, input.ticket));
+  const result = await claimConnection(port, user.id, input.ticket);
+  await populatePicker(db, result.connection_id, result.provider, user.id);
+  return jsonResponse(result);
 });
+
+/**
+ * Fills in what the connect screen offers, immediately after the token lands.
+ *
+ * Best effort and never fatal: the connection is already stored and usable, and
+ * connections-scopes refreshes this on demand anyway. Doing it here only saves
+ * the user watching a spinner on the screen they are already looking at.
+ */
+async function populatePicker(
+  db: ReturnType<typeof serviceClient>,
+  connectionId: string,
+  provider: string,
+  userId: string,
+): Promise<void> {
+  if (!hasDriver(provider)) return;
+  const driver = driverFor(provider);
+  if (driver.scopeSelectionKind === null) return;
+
+  try {
+    const { data } = await db
+      .from('connections')
+      .select('access_token_enc')
+      .eq('id', connectionId)
+      .maybeSingle<{ access_token_enc: string | null }>();
+    if (!data?.access_token_enc) return;
+
+    const http = { fetch: liveHttp.fetch, now: () => new Date() };
+    const options = await driver.listScopeOptions(
+      {
+        accessToken: await decryptProviderToken(data.access_token_enc, { userId, provider }),
+        scopeSelection: { ids: [] },
+      },
+      http,
+    );
+
+    await db
+      .from('connections')
+      .update({
+        scope_selection: buildScopeSelection(driver.scopeSelectionKind, options, []),
+      })
+      .eq('id', connectionId);
+  } catch (err) {
+    console.error('scope listing after claim failed', provider, err);
+  }
+}

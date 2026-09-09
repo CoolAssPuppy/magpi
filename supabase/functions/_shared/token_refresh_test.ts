@@ -14,8 +14,8 @@ const SPACE = '33333333-3333-4333-8333-333333333333';
 const ENV = envSource({
   SB_TOKEN_ENC_KEY: 'AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=',
   SB_TOKEN_ENC_KEY_ID: '1',
-  SB_GOOGLE_CLIENT_ID: 'google-client',
-  SB_GOOGLE_CLIENT_SECRET: 'google-secret',
+  SB_GOOGLE_DRIVE_CLIENT_ID: 'google-client',
+  SB_GOOGLE_DRIVE_CLIENT_SECRET: 'google-secret',
   SB_NOTION_CLIENT_ID: 'notion-client',
   SB_NOTION_CLIENT_SECRET: 'notion-secret',
 });
@@ -37,7 +37,7 @@ function providerRow(slug: string) {
 }
 
 async function connection(overrides: Partial<ConnectionRow> = {}): Promise<ConnectionRow> {
-  const provider = overrides.provider ?? 'google';
+  const provider = overrides.provider ?? 'google_drive';
   return {
     id: 'connection-1',
     org_id: '44444444-4444-4444-8444-444444444444',
@@ -48,7 +48,11 @@ async function connection(overrides: Partial<ConnectionRow> = {}): Promise<Conne
     access_token_enc: await encryptProviderToken('at_stored', { userId: USER, provider }, ENV),
     refresh_token_enc: await encryptProviderToken('rt_stored', { userId: USER, provider }, ENV),
     scopes: [],
-    scope_selection: { ids: ['folder-1'] },
+    scope_selection: {
+      kind: 'folder',
+      available: [{ id: 'folder-1', name: 'Runbooks' }],
+      selected: ['folder-1'],
+    },
     status: 'active',
     status_detail: null,
     cursor: null,
@@ -97,7 +101,7 @@ function updatesTo(stub: StubDb, table: string): Record<string, unknown>[] {
 }
 
 Deno.test('a token with time left is used as it stands, with no renewal call', async () => {
-  const h = harness('google', () => json({}));
+  const h = harness('google_drive', () => json({}));
   try {
     const outcome = await resolveCredentials(await connection(), {
       db: h.stub.db,
@@ -117,7 +121,7 @@ Deno.test('a token with time left is used as it stands, with no renewal call', a
 });
 
 Deno.test('a token with no expiry recorded is used as it stands', async () => {
-  const h = harness('google', () => json({}));
+  const h = harness('google_drive', () => json({}));
   try {
     const outcome = await resolveCredentials(await connection({ token_expires_at: null }), {
       db: h.stub.db,
@@ -133,7 +137,7 @@ Deno.test('a token with no expiry recorded is used as it stands', async () => {
 
 Deno.test('a token inside the skew window is renewed before the work starts', async () => {
   // Sixty seconds left is not enough to finish a sync with.
-  const h = harness('google', () => json({ access_token: 'at_fresh', expires_in: 3600 }));
+  const h = harness('google_drive', () => json({ access_token: 'at_fresh', expires_in: 3600 }));
   try {
     const outcome = await resolveCredentials(
       await connection({ token_expires_at: '2026-09-09T12:01:00.000Z' }),
@@ -144,14 +148,14 @@ Deno.test('a token inside the skew window is renewed before the work starts', as
     if (outcome.kind !== 'ready') return;
     assertEquals(outcome.credentials.accessToken, 'at_fresh');
     assertEquals(outcome.refreshed, true);
-    assertEquals(h.calls, ['https://google.example/token']);
+    assertEquals(h.calls, ['https://google_drive.example/token']);
   } finally {
     await h.stub.close();
   }
 });
 
 Deno.test('an already expired token is renewed', async () => {
-  const h = harness('google', () => json({ access_token: 'at_fresh', expires_in: 3600 }));
+  const h = harness('google_drive', () => json({ access_token: 'at_fresh', expires_in: 3600 }));
   try {
     const outcome = await resolveCredentials(
       await connection({ token_expires_at: '2026-09-08T00:00:00.000Z' }),
@@ -164,7 +168,7 @@ Deno.test('an already expired token is renewed', async () => {
 });
 
 Deno.test('a renewed token is written back encrypted, never in the clear', async () => {
-  const h = harness('google', () => json({ access_token: 'at_fresh', expires_in: 3600 }));
+  const h = harness('google_drive', () => json({ access_token: 'at_fresh', expires_in: 3600 }));
   try {
     await resolveCredentials(await connection({ token_expires_at: '2026-09-09T12:00:30.000Z' }), {
       db: h.stub.db,
@@ -185,7 +189,7 @@ Deno.test('a renewed token is written back encrypted, never in the clear', async
 });
 
 Deno.test('a refused renewal sets the connection expired with a reason a user can read', async () => {
-  const h = harness('google', () => json({ error: 'invalid_grant' }, 400));
+  const h = harness('google_drive', () => json({ error: 'invalid_grant' }, 400));
   try {
     const outcome = await resolveCredentials(
       await connection({ token_expires_at: '2026-09-09T12:00:30.000Z' }),
@@ -205,7 +209,7 @@ Deno.test('a refused renewal sets the connection expired with a reason a user ca
 });
 
 Deno.test('a spent token with no renewal token is expired rather than retried forever', async () => {
-  const h = harness('google', () => json({}));
+  const h = harness('google_drive', () => json({}));
   try {
     const outcome = await resolveCredentials(
       await connection({
@@ -224,7 +228,7 @@ Deno.test('a spent token with no renewal token is expired rather than retried fo
 });
 
 Deno.test('a connection holding no token at all is expired, not decrypted', async () => {
-  const h = harness('google', () => json({}));
+  const h = harness('google_drive', () => json({}));
   try {
     const outcome = await resolveCredentials(await connection({ access_token_enc: null }), {
       db: h.stub.db,
@@ -256,11 +260,12 @@ Deno.test('a provider whose tokens never expire clears the stale expiry and carr
   }
 });
 
-Deno.test('a scope selection of the wrong shape reads as no selection', async () => {
-  const h = harness('google', () => json({}));
+Deno.test('a scope selection the picker has never populated reads as no selection', async () => {
+  // The column defaults to {} and a connection in that state still syncs.
+  const h = harness('google_drive', () => json({}));
   try {
     const outcome = await resolveCredentials(
-      await connection({ scope_selection: { ids: 'not-an-array' } }),
+      await connection({ scope_selection: {} }),
       { db: h.stub.db, http: h.http, env: ENV },
     );
     assertEquals(outcome.kind, 'ready');

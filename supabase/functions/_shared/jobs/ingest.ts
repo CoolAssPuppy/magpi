@@ -58,16 +58,24 @@ interface DocumentRow {
   storage_path: string | null;
   content_hash: string | null;
   version: number;
+  size_bytes: number | null;
 }
 
 const DOCUMENT_COLUMNS =
-  'id, org_id, space_id, connection_id, external_id, title, url, mime_type, storage_path, content_hash, version';
+  'id, org_id, space_id, connection_id, external_id, title, url, mime_type, storage_path, content_hash, version, size_bytes';
 
 interface SourceText {
   text: string;
   mimeType: string;
   title: string;
   url: string | null;
+  /**
+   * What the document weighs: the uploaded file for an upload, the fetched text
+   * for a synced document, which occupies no bucket at all.
+   */
+  sizeBytes: number;
+  /** Only an upload consumes Storage, and only Storage is worth metering. */
+  occupiesStorage: boolean;
 }
 
 async function loadDocument(db: SupabaseClient, documentId: string): Promise<DocumentRow> {
@@ -110,6 +118,8 @@ async function readSource(document: DocumentRow, deps: JobDeps): Promise<SourceT
       mimeType: extracted.mimeType,
       title: document.title,
       url: document.url,
+      sizeBytes: bytes.byteLength,
+      occupiesStorage: true,
     };
   }
 
@@ -146,6 +156,8 @@ async function readSource(document: DocumentRow, deps: JobDeps): Promise<SourceT
     mimeType: fetched.mimeType,
     title: fetched.title,
     url: fetched.url,
+    sizeBytes: new TextEncoder().encode(fetched.text).byteLength,
+    occupiesStorage: false,
   };
 }
 
@@ -199,16 +211,11 @@ function detailOf(err: unknown): string {
 
 export async function runIngestJob(job: IngestJobRecord, deps: JobDeps): Promise<IngestResult> {
   const budget = startBudget(deps.http, deps.budgetMs ?? DEFAULT_BUDGET_MS);
+  // The caller claimed this row and set status, claimed_at and attempts in the
+  // same statement it selected it. Writing them again here would overwrite the
+  // claim time with a later one, which is the number that says how long a job
+  // has been held.
   let stage: IngestStage = 'fetch';
-
-  await deps.db
-    .from('ingest_jobs')
-    .update({
-      status: 'running',
-      stage,
-      claimed_at: deps.http.now().toISOString(),
-    })
-    .eq('id', job.id);
 
   try {
     const document = await loadDocument(deps.db, job.document_id);
@@ -255,6 +262,7 @@ export async function runIngestJob(job: IngestJobRecord, deps: JobDeps): Promise
         title: source.title,
         url: source.url,
         mime_type: source.mimeType,
+        size_bytes: source.sizeBytes,
       })
       .eq('id', document.id);
     if (documentError) throw new ApiError(500, 'internal', 'the document could not be updated');
@@ -262,6 +270,16 @@ export async function runIngestJob(job: IngestJobRecord, deps: JobDeps): Promise
     await recordUsage(deps.db, [
       { orgId: document.org_id, kind: 'document_ingested', quantity: 1 },
       { orgId: document.org_id, kind: 'chunk_embedded', quantity: chunks.length },
+      // The delta, not the size. The admin page sums these events and never
+      // scans documents, so a re-import that grew a file by a kilobyte has to
+      // add a kilobyte rather than the whole file a second time.
+      ...(source.occupiesStorage
+        ? [{
+          orgId: document.org_id,
+          kind: 'storage_bytes' as const,
+          quantity: source.sizeBytes - (document.size_bytes ?? 0),
+        }]
+        : []),
     ]);
 
     await finish(deps, job, { status: 'succeeded', stage: 'store', error: null });

@@ -130,3 +130,10 @@ rediscovered as gaps.
 - i18n beyond a string catalog
 - Accessibility beyond what the Supabase components give us
 - Load targets above what the keynote needs
+- **Google Drive does not index PDFs or other binary files.** The driver exports
+  Google-native documents and downloads text types; anything else raises "that
+  file type is not indexed yet". Binary extraction already exists in
+  `supabase/functions/_shared/extract.ts` and serves the upload path, so closing
+  this is wiring the Drive driver into it rather than new work. Left out because
+  Drive's export endpoints answer with text and the download path answers with
+  bytes, which is a second response shape in a driver that otherwise has one.

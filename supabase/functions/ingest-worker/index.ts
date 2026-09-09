@@ -5,32 +5,43 @@
 // lives in the job body, which has no runtime assumptions and is tested without
 // a server.
 
+import { z } from 'zod';
+
 import { jsonResponse } from '../_shared/errors.ts';
 import { serveFunction } from '../_shared/http.ts';
 import { parseBody, workerBatchSchema } from '../_shared/validate.ts';
-import { type IngestJobRecord, type IngestResult, runIngestJob } from '../_shared/jobs/ingest.ts';
+import { type IngestResult, runIngestJob } from '../_shared/jobs/ingest.ts';
 import { jobDepsFromEnv, requireWorkerCaller } from '../_shared/jobs/runtime.ts';
 
 const DEFAULT_BATCH = 5;
 
-const JOB_COLUMNS = 'id, org_id, space_id, document_id, connection_id';
+// The rpc returns whole ingest_jobs rows; the job body reads five of the columns.
+const claimedJobsSchema = z.array(z.object({
+  id: z.uuid(),
+  org_id: z.uuid(),
+  space_id: z.uuid(),
+  document_id: z.uuid(),
+  connection_id: z.uuid().nullable(),
+}));
 
 serveFunction('ingest-worker', async (core) => {
   requireWorkerCaller(core.headers);
   const input = parseBody(workerBatchSchema, core.body ?? {});
   const deps = jobDepsFromEnv();
 
-  const { data, error } = await deps.db
-    .from('ingest_jobs')
-    .select(JOB_COLUMNS)
-    .eq('status', 'queued')
-    .order('created_at', { ascending: true })
-    .limit(input.batch ?? DEFAULT_BATCH)
-    .returns<IngestJobRecord[]>();
+  // claim_ingest_jobs, not a select: it marks the rows running behind
+  // `for update skip locked` in one statement, so two overlapping invocations
+  // take different jobs instead of both importing the same document. A plain
+  // select and a later update cannot do that, and the scheduler will overlap
+  // the moment a batch runs longer than its interval.
+  const { data, error } = await deps.db.rpc('claim_ingest_jobs', {
+    p_limit: input.batch ?? DEFAULT_BATCH,
+  });
   if (error) throw error;
+  const jobs = claimedJobsSchema.parse(data ?? []);
 
   const results: (IngestResult & { job_id: string })[] = [];
-  for (const job of data ?? []) {
+  for (const job of jobs) {
     // One job's failure is recorded on its own row and must not stop the batch:
     // the next document has nothing to do with this one.
     results.push({ job_id: job.id, ...(await runIngestJob(job, deps)) });

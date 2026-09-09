@@ -29,18 +29,21 @@ export const connectionsClaimSchema = z.strictObject({
 });
 
 /**
- * Which channels, folders or workspaces a connection reads.
+ * The picker, both halves in one call.
  *
- * Ids only, bounded in count and length. The driver decides what an id means;
- * this only guarantees the column cannot be used as free storage.
+ * `selected` present saves a choice; absent just refreshes what is on offer.
+ * Ids only, bounded in count and length, because the driver decides what an id
+ * means and the column must not become free storage.
  */
-export const scopeSelectionSchema = z.strictObject({
-  ids: z.array(z.string().min(1).max(200)).max(500),
+export const connectionsScopesSchema = z.strictObject({
+  connection_id: z.uuid(),
+  selected: z.array(z.string().min(1).max(200)).max(500).optional(),
 });
 
-export const connectionsScopeSchema = z.strictObject({
+export const connectionsSyncSchema = z.strictObject({
   connection_id: z.uuid(),
-  scope_selection: scopeSelectionSchema,
+  /** Clears the cursor first, so the whole account is read again. */
+  full: z.boolean().default(false),
 });
 
 export const ingestEnqueueSchema = z.strictObject({

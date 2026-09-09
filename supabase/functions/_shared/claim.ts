@@ -45,11 +45,12 @@ export interface ClaimPort {
   }): void;
 }
 
+/** Snake case, because this crosses the wire to the web app. */
 export interface ClaimResult {
-  connectionId: string;
+  connection_id: string;
   provider: string;
-  spaceId: string;
-  returnTo: string | null;
+  space_id: string;
+  return_to: string | null;
 }
 
 export async function claimConnection(
@@ -93,9 +94,9 @@ export async function claimConnection(
   });
 
   return {
-    connectionId,
+    connection_id: connectionId,
     provider: pending.provider,
-    spaceId: pending.spaceId,
-    returnTo: pending.returnTo,
+    space_id: pending.spaceId,
+    return_to: pending.returnTo,
   };
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  applySelection,
+  describeEmptySelection,
   describeScopeSelection,
   parseScopeSelection,
   type ScopeSelection,
@@ -36,28 +36,11 @@ describe('scope selection parsing', () => {
       kind: 'set',
       selectionKind: 'channel',
       available: [
-        { id: 'C1', name: 'general', url: null },
-        { id: 'C2', name: 'engineering', url: null },
-        { id: 'C3', name: 'design', url: null },
+        { id: 'C1', name: 'general' },
+        { id: 'C2', name: 'engineering' },
+        { id: 'C3', name: 'design' },
       ],
       selected: ['C1'],
-    });
-  });
-
-  it('keeps the link to a source when the provider gives one', () => {
-    const selection = parsed(
-      getPopulatedSelection({
-        available: [{ id: 'F1', name: 'Roadmap', url: 'https://drive.example/f/1' }],
-        selected: [],
-        kind: 'folder',
-      }),
-    );
-
-    expect(selection).toEqual({
-      kind: 'set',
-      selectionKind: 'folder',
-      available: [{ id: 'F1', name: 'Roadmap', url: 'https://drive.example/f/1' }],
-      selected: [],
     });
   });
 
@@ -71,31 +54,6 @@ describe('scope selection parsing', () => {
     const result = parseScopeSelection(getPopulatedSelection({ available: ['general'] }));
 
     expect(result.ok).toBe(false);
-  });
-});
-
-describe('changing a selection', () => {
-  it('accepts a selection drawn from what the provider offered', () => {
-    const result = applySelection(parsed(getPopulatedSelection()), ['C2', 'C3']);
-
-    expect(result).toEqual({ ok: true, data: ['C2', 'C3'] });
-  });
-
-  it('refuses an id the provider never offered, so a forged form cannot widen the scope', () => {
-    const result = applySelection(parsed(getPopulatedSelection()), ['C2', 'C9']);
-
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toContain('C9');
-  });
-
-  it('refuses any change while the provider has not said what is available', () => {
-    const result = applySelection({ kind: 'unset' }, ['C1']);
-
-    expect(result.ok).toBe(false);
-  });
-
-  it('accepts an empty selection, which is how a user pauses a source without disconnecting', () => {
-    expect(applySelection(parsed(getPopulatedSelection()), [])).toEqual({ ok: true, data: [] });
   });
 });
 
@@ -124,5 +82,23 @@ describe('describing a selection', () => {
 
   it('says the provider has not answered yet when the selection is unset', () => {
     expect(describeScopeSelection({ kind: 'unset' })).toBe('Nothing chosen yet');
+  });
+});
+
+describe('what an empty selection means', () => {
+  it('says a channel source reads nothing, because that is what Slack does', () => {
+    expect(describeEmptySelection('channel')).toBe(
+      'With no channels selected, Recall reads nothing from this source.',
+    );
+  });
+
+  it('says a folder source reads everything, because that is what Drive does', () => {
+    expect(describeEmptySelection('folder')).toBe(
+      'With no folders selected, Recall reads everything this account can see.',
+    );
+  });
+
+  it('has nothing to add for a source that reads a whole workspace either way', () => {
+    expect(describeEmptySelection('workspace')).toBeNull();
   });
 });

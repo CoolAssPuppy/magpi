@@ -7,6 +7,7 @@ import { jsonResponse } from '../_shared/errors.ts';
 import { serveFunction } from '../_shared/http.ts';
 import { parseBody, workerBatchSchema } from '../_shared/validate.ts';
 import { type DreamResult, type DreamRunRecord, runDreamJob } from '../_shared/jobs/dream.ts';
+import { claimQueuedRow } from '../_shared/jobs/claim.ts';
 import { jobDepsFromEnv, requireWorkerCaller } from '../_shared/jobs/runtime.ts';
 
 // Dreaming is the heaviest thing this project does: many sequential model calls
@@ -29,9 +30,21 @@ serveFunction('dream-worker', async (core) => {
   if (error) throw error;
 
   const results: (DreamResult & { run_id: string })[] = [];
+  let contended = 0;
   for (const run of data ?? []) {
+    // A select says a run was queued a moment ago, not that this caller owns it.
+    // A dream run is many sequential model calls, so two workers taking the same
+    // one is the most expensive duplicate this system can produce.
+    const claimed = await claimQueuedRow(deps.db, 'dream_runs', run.id, {
+      status: 'running',
+      started_at: deps.http.now().toISOString(),
+    });
+    if (!claimed) {
+      contended += 1;
+      continue;
+    }
     results.push({ run_id: run.id, ...(await runDreamJob(run, deps)) });
   }
 
-  return jsonResponse({ claimed: results.length, results });
+  return jsonResponse({ claimed: results.length, contended, results });
 });

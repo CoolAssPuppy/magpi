@@ -82,9 +82,7 @@ describe('claiming ingest jobs', () => {
     // Four workers, each asking for the whole queue at the same instant. With a
     // plain select-then-update every one of them would take all twelve.
     const workers = await Promise.all(
-      Array.from({ length: 4 }, () =>
-        serviceClient().rpc('claim_ingest_jobs', { p_limit: 12 }),
-      ),
+      Array.from({ length: 4 }, () => serviceClient().rpc('claim_ingest_jobs', { p_limit: 12 })),
     );
 
     const claimed: string[] = [];

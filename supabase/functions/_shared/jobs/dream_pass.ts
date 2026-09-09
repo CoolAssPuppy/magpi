@@ -25,12 +25,34 @@ export interface DreamOutcome {
   produced: number;
 }
 
-/** The four things every phase needs, so no phase grows a fifth. */
+/**
+ * The four stages a run can die in.
+ *
+ * The web client parses dream_runs.error as "<stage>: <message>" and knows only
+ * these four words, so a fifth stage name is a row it cannot read.
+ */
+export type DreamStage = 'collect' | 'extract' | 'synthesize' | 'write';
+
+/** The five things every phase needs, so no phase grows a sixth. */
 export interface Pass {
   run: DreamRunRecord;
   deps: JobDeps;
   db: SpaceScopedDb;
   budget: Budget;
+  /**
+   * Where the pass is now.
+   *
+   * A timeout carries its own stage. A failure does not, and dream_runs has no
+   * stage column to look it up in, so the pass has to leave a trail as it goes
+   * or the run row cannot say where the work stopped.
+   */
+  stage: DreamStage;
+}
+
+/** Enter a stage: leave the trail, then check the clock. */
+export function enter(pass: Pass, stage: DreamStage): void {
+  pass.stage = stage;
+  pass.budget.checkpoint(stage);
 }
 
 /**

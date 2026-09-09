@@ -10,7 +10,13 @@ import { DEFAULT_BUDGET_MS, StageTimeout, startBudget } from './budget.ts';
 import { dreamConnections } from './dream_connections.ts';
 import { dreamDigest } from './dream_digest.ts';
 import { dreamEntities } from './dream_entities.ts';
-import { type DreamOutcome, type DreamRunRecord, NOTHING, type Pass } from './dream_pass.ts';
+import {
+  type DreamOutcome,
+  type DreamRunRecord,
+  type DreamStage,
+  NOTHING,
+  type Pass,
+} from './dream_pass.ts';
 import { spaceScoped } from './space_writer.ts';
 import { type JobDeps, recordUsage } from './types.ts';
 
@@ -68,12 +74,25 @@ function readableDetail(err: unknown): string {
   return 'the dream run stopped on an unexpected error';
 }
 
+/**
+ * Every terminal error names its stage first.
+ *
+ * dream_runs has no stage column, so this string is the only place the web
+ * client can learn where a run died, and it reads everything before the first
+ * colon as the stage. A row without the prefix leaves it saying the stage was
+ * not recorded.
+ */
+function withStage(stage: DreamStage, message: string): string {
+  return `${stage}: ${message}`;
+}
+
 export async function runDreamJob(run: DreamRunRecord, deps: JobDeps): Promise<DreamResult> {
   const pass: Pass = {
     run,
     deps,
     db: spaceScoped(deps.db, { orgId: run.org_id, spaceId: run.space_id }),
     budget: startBudget(deps.http, deps.budgetMs ?? DEFAULT_BUDGET_MS),
+    stage: 'collect',
   };
   await updateRun(run, deps, { status: 'running', started_at: deps.http.now().toISOString() });
 
@@ -85,12 +104,12 @@ export async function runDreamJob(run: DreamRunRecord, deps: JobDeps): Promise<D
   } catch (err) {
     if (err instanceof StageTimeout) {
       console.error('a dream run ran out of time', run.id, err.message);
-      await finish(pass, 'timeout', NOTHING, err.message);
+      await finish(pass, 'timeout', NOTHING, withStage(pass.stage, err.message));
       return { kind: 'timeout', stage: err.stage };
     }
     const detail = readableDetail(err);
     console.error('a dream run failed', run.id, err);
-    await finish(pass, 'failed', NOTHING, detail);
+    await finish(pass, 'failed', NOTHING, withStage(pass.stage, detail));
     return { kind: 'failed', detail };
   }
 }

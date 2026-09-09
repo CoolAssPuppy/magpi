@@ -14,6 +14,7 @@ import { type ConnectionRow, markConnectionStatus } from './connections.ts';
 import { denoEnv, type EnvSource, oauthCredentials } from './env.ts';
 import { decryptProviderToken, encryptProviderToken } from './provider_tokens.ts';
 import { loadProvider, requireOAuthProvider } from './providers.ts';
+import { selectedIdsOf } from './scope_selection.ts';
 import type { SourceCredentials, SourceDeps } from './sources/contract.ts';
 import { driverFor } from './sources/index.ts';
 
@@ -34,12 +35,6 @@ export interface RefreshDeps {
   db: SupabaseClient;
   http: SourceDeps;
   env?: EnvSource;
-}
-
-function scopeSelectionOf(connection: ConnectionRow): { ids: string[] } {
-  const ids = connection.scope_selection.ids;
-  if (!Array.isArray(ids)) return { ids: [] };
-  return { ids: ids.filter((id): id is string => typeof id === 'string') };
 }
 
 function isSpent(connection: ConnectionRow, now: Date): boolean {
@@ -73,7 +68,7 @@ export async function resolveCredentials(
   deps: RefreshDeps,
 ): Promise<CredentialsOutcome> {
   const env = deps.env ?? denoEnv;
-  const scopeSelection = scopeSelectionOf(connection);
+  const scopeSelection = selectedIdsOf(connection.scope_selection);
 
   if (!connection.access_token_enc) {
     return await expire(deps, connection, 'this connection holds no token, connect it again');

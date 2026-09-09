@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { errorState, successState, type ActionState } from '@/lib/actions/state';
 import { withSession } from '@/lib/actions/with-session';
-import { requestDreamRun } from '@/lib/dreams/edge';
+import { requestDreamRun, type DreamRunOutcome } from '@/lib/dreams/edge';
 
 const DREAMS_PATH = '/dreams';
 
@@ -14,11 +14,15 @@ const kindSchema = z.enum(['entities', 'digest', 'connections']);
 /**
  * The manual trigger. A scheduled run and this one do the same work, which is
  * also how the product is shown without waiting for a cron.
+ *
+ * dream-run works inline, so by the time this returns the run has finished one
+ * way or another. The outcome comes back rather than a bare success: a run that
+ * timed out is not a button press that worked.
  */
 export async function startDreamRun(
   spaceId: string,
   kind: 'entities' | 'digest' | 'connections',
-): Promise<ActionState<undefined>> {
+): Promise<ActionState<DreamRunOutcome>> {
   const input = z.object({ spaceId: idSchema, kind: kindSchema }).safeParse({ spaceId, kind });
   if (!input.success) return errorState('That is not a space and a kind of dream Recall runs.');
 
@@ -37,7 +41,7 @@ export async function startDreamRun(
       spaceId: input.data.spaceId,
       kind: input.data.kind,
     });
-    return result.ok ? successState(undefined) : errorState(result.error);
+    return result.ok ? successState(result.data) : errorState(result.error);
   }, DREAMS_PATH);
 }
 

@@ -137,6 +137,15 @@ export function tokenEncryptionEnv(source: EnvSource = denoEnv): TokenEncryption
 const stripeSchema = z.object({
   secretKey: z.string().min(1),
   webhookSecret: z.string().min(1),
+  /**
+   * The price a Team subscription is sold at.
+   *
+   * Optional, because a deployment that has not wired billing up yet still
+   * serves every other function. Absent means the webhook cannot confirm a
+   * subscription is the thing we sell, and an unconfirmed subscription is not
+   * Team. See planForSubscription in billing.ts.
+   */
+  teamPriceId: z.string().min(1).nullable(),
 });
 
 export type StripeEnv = z.infer<typeof stripeSchema>;
@@ -147,6 +156,7 @@ export function stripeEnv(source: EnvSource = denoEnv): StripeEnv {
     {
       secretKey: source.get('SB_STRIPE_SECRET_KEY'),
       webhookSecret: source.get('SB_STRIPE_WEBHOOK_SECRET'),
+      teamPriceId: source.get('SB_STRIPE_PRICE_TEAM') ?? null,
     },
     'stripe env',
   );

@@ -10,9 +10,9 @@ const getSelection = (): ScopeSelection => ({
   kind: 'set',
   selectionKind: 'channel',
   available: [
-    { id: 'C1', name: 'general', url: null },
-    { id: 'C2', name: 'engineering', url: null },
-    { id: 'C3', name: 'design', url: null },
+    { id: 'C1', name: 'general' },
+    { id: 'C2', name: 'engineering' },
+    { id: 'C3', name: 'design' },
   ],
   selected: ['C1'],
 });
@@ -49,6 +49,12 @@ describe('the scope picker', () => {
     expect(screen.getByText('2 of 3 channels')).toBeInTheDocument();
   });
 
+  it('says what reading nothing means when nothing is ticked', () => {
+    render(<ScopePicker selection={getSelection()} selected={[]} onChange={vi.fn()} />);
+
+    expect(screen.getByText(/reads nothing from this source/i)).toBeInTheDocument();
+  });
+
   it('explains itself rather than showing an empty list before the source has answered', () => {
     render(<ScopePicker selection={{ kind: 'unset' }} selected={[]} onChange={vi.fn()} />);
 
@@ -62,7 +68,7 @@ describe('the scope picker', () => {
         selection={{
           kind: 'set',
           selectionKind: 'workspace',
-          available: [{ id: 'W1', name: 'Acme', url: null }],
+          available: [{ id: 'W1', name: 'Acme' }],
           selected: ['W1'],
         }}
         selected={['W1']}

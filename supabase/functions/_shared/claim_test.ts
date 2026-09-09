@@ -48,8 +48,8 @@ Deno.test('a claim by the account that started the flow stores the connection', 
   const result = await claimConnection(p.claim, OWNER, 'ticket');
 
   assertEquals(result.provider, 'notion');
-  assertEquals(result.spaceId, SPACE);
-  assertEquals(result.returnTo, '/connections');
+  assertEquals(result.space_id, SPACE);
+  assertEquals(result.return_to, '/connections');
   assertEquals(p.stored.length, 1);
   assertEquals(p.audits[0].action, 'conn.link');
 });

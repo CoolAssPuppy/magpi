@@ -92,13 +92,33 @@ const envelopeSchema = z.object({
   type: z.string().min(1).max(255),
 });
 
+/**
+ * A reference to another Stripe object, which arrives either as a bare id or as
+ * the expanded object.
+ *
+ * Which one depends on how the endpoint was configured and on whether a human
+ * replayed the event from the dashboard, neither of which we control. Requiring
+ * the string turned a recoverable event into a permanent 400: Stripe retries a
+ * 400 for a while, gives up, and the organization stays on the wrong plan with
+ * nobody looking at the error.
+ */
+const stripeRef = z.union([
+  z.string().min(1),
+  z.object({ id: z.string().min(1) }).transform((object) => object.id),
+]);
+
 const checkoutCompletedSchema = z.object({
   type: z.literal('checkout.session.completed'),
   data: z.object({
     object: z.object({
-      customer: z.string().min(1),
-      subscription: z.string().min(1),
-      metadata: z.object({ org_id: z.uuid() }),
+      customer: stripeRef,
+      // Null on a session that bought something other than a subscription.
+      subscription: stripeRef.nullish(),
+      // The checkout route sets the org id four ways. Reading one of them and
+      // rejecting the event when it is absent is how a session created by any
+      // other path, the dashboard included, becomes a permanent 400.
+      client_reference_id: z.string().nullish(),
+      metadata: z.object({ org_id: z.string() }).partial().nullish(),
     }),
   }),
 });
@@ -106,8 +126,18 @@ const checkoutCompletedSchema = z.object({
 const subscriptionObjectSchema = z.object({
   id: z.string().min(1),
   status: z.string().min(1),
-  customer: z.string().min(1),
-  items: z.object({ data: z.array(z.object({ quantity: z.number().int().min(1) })).min(1) }),
+  customer: stripeRef,
+  // Set by the checkout route, so the plan travels with the subscription and
+  // there is no second price map to keep in step with Stripe.
+  metadata: z.object({ plan: z.string() }).partial().nullish(),
+  items: z.object({
+    data: z.array(z.object({
+      // Omitted on a metered item and on some licensed ones, where one is the
+      // only answer that means anything.
+      quantity: z.number().int().min(1).nullish(),
+      price: z.object({ id: z.string() }).nullish(),
+    })).min(1),
+  }),
 });
 
 function subscriptionEventSchema<T extends string>(type: T) {
@@ -133,6 +163,46 @@ const HANDLED_TYPES: readonly HandledEventType[] = [
 // The statuses a customer is still being served under; everything else is free.
 const PAYING_STATUSES: readonly string[] = ['active', 'trialing', 'past_due'];
 
+type SubscriptionObject = z.infer<typeof subscriptionObjectSchema>;
+
+/**
+ * Which plan a subscription buys.
+ *
+ * A paying status alone is not the answer. Any subscription on any price reaches
+ * this webhook, including one created by hand in the dashboard and one on a
+ * product we have not launched, and treating all of them as Team files paying
+ * customers under a plan nobody sold them.
+ *
+ * Two things can confirm Team, in this order. The plan we intended, carried in
+ * subscription metadata by the checkout route, which needs no price map here.
+ * Then the price itself, which is what resolves a subscription created outside
+ * that route. Anything else is a subscription to something we do not sell, and
+ * the safe reading of that is free: a wrongly free organization complains, a
+ * wrongly paid one does not.
+ */
+function planForSubscription(
+  subscription: SubscriptionObject,
+  teamPriceId: string | null,
+): 'free' | 'team' {
+  if (!PAYING_STATUSES.includes(subscription.status)) return 'free';
+
+  const intended = subscription.metadata?.plan;
+  if (intended === 'team') return 'team';
+  if (intended === 'free') return 'free';
+
+  const priceId = subscription.items.data[0].price?.id ?? null;
+  if (teamPriceId !== null && priceId === teamPriceId) return 'team';
+
+  // Loud, because the alternative to noticing this is a customer paying for a
+  // plan they are not on.
+  audit({
+    action: 'billing.unrecognized_price',
+    target: subscription.id,
+    meta: { price_id: priceId, status: subscription.status, configured: teamPriceId !== null },
+  });
+  return 'free';
+}
+
 interface OrganizationPatch {
   plan?: 'free' | 'team';
   seats?: number;
@@ -150,6 +220,8 @@ export type StripeEventResult =
 export interface BillingDeps {
   db: SupabaseClient;
   clock: ClockDeps;
+  /** From SB_STRIPE_PRICE_TEAM. Null where billing is not configured. */
+  teamPriceId: string | null;
 }
 
 function storageFailed(what: string, detail: string): ApiError {
@@ -211,14 +283,29 @@ function orgNotFound(type: HandledEventType, target: string): StripeEventResult 
 
 type CheckoutSession = z.infer<typeof checkoutCompletedSchema>['data']['object'];
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 async function applyCheckout(
   session: CheckoutSession,
   deps: BillingDeps,
 ): Promise<StripeEventResult> {
-  const orgId = session.metadata.org_id;
+  const orgId = session.client_reference_id ?? session.metadata?.org_id ?? null;
+  if (orgId === null || !UUID_RE.test(orgId)) {
+    // Terminal rather than a 500: no retry will make an event that never named
+    // an organization name one.
+    audit({ action: 'billing.org_not_identified', target: session.customer, meta: {} });
+    return {
+      kind: 'ignored',
+      type: 'checkout.session.completed',
+      reason: 'organization_not_identified',
+    };
+  }
+
   const found = await updateOrganization(deps.db, orgId, {
     stripe_customer_id: session.customer,
-    stripe_subscription_id: session.subscription,
+    // A session that bought no subscription leaves the column alone rather than
+    // clearing one an earlier event set.
+    ...(session.subscription ? { stripe_subscription_id: session.subscription } : {}),
     plan: 'team',
   });
   if (!found) return orgNotFound('checkout.session.completed', orgId);
@@ -227,7 +314,7 @@ async function applyCheckout(
 
 async function applySubscription(
   type: SubscriptionEventType,
-  subscription: z.infer<typeof subscriptionObjectSchema>,
+  subscription: SubscriptionObject,
   deps: BillingDeps,
 ): Promise<StripeEventResult> {
   // The subscription id is the precise handle; the customer id catches an org
@@ -239,8 +326,8 @@ async function applySubscription(
   const patch: OrganizationPatch = type === 'customer.subscription.deleted'
     ? { plan: 'free', seats: 1, stripe_subscription_id: null }
     : {
-      seats: subscription.items.data[0].quantity,
-      plan: PAYING_STATUSES.includes(subscription.status) ? 'team' : 'free',
+      seats: subscription.items.data[0].quantity ?? 1,
+      plan: planForSubscription(subscription, deps.teamPriceId),
     };
 
   const found = await updateOrganization(deps.db, orgId, patch);

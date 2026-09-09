@@ -11,11 +11,7 @@ const getCited = (): DreamOutputView => ({
   kind: 'cited',
   documentId: 'doc-1',
   title: 'Engineering digest, 9 September',
-  segments: [
-    { kind: 'text', value: 'Billing slipped a week ' },
-    { kind: 'citation', chunkId: 'chunk-a', index: 1 },
-    { kind: 'text', value: '.' },
-  ],
+  body: 'Billing slipped a week.',
   sources: [
     {
       index: 1,
@@ -40,7 +36,12 @@ describe('a dream output', () => {
   it('says a run produced nothing when its output cites no source', () => {
     render(
       <DreamOutput
-        output={{ kind: 'uncited', documentId: 'doc-1', title: 'Engineering digest' }}
+        output={{
+          kind: 'unsourced',
+          documentId: 'doc-1',
+          title: 'Engineering digest',
+          reason: 'no-citations',
+        }}
         onDelete={onDelete()}
       />,
     );
@@ -48,10 +49,31 @@ describe('a dream output', () => {
     expect(screen.getByText(/produced nothing/i)).toBeInTheDocument();
   });
 
+  it('says the sources are gone rather than blaming the run that wrote them', () => {
+    render(
+      <DreamOutput
+        output={{
+          kind: 'unsourced',
+          documentId: 'doc-1',
+          title: 'Engineering digest',
+          reason: 'sources-unreadable',
+        }}
+        onDelete={onDelete()}
+      />,
+    );
+
+    expect(screen.getByText(/no longer be read/i)).toBeInTheDocument();
+  });
+
   it('shows no synthesis at all when there is nothing to back it up', () => {
     render(
       <DreamOutput
-        output={{ kind: 'uncited', documentId: 'doc-1', title: 'Engineering digest' }}
+        output={{
+          kind: 'unsourced',
+          documentId: 'doc-1',
+          title: 'Engineering digest',
+          reason: 'sources-unreadable',
+        }}
         onDelete={onDelete()}
       />,
     );

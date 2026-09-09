@@ -8,6 +8,7 @@ import {
   chunkPrompt,
   documentCount,
   type DreamOutcome,
+  enter,
   MAX_INPUT_CHUNKS,
   NOTHING,
   type Pass,
@@ -31,13 +32,15 @@ const ENTITY_SYSTEM =
   'the text it came from). Use only ids that appear in the input.';
 
 export async function dreamEntities(pass: Pass): Promise<DreamOutcome> {
-  const { deps, db, budget } = pass;
-  budget.checkpoint('read');
+  const { deps, db } = pass;
+  enter(pass, 'collect');
   const chunks = await db.recentChunks(sinceIso(deps), MAX_INPUT_CHUNKS);
   if (chunks.length === 0) return NOTHING;
 
-  budget.checkpoint('extract');
+  enter(pass, 'synthesize');
   const answer = await ask(pass, ENTITY_SYSTEM, chunkPrompt(chunks), 2000);
+
+  enter(pass, 'extract');
   const drafts = readAnswer(entitiesSchema, answer, 'entities');
 
   // A chunk id the model was not given is one it invented, and an invented id
@@ -45,7 +48,7 @@ export async function dreamEntities(pass: Pass): Promise<DreamOutcome> {
   const known = new Map(chunks.map((chunk) => [chunk.id, chunk.document_id]));
 
   for (const draft of drafts) {
-    budget.checkpoint('store');
+    enter(pass, 'write');
     const entityId = await db.upsertEntity({
       kind: draft.kind,
       name: draft.name,

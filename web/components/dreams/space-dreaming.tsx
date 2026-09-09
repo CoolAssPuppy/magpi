@@ -1,10 +1,12 @@
 'use client';
 
+import Link from 'next/link';
 import { useId, useState, useTransition } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import type { ActionState } from '@/lib/actions/state';
+import type { DreamRunOutcome } from '@/lib/dreams/edge';
 import { DREAM_KINDS, describeDreamKind, type DreamKind } from '@/lib/dreams/status';
 
 export type DreamingSpace = {
@@ -13,14 +15,35 @@ export type DreamingSpace = {
   readonly dreaming_enabled: boolean;
 };
 
+export type ToggleDreaming = (spaceId: string, enabled: boolean) => Promise<ActionState<undefined>>;
+
+export type RunDream = (spaceId: string, kind: DreamKind) => Promise<ActionState<DreamRunOutcome>>;
+
+function describeOutcome(outcome: DreamRunOutcome): string {
+  switch (outcome.status) {
+    case 'succeeded':
+      return outcome.outputDocumentId
+        ? 'The run finished and wrote a document.'
+        : 'The run finished and produced nothing, because it found nothing it could cite.';
+    case 'timeout':
+      return 'The run timed out. Open it to see which stage it died in.';
+    case 'failed':
+      return 'The run failed. Open it to see which stage it died in.';
+    default: {
+      const unhandled: never = outcome.status;
+      throw new Error(`Unhandled dream run status: ${String(unhandled)}`);
+    }
+  }
+}
+
 function SpaceRow({
   space,
   onToggle,
   onRun,
 }: {
   space: DreamingSpace;
-  onToggle: (spaceId: string, enabled: boolean) => Promise<ActionState<undefined>>;
-  onRun: (spaceId: string, kind: DreamKind) => Promise<ActionState<undefined>>;
+  onToggle: ToggleDreaming;
+  onRun: RunDream;
 }) {
   const kindFieldId = useId();
   const [kind, setKind] = useState<DreamKind>('digest');
@@ -28,14 +51,25 @@ function SpaceRow({
   // rather than snapping back until the page is read again.
   const [isDreaming, setDreaming] = useState(space.dreaming_enabled);
   const [failure, setFailure] = useState<string | null>(null);
+  const [outcome, setOutcome] = useState<DreamRunOutcome | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const run = (work: () => Promise<ActionState<undefined>>, onDone?: () => void) => {
+  const toggle = (next: boolean) => {
     setFailure(null);
     startTransition(async () => {
-      const result = await work();
+      const result = await onToggle(space.id, next);
       if (result.status === 'error') setFailure(result.message);
-      else onDone?.();
+      else setDreaming(next);
+    });
+  };
+
+  const runNow = () => {
+    setFailure(null);
+    setOutcome(null);
+    startTransition(async () => {
+      const result = await onRun(space.id, kind);
+      if (result.status === 'error') setFailure(result.message);
+      else if (result.status === 'success') setOutcome(result.data);
     });
   };
 
@@ -47,12 +81,7 @@ function SpaceRow({
             checked={isDreaming}
             aria-label={`Dreaming in ${space.name}`}
             disabled={isPending}
-            onCheckedChange={(next) =>
-              run(
-                () => onToggle(space.id, next),
-                () => setDreaming(next),
-              )
-            }
+            onCheckedChange={toggle}
           />
           <span className="text-sm text-foreground">{space.name}</span>
           {isDreaming ? null : (
@@ -83,12 +112,7 @@ function SpaceRow({
             </select>
           </div>
 
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={!isDreaming || isPending}
-            onClick={() => run(() => onRun(space.id, kind))}
-          >
+          <Button size="sm" variant="outline" disabled={!isDreaming || isPending} onClick={runNow}>
             Run now
           </Button>
         </div>
@@ -97,6 +121,15 @@ function SpaceRow({
       <p className="max-w-[var(--measure-prose)] text-xs text-foreground-lighter">
         {describeDreamKind(kind).summary}
       </p>
+
+      {outcome ? (
+        <p className="flex flex-wrap items-center gap-2 text-xs text-foreground-light">
+          {describeOutcome(outcome)}
+          <Link href={`/dreams/${outcome.dreamRunId}`} className="text-brand-link hover:underline">
+            Open the run
+          </Link>
+        </p>
+      ) : null}
 
       {failure ? (
         <p role="alert" className="text-xs text-destructive-600">
@@ -118,8 +151,8 @@ export function SpaceDreaming({
   onRun,
 }: {
   spaces: readonly DreamingSpace[];
-  onToggle: (spaceId: string, enabled: boolean) => Promise<ActionState<undefined>>;
-  onRun: (spaceId: string, kind: DreamKind) => Promise<ActionState<undefined>>;
+  onToggle: ToggleDreaming;
+  onRun: RunDream;
 }) {
   return (
     <section className="flex flex-col gap-3">

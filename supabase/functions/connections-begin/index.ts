@@ -66,7 +66,7 @@ serveFunction('connections-begin', async (core) => {
   });
 
   return jsonResponse({
-    url: driver.buildAuthUrl({
+    authorize_url: driver.buildAuthUrl({
       clientId,
       redirectUri: callbackUrl(),
       state,

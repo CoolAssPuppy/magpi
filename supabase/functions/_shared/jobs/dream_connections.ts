@@ -7,6 +7,7 @@ import { ApiError } from '../errors.ts';
 import {
   ask,
   type DreamOutcome,
+  enter,
   NOTHING,
   parsed,
   type Pass,
@@ -64,20 +65,23 @@ async function searchNeighbours(pass: Pass, embedding: number[], text: string): 
 async function candidatePairs(pass: Pass, documents: SpaceDocumentRow[]): Promise<
   { sourceId: string; otherId: string; similarity: number }[]
 > {
-  const { run, deps, db, budget } = pass;
+  const { run, deps, db } = pass;
   const found = new Map<string, { sourceId: string; otherId: string; similarity: number }>();
 
+  // Reading one document at a time and asking the space what it looks like is
+  // how this pass pulls structure out of what it read, so the whole scan is one
+  // stage however many round trips it takes.
   for (const document of documents) {
     if (found.size >= MAX_LINKS) break;
-    budget.checkpoint('read');
+    enter(pass, 'extract');
     const chunk = await db.firstChunkOf(document.id);
     if (!chunk) continue;
 
-    budget.checkpoint('embed');
+    enter(pass, 'extract');
     const [embedding] = await deps.models.embed({ orgId: run.org_id, texts: [chunk.content] });
     if (!embedding) continue;
 
-    budget.checkpoint('read');
+    enter(pass, 'extract');
     for (const hit of await searchNeighbours(pass, embedding, chunk.content)) {
       if (hit.document_id === document.id) continue;
       const key = [document.id, hit.document_id].sort().join(':');
@@ -91,13 +95,13 @@ async function candidatePairs(pass: Pass, documents: SpaceDocumentRow[]): Promis
 }
 
 export async function dreamConnections(pass: Pass): Promise<DreamOutcome> {
-  const { run, deps, db, budget } = pass;
-  budget.checkpoint('read');
+  const { run, deps, db } = pass;
+  enter(pass, 'collect');
   const documents = await db.recentDocuments(sinceIso(deps), MAX_COMPARED_DOCUMENTS);
   if (documents.length === 0) return NOTHING;
 
   const candidates = await candidatePairs(pass, documents);
-  budget.checkpoint('read');
+  enter(pass, 'collect');
   const others = await db.documentsByIds([...new Set(candidates.map((c) => c.otherId))]);
   const known = new Map([...documents, ...others].map((doc) => [doc.id, doc]));
   const outcome = { ...NOTHING, inputDocumentCount: documents.length };
@@ -112,7 +116,7 @@ export async function dreamConnections(pass: Pass): Promise<DreamOutcome> {
   });
   if (pairs.length === 0) return outcome;
 
-  budget.checkpoint('extract');
+  enter(pass, 'synthesize');
   const prompt = pairs.map((pair, index) => `${index}: ${pair.title}`).join('\n');
   const answer = await ask(pass, RATIONALE_SYSTEM, `CANDIDATE PAIRS\n${prompt}`, 800);
   const rationales = new Map(
@@ -133,7 +137,7 @@ export async function dreamConnections(pass: Pass): Promise<DreamOutcome> {
     }];
   });
 
-  budget.checkpoint('store');
+  enter(pass, 'write');
   await db.insertLinks(drafts);
   return { ...outcome, produced: drafts.length };
 }

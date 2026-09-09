@@ -18,11 +18,12 @@ Deno.serve(async (req: Request): Promise<Response> => {
       throw new ApiError(405, 'method_not_allowed', 'stripe webhooks arrive as POST');
     }
 
+    const env = stripeEnv();
     const payload = await req.text();
     const verified = await verifyStripeSignature({
       payload,
       header: req.headers.get('Stripe-Signature'),
-      secret: stripeEnv().webhookSecret,
+      secret: env.webhookSecret,
       now: liveClock.now(),
     });
     if (!verified.ok) {
@@ -39,7 +40,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
       throw new ApiError(400, 'invalid_body', 'body is not valid json');
     }
 
-    const result = await handleStripeEvent(event, { db: serviceClient(), clock: liveClock });
+    const result = await handleStripeEvent(event, {
+      db: serviceClient(),
+      clock: liveClock,
+      teamPriceId: env.teamPriceId,
+    });
     // 200 for a duplicate and for an ignored type as much as for an applied one:
     // anything else makes Stripe redeliver an event there is nothing left to do
     // with, for days.

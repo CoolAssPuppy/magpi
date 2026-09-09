@@ -176,7 +176,7 @@ interface DriverQuirks {
 }
 
 const QUIRKS: Record<string, DriverQuirks> = {
-  google: {
+  google_drive: {
     // Without both of these Google issues a refresh token on the very first
     // consent and never again, so a reconnect leaves a token that dies in an
     // hour and no way to renew it.

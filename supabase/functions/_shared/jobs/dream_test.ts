@@ -39,17 +39,43 @@ function fakeModels(complete: (input: CompleteInput) => string): ModelRunner {
   };
 }
 
-function jobDeps(stub: StubDb, models: ModelRunner, budgetMs?: number): JobDeps {
+function jobDeps(
+  stub: StubDb,
+  models: ModelRunner,
+  budgetMs?: number,
+  now: () => Date = () => new Date(NOW.getTime()),
+): JobDeps {
   return {
     db: stub.db,
     http: {
       fetch: () => Promise.reject(new Error('a dream job makes no direct http call')),
-      now: () => new Date(NOW.getTime()),
+      now,
     },
     models,
     uploads: { read: () => Promise.reject(new Error('a dream job reads no uploads')) },
     budgetMs,
   };
+}
+
+/** The only four words the web client can read out of dream_runs.error. */
+const STAGES = ['collect', 'extract', 'synthesize', 'write'];
+
+/**
+ * A clock that stands still for `ticks` readings and then jumps past any budget,
+ * so a run times out at a chosen checkpoint rather than always at the first.
+ */
+function jumpingClock(ticks: number): () => Date {
+  let readings = 0;
+  return () => {
+    readings += 1;
+    return new Date(NOW.getTime() + (readings > ticks ? 60_000 : 0));
+  };
+}
+
+/** The stage the run row names, which is everything before the first colon. */
+function stageOf(error: string): string {
+  const colon = error.indexOf(':');
+  return colon === -1 ? '' : error.slice(0, colon);
 }
 
 /** The rows a read answers with. `foreign` adds a row a leak has something to leak. */
@@ -168,6 +194,16 @@ function answerFor(input: CompleteInput): string {
   if (input.user.includes('CANDIDATE PAIRS')) return RATIONALE_ANSWER;
   if (input.system.includes('entities')) return entityAnswer([CHUNK_A, CHUNK_B]);
   return 'What changed: the billing page shipped.';
+}
+
+function storedText(pieces: unknown[]): string {
+  return pieces
+    .flatMap((piece) => isRecord(piece) && typeof piece.content === 'string' ? [piece.content] : [])
+    .join('\n');
+}
+
+function markersIn(text: string): string[] {
+  return [...text.matchAll(/\[\[chunk:[^\]]+\]\]/g)].map((match) => match[0]);
 }
 
 function writtenBodies(stub: StubDb, table: string): unknown[] {
@@ -289,7 +325,9 @@ Deno.test('a model answer that is not JSON fails the run and writes no entities'
 
     const updates = runUpdates(stub);
     assertEquals(updates[1].status, 'failed');
-    assertEquals(updates[1].error, result.detail);
+    // The failure knows no stage of its own, so the pass has to have left one.
+    assertEquals(updates[1].error, `extract: ${result.detail}`);
+    assert(STAGES.includes(stageOf(String(updates[1].error))));
     assertEquals(updates[1].finished_at, NOW.toISOString());
   } finally {
     await stub.close();
@@ -330,7 +368,7 @@ Deno.test('a mention naming a chunk the model was never given is dropped', async
   }
 });
 
-Deno.test('a digest is written as a cited document, chunked and embedded', async () => {
+Deno.test('a digest cites every chunk it read, in documents.source_chunk_ids', async () => {
   const stub = stubDb(replies());
   try {
     const result = await runDreamJob(dreamRun('digest'), jobDeps(stub, fakeModels(answerFor)));
@@ -345,20 +383,58 @@ Deno.test('a digest is written as a cited document, chunked and embedded', async
     assertEquals(documents[0].dream_run_id, RUN);
     assertEquals(documents[0].space_id, SPACE);
 
+    // The column, not a marker in the prose: the client resolves these through
+    // RLS on read, so a reader who lost the space sees the digest without them.
+    assertEquals(documents[0].source_chunk_ids, [CHUNK_A, CHUNK_B]);
+
     const chunks = writtenBodies(stub, 'chunks');
     assertEquals(chunks.length, 1);
     assert(Array.isArray(chunks[0]));
-    const text = chunks[0]
-      .flatMap((
-        chunk,
-      ) => (isRecord(chunk) && typeof chunk.content === 'string' ? [chunk.content] : []))
-      .join('\n');
-    assertStringIncludes(text, '## Sources');
-    assertStringIncludes(text, 'Notes from Monday');
-    assertStringIncludes(text, CHUNK_A);
-    assertStringIncludes(text, CHUNK_B);
+    // Citations are not prose, so nothing shaped like one is embedded.
+    assertEquals(markersIn(storedText(chunks[0])), []);
     assert(isRecord(chunks[0][0]));
     assert(Array.isArray(chunks[0][0].embedding));
+  } finally {
+    await stub.close();
+  }
+});
+
+Deno.test('a chunk the model invented is never cited', async () => {
+  // The citation list is built from what went into the prompt, so an id the
+  // model produced cannot reach the column or the stored prose.
+  const stub = stubDb(replies());
+  const invented = `What changed: the billing page shipped. [[chunk:${FOREIGN_CHUNK}]]`;
+  try {
+    const result = await runDreamJob(
+      dreamRun('digest'),
+      jobDeps(stub, fakeModels(() => invented)),
+    );
+
+    assert(result.kind === 'succeeded');
+    const documents = writtenBodies(stub, 'documents');
+    assert(isRecord(documents[0]));
+    assertEquals(documents[0].source_chunk_ids, [CHUNK_A, CHUNK_B]);
+
+    const chunks = writtenBodies(stub, 'chunks');
+    assert(Array.isArray(chunks[0]));
+    const text = storedText(chunks[0]);
+    assert(!text.includes(FOREIGN_CHUNK), 'a chunk the model was never given was cited');
+    assertEquals(markersIn(text), []);
+  } finally {
+    await stub.close();
+  }
+});
+
+Deno.test('a run that read nothing writes no document rather than an uncited one', async () => {
+  // An empty source_chunk_ids would be a claim with no source, which the spec
+  // forbids outright. Producing nothing is the honest answer.
+  const stub = stubDb(replies({ chunks: [] }));
+  try {
+    const result = await runDreamJob(dreamRun('digest'), jobDeps(stub, fakeModels(answerFor)));
+
+    assert(result.kind === 'succeeded');
+    assertEquals(result.outputDocumentId, null);
+    assertEquals(writtenBodies(stub, 'documents').length, 0);
   } finally {
     await stub.close();
   }
@@ -410,15 +486,43 @@ Deno.test('a spent budget reports the stage it died in', async () => {
     const result = await runDreamJob(dreamRun('digest'), jobDeps(stub, fakeModels(answerFor), 0));
 
     assert(result.kind === 'timeout');
-    assertEquals(result.stage, 'read');
+    assertEquals(result.stage, 'collect');
 
     const updates = runUpdates(stub);
     assertEquals(updates[1].status, 'timeout');
     assertEquals(updates[1].finished_at, NOW.toISOString());
-    assertStringIncludes(String(updates[1].error), 'read');
+    const error = String(updates[1].error);
+    assertEquals(stageOf(error), 'collect');
+    assertStringIncludes(error, 'collect: ');
+    assertStringIncludes(error, 'ran out of time');
   } finally {
     await stub.close();
   }
+});
+
+Deno.test('every stage a run can stop in is one of the four the client knows', async () => {
+  const seen = new Set<string>();
+  // Walking the clock forward one reading at a time stops each kind at each of
+  // its checkpoints in turn, so this reads the names off real error rows rather
+  // than off the source.
+  for (const kind of ['entities', 'digest', 'connections'] as const) {
+    for (let ticks = 1; ticks <= 30; ticks += 1) {
+      const stub = stubDb(replies());
+      try {
+        const result = await runDreamJob(
+          dreamRun(kind),
+          jobDeps(stub, fakeModels(answerFor), 1_000, jumpingClock(ticks)),
+        );
+        if (result.kind !== 'timeout') continue;
+        const stage = stageOf(String(runUpdates(stub)[1].error));
+        assert(STAGES.includes(stage), `${kind} named a stage the client cannot read: ${stage}`);
+        seen.add(stage);
+      } finally {
+        await stub.close();
+      }
+    }
+  }
+  assertEquals([...seen].sort(), [...STAGES].sort());
 });
 
 Deno.test('an empty space succeeds with nothing produced', async () => {
@@ -430,7 +534,10 @@ Deno.test('an empty space succeeds with nothing produced', async () => {
     assertEquals(result.inputDocumentCount, 0);
     assertEquals(result.produced, 0);
     assertEquals(result.outputDocumentId, null);
+    // A document with no markers reads as a run that produced nothing, so an
+    // uncited digest must not be written at all.
     assertEquals(writtenBodies(stub, 'documents').length, 0);
+    assertEquals(writtenBodies(stub, 'chunks').length, 0);
     assertEquals(runUpdates(stub)[1].status, 'succeeded');
   } finally {
     await stub.close();

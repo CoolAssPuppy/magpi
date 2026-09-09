@@ -35,8 +35,8 @@ const getConnectionScope = (overrides?: Partial<ConnectionScope>): ConnectionSco
     kind: 'set',
     selectionKind: 'channel',
     available: [
-      { id: 'C1', name: 'general', url: null },
-      { id: 'C2', name: 'engineering', url: null },
+      { id: 'C1', name: 'general' },
+      { id: 'C2', name: 'engineering' },
     ],
     selected: ['C1'],
   },
@@ -49,7 +49,17 @@ const getProps = () => ({
   connections: [],
   initialSpaceId: 'space-1',
   onBegin: vi.fn().mockResolvedValue(successState(undefined)),
-  onSaveScope: vi.fn().mockResolvedValue(successState(undefined)),
+  onSaveScope: vi.fn().mockResolvedValue(
+    successState({
+      kind: 'set',
+      selectionKind: 'channel',
+      available: [
+        { id: 'C1', name: 'general' },
+        { id: 'C2', name: 'engineering' },
+      ],
+      selected: ['C1', 'C2'],
+    }),
+  ),
 });
 
 describe('the connect screen', () => {
@@ -84,6 +94,47 @@ describe('the connect screen', () => {
     await userEvent.click(screen.getByRole('button', { name: /save/i }));
 
     expect(props.onSaveScope).toHaveBeenCalledWith('conn-1', ['C1', 'C2']);
+  });
+
+  it('drops a tick the provider no longer offers, rather than showing it as saved', async () => {
+    const props = getProps();
+    props.onSaveScope.mockResolvedValue(
+      successState({
+        kind: 'set',
+        selectionKind: 'channel',
+        available: [{ id: 'C1', name: 'general' }],
+        selected: ['C1'],
+      }),
+    );
+    render(<ConnectPanel {...props} connections={[getConnectionScope()]} />);
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'engineering' }));
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+
+    expect(await screen.findByText('Saved')).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'engineering' })).not.toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'general' })).toBeChecked();
+  });
+
+  it('says what an empty selection does, because it differs by source', () => {
+    const props = getProps();
+    render(
+      <ConnectPanel
+        {...props}
+        connections={[
+          getConnectionScope({
+            selection: {
+              kind: 'set',
+              selectionKind: 'channel',
+              available: [{ id: 'C1', name: 'general' }],
+              selected: [],
+            },
+          }),
+        ]}
+      />,
+    );
+
+    expect(screen.getByText(/reads nothing from this source/i)).toBeInTheDocument();
   });
 
   it('reports a refused save rather than leaving a changed tick box looking saved', async () => {

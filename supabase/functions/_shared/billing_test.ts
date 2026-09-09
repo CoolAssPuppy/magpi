@@ -52,14 +52,42 @@ function checkoutEvent(orgId: string = ORG): unknown {
   return { id: 'evt_checkout_1', type: 'checkout.session.completed', data: { object } };
 }
 
+/** The price a Team subscription is sold at, as SB_STRIPE_PRICE_TEAM would set it. */
+const TEAM_PRICE = 'price_team_test';
+
 function subscriptionEvent(
   type: 'customer.subscription.updated' | 'customer.subscription.deleted',
-  overrides: { status?: string; quantity?: number } = {},
+  overrides: { status?: string; quantity?: number; priceId?: string } = {},
 ): unknown {
-  const items = { data: [{ id: 'si_1', quantity: overrides.quantity ?? 7 }] };
+  const price = { id: overrides.priceId ?? TEAM_PRICE };
+  const items = { data: [{ id: 'si_1', quantity: overrides.quantity ?? 7, price }] };
   const status = overrides.status ?? 'active';
   const object = { id: 'sub_1', status, customer: 'cus_1', items };
   return { id: `evt_${type}`, type, data: { object } };
+}
+
+/** A recorded event, envelope and all, as Stripe actually sends it. */
+async function fixture(name: string): Promise<unknown> {
+  const path = new URL(`./testing/fixtures/stripe/${name}.json`, import.meta.url);
+  return JSON.parse(await Deno.readTextFile(path));
+}
+
+/** The organization the recorded fixtures name in client_reference_id. */
+const FIXTURE_ORG = '11111111-1111-4111-8111-111111111111';
+
+/** The body of one captured write, as a record rather than as unknown. */
+function bodyOf(stub: StubDb, table: string, index: number): Record<string, unknown> {
+  const body = requestsFor(stub, table)[index].body;
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+    throw new Error(`${table}[${index}] was not an object body`);
+  }
+  return body as Record<string, unknown>;
+}
+
+function fixtureOrgFound(): StubDb {
+  return stubDb((request) =>
+    request.table === 'organizations' ? { body: [{ id: FIXTURE_ORG }] } : {}
+  );
 }
 
 /** Every organizations read and write finds the one org; stripe_events accepts. */
@@ -67,8 +95,8 @@ function orgFound(): StubDb {
   return stubDb((request) => (request.table === 'organizations' ? { body: [{ id: ORG }] } : {}));
 }
 
-function deps(stub: StubDb) {
-  return { db: stub.db, clock: fixedClock(AT_SIGNING) };
+function deps(stub: StubDb, teamPriceId: string | null = TEAM_PRICE) {
+  return { db: stub.db, clock: fixedClock(AT_SIGNING), teamPriceId };
 }
 
 Deno.test('a correctly signed payload verifies', async () => {
@@ -286,6 +314,171 @@ Deno.test('an event that is not shaped like a stripe event is a 400', async () =
     const err = await asyncApiErrorFrom(() => handleStripeEvent({ nope: true }, deps(stub)));
     assertEquals(err.status, 400);
     assertEquals(requestsFor(stub, 'stripe_events'), []);
+  } finally {
+    await stub.close();
+  }
+});
+
+// The tests below run against recorded Stripe events rather than objects built
+// to the shape this module already expects. Every one of them failed before the
+// fix it names, and none of the inline-built tests above could have caught any
+// of them.
+
+Deno.test('a paying subscription on a price we do not sell is not team', async () => {
+  // The revenue bug. Any active subscription on any price used to file as team,
+  // including one created by hand in the dashboard.
+  const stub = fixtureOrgFound();
+  try {
+    const result = await handleStripeEvent(
+      await fixture('subscription-updated-unknown-price'),
+      deps(stub),
+    );
+    assertEquals(result.kind, 'applied');
+    assertEquals(requestsFor(stub, 'organizations')[1].body, { seats: 7, plan: 'free' });
+  } finally {
+    await stub.close();
+  }
+});
+
+Deno.test('a paying subscription on the team price is team', async () => {
+  const stub = fixtureOrgFound();
+  try {
+    await handleStripeEvent(await fixture('subscription-updated'), deps(stub));
+    assertEquals(requestsFor(stub, 'organizations')[1].body, { seats: 7, plan: 'team' });
+  } finally {
+    await stub.close();
+  }
+});
+
+Deno.test('with no price configured, only the intended plan can confirm team', async () => {
+  // A deployment that has not wired billing up cannot confirm anything, so a
+  // subscription carrying no intent is free rather than assumed.
+  const stub = fixtureOrgFound();
+  try {
+    await handleStripeEvent(await fixture('subscription-updated'), deps(stub, null));
+    assertEquals(requestsFor(stub, 'organizations')[1].body, { seats: 7, plan: 'free' });
+  } finally {
+    await stub.close();
+  }
+});
+
+Deno.test('the plan intended at checkout travels with the subscription', async () => {
+  // metadata.plan is set by the checkout route, so an unknown price still
+  // resolves for a subscription we created ourselves.
+  const stub = fixtureOrgFound();
+  try {
+    await handleStripeEvent(await fixture('subscription-updated-expanded'), deps(stub, null));
+    assertEquals(bodyOf(stub, 'organizations', 1).plan, 'team');
+  } finally {
+    await stub.close();
+  }
+});
+
+Deno.test('a subscription that stopped paying loses the plan whatever its price', async () => {
+  const stub = fixtureOrgFound();
+  try {
+    await handleStripeEvent(await fixture('subscription-updated-unpaid'), deps(stub));
+    assertEquals(requestsFor(stub, 'organizations')[1].body, { seats: 7, plan: 'free' });
+  } finally {
+    await stub.close();
+  }
+});
+
+Deno.test('an expanded customer object is read, not rejected', async () => {
+  // Replaying an event from the dashboard, or configuring the endpoint with
+  // expansion, sends the object where the id normally is. Rejecting it made the
+  // event a permanent 400 and left the organization on the wrong plan.
+  const stub = fixtureOrgFound();
+  try {
+    const result = await handleStripeEvent(
+      await fixture('subscription-updated-expanded'),
+      deps(stub),
+    );
+    assertEquals(result.kind, 'applied');
+    assertEquals(
+      requestsFor(stub, 'organizations')[0].query,
+      'select=id&stripe_subscription_id=eq.sub_TestTeam01',
+    );
+  } finally {
+    await stub.close();
+  }
+});
+
+Deno.test('an item with no quantity counts as one seat', async () => {
+  // Stripe omits quantity on a metered item.
+  const stub = fixtureOrgFound();
+  try {
+    await handleStripeEvent(await fixture('subscription-updated-expanded'), deps(stub));
+    assertEquals(bodyOf(stub, 'organizations', 1).seats, 1);
+  } finally {
+    await stub.close();
+  }
+});
+
+Deno.test('a checkout session naming its organization only by reference still applies', async () => {
+  const stub = fixtureOrgFound();
+  try {
+    const result = await handleStripeEvent(
+      await fixture('checkout-session-reference-only'),
+      deps(stub),
+    );
+    assertEquals(result, {
+      kind: 'applied',
+      type: 'checkout.session.completed',
+      orgId: FIXTURE_ORG,
+    });
+    assertEquals(requestsFor(stub, 'organizations')[0].body, {
+      stripe_customer_id: 'cus_TestTeam01',
+      stripe_subscription_id: 'sub_TestTeam01',
+      plan: 'team',
+    });
+  } finally {
+    await stub.close();
+  }
+});
+
+Deno.test('a recorded checkout session applies with its envelope intact', async () => {
+  const stub = fixtureOrgFound();
+  try {
+    const result = await handleStripeEvent(await fixture('checkout-session-completed'), deps(stub));
+    assertEquals(result.kind, 'applied');
+    assertEquals(requestsFor(stub, 'stripe_events')[0].body, {
+      id: 'evt_checkout_completed',
+      type: 'checkout.session.completed',
+      processed_at: AT_SIGNING.toISOString(),
+    });
+  } finally {
+    await stub.close();
+  }
+});
+
+Deno.test('a session naming no organization at all is terminal, not a retry', async () => {
+  const stub = fixtureOrgFound();
+  try {
+    const result = await handleStripeEvent(
+      { id: 'evt_x', type: 'checkout.session.completed', data: { object: { customer: 'cus_1' } } },
+      deps(stub),
+    );
+    assertEquals(result, {
+      kind: 'ignored',
+      type: 'checkout.session.completed',
+      reason: 'organization_not_identified',
+    });
+    assertEquals(requestsFor(stub, 'organizations'), []);
+  } finally {
+    await stub.close();
+  }
+});
+
+Deno.test('a recorded deletion drops the organization to one free seat', async () => {
+  const stub = fixtureOrgFound();
+  try {
+    await handleStripeEvent(await fixture('subscription-deleted'), deps(stub));
+    assertEquals(requestsFor(stub, 'organizations')[1].body, {
+      plan: 'free',
+      seats: 1,
+      stripe_subscription_id: null,
+    });
   } finally {
     await stub.close();
   }

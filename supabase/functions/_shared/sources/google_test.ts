@@ -167,7 +167,7 @@ Deno.test('a file type with no text extraction is refused without a reconnect', 
   );
 
   assertEquals(error.needsReconnect, false);
-  assertEquals(error.provider, 'google');
+  assertEquals(error.provider, 'google_drive');
 });
 
 Deno.test('a refused export asks for a reconnect and quotes nothing back', async () => {

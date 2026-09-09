@@ -26,7 +26,9 @@ import {
   selectedIds,
 } from './common.ts';
 
-const PROVIDER = 'google';
+// Matches the slug seeded into `providers`. The registry row is the authority
+// and sources_registry_test pins the two together.
+const PROVIDER = 'google_drive';
 const API = 'https://www.googleapis.com/drive/v3';
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
 const PAGE_SIZE = 100;

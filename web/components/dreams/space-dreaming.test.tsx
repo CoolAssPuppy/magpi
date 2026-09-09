@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import { successState } from '@/lib/actions/state';
+import type { DreamRunOutcome } from '@/lib/dreams/edge';
 
 import { SpaceDreaming, type DreamingSpace } from './space-dreaming';
 
@@ -13,9 +14,16 @@ const getSpace = (overrides?: Partial<DreamingSpace>): DreamingSpace => ({
   ...overrides,
 });
 
+const getOutcome = (overrides?: Partial<DreamRunOutcome>): DreamRunOutcome => ({
+  dreamRunId: '11111111-2222-4333-8444-555555555555',
+  status: 'succeeded',
+  outputDocumentId: '22222222-3333-4444-8555-666666666666',
+  ...overrides,
+});
+
 const getActions = () => ({
   onToggle: vi.fn().mockResolvedValue(successState(undefined)),
-  onRun: vi.fn().mockResolvedValue(successState(undefined)),
+  onRun: vi.fn().mockResolvedValue(successState(getOutcome())),
 });
 
 describe('dreaming, per space', () => {
@@ -81,6 +89,41 @@ describe('dreaming, per space', () => {
 
     expect(await screen.findByRole('alert')).toBeInTheDocument();
     expect(screen.getByRole('switch', { name: /dreaming in engineering/i })).toBeChecked();
+  });
+
+  it('says how a run it started actually ended, since the run is done when the call returns', async () => {
+    const actions = getActions();
+    render(<SpaceDreaming spaces={[getSpace()]} {...actions} />);
+
+    await userEvent.click(screen.getByRole('button', { name: /run now/i }));
+
+    expect(await screen.findByText(/wrote a document/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /open the run/i })).toHaveAttribute(
+      'href',
+      '/dreams/11111111-2222-4333-8444-555555555555',
+    );
+  });
+
+  it('says a run timed out rather than calling it a success', async () => {
+    const actions = getActions();
+    actions.onRun.mockResolvedValue(
+      successState(getOutcome({ status: 'timeout', outputDocumentId: null })),
+    );
+    render(<SpaceDreaming spaces={[getSpace()]} {...actions} />);
+
+    await userEvent.click(screen.getByRole('button', { name: /run now/i }));
+
+    expect(await screen.findByText(/timed out/i)).toBeInTheDocument();
+  });
+
+  it('says a run that wrote nothing produced nothing, rather than implying a document', async () => {
+    const actions = getActions();
+    actions.onRun.mockResolvedValue(successState(getOutcome({ outputDocumentId: null })));
+    render(<SpaceDreaming spaces={[getSpace()]} {...actions} />);
+
+    await userEvent.click(screen.getByRole('button', { name: /run now/i }));
+
+    expect(await screen.findByText(/produced nothing/i)).toBeInTheDocument();
   });
 
   it('reports a refused run', async () => {

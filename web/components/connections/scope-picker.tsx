@@ -1,6 +1,10 @@
 'use client';
 
-import { describeScopeSelection, type ScopeSelection } from '@/lib/connections/scope-selection';
+import {
+  describeEmptySelection,
+  describeScopeSelection,
+  type ScopeSelection,
+} from '@/lib/connections/scope-selection';
 
 /**
  * Which channels or folders a connection reads. The list comes from the source
@@ -42,11 +46,17 @@ export function ScopePicker({
     onChange(next);
   };
 
+  const emptyMeaning =
+    selected.length === 0 ? describeEmptySelection(selection.selectionKind) : null;
+
   return (
     <div className="flex flex-col gap-2">
       <p className="text-xs text-foreground-lighter">
         {describeScopeSelection({ ...selection, selected: [...selected] })}
       </p>
+      {emptyMeaning ? (
+        <p className="max-w-[var(--measure-prose)] text-xs text-foreground-light">{emptyMeaning}</p>
+      ) : null}
       <ul className="max-h-64 divide-y divide-border overflow-y-auto rounded-[var(--radius-panel)] border border-border">
         {selection.available.map((item) => (
           <li key={item.id}>

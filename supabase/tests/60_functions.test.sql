@@ -9,7 +9,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(35);
+select plan(36);
 
 insert into auth.users (id, email, instance_id, aud, role)
 values
@@ -283,6 +283,33 @@ select is_empty(
             or exists (select 1 from aclexplode(p.proacl) a
                        where a.grantee = 0 and a.privilege_type = 'EXECUTE')) $$,
   'no function in public is executable by PUBLIC'
+);
+
+-- The assertion above catches a grant to PUBLIC and nothing else. A grant to
+-- `authenticated` specifically passes it, and no table-privilege check covers
+-- function privileges, so `grant execute on claim_ingest_jobs to authenticated`
+-- would have been invisible to this entire suite. I checked rather than assumed.
+--
+-- So this one names the whole client-callable surface instead. It is a list of
+-- what a client may call, not a list of what it may not, and that direction is
+-- the point: a new service-role function nobody thought about is caught the
+-- moment it becomes callable, while adding to the list is a deliberate act of
+-- saying yes, a client may run this. The other direction rots silently.
+--
+-- claim_ingest_jobs is the case in point. It arrived security definer returning
+-- SETOF ingest_jobs, so a client that could call it would read every queued job
+-- in every organization and mark them all running on the way out.
+select set_eq(
+  $$ select p.proname::text
+     from pg_proc p
+     join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public'
+       and (has_function_privilege('authenticated', p.oid, 'EXECUTE')
+            or has_function_privilege('anon', p.oid, 'EXECUTE')) $$,
+  array['visible_space_ids', 'is_org_member', 'is_org_admin', 'is_space_member',
+        'search', 'plan_document_limit', 'plan_monthly_query_limit',
+        'check_ingest_allowed'],
+  'the only functions a client role may execute are the eight meant to be callable'
 );
 
 -- Grants ---------------------------------------------------------------------------

@@ -5,13 +5,13 @@ import { z } from 'zod';
 
 import { errorState, successState, type ActionState } from '@/lib/actions/state';
 import { withSession } from '@/lib/actions/with-session';
-import { beginConnection, claimConnection, requestFullSync } from '@/lib/connections/edge';
 import {
-  applySelection,
-  parseScopeSelection,
-  serializeScopeSelection,
-} from '@/lib/connections/scope-selection';
-import { createServiceClient } from '@/lib/supabase/service';
+  beginConnection,
+  claimConnection,
+  requestFullSync,
+  requestScopes,
+} from '@/lib/connections/edge';
+import type { ScopeSelection } from '@/lib/connections/scope-selection';
 
 const CONNECTIONS_PATH = '/connections';
 
@@ -70,45 +70,27 @@ export async function claimPendingConnection(ticket: string): Promise<ActionStat
   }, CONNECTIONS_PATH);
 }
 
+/**
+ * Saves what a connection reads, and answers with the selection as it now
+ * stands. connections-scopes drops an id the provider no longer offers, so the
+ * answer is what the screen renders: a tick that was quietly dropped would
+ * otherwise read as saved.
+ */
 export async function saveScopeSelection(
   connectionId: string,
   selected: readonly string[],
-): Promise<ActionState<undefined>> {
+): Promise<ActionState<ScopeSelection>> {
   const input = z
     .object({ connectionId: idSchema, selected: z.array(z.string().min(1).max(256)).max(500) })
     .safeParse({ connectionId, selected });
   if (!input.success) return errorState('That selection is not one this app can save.');
 
   return withSession(async (context) => {
-    const { data: connection } = await context.supabase
-      .from('connections')
-      .select('id, user_id, scope_selection')
-      .eq('id', input.data.connectionId)
-      .maybeSingle();
-    if (!connection) return errorState('That connection is not one you can change.');
-    if (connection.user_id !== context.userId) {
-      return errorState('Only the person who connected this source can change what it reads.');
-    }
-
-    const parsed = parseScopeSelection(connection.scope_selection);
-    if (!parsed.ok) return errorState('This connection recorded a scope this app cannot read.');
-    if (parsed.data.kind === 'unset') {
-      return errorState('This connection has not listed what it can read yet.');
-    }
-
-    const applied = applySelection(parsed.data, input.data.selected);
-    if (!applied.ok) return errorState(applied.error);
-
-    // connections has no update policy: every write to it is a service-role
-    // write. The ownership check above is what stands in for the policy, and it
-    // runs before the elevated client is constructed.
-    const { error } = await createServiceClient()
-      .from('connections')
-      .update({ scope_selection: serializeScopeSelection(parsed.data, applied.data) })
-      .eq('id', input.data.connectionId);
-    if (error) return errorState('The selection could not be saved.');
-
-    return successState(undefined);
+    const result = await requestScopes(context.supabase, {
+      connectionId: input.data.connectionId,
+      selected: input.data.selected,
+    });
+    return result.ok ? successState(result.data) : errorState(result.error);
   }, CONNECTIONS_PATH);
 }
 
