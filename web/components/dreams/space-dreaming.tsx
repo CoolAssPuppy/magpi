@@ -47,7 +47,12 @@ function SpaceRow({
             checked={isDreaming}
             aria-label={`Dreaming in ${space.name}`}
             disabled={isPending}
-            onCheckedChange={(next) => run(() => onToggle(space.id, next), () => setDreaming(next))}
+            onCheckedChange={(next) =>
+              run(
+                () => onToggle(space.id, next),
+                () => setDreaming(next),
+              )
+            }
           />
           <span className="text-sm text-foreground">{space.name}</span>
           {isDreaming ? null : (

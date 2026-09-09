@@ -84,5 +84,8 @@ export function seriesPath(
  * aria-labelledby on the second one points at the first one's heading.
  */
 export function headingIdFor(title: string): string {
-  return `chart-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
+  return `chart-${title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')}`;
 }

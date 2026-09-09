@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { enqueueUploadedDocument } from '@/app/(app)/documents/actions';
 import { FormError } from '@/components/auth/form-error';
@@ -36,7 +36,10 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024;
 export function UploadPanel({ spaces }: { spaces: readonly SpaceOption[] }) {
   const [spaceId, setSpaceId] = useState(spaces[0]?.id ?? '');
   const [error, setError] = useState<string | null>(null);
-  const [recorded, setRecorded] = useState<readonly string[]>([]);
+  // A ref rather than state: nothing renders from it, and recording a name is
+  // how the effect avoids enqueuing the same upload twice, not something the
+  // screen reacts to.
+  const recorded = useRef(new Set<string>());
 
   const upload = useSupabaseUpload({
     bucketName: 'documents',
@@ -51,12 +54,11 @@ export function UploadPanel({ spaces }: { spaces: readonly SpaceOption[] }) {
   const { successes, files } = upload;
 
   useEffect(() => {
-    const pending = successes.filter((name) => !recorded.includes(name));
+    const pending = successes.filter((name) => !recorded.current.has(name));
     if (pending.length === 0) return;
 
-    setRecorded((previous) => [...previous, ...pending]);
-
     for (const name of pending) {
+      recorded.current.add(name);
       const file = files.find((candidate) => candidate.name === name);
       void enqueueUploadedDocument({
         spaceId,
@@ -67,7 +69,7 @@ export function UploadPanel({ spaces }: { spaces: readonly SpaceOption[] }) {
         if (state.status === 'error') setError(state.message);
       });
     }
-  }, [successes, files, recorded, spaceId]);
+  }, [successes, files, spaceId]);
 
   return (
     <div className="flex max-w-2xl flex-col gap-4">

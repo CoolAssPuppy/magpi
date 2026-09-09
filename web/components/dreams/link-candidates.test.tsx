@@ -53,14 +53,18 @@ describe('candidate document links', () => {
   });
 
   it('shows a decided pair as decided, with nothing left to press', () => {
-    render(<LinkCandidates candidates={[getCandidate({ state: 'confirmed' })]} {...getActions()} />);
+    render(
+      <LinkCandidates candidates={[getCandidate({ state: 'confirmed' })]} {...getActions()} />,
+    );
 
     expect(screen.getByText('Confirmed')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /confirm/i })).not.toBeInTheDocument();
   });
 
   it('shows a dismissed pair as dismissed', () => {
-    render(<LinkCandidates candidates={[getCandidate({ state: 'dismissed' })]} {...getActions()} />);
+    render(
+      <LinkCandidates candidates={[getCandidate({ state: 'dismissed' })]} {...getActions()} />,
+    );
 
     expect(screen.getByText('Dismissed')).toBeInTheDocument();
   });

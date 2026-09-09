@@ -28,7 +28,13 @@ export function InviteForm({ action, baseUrl }: { action: InviteAction; baseUrl:
       <form action={submit} className="flex flex-wrap items-end gap-3">
         <div className="flex min-w-56 flex-col gap-1.5">
           <Label htmlFor="invite-email">Email address</Label>
-          <Input id="invite-email" name="email" type="email" required placeholder="name@company.com" />
+          <Input
+            id="invite-email"
+            name="email"
+            type="email"
+            required
+            placeholder="name@company.com"
+          />
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -60,7 +66,7 @@ export function InviteForm({ action, baseUrl }: { action: InviteAction; baseUrl:
           <p className="text-sm text-foreground">
             Invitation created for {state.data.email}. Send them this link.
           </p>
-          <code className="mt-2 block break-all font-mono text-xs text-foreground-light">
+          <code className="mt-2 block font-mono text-xs break-all text-foreground-light">
             {`${baseUrl}/invite/${state.data.token}`}
           </code>
           <p className="mt-2 text-xs text-foreground-lighter">

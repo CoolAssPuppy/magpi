@@ -10,3 +10,8 @@ test-results
 playwright-report
 supabase/functions
 web/next-env.d.ts
+
+# The sample corpus is content, not code. These are documents written as if by
+# people at a fictional company, and rewrapping their prose would flatten the
+# formatting differences that make a Slack thread read unlike a Notion page.
+supabase/corpus

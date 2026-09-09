@@ -118,7 +118,9 @@ describe('dead content', () => {
   });
 
   it('says nothing has been ingested rather than dividing by zero', () => {
-    render(<DeadContent now={NOW} content={deadContent({ totalDocuments: 0, neverRetrieved: 0 })} />);
+    render(
+      <DeadContent now={NOW} content={deadContent({ totalDocuments: 0, neverRetrieved: 0 })} />,
+    );
 
     expect(screen.getByText('Nothing ingested yet')).toBeInTheDocument();
   });
@@ -129,7 +131,10 @@ describe('range filter', () => {
     render(<RangeFilter basePath="/admin" active={7} />);
 
     const nav = screen.getByRole('navigation', { name: 'Time range' });
-    expect(within(nav).getByRole('link', { name: '7 days' })).toHaveAttribute('aria-current', 'true');
+    expect(within(nav).getByRole('link', { name: '7 days' })).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
     expect(within(nav).getByRole('link', { name: '30 days' })).not.toHaveAttribute('aria-current');
   });
 

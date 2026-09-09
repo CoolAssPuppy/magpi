@@ -76,3 +76,24 @@ fixed the symptom by granting every future table automatically. Explicit grants
 in `95_grants.sql` are the posture we want: a new table gets its privileges in
 the same commit as its policies, and a reviewer reading that one file sees the
 whole client-facing surface.
+
+**The two vendored Library hooks were fixed rather than exempted.**
+`use-infinite-query` and `use-supabase-upload` failed the new React hooks rules
+in eslint-plugin-react-hooks 6, and carried seven `any` types between them. The
+easy answer was an ESLint override scoped to vendored files. The fixes turned
+out to be smaller than the override would have been:
+
+- The infinite query hook's `IfAny` fallback existed for projects whose client
+  carries no `Database` generic. Ours does, so it resolved to one line and six
+  `any`s. Deleting it removed all six.
+- Its `trailingQuery` ref is gone. The store outlives any single render and is
+  the thing that fetches, so it owns the handler and takes a setter. No ref
+  crosses into render scope.
+- The upload hook's too-many-files reconciliation moved from an effect into
+  `onDrop`, where the array is built and the answer is already known.
+- Its error-clearing effect became a derived value. An upload error belongs to a
+  file, so with no files there is nothing for one to be about.
+
+None of this is a fork of upstream in any meaningful sense: the behavior is
+unchanged and the diffs are readable. If a future `npx shadcn add` overwrites
+either file, the lint failure is how we will know.

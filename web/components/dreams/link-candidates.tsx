@@ -13,10 +13,7 @@ export type LinkDecision = (linkId: string) => Promise<ActionState<undefined>>;
 function DocumentLine({ document }: { document: LinkedDocument }) {
   return (
     <div className="min-w-0">
-      <Link
-        href={`/documents/${document.id}`}
-        className="text-sm text-brand-link hover:underline"
-      >
+      <Link href={`/documents/${document.id}`} className="text-sm text-brand-link hover:underline">
         {document.title}
       </Link>
     </div>

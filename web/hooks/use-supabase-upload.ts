@@ -51,6 +51,9 @@ type UseSupabaseUploadOptions = {
 
 type UseSupabaseUploadReturn = ReturnType<typeof useSupabaseUpload>;
 
+/** Stable identity, so the derived value below does not change on every render. */
+const EMPTY_ERRORS: { name: string; message: string }[] = [];
+
 const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
   const {
     bucketName,
@@ -64,7 +67,12 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
 
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [errors, setErrors] = useState<{ name: string; message: string }[]>([]);
+  const [uploadErrors, setErrors] = useState<{ name: string; message: string }[]>([]);
+
+  // An upload error belongs to a file. With no files there is nothing for one to
+  // be about, so it is derived rather than cleared by an effect that set state
+  // synchronously on every change to the list.
+  const errors = files.length === 0 ? EMPTY_ERRORS : uploadErrors;
   const [successes, setSuccesses] = useState<string[]>([]);
 
   const isSuccess = useMemo(() => {
@@ -92,9 +100,25 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
 
       const newFiles = [...files, ...validFiles, ...invalidFiles];
 
-      setFiles(newFiles);
+      // A file carries the too-many-files marker only while the set is actually
+      // over the limit, so dropping back under it clears the marker for every
+      // file. The Library block reconciled this in an effect that set state
+      // synchronously; it is derivable from the array being built, so it is
+      // computed here instead and the effect is gone.
+      const withinLimit = newFiles.length <= maxFiles;
+      setFiles(
+        withinLimit
+          ? newFiles.map((file) =>
+              file.errors.some((e) => e.code === 'too-many-files')
+                ? Object.assign(file, {
+                    errors: file.errors.filter((e) => e.code !== 'too-many-files'),
+                  })
+                : file,
+            )
+          : newFiles,
+      );
     },
-    [files, setFiles],
+    [files, setFiles, maxFiles],
   );
 
   const dropzoneProps = useDropzone({
@@ -150,27 +174,6 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
 
     setLoading(false);
   }, [files, path, bucketName, errors, successes]);
-
-  useEffect(() => {
-    if (files.length === 0) {
-      setErrors([]);
-    }
-
-    // If the number of files doesn't exceed the maxFiles parameter, remove the error 'Too many files' from each file
-    if (files.length <= maxFiles) {
-      let changed = false;
-      const newFiles = files.map((file) => {
-        if (file.errors.some((e) => e.code === 'too-many-files')) {
-          file.errors = file.errors.filter((e) => e.code !== 'too-many-files');
-          changed = true;
-        }
-        return file;
-      });
-      if (changed) {
-        setFiles(newFiles);
-      }
-    }
-  }, [files.length, setFiles, maxFiles]);
 
   return {
     files,

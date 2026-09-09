@@ -1,40 +1,14 @@
 'use client';
 
 import { PostgrestQueryBuilder, type PostgrestClientOptions } from '@supabase/postgrest-js';
-import { type SupabaseClient } from '@supabase/supabase-js';
-import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useSyncExternalStore } from 'react';
 
+import type { Database } from '@/lib/database.types';
 import { createClient } from '@/lib/supabase/client';
 
-const supabase = createClient();
-
-// The following types are used to make the hook type-safe. It extracts the database type from the supabase client.
-type SupabaseClientType = typeof supabase;
-
-// Utility type to check if the type is any
-type IfAny<T, Y, N> = 0 extends 1 & T ? Y : N;
-
-// Extracts the database type from the supabase client. If the supabase client doesn't have a type, it will fallback properly.
-type Database =
-  SupabaseClientType extends SupabaseClient<infer U>
-    ? IfAny<
-        U,
-        {
-          public: {
-            Tables: Record<string, any>;
-            Views: Record<string, any>;
-            Functions: Record<string, any>;
-          };
-        },
-        U
-      >
-    : {
-        public: {
-          Tables: Record<string, any>;
-          Views: Record<string, any>;
-          Functions: Record<string, any>;
-        };
-      };
+// The Supabase Library block, with its untyped-client fallback removed. That
+// fallback existed for projects whose client carries no Database generic; ours
+// does, so the whole IfAny dance resolved to this one line and six `any`s.
 
 // Change this to the database schema you want to use
 type DatabaseSchema = Database['public'];
@@ -92,13 +66,17 @@ interface StoreProps<T extends SupabaseTableName> {
   tableName: T;
   columns?: string;
   pageSize?: number;
-  getTrailingQuery: () => SupabaseQueryHandler<T> | undefined;
+  initialTrailingQuery: SupabaseQueryHandler<T> | undefined;
 }
 
 function createStore<TData extends SupabaseTableData<T>, T extends SupabaseTableName>(
   props: StoreProps<T>,
 ) {
-  const { tableName, columns = '*', pageSize = 20, getTrailingQuery } = props;
+  const { tableName, columns = '*', pageSize = 20, initialTrailingQuery } = props;
+
+  // Owned by the store rather than read out of a ref during render. The store
+  // outlives any single render and is the thing that fetches, so it holds it.
+  let trailingQuery: SupabaseQueryHandler<T> | undefined = initialTrailingQuery;
 
   let state: StoreState<TData> = {
     data: [],
@@ -126,11 +104,15 @@ function createStore<TData extends SupabaseTableData<T>, T extends SupabaseTable
 
     setState({ isFetching: true });
 
-    let query = supabase
+    // Constructed per fetch rather than at module scope. On Fluid compute a
+    // hoisted client is shared across requests, which the Library's own client
+    // block warns about.
+    let query = createClient()
       .from(tableName)
       .select(columns, { count: 'exact' }) as unknown as SupabaseSelectBuilder<T>;
 
-    const trailingQuery = getTrailingQuery();
+    // Read at fetch time, so a handler replaced since the last page applies to
+    // the next one without rebuilding the store.
     if (trailingQuery) {
       query = trailingQuery(query);
     }
@@ -169,11 +151,14 @@ function createStore<TData extends SupabaseTableData<T>, T extends SupabaseTable
     },
     fetchNextPage,
     initialize,
+    setTrailingQuery: (next: SupabaseQueryHandler<T> | undefined) => {
+      trailingQuery = next;
+    },
   };
 }
 
 // Empty initial state to avoid hydration errors.
-const initialState: any = {
+const initialState: StoreState<never> = {
   data: [],
   count: 0,
   isSuccess: false,
@@ -192,20 +177,25 @@ function useInfiniteQuery<
   const pageSize = props.pageSize ?? 20;
   const trailingQuery = props.trailingQuery;
   const trailingQueryKey = props.trailingQueryKey;
-  const trailingQueryRef = useRef(trailingQuery);
-
-  trailingQueryRef.current = trailingQuery;
-
   const store = useMemo(
     () =>
       createStore<TData, T>({
         tableName,
         columns,
         pageSize,
-        getTrailingQuery: () => trailingQueryRef.current,
+        initialTrailingQuery: trailingQuery,
       }),
+    // A replaced handler reaches the store through setTrailingQuery below rather
+    // than by rebuilding it, so it is deliberately not a dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [tableName, columns, pageSize, trailingQueryKey],
   );
+
+  // The store outlives any single render and is the thing that fetches, so it
+  // owns the current handler. No ref crosses into render scope.
+  useEffect(() => {
+    store.setTrailingQuery(trailingQuery);
+  }, [store, trailingQuery]);
 
   const state = useSyncExternalStore(
     store.subscribe,
