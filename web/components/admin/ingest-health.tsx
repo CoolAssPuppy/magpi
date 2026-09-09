@@ -73,17 +73,17 @@ export function IngestHealth({ rows, now }: { rows: readonly IngestHealthRow[]; 
             <TableCell>
               <StatusBadge tone={STATUS_TONE[row.status]}>{STATUS_LABEL[row.status]}</StatusBadge>
             </TableCell>
-            <TableCell className="text-foreground-light">
+            <TableCell className="text-muted-foreground">
               {formatSince(row.lastSyncedAt, now)}
             </TableCell>
-            <TableCell className="text-right text-foreground-light tabular-nums">
+            <TableCell className="text-right text-muted-foreground tabular-nums">
               {row.documentsPulled.toLocaleString('en-US')}
             </TableCell>
-            <TableCell className="text-right text-foreground-light tabular-nums">
+            <TableCell className="text-right text-muted-foreground tabular-nums">
               {row.recentFailures.toLocaleString('en-US')}
             </TableCell>
             <TableCell
-              className="max-w-[36ch] truncate text-foreground-light"
+              className="max-w-[36ch] truncate text-muted-foreground"
               title={failureText(row)}
             >
               {failureText(row)}

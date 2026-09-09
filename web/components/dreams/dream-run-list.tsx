@@ -16,12 +16,12 @@ export function DreamRunList({ runs }: { runs: readonly DreamRunSummary[] }) {
             <div className="flex flex-wrap items-center gap-2">
               <StatusPill tone={run.status.tone} label={run.status.label} />
               <span className="text-sm font-medium text-foreground">{run.kindLabel}</span>
-              <span className="text-sm text-foreground-light">{run.spaceName}</span>
+              <span className="text-sm text-muted-foreground">{run.spaceName}</span>
             </div>
-            <p className="mt-1 max-w-[var(--measure-prose)] text-sm text-foreground-light">
+            <p className="mt-1 max-w-[var(--measure-prose)] text-sm text-muted-foreground">
               {run.status.detail}
             </p>
-            <p className="mt-0.5 text-xs text-foreground-lighter">
+            <p className="mt-0.5 text-xs text-tertiary-foreground">
               {run.inputSummary} read &middot; {run.duration} &middot;{' '}
               {run.outputDocumentId ? 'Wrote one document' : 'No output document'}
             </p>

@@ -19,13 +19,13 @@ export function EntityGroups({ groups }: { groups: readonly EntityGroup[] }) {
               <li key={entity.id} aria-label={entity.name} className="px-4 py-3">
                 <p className="text-sm font-medium text-foreground">{entity.name}</p>
                 {entity.summary ? (
-                  <p className="mt-0.5 max-w-[var(--measure-prose)] text-sm text-foreground-light">
+                  <p className="mt-0.5 max-w-[var(--measure-prose)] text-sm text-muted-foreground">
                     {entity.summary}
                   </p>
                 ) : null}
 
                 {entity.documents.length === 0 ? (
-                  <p className="mt-1 text-xs text-foreground-lighter">
+                  <p className="mt-1 text-xs text-tertiary-foreground">
                     No documents you can see mention this.
                   </p>
                 ) : (

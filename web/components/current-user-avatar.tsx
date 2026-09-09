@@ -26,7 +26,7 @@ export function CurrentUserAvatar() {
   return (
     <Avatar className="size-7">
       {image ? <AvatarImage src={image} alt={name ?? 'Your avatar'} /> : null}
-      <AvatarFallback className="bg-background-surface-300 text-xs text-foreground-light">
+      <AvatarFallback className="bg-secondary text-xs text-muted-foreground">
         {initials}
       </AvatarFallback>
     </Avatar>

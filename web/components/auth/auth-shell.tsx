@@ -27,13 +27,13 @@ export function AuthShell({
         Magpi
       </Link>
 
-      <div className="w-full max-w-sm rounded-[var(--radius-panel)] border border-border bg-background-surface-100 p-6">
+      <div className="w-full max-w-sm rounded-[var(--radius-panel)] border border-border bg-card p-6">
         <h1 className="font-heading text-lg leading-tight font-medium text-foreground">{title}</h1>
-        <p className="mt-1 text-sm text-foreground-lighter">{description}</p>
+        <p className="mt-1 text-sm text-tertiary-foreground">{description}</p>
         <div className="mt-6">{children}</div>
       </div>
 
-      {footer ? <div className="text-sm text-foreground-lighter">{footer}</div> : null}
+      {footer ? <div className="text-sm text-tertiary-foreground">{footer}</div> : null}
     </div>
   );
 }

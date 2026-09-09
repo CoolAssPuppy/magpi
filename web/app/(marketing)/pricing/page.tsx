@@ -12,7 +12,7 @@ export default function PricingPage() {
         <h1 className="font-heading text-4xl leading-[1.1] font-medium tracking-tight text-foreground">
           Pay for the team, not the documents.
         </h1>
-        <p className="mt-5 text-base text-foreground-light">
+        <p className="mt-5 text-base text-muted-foreground">
           Every plan reads the same way and answers with the same citations. What changes is how
           many people you can bring, and whether Magpi goes and fetches your sources for you.
         </p>
@@ -25,27 +25,27 @@ export default function PricingPage() {
         <dl className="grid gap-8 md:grid-cols-2">
           <div>
             <dt className="text-sm font-medium text-foreground">What counts as a question?</dt>
-            <dd className="mt-1.5 max-w-[var(--measure-prose)] text-sm text-foreground-lighter">
+            <dd className="mt-1.5 max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">
               One answered turn in chat. Follow-ups count, because each one runs a search.
             </dd>
           </div>
           <div>
             <dt className="text-sm font-medium text-foreground">What happens at the limit?</dt>
-            <dd className="mt-1.5 max-w-[var(--measure-prose)] text-sm text-foreground-lighter">
+            <dd className="mt-1.5 max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">
               New ingest is refused and everything already in Magpi keeps answering. The check runs
               in the database, so it is the same answer everywhere.
             </dd>
           </div>
           <div>
             <dt className="text-sm font-medium text-foreground">Can I cancel?</dt>
-            <dd className="mt-1.5 max-w-[var(--measure-prose)] text-sm text-foreground-lighter">
+            <dd className="mt-1.5 max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">
               In the Stripe customer portal, in two clicks. Your organization drops back to Free and
               your documents stay where they are.
             </dd>
           </div>
           <div>
             <dt className="text-sm font-medium text-foreground">Is it really open source?</dt>
-            <dd className="mt-1.5 max-w-[var(--measure-prose)] text-sm text-foreground-lighter">
+            <dd className="mt-1.5 max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">
               MIT, the whole thing, including this billing code. Run it yourself and pay nobody.
             </dd>
           </div>

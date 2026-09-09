@@ -50,13 +50,13 @@ function Candidate({
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <DocumentLine document={candidate.documentA} />
-          <span className="text-xs text-foreground-lighter">and</span>
+          <span className="text-xs text-tertiary-foreground">and</span>
           <DocumentLine document={candidate.documentB} />
         </div>
-        <p className="mt-1 max-w-[var(--measure-prose)] text-sm text-foreground-light">
+        <p className="mt-1 max-w-[var(--measure-prose)] text-sm text-muted-foreground">
           {candidate.rationale}
         </p>
-        <p className="mt-0.5 text-xs text-foreground-lighter">{candidate.similarityLabel}</p>
+        <p className="mt-0.5 text-xs text-tertiary-foreground">{candidate.similarityLabel}</p>
         {failure ? (
           <p role="alert" className="mt-1 text-xs text-destructive-600">
             {failure}
@@ -108,7 +108,7 @@ export function LinkCandidates({
 }) {
   if (candidates.length === 0) {
     return (
-      <p className="max-w-[var(--measure-prose)] text-sm text-foreground-lighter">
+      <p className="max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">
         This run found no pairs of documents worth linking.
       </p>
     );

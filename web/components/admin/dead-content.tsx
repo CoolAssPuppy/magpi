@@ -19,7 +19,7 @@ export function DeadContent({ content, now }: { content: DeadContentData; now: D
     <div className="flex flex-col gap-6">
       <div className="max-w-md">
         <p className="font-heading text-3xl leading-none font-medium text-foreground">{share}%</p>
-        <p className="mt-2 max-w-[var(--measure-prose)] text-sm text-foreground-lighter">
+        <p className="mt-2 max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">
           {content.neverRetrieved.toLocaleString('en-US')} of{' '}
           {content.totalDocuments.toLocaleString('en-US')} documents have never been cited in an
           answer.
@@ -43,7 +43,7 @@ export function DeadContent({ content, now }: { content: DeadContentData; now: D
                 <p className="truncate text-sm text-foreground" title={document.title}>
                   {document.title}
                 </p>
-                <p className="shrink-0 text-xs text-foreground-lighter">
+                <p className="shrink-0 text-xs text-tertiary-foreground">
                   Added {formatSince(document.createdAt, now).toLowerCase()}
                 </p>
               </li>

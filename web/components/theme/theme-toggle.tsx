@@ -29,8 +29,8 @@ export function ThemeToggle() {
           className={cn(
             'rounded-[calc(var(--radius-panel)-2px)] p-1.5 transition-colors motion-reduce:transition-none',
             theme === value
-              ? 'bg-background-surface-300 text-foreground'
-              : 'text-foreground-lighter hover:text-foreground',
+              ? 'bg-secondary text-foreground'
+              : 'text-tertiary-foreground hover:text-foreground',
           )}
         >
           <Icon className="size-3.5" />

@@ -16,7 +16,7 @@ export function EmptyState({
   return (
     <div className="flex flex-col items-start gap-3 rounded-[var(--radius-panel)] border border-dashed border-border p-8">
       <h2 className="font-heading text-base font-medium text-foreground">{title}</h2>
-      <p className="max-w-[var(--measure-prose)] text-sm text-foreground-lighter">{description}</p>
+      <p className="max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">{description}</p>
       {action}
     </div>
   );

@@ -61,7 +61,7 @@ export function SignInForm({ next }: { next: string }) {
             <Label htmlFor="password">Password</Label>
             <Link
               href="/forgot-password"
-              className="text-xs text-foreground-lighter underline-offset-4 hover:text-foreground hover:underline"
+              className="text-xs text-tertiary-foreground underline-offset-4 hover:text-foreground hover:underline"
             >
               Forgot it?
             </Link>
@@ -83,7 +83,7 @@ export function SignInForm({ next }: { next: string }) {
 
       <div className="flex items-center gap-3">
         <span className="h-px flex-1 bg-border" />
-        <span className="text-xs text-foreground-lighter">or</span>
+        <span className="text-xs text-tertiary-foreground">or</span>
         <span className="h-px flex-1 bg-border" />
       </div>
 

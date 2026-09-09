@@ -28,8 +28,8 @@ export function RangeFilter({ basePath, active }: { basePath: string; active: Ra
           className={cn(
             'rounded-[var(--radius-panel)] px-2.5 py-1 text-xs transition-colors motion-reduce:transition-none',
             option === active
-              ? 'bg-background-surface-300 text-foreground'
-              : 'text-foreground-lighter hover:text-foreground',
+              ? 'bg-secondary text-foreground'
+              : 'text-tertiary-foreground hover:text-foreground',
           )}
         >
           {option} days

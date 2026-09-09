@@ -41,7 +41,7 @@ export function Composer({ onAsk, busy, placeholder, autoFocus }: ComposerProps)
         placeholder={placeholder}
         autoFocus={autoFocus}
         rows={2}
-        className="min-h-[52px] resize-none rounded-[var(--radius-panel)] border-border bg-background-surface-100 text-sm text-foreground placeholder:text-foreground-lighter focus-visible:ring-border-strong"
+        className="min-h-[52px] resize-none rounded-[var(--radius-panel)] border-border bg-card text-sm text-foreground placeholder:text-tertiary-foreground focus-visible:ring-input"
       />
       <Button type="submit" size="icon" disabled={!canAsk} aria-label="Ask">
         <ArrowUp />

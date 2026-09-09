@@ -21,7 +21,7 @@ export function Panel({
         <div>
           <h2 className="font-heading text-base font-medium text-foreground">{title}</h2>
           {description ? (
-            <p className="mt-1 max-w-[var(--measure-prose)] text-sm text-foreground-lighter">
+            <p className="mt-1 max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">
               {description}
             </p>
           ) : null}

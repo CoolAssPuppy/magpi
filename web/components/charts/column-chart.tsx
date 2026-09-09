@@ -46,7 +46,7 @@ export function ColumnChart({
       <h3 id={headingId} className="font-heading text-sm font-medium text-foreground">
         {title}
       </h3>
-      <p className="mt-1 text-xs text-foreground-lighter">{description}</p>
+      <p className="mt-1 text-xs text-tertiary-foreground">{description}</p>
 
       <svg
         role="img"
@@ -71,7 +71,7 @@ export function ColumnChart({
                   x={-8}
                   y={y + 4}
                   textAnchor="end"
-                  className="fill-foreground-lighter text-[11px] tabular-nums"
+                  className="fill-tertiary-foreground text-[11px] tabular-nums"
                 >
                   {formatNumber(Math.round(tick))}
                 </text>
@@ -115,7 +115,7 @@ export function ColumnChart({
                 x={bandCenter(index, points.length, PLOT.width)}
                 y={PLOT.height + 16}
                 textAnchor="middle"
-                className="fill-foreground-lighter text-[11px]"
+                className="fill-tertiary-foreground text-[11px]"
               >
                 {point.label}
               </text>

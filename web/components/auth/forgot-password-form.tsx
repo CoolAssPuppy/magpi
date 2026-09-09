@@ -37,7 +37,7 @@ export function ForgotPasswordForm() {
 
   if (isSent) {
     return (
-      <p className="text-sm text-foreground-light">
+      <p className="text-sm text-muted-foreground">
         Check {email} for a link to set a new password.
       </p>
     );

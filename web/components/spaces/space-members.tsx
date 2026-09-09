@@ -18,13 +18,13 @@ export function SpaceMembers({
       </h2>
 
       {kind === 'personal' ? (
-        <p className="text-sm text-foreground-lighter">
+        <p className="text-sm text-tertiary-foreground">
           A personal space has one member, always. Nobody can be added to it.
         </p>
       ) : null}
 
       {kind === 'org' ? (
-        <p className="text-sm text-foreground-lighter">
+        <p className="text-sm text-tertiary-foreground">
           Everyone in the organization is in this space. Membership follows the organization.
         </p>
       ) : null}
@@ -33,10 +33,10 @@ export function SpaceMembers({
         {members.map((member) => (
           <li
             key={member.userId}
-            className="flex items-baseline justify-between gap-4 px-4 py-2.5 text-sm text-foreground-light"
+            className="flex items-baseline justify-between gap-4 px-4 py-2.5 text-sm text-muted-foreground"
           >
             <span className="font-mono text-xs">{member.userId.slice(0, 8)}</span>
-            <time className="text-xs text-foreground-lighter" dateTime={member.joinedAt}>
+            <time className="text-xs text-tertiary-foreground" dateTime={member.joinedAt}>
               joined {member.joinedAt.slice(0, 10)}
             </time>
           </li>

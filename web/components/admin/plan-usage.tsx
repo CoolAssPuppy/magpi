@@ -12,7 +12,7 @@ export function PlanUsage({ usage }: { usage: PlanUsageData }) {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
-        <p className="text-sm text-foreground-light">
+        <p className="text-sm text-muted-foreground">
           On the <span className="text-foreground">{plan.name}</span> plan. {plan.summary}
         </p>
         <Button variant="outline" size="sm" asChild>
@@ -43,7 +43,7 @@ export function PlanUsage({ usage }: { usage: PlanUsageData }) {
         />
       </div>
 
-      <p className="max-w-[var(--measure-prose)] text-xs text-foreground-lighter">
+      <p className="max-w-[var(--measure-prose)] text-xs text-tertiary-foreground">
         Every number here is read from the metered usage events, which is the same count the
         database checks before it accepts an ingest job. Storage has no plan limit, so it is a
         running total rather than a gauge.

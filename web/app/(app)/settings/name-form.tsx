@@ -59,7 +59,7 @@ export function NameForm({
         </p>
       ) : null}
       {state.status === 'success' ? (
-        <p className="text-sm text-foreground-lighter">{savedLabel}</p>
+        <p className="text-sm text-tertiary-foreground">{savedLabel}</p>
       ) : null}
     </form>
   );

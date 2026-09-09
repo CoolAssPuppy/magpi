@@ -20,21 +20,21 @@ export function DocumentList({ documents }: { documents: readonly DocumentSummar
                 {document.title}
               </Link>
               <time
-                className="shrink-0 text-xs text-foreground-lighter"
+                className="shrink-0 text-xs text-tertiary-foreground"
                 dateTime={document.updatedAt}
               >
                 {document.updatedAt.slice(0, 10)}
               </time>
             </div>
 
-            <p className="text-xs text-foreground-lighter">
+            <p className="text-xs text-tertiary-foreground">
               {describeOrigin(document.origin)} into {document.spaceName}
             </p>
 
             {problem ? (
               <p
                 className={
-                  isFailure ? 'text-xs text-destructive-600' : 'text-xs text-foreground-light'
+                  isFailure ? 'text-xs text-destructive-600' : 'text-xs text-muted-foreground'
                 }
               >
                 {problem}

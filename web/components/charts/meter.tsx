@@ -53,11 +53,11 @@ export function Meter({ label, used, limit, unit, formatValue = defaultFormat }:
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between gap-4">
-        <p className="text-sm text-foreground-light">{label}</p>
+        <p className="text-sm text-muted-foreground">{label}</p>
         <p className="text-sm text-foreground tabular-nums">
           {formatValue(used)}
           {limit === null ? null : (
-            <span className="text-foreground-lighter"> / {formatValue(limit)}</span>
+            <span className="text-tertiary-foreground"> / {formatValue(limit)}</span>
           )}
           <span className="sr-only"> {unit}</span>
         </p>
@@ -70,7 +70,7 @@ export function Meter({ label, used, limit, unit, formatValue = defaultFormat }:
           aria-valuenow={used}
           aria-valuemin={0}
           aria-valuemax={limit}
-          className="h-1.5 overflow-hidden rounded-full bg-background-surface-300"
+          className="h-1.5 overflow-hidden rounded-full bg-secondary"
         >
           <div
             className="h-full rounded-full"
@@ -79,7 +79,7 @@ export function Meter({ label, used, limit, unit, formatValue = defaultFormat }:
         </div>
       )}
 
-      {word ? <p className="text-xs text-foreground-light">{word}</p> : null}
+      {word ? <p className="text-xs text-muted-foreground">{word}</p> : null}
     </div>
   );
 }

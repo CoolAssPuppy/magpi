@@ -27,12 +27,12 @@ function PlanColumn({ plan }: { plan: Plan }) {
           {plan.price}
         </p>
         {plan.cadence ? (
-          <p className="mt-1.5 text-xs text-foreground-lighter">{plan.cadence}</p>
+          <p className="mt-1.5 text-xs text-tertiary-foreground">{plan.cadence}</p>
         ) : null}
-        <p className="mt-4 text-sm text-foreground-lighter">{plan.summary}</p>
+        <p className="mt-4 text-sm text-tertiary-foreground">{plan.summary}</p>
       </div>
 
-      <ul className="flex flex-1 flex-col gap-2 text-sm text-foreground-light">
+      <ul className="flex flex-1 flex-col gap-2 text-sm text-muted-foreground">
         {plan.features.map((feature) => (
           <li key={feature}>{feature}</li>
         ))}

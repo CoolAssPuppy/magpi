@@ -17,7 +17,7 @@ export function AssistantTurn({ content, citations, streaming }: AssistantTurnPr
   const cited = citations.filter((_, index) => citedLabels.has(index + 1));
 
   if (segments.length === 0 && streaming) {
-    return <p className="text-sm text-foreground-lighter">Reading your documents...</p>;
+    return <p className="text-sm text-tertiary-foreground">Reading your documents...</p>;
   }
 
   return (
@@ -31,7 +31,7 @@ export function AssistantTurn({ content, citations, streaming }: AssistantTurnPr
               key={index}
               href={`/documents/${segment.citation.documentId}`}
               title={segment.citation.documentTitle}
-              className="mx-0.5 rounded-[var(--radius-panel)] bg-background-surface-200 px-1.5 py-0.5 align-baseline text-xs text-brand-link hover:bg-background-surface-300"
+              className="mx-0.5 rounded-[var(--radius-panel)] bg-muted px-1.5 py-0.5 align-baseline text-xs text-brand-link hover:bg-secondary"
             >
               {segment.label}
             </Link>
@@ -40,7 +40,7 @@ export function AssistantTurn({ content, citations, streaming }: AssistantTurnPr
         {streaming ? (
           <span
             aria-hidden
-            className="ml-0.5 inline-block h-4 w-1.5 translate-y-0.5 animate-pulse bg-foreground-lighter motion-reduce:animate-none"
+            className="ml-0.5 inline-block h-4 w-1.5 translate-y-0.5 animate-pulse bg-tertiary-foreground motion-reduce:animate-none"
           />
         ) : null}
       </p>
@@ -53,16 +53,16 @@ export function AssistantTurn({ content, citations, streaming }: AssistantTurnPr
 function Sources({ citations }: { citations: readonly Citation[] }) {
   return (
     <section className="mt-4 border-t border-border pt-3">
-      <h3 className="text-xs font-medium text-foreground-lighter">Sources</h3>
+      <h3 className="text-xs font-medium text-tertiary-foreground">Sources</h3>
       <ul className="mt-2 flex flex-col gap-2">
         {citations.map((citation) => (
           <li key={citation.chunkId}>
             <Link
               href={`/documents/${citation.documentId}`}
-              className="block rounded-[var(--radius-panel)] px-2 py-1.5 transition-colors hover:bg-background-surface-200 motion-reduce:transition-none"
+              className="block rounded-[var(--radius-panel)] px-2 py-1.5 transition-colors hover:bg-muted motion-reduce:transition-none"
             >
               <span className="block text-sm text-foreground">{citation.documentTitle}</span>
-              <span className="mt-0.5 block text-xs leading-relaxed text-foreground-lighter">
+              <span className="mt-0.5 block text-xs leading-relaxed text-tertiary-foreground">
                 {citation.excerpt}
               </span>
             </Link>

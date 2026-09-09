@@ -40,8 +40,8 @@ export function HistorySidebar() {
                 className={cn(
                   'min-w-0 flex-1 truncate rounded-[var(--radius-panel)] px-2 py-1.5 text-sm transition-colors motion-reduce:transition-none',
                   isOpen
-                    ? 'bg-background-surface-200 text-foreground'
-                    : 'text-foreground-light hover:bg-background-surface-100 hover:text-foreground',
+                    ? 'bg-muted text-foreground'
+                    : 'text-muted-foreground hover:bg-card hover:text-foreground',
                 )}
               >
                 {conversation.title ?? 'Untitled conversation'}
@@ -59,7 +59,7 @@ export function HistorySidebar() {
         <button
           type="button"
           onClick={() => void fetchNextPage()}
-          className="self-start px-2 py-1 text-xs text-foreground-lighter hover:text-foreground"
+          className="self-start px-2 py-1 text-xs text-tertiary-foreground hover:text-foreground"
         >
           Show older
         </button>
@@ -69,5 +69,5 @@ export function HistorySidebar() {
 }
 
 function SidebarNote({ children }: { children: string }) {
-  return <p className="px-2 text-sm text-foreground-lighter">{children}</p>;
+  return <p className="px-2 text-sm text-tertiary-foreground">{children}</p>;
 }

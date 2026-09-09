@@ -70,12 +70,12 @@ export function MemberList({
             <TableCell>
               <StatusBadge tone={ROLE_TONE[member.role]}>{ROLE_LABEL[member.role]}</StatusBadge>
             </TableCell>
-            <TableCell className="text-foreground-light">
+            <TableCell className="text-muted-foreground">
               {formatSince(member.joinedAt, now)}
             </TableCell>
             <TableCell className="text-right">
               {member.isSelf || member.role === 'owner' ? (
-                <span className="text-xs text-foreground-lighter">
+                <span className="text-xs text-tertiary-foreground">
                   {member.isSelf ? 'That is you' : 'Owner'}
                 </span>
               ) : (

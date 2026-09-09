@@ -26,19 +26,19 @@ export default async function DreamRunPage({ params }: { params: Promise<{ id: s
         <div className="flex flex-wrap items-center gap-2">
           <StatusPill tone={run.status.tone} label={run.status.label} />
           <h2 className="font-heading text-base font-medium text-foreground">{run.kindLabel}</h2>
-          <span className="text-sm text-foreground-light">{run.spaceName}</span>
-          <Link href="/dreams" className="text-sm text-foreground-lighter hover:text-foreground">
+          <span className="text-sm text-muted-foreground">{run.spaceName}</span>
+          <Link href="/dreams" className="text-sm text-tertiary-foreground hover:text-foreground">
             All runs
           </Link>
         </div>
 
-        <p className="max-w-[var(--measure-prose)] text-sm text-foreground-light">
+        <p className="max-w-[var(--measure-prose)] text-sm text-muted-foreground">
           {run.status.detail}
         </p>
-        <p className="max-w-[var(--measure-prose)] text-sm text-foreground-lighter">
+        <p className="max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">
           {run.kindSummary}
         </p>
-        <p className="text-xs text-foreground-lighter">
+        <p className="text-xs text-tertiary-foreground">
           {run.inputSummary} read &middot; {run.duration}
         </p>
       </section>
@@ -53,7 +53,7 @@ export default async function DreamRunPage({ params }: { params: Promise<{ id: s
       {run.kind === 'connections' ? (
         <section className="flex flex-col gap-3">
           <h2 className="font-heading text-sm font-medium text-foreground">Candidate pairs</h2>
-          <p className="max-w-[var(--measure-prose)] text-sm text-foreground-lighter">
+          <p className="max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">
             Nothing here is applied until a person confirms it.
           </p>
           <LinkCandidates

@@ -38,7 +38,7 @@ export default async function DocumentPage({ params }: { params: Promise<{ id: s
         description={`${describeOrigin(document.origin)} into ${document.spaces?.name ?? 'a space'}.`}
       />
 
-      {problem ? <p className="text-sm text-foreground-light">{problem}</p> : null}
+      {problem ? <p className="text-sm text-muted-foreground">{problem}</p> : null}
 
       {document.url ? (
         <a
@@ -54,7 +54,7 @@ export default async function DocumentPage({ params }: { params: Promise<{ id: s
           <p
             key={chunk.id}
             id={`chunk-${chunk.id}`}
-            className="text-sm leading-relaxed text-foreground-light target:bg-brand-200"
+            className="text-sm leading-relaxed text-muted-foreground target:bg-brand-200"
           >
             {chunk.content}
           </p>

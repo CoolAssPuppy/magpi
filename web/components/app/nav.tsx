@@ -27,7 +27,7 @@ export function Nav({ items }: { items: readonly NavItem[] }) {
               '-mb-px border-b-2 px-3 py-2 text-sm transition-colors motion-reduce:transition-none',
               isActive
                 ? 'border-brand-600 text-foreground'
-                : 'border-transparent text-foreground-lighter hover:text-foreground',
+                : 'border-transparent text-tertiary-foreground hover:text-foreground',
             )}
           >
             {item.label}

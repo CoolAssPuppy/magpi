@@ -21,12 +21,12 @@ function ConnectionRow({
         <div className="flex flex-wrap items-center gap-2">
           <StatusPill tone={connection.status.tone} label={connection.status.label} />
           <span className="text-sm text-foreground">{connection.spaceName}</span>
-          <span className="text-xs text-foreground-lighter">{connection.account}</span>
+          <span className="text-xs text-tertiary-foreground">{connection.account}</span>
         </div>
-        <p className="mt-1 max-w-[var(--measure-prose)] text-sm text-foreground-light">
+        <p className="mt-1 max-w-[var(--measure-prose)] text-sm text-muted-foreground">
           {connection.status.reason}
         </p>
-        <p className="mt-0.5 text-xs text-foreground-lighter">
+        <p className="mt-0.5 text-xs text-tertiary-foreground">
           {connection.lastSynced} &middot; {connection.scope}
         </p>
       </div>
@@ -58,7 +58,7 @@ export function ConnectionList({
               <h2 className="font-heading text-sm font-medium text-foreground">
                 {listing.displayName}
               </h2>
-              <p className="mt-0.5 max-w-[var(--measure-prose)] text-sm text-foreground-lighter">
+              <p className="mt-0.5 max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">
                 {listing.description}
               </p>
             </div>

@@ -17,7 +17,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
           Magpi
         </Link>
         <div className="flex items-center gap-3">
-          <Link href="/pricing" className="text-sm text-foreground-lighter hover:text-foreground">
+          <Link href="/pricing" className="text-sm text-tertiary-foreground hover:text-foreground">
             Pricing
           </Link>
           <ThemeToggle />
@@ -29,7 +29,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
 
       <main className="flex flex-1 flex-col">{children}</main>
 
-      <footer className="border-t border-border px-5 py-4 text-xs text-foreground-lighter">
+      <footer className="border-t border-border px-5 py-4 text-xs text-tertiary-foreground">
         Magpi is open source under MIT. Built on Supabase.
       </footer>
     </div>

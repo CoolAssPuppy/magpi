@@ -40,6 +40,7 @@ const LIGHT_STEPS = [
   { name: 'raw color', cmd: 'node', argv: ['scripts/check-raw-color.mjs'] },
   { name: 'cron routes', cmd: 'node', argv: ['scripts/check-cron-routes.mjs'] },
   { name: 'upload types', cmd: 'node', argv: ['scripts/check-upload-types.mjs'] },
+  { name: 'compat tokens', cmd: 'node', argv: ['scripts/check-compat-tokens.mjs'] },
   { name: 'web build', cmd: 'pnpm', argv: ['build'] },
 ];
 

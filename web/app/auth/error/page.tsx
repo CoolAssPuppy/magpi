@@ -23,7 +23,7 @@ export default async function AuthErrorPage({
         </Link>
       }
     >
-      <p className="text-sm text-foreground-light">{signInFailureCopy({ error, errorCode })}</p>
+      <p className="text-sm text-muted-foreground">{signInFailureCopy({ error, errorCode })}</p>
     </AuthShell>
   );
 }

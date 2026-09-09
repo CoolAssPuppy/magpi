@@ -24,7 +24,7 @@ export function ScopePicker({
 }) {
   if (selection.kind === 'unset') {
     return (
-      <p className="max-w-[var(--measure-prose)] text-sm text-foreground-lighter">
+      <p className="max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">
         This source has not listed what it can read yet. Authorize it and the list appears here.
       </p>
     );
@@ -32,7 +32,7 @@ export function ScopePicker({
 
   if (selection.selectionKind === 'workspace') {
     return (
-      <p className="max-w-[var(--measure-prose)] text-sm text-foreground-lighter">
+      <p className="max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">
         This connection reads the whole workspace:{' '}
         {selection.available.map((i) => i.name).join(', ')}.
       </p>
@@ -51,19 +51,19 @@ export function ScopePicker({
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-xs text-foreground-lighter">
+      <p className="text-xs text-tertiary-foreground">
         {describeScopeSelection({ ...selection, selected: [...selected] })}
       </p>
       {emptyMeaning ? (
-        <p className="max-w-[var(--measure-prose)] text-xs text-foreground-light">{emptyMeaning}</p>
+        <p className="max-w-[var(--measure-prose)] text-xs text-muted-foreground">{emptyMeaning}</p>
       ) : null}
       <ul className="max-h-64 divide-y divide-border overflow-y-auto rounded-[var(--radius-panel)] border border-border">
         {selection.available.map((item) => (
           <li key={item.id}>
-            <label className="flex cursor-pointer items-center gap-2.5 px-3 py-2 text-sm text-foreground hover:bg-background-surface-200">
+            <label className="flex cursor-pointer items-center gap-2.5 px-3 py-2 text-sm text-foreground hover:bg-muted">
               <input
                 type="checkbox"
-                className="size-4 rounded-sm border-border-strong text-brand-600 focus-visible:ring-2 focus-visible:ring-border-strong"
+                className="size-4 rounded-sm border-input text-brand-600 focus-visible:ring-2 focus-visible:ring-input"
                 checked={selected.includes(item.id)}
                 disabled={disabled}
                 onChange={() => toggle(item.id)}

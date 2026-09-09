@@ -104,7 +104,7 @@ export default async function AdminOverviewPage({
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-foreground-lighter">
+        <p className="text-sm text-tertiary-foreground">
           Everything below is scoped to this organization.
         </p>
         <RangeFilter basePath="/admin" active={days} />

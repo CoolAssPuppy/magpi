@@ -43,7 +43,7 @@ export function InviteForm({ action, baseUrl }: { action: InviteAction; baseUrl:
             id="invite-role"
             name="role"
             defaultValue="member"
-            className="h-9 rounded-[var(--radius-panel)] border border-border-strong bg-background px-3 text-sm text-foreground"
+            className="h-9 rounded-[var(--radius-panel)] border border-input bg-background px-3 text-sm text-foreground"
           >
             <option value="member">Member</option>
             <option value="admin">Admin</option>
@@ -66,10 +66,10 @@ export function InviteForm({ action, baseUrl }: { action: InviteAction; baseUrl:
           <p className="text-sm text-foreground">
             Invitation created for {state.data.email}. Send them this link.
           </p>
-          <code className="mt-2 block font-mono text-xs break-all text-foreground-light">
+          <code className="mt-2 block font-mono text-xs break-all text-muted-foreground">
             {`${baseUrl}/invite/${state.data.token}`}
           </code>
-          <p className="mt-2 text-xs text-foreground-lighter">
+          <p className="mt-2 text-xs text-tertiary-foreground">
             This is the only time the link is shown. Magpi stores a hash of it.
           </p>
         </div>

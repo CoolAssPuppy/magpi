@@ -105,7 +105,7 @@ export function SignUpForm() {
 
       <div className="flex items-center gap-3">
         <span className="h-px flex-1 bg-border" />
-        <span className="text-xs text-foreground-lighter">or</span>
+        <span className="text-xs text-tertiary-foreground">or</span>
         <span className="h-px flex-1 bg-border" />
       </div>
 

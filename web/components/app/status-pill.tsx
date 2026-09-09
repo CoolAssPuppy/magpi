@@ -2,9 +2,9 @@ import type { StatusTone } from '@/lib/ui/status-tone';
 import { cn } from '@/lib/utils';
 
 const TONE_CLASSES: Record<StatusTone, string> = {
-  neutral: 'border-border bg-background-surface-200 text-foreground-light',
+  neutral: 'border-border bg-muted text-muted-foreground',
   positive: 'border-border-brand bg-brand-200 text-brand-600',
-  progress: 'border-border-strong bg-background-surface-200 text-foreground-light',
+  progress: 'border-input bg-muted text-muted-foreground',
   warning: 'border-border-warning bg-warning-200 text-warning-600',
   destructive: 'border-border-destructive bg-destructive-200 text-destructive-600',
 };

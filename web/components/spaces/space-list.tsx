@@ -18,18 +18,18 @@ export function SpaceList({ spaces }: { spaces: readonly Space[] }) {
             >
               {space.name}
             </Link>
-            <p className="mt-0.5 text-xs text-foreground-lighter">{describeKind(space.kind)}</p>
+            <p className="mt-0.5 text-xs text-tertiary-foreground">{describeKind(space.kind)}</p>
           </div>
 
-          <dl className="flex shrink-0 gap-5 text-xs text-foreground-lighter">
+          <dl className="flex shrink-0 gap-5 text-xs text-tertiary-foreground">
             <div className="text-right">
               <dt className="sr-only">Documents</dt>
-              <dd className="text-foreground-light tabular-nums">{space.documentCount}</dd>
+              <dd className="text-muted-foreground tabular-nums">{space.documentCount}</dd>
               <dd>documents</dd>
             </div>
             <div className="text-right">
               <dt className="sr-only">Members</dt>
-              <dd className="text-foreground-light tabular-nums">{space.memberCount}</dd>
+              <dd className="text-muted-foreground tabular-nums">{space.memberCount}</dd>
               <dd>{space.memberCount === 1 ? 'member' : 'members'}</dd>
             </div>
           </dl>

@@ -31,7 +31,7 @@ export function PendingInvites({
   revokeAction: FormAction;
 }) {
   if (invites.length === 0) {
-    return <p className="text-sm text-foreground-lighter">No invitations are waiting.</p>;
+    return <p className="text-sm text-tertiary-foreground">No invitations are waiting.</p>;
   }
 
   return (
@@ -49,11 +49,11 @@ export function PendingInvites({
         {invites.map((invite) => (
           <TableRow key={invite.id}>
             <TableCell className="text-foreground">{invite.email}</TableCell>
-            <TableCell className="text-foreground-light capitalize">{invite.role}</TableCell>
-            <TableCell className="text-foreground-light">
+            <TableCell className="text-muted-foreground capitalize">{invite.role}</TableCell>
+            <TableCell className="text-muted-foreground">
               {formatSince(invite.createdAt, now)}
             </TableCell>
-            <TableCell className="text-foreground-light">
+            <TableCell className="text-muted-foreground">
               {new Date(invite.expiresAt) < now
                 ? 'Expired'
                 : `in ${Math.ceil((new Date(invite.expiresAt).getTime() - now.getTime()) / 86_400_000)} days`}

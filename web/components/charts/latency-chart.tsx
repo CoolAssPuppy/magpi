@@ -52,11 +52,11 @@ export function LatencyChart({
       <h3 id={headingId} className="font-heading text-sm font-medium text-foreground">
         {title}
       </h3>
-      <p className="mt-1 text-xs text-foreground-lighter">{description}</p>
+      <p className="mt-1 text-xs text-tertiary-foreground">{description}</p>
 
       <ul
         aria-label="Series"
-        className="mt-3 flex items-center gap-4 text-xs text-foreground-light"
+        className="mt-3 flex items-center gap-4 text-xs text-muted-foreground"
       >
         <li className="flex items-center gap-2">
           <span
@@ -99,7 +99,7 @@ export function LatencyChart({
                   x={-8}
                   y={y + 4}
                   textAnchor="end"
-                  className="fill-foreground-lighter text-[11px] tabular-nums"
+                  className="fill-tertiary-foreground text-[11px] tabular-nums"
                 >
                   {Math.round(tick).toLocaleString('en-US')}
                 </text>
@@ -156,7 +156,7 @@ export function LatencyChart({
                 x={bandCenter(index, points.length, PLOT.width)}
                 y={PLOT.height + 16}
                 textAnchor="middle"
-                className="fill-foreground-lighter text-[11px]"
+                className="fill-tertiary-foreground text-[11px]"
               >
                 {point.label}
               </text>

@@ -37,7 +37,7 @@ export default async function ProviderConnectPage({
         actions={
           <Link
             href="/connections"
-            className="text-sm text-foreground-lighter hover:text-foreground"
+            className="text-sm text-tertiary-foreground hover:text-foreground"
           >
             All connections
           </Link>

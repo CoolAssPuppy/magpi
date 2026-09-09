@@ -31,12 +31,12 @@ export function RankedBars({
           >
             {item.label}
           </p>
-          <p className="text-sm text-foreground-light tabular-nums">
+          <p className="text-sm text-muted-foreground tabular-nums">
             {item.value.toLocaleString('en-US')}
             <span className="sr-only"> {valueLabel}</span>
           </p>
           <div
-            className="col-span-2 h-1.5 rounded-full bg-background-surface-300"
+            className="col-span-2 h-1.5 rounded-full bg-secondary"
             role="img"
             aria-label={`${item.value.toLocaleString('en-US')} ${valueLabel}`}
           >
@@ -49,7 +49,7 @@ export function RankedBars({
             />
           </div>
           {item.caption ? (
-            <p className="col-span-2 text-xs text-foreground-lighter">{item.caption}</p>
+            <p className="col-span-2 text-xs text-tertiary-foreground">{item.caption}</p>
           ) : null}
         </li>
       ))}

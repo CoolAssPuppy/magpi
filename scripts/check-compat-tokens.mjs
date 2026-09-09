@@ -19,14 +19,8 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const COMPAT = 'web/styles/supabase/packages/ui/build/css/source/compat.css';
-const SEARCHED = [
-  'web/app',
-  'web/components',
-  'web/lib',
-  'web/hooks',
-  'web/styles/globals.css',
-  'web/styles/tokens.css',
-];
+const OURS = 'web/styles/tokens.css';
+const SEARCHED = ['web/app', 'web/components', 'web/lib', 'web/hooks', 'web/styles/globals.css'];
 const EXTENSIONS = new Set(['.ts', '.tsx', '.css']);
 
 function aliasNames(source) {
@@ -53,7 +47,14 @@ function filesUnder(path) {
 }
 
 function main() {
-  const aliases = aliasNames(readFileSync(resolve(ROOT, COMPAT), 'utf8'));
+  // A name compat.css declares and web/styles/tokens.css declares again is not
+  // a dependency on compat.css: tokens.css loads last and wins, and it survives
+  // the file being deleted. --border-stronger is the only one, because it is a
+  // computed value rather than an alias and has no semantic twin to move to.
+  const ours = new Set(aliasNames(readFileSync(resolve(ROOT, OURS), 'utf8')));
+  const aliases = aliasNames(readFileSync(resolve(ROOT, COMPAT), 'utf8')).filter(
+    (alias) => !ours.has(alias),
+  );
   if (aliases.length === 0) {
     console.log('compat tokens: compat.css declares none, nothing to guard');
     return;

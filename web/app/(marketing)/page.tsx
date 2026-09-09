@@ -24,7 +24,7 @@ export default function LandingPage() {
           <h1 className="font-heading text-4xl leading-[1.1] font-medium tracking-tight text-foreground md:text-5xl">
             Ask your team&apos;s knowledge base a question.
           </h1>
-          <p className="mt-5 text-base text-foreground-light">
+          <p className="mt-5 text-base text-muted-foreground">
             Magpi reads Notion, Linear, Slack and Google Drive, and answers in a conversation with
             citations back to the source. Overnight it re-reads what came in, links what is about
             the same thing, and writes a digest.
@@ -48,7 +48,7 @@ export default function LandingPage() {
           {SOURCES.map((source) => (
             <li
               key={source}
-              className="rounded-[var(--radius-panel)] border border-border px-3 py-1.5 text-sm text-foreground-light"
+              className="rounded-[var(--radius-panel)] border border-border px-3 py-1.5 text-sm text-muted-foreground"
             >
               {source}
             </li>
@@ -61,7 +61,7 @@ export default function LandingPage() {
           <h3 className="font-heading text-base font-medium text-foreground">
             Every document lives in one space
           </h3>
-          <p className="mt-2 text-sm text-foreground-lighter">
+          <p className="mt-2 text-sm text-tertiary-foreground">
             Personal, team, or everyone. You pick when you put it in, and that is the whole
             permission model.
           </p>
@@ -70,7 +70,7 @@ export default function LandingPage() {
           <h3 className="font-heading text-base font-medium text-foreground">
             Answers cite their sources
           </h3>
-          <p className="mt-2 text-sm text-foreground-lighter">
+          <p className="mt-2 text-sm text-tertiary-foreground">
             Citations are stored as chunk ids and resolved when you read the message, so a person
             who lost access to a space stops seeing the quote.
           </p>
@@ -79,7 +79,7 @@ export default function LandingPage() {
           <h3 className="font-heading text-base font-medium text-foreground">
             It dreams overnight
           </h3>
-          <p className="mt-2 text-sm text-foreground-lighter">
+          <p className="mt-2 text-sm text-tertiary-foreground">
             Dreaming is a nightly pass that re-reads the day, extracts entities, links documents
             about the same thing, and writes a digest back into the space.
           </p>

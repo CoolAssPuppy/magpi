@@ -40,7 +40,7 @@ export function RunFailure({
       </p>
 
       {/* The detail carries the measured numbers, so nothing below asserts them. */}
-      <p className="mt-1 max-w-[var(--measure-prose)] text-sm text-foreground-light">
+      <p className="mt-1 max-w-[var(--measure-prose)] text-sm text-muted-foreground">
         {status.detail}{' '}
         {inputDocumentCount === 0
           ? 'It had not read anything when it stopped.'
@@ -48,7 +48,7 @@ export function RunFailure({
       </p>
 
       {status.status === 'timeout' ? (
-        <p className="mt-1 max-w-[var(--measure-prose)] text-sm text-foreground-light">
+        <p className="mt-1 max-w-[var(--measure-prose)] text-sm text-muted-foreground">
           {status.stage
             ? 'Retrying will not help at this size. A dream runs inside one Edge Function, so a space this large cannot finish in a single run.'
             : 'The run stopped before it finished. Try it again, and if it keeps stopping the space may be too large for one run.'}

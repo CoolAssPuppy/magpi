@@ -18,7 +18,7 @@ export default async function EntitiesPage({
 
   return (
     <>
-      <p className="max-w-[var(--measure-prose)] text-sm text-foreground-lighter">
+      <p className="max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">
         The people, projects, customers and decisions the entities dream found, each with the
         documents it was mentioned in.
       </p>

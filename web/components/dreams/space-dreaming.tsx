@@ -85,13 +85,13 @@ function SpaceRow({
           />
           <span className="text-sm text-foreground">{space.name}</span>
           {isDreaming ? null : (
-            <span className="text-xs text-foreground-lighter">Dreaming is off in this space</span>
+            <span className="text-xs text-tertiary-foreground">Dreaming is off in this space</span>
           )}
         </div>
 
         <div className="flex items-end gap-2">
           <div className="flex flex-col gap-1">
-            <label htmlFor={kindFieldId} className="text-xs text-foreground-lighter">
+            <label htmlFor={kindFieldId} className="text-xs text-tertiary-foreground">
               Kind
             </label>
             <select
@@ -102,7 +102,7 @@ function SpaceRow({
                 const chosen = DREAM_KINDS.find((candidate) => candidate === event.target.value);
                 if (chosen) setKind(chosen);
               }}
-              className="h-8 rounded-[var(--radius-panel)] border border-border-strong bg-background-surface-100 px-2 text-xs text-foreground focus-visible:ring-2 focus-visible:ring-border-strong focus-visible:outline-none"
+              className="h-8 rounded-[var(--radius-panel)] border border-input bg-card px-2 text-xs text-foreground focus-visible:ring-2 focus-visible:ring-input focus-visible:outline-none"
             >
               {DREAM_KINDS.map((candidate) => (
                 <option key={candidate} value={candidate}>
@@ -118,12 +118,12 @@ function SpaceRow({
         </div>
       </div>
 
-      <p className="max-w-[var(--measure-prose)] text-xs text-foreground-lighter">
+      <p className="max-w-[var(--measure-prose)] text-xs text-tertiary-foreground">
         {describeDreamKind(kind).summary}
       </p>
 
       {outcome ? (
-        <p className="flex flex-wrap items-center gap-2 text-xs text-foreground-light">
+        <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           {describeOutcome(outcome)}
           <Link href={`/dreams/${outcome.dreamRunId}`} className="text-brand-link hover:underline">
             Open the run
@@ -157,7 +157,7 @@ export function SpaceDreaming({
   return (
     <section className="flex flex-col gap-3">
       <h2 className="font-heading text-sm font-medium text-foreground">Dreaming by space</h2>
-      <p className="max-w-[var(--measure-prose)] text-sm text-foreground-lighter">
+      <p className="max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">
         A run reads one space and writes back into that space only. Switch it off for a space and
         nothing in that space is read overnight.
       </p>

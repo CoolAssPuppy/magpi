@@ -118,7 +118,7 @@ function MemberPager({ page, pageCount }: { page: number; pageCount: number }) {
   return (
     <nav
       aria-label="Member pages"
-      className="mt-4 flex items-center justify-between text-sm text-foreground-lighter"
+      className="mt-4 flex items-center justify-between text-sm text-tertiary-foreground"
     >
       <PagerLink href={`/admin/members?page=${page - 1}`} enabled={page > 1}>
         Previous
@@ -140,7 +140,7 @@ function PagerLink({
   enabled: boolean;
   children: string;
 }) {
-  if (!enabled) return <span className="text-foreground-muted">{children}</span>;
+  if (!enabled) return <span className="text-tertiary-foreground">{children}</span>;
 
   return (
     <Link href={href} className="text-foreground hover:underline">

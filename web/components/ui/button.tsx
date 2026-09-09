@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
  * there is no shadow paired with a border on the same element.
  *
  * The muted fill is written as bg-(--muted) here and in the other primitives.
- * Tailwind's bg-muted utility resolves through --background-muted, an alias
+ * Tailwind's bg-muted utility resolves through --muted, an alias
  * declared in compat.css, which upstream has marked for deletion.
  */
 const buttonVariants = cva(

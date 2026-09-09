@@ -64,7 +64,7 @@ export default async function SettingsPage() {
             savedLabel="Renamed"
           />
         ) : (
-          <p className="text-sm text-foreground-lighter">
+          <p className="text-sm text-tertiary-foreground">
             This account has no personal space, which should not be possible. Sign out and back in,
             and tell us if it is still missing.
           </p>

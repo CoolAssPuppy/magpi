@@ -21,7 +21,7 @@ type ChartTableProps = {
 export function ChartTable({ caption, columns, rows }: ChartTableProps) {
   return (
     <details className="group mt-4">
-      <summary className="cursor-pointer text-xs text-foreground-lighter hover:text-foreground">
+      <summary className="cursor-pointer text-xs text-tertiary-foreground hover:text-foreground">
         {caption}
       </summary>
       <div className="mt-3 max-h-64 overflow-auto">
@@ -40,7 +40,7 @@ export function ChartTable({ caption, columns, rows }: ChartTableProps) {
                   <TableCell
                     key={columns[index]}
                     className={
-                      index === 0 ? 'text-foreground' : 'text-foreground-light tabular-nums'
+                      index === 0 ? 'text-foreground' : 'text-muted-foreground tabular-nums'
                     }
                   >
                     {cell}

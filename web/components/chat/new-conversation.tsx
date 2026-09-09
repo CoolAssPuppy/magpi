@@ -51,7 +51,7 @@ export function NewConversation({ spaces }: NewConversationProps) {
 
       <div className="flex items-center gap-3">
         <SpaceFilter spaces={spaces} selected={selected} onChange={setSelected} />
-        <p className="text-xs text-foreground-lighter">
+        <p className="text-xs text-tertiary-foreground">
           {selected.length === 0
             ? 'Searching every space you can see.'
             : 'Searching the spaces you picked.'}

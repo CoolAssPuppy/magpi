@@ -85,7 +85,7 @@ export function DreamOutput({
   switch (output.kind) {
     case 'none':
       return (
-        <p className="max-w-[var(--measure-prose)] text-sm text-foreground-lighter">
+        <p className="max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">
           This run wrote no document.
         </p>
       );
@@ -120,9 +120,9 @@ export function DreamOutput({
 
           <div
             role="status"
-            className="rounded-[var(--radius-panel)] border border-border bg-background-surface-100 px-4 py-3"
+            className="rounded-[var(--radius-panel)] border border-border bg-card px-4 py-3"
           >
-            <p className="max-w-[var(--measure-prose)] text-sm text-foreground-light">
+            <p className="max-w-[var(--measure-prose)] text-sm text-muted-foreground">
               The {output.citedCount} source{output.citedCount === 1 ? '' : 's'} this digest was
               built from {output.citedCount === 1 ? 'has' : 'have'} since been deleted or
               re-imported. The run cited {output.citedCount === 1 ? 'it' : 'them'} when it wrote
@@ -150,7 +150,7 @@ export function DreamOutput({
               {output.sources.map((source) => (
                 <li key={source.chunkId} id={`source-${source.index}`} className="px-4 py-3">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-xs text-foreground-lighter">{source.index}</span>
+                    <span className="text-xs text-tertiary-foreground">{source.index}</span>
                     <Link
                       href={`/documents/${source.documentId}`}
                       className="text-sm text-brand-link hover:underline"
@@ -158,7 +158,7 @@ export function DreamOutput({
                       {source.documentTitle}
                     </Link>
                   </div>
-                  <p className="mt-1 max-w-[var(--measure-prose)] text-sm text-foreground-light">
+                  <p className="mt-1 max-w-[var(--measure-prose)] text-sm text-muted-foreground">
                     {source.excerpt}
                   </p>
                 </li>

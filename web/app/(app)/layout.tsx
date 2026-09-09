@@ -39,7 +39,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          <Link href="/settings" className="text-sm text-foreground-lighter hover:text-foreground">
+          <Link href="/settings" className="text-sm text-tertiary-foreground hover:text-foreground">
             Settings
           </Link>
           <SignOutButton />

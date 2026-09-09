@@ -81,9 +81,9 @@ function ScopeEditor({
       <div className="flex flex-wrap items-center gap-2">
         <StatusPill tone={connection.status.tone} label={connection.status.label} />
         <span className="text-sm text-foreground">{connection.spaceName}</span>
-        <span className="text-xs text-foreground-lighter">{connection.account}</span>
+        <span className="text-xs text-tertiary-foreground">{connection.account}</span>
       </div>
-      <p className="max-w-[var(--measure-prose)] text-sm text-foreground-light">
+      <p className="max-w-[var(--measure-prose)] text-sm text-muted-foreground">
         {connection.status.reason}
       </p>
 
@@ -99,7 +99,7 @@ function ScopeEditor({
           <Button size="sm" disabled={isPending} onClick={save}>
             Save selection
           </Button>
-          {isSaved ? <span className="text-xs text-foreground-lighter">Saved</span> : null}
+          {isSaved ? <span className="text-xs text-tertiary-foreground">Saved</span> : null}
         </div>
       ) : null}
 
@@ -168,13 +168,13 @@ export function ConnectPanel({
               ))}
             </SelectContent>
           </Select>
-          <p className="max-w-[var(--measure-prose)] text-xs text-foreground-lighter">
+          <p className="max-w-[var(--measure-prose)] text-xs text-tertiary-foreground">
             Everything this connection imports lands in this space, and only people in the space can
             read it.
           </p>
         </div>
 
-        <p className="max-w-[var(--measure-prose)] text-sm text-foreground-lighter">
+        <p className="max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">
           You will be sent to {provider.displayName} to authorize Magpi, then brought back here to
           choose what it reads.
         </p>
@@ -205,7 +205,7 @@ export function ConnectPanel({
       <section aria-label="What Magpi reads" className="flex flex-col gap-1">
         <h2 className="font-heading text-sm font-medium text-foreground">What Magpi reads</h2>
         {connections.length === 0 ? (
-          <p className="max-w-[var(--measure-prose)] text-sm text-foreground-lighter">
+          <p className="max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">
             There is no connection to {provider.displayName} yet. Once one exists, the channels and
             folders it reads are chosen here.
           </p>
