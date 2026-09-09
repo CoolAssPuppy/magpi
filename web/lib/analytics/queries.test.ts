@@ -20,6 +20,8 @@ type RecordedCall = readonly [string, ...unknown[]];
 type Stub = {
   readonly client: AnalyticsClient;
   readonly callsFor: (source: string) => readonly RecordedCall[];
+  /** One entry per `.from()`, in call order, holding that query's whole chain. */
+  readonly tableQueries: () => readonly (readonly RecordedCall[])[];
 };
 
 /**
@@ -70,7 +72,19 @@ function createStub(responses: Readonly<Record<string, readonly StubResponse[]>>
     rpc: (name: string, args: unknown) => builderFor(name, ['rpc', name, args]),
   } as unknown as AnalyticsClient;
 
-  return { client, callsFor: (source) => calls.get(source) ?? [] };
+  function tableQueries(): readonly (readonly RecordedCall[])[] {
+    const queries: RecordedCall[][] = [];
+    for (const recorded of calls.values()) {
+      for (const call of recorded) {
+        if (call[0] === 'from') queries.push([call]);
+        else if (call[0] === 'rpc') queries.push([]);
+        else queries.at(-1)?.push(call);
+      }
+    }
+    return queries.filter((query) => query.length > 0);
+  }
+
+  return { client, callsFor: (source) => calls.get(source) ?? [], tableQueries };
 }
 
 const ORG = '11111111-1111-4111-8111-111111111111';
@@ -331,6 +345,7 @@ describe('usage against plan', () => {
       usage_events: [
         { data: [{ kind: 'document_ingested', sum: 88 }] },
         { data: [{ kind: 'query', sum: 140 }] },
+        { data: [{ kind: 'storage_bytes', sum: 1_400_000_000 }] },
       ],
       plan_document_limit: [{ data: 200 }],
       plan_monthly_query_limit: [{ data: 500 }],
@@ -343,6 +358,7 @@ describe('usage against plan', () => {
       documents: { used: 88, limit: 200 },
       queries: { used: 140, limit: 500 },
       seats: { used: 3, limit: 1 },
+      storageBytes: { used: 1_400_000_000, limit: null },
       stripeCustomerId: null,
       stripeSubscriptionId: null,
     });
@@ -362,7 +378,7 @@ describe('usage against plan', () => {
         },
       ],
       org_members: [{ count: 5 }],
-      usage_events: [{ data: [] }, { data: [] }],
+      usage_events: [{ data: [] }, { data: [] }, { data: [] }],
       plan_document_limit: [{ data: 25000 }],
       plan_monthly_query_limit: [{ data: 50000 }],
     });
@@ -382,11 +398,76 @@ describe('usage against plan', () => {
     const stub = createStub({
       organizations: [{ error: { message: 'permission denied' } }],
       org_members: [{ count: 0 }],
-      usage_events: [{ data: [] }, { data: [] }],
+      usage_events: [{ data: [] }, { data: [] }, { data: [] }],
     });
 
     await expect(fetchPlanUsage(stub.client, ORG, { now: NOW })).rejects.toThrow(
       'permission denied',
     );
   });
+});
+
+describe('organization scoping', () => {
+  /**
+   * These five run through the elevated client, which bypasses RLS, so nothing
+   * below them will catch a query that forgot its organization. This is that
+   * catch: every table query any panel issues has to carry a filter equal to the
+   * organization id, and a new query with no filter fails here rather than
+   * quietly returning another customer's rows.
+   */
+  const panels: readonly (readonly [string, (stub: Stub) => Promise<unknown>])[] = [
+    [
+      'ingest health',
+      (stub) => fetchIngestHealth(stub.client, ORG),
+    ],
+    [
+      'answer latency',
+      (stub) => fetchAnswerLatency(stub.client, ORG, { days: 7, now: NOW }),
+    ],
+    [
+      'top questions',
+      (stub) => fetchTopQuestions(stub.client, ORG, { days: 7, limit: 5, now: NOW }),
+    ],
+    [
+      'dead content',
+      (stub) => fetchDeadContent(stub.client, ORG, { sampleSize: 5 }),
+    ],
+    [
+      'plan usage',
+      (stub) => fetchPlanUsage(stub.client, ORG, { now: NOW }),
+    ],
+  ];
+
+  function emptyStub(): Stub {
+    const empty = { data: [] };
+    return createStub({
+      connections: [empty],
+      ingest_jobs: [empty],
+      messages: [empty],
+      documents: [{ count: 0 }, { count: 0 }, empty],
+      organizations: [{ data: { plan: 'free', seats: 1, stripe_customer_id: null, stripe_subscription_id: null } }],
+      org_members: [{ count: 0 }],
+      usage_events: [empty, empty, empty],
+      plan_document_limit: [{ data: 200 }],
+      plan_monthly_query_limit: [{ data: 500 }],
+    });
+  }
+
+  for (const [name, run] of panels) {
+    it(`filters every table query in ${name} to one organization`, async () => {
+      const stub = emptyStub();
+      await run(stub);
+
+      const queries = stub.tableQueries();
+      expect(queries.length).toBeGreaterThan(0);
+
+      for (const query of queries) {
+        const filters = query.filter((call) => call[0] === 'eq' && call[2] === ORG);
+        expect({ table: query[0][1], filters: filters.length }).toEqual({
+          table: query[0][1],
+          filters: 1,
+        });
+      }
+    });
+  }
 });

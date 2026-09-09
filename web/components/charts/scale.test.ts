@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { axisTicks, bandCenter, barWidth, niceCeiling, seriesPath, valueToY } from './scale';
+import {
+  axisTicks,
+  bandCenter,
+  barWidth,
+  headingIdFor,
+  niceCeiling,
+  seriesPath,
+  valueToY,
+} from './scale';
 
 describe('axis ceiling', () => {
   it('rounds up to a number a reader can do arithmetic with', () => {
@@ -69,5 +77,12 @@ describe('series path', () => {
 
   it('is empty when nothing was measured', () => {
     expect(seriesPath([null, null], { width: 200, height: 100, ceiling: 1 })).toBe('');
+  });
+});
+
+describe('heading ids', () => {
+  it('derives a stable id from the title, so two charts never collide', () => {
+    expect(headingIdFor('Questions per day')).toBe('chart-questions-per-day');
+    expect(headingIdFor('Answer latency')).toBe('chart-answer-latency');
   });
 });

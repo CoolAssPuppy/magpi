@@ -114,6 +114,69 @@ problem is then a question about where a component belongs on a named scale,
 with an answer in this table. Nothing in the codebase uses a numeric `z-index`
 literal, and `999` never appears.
 
+## Chart palette validation
+
+Every mark in every chart reads its color from `CHART_COLORS` in
+`web/components/charts/palette.ts`, which holds `var(--color-*)` references and
+nothing else. What those references resolve to, and what the `dataviz` validator
+said about them, is recorded here rather than in that file. The raw-color check
+does not read comments, on purpose: a checker that skipped them would be a
+checker anyone could get a literal past by writing it above the line instead of
+on it.
+
+**The form is emphasis, not categorical.** One accent series carries the story
+and its companion recedes to a gray. A validated categorical palette needs hues
+the Supabase token set does not expose, and a two-series chart where one series
+is the point does not need one. `--color-brand-600` is the accent,
+`--color-border-stronger` is the companion, `--color-border` draws the hairline
+grid, and `--color-warning-600` and `--color-destructive-600` are reserved for
+meter severity, where they always appear beside a word saying the same thing.
+
+Checked on 2026-09-09 with `scripts/validate_palette.js` from the `dataviz`
+skill, fed the resolved values of both slots over each theme's own surface.
+
+| Theme | Accent, `--color-brand-600` | Companion, `--color-border-stronger` | Surface   |
+| ----- | --------------------------- | ------------------------------------ | --------- |
+| Light | `#097c4f`                   | `#a0a09c`                            | `#fcfcfc` |
+| Dark  | `#85e0ba`                   | `#6e6e6a`                            | `#1c1c1c` |
+
+| Check               | Light                      | Dark                       |
+| ------------------- | -------------------------- | -------------------------- |
+| Lightness band      | pass                       | fail, accent at L 0.839    |
+| Chroma floor        | fail, companion at C 0.006 | fail, companion at C 0.006 |
+| CVD separation      | pass, worst dE 16.3 protan | pass, worst dE 30.1 deutan |
+| Normal-vision floor | pass, worst dE 21.8        | pass, worst dE 31.8        |
+| Contrast vs surface | warn, companion at 2.56    | pass                       |
+
+WCAG contrast against the surface, measured separately: light accent 5.11,
+light companion 2.56, dark accent 10.85, dark companion 3.33.
+
+Both themes clear the two checks that decide whether a reader can tell the
+series apart. Three results are marked and accepted, and each one is a decision
+rather than an oversight.
+
+- **Chroma floor, both themes.** The companion is achromatic by design. Sitting
+  below the floor is what makes it read as context rather than as a second
+  subject, which is the whole point of the emphasis form. The validator scores a
+  categorical palette, where a gray slot is a mistake; here it is the brief.
+- **Lightness band, dark theme.** `--color-brand-600` resolves above the band in
+  dark. It is a fixed Supabase token, and restepping it to satisfy a chart check
+  would put the charts on a green the rest of the product does not use.
+  Identity preservation wins, and the pair passes CVD separation at dE 30.1
+  regardless.
+- **Contrast warning, light theme.** The companion at 2.56 is below 3:1, which
+  the validator says obligates relief rather than being dismissable. The relief
+  is built: every chart carries a table view of the same numbers behind a
+  disclosure, both series are named in a legend, and the accent series is
+  directly labelled. No value in any chart is reachable only by looking at a
+  gray line.
+
+An earlier attempt used a companion at the same lightness as the accent. It
+failed the normal-vision floor at dE 11.9, meaning a full-color reader could not
+reliably separate a dark green line from a dark gray one. Separating the two on
+lightness rather than on hue is what fixed it, and it is why the companion is a
+border token rather than a foreground one.
+
 ## The banned patterns, as a review checklist
 
 Restated from `DESIGN.md` so a reviewer can run down them against a diff. Each
@@ -184,8 +247,10 @@ fills.
 - Any `var(--...)` reference, which is how every legitimate color is written.
 - The Supabase semantic and Radix utility classes generated from `theme.css`.
 - `currentColor`, `transparent`, `inherit`, `initial`, `unset`, `none`.
-- `#` inside a url, a route path, a fragment identifier or a comment, so a
-  string like `href="#main"` does not trip it.
+- `#` inside a url, a route path or a fragment identifier, so a string like
+  `href="#main"` does not trip it. Not comments: a hex literal in a docblock
+  fails the same as one in a class name, so a recorded color measurement belongs
+  in this file rather than above the line it describes.
 
 **What it reports.** File path, line number, the matched text, and the token to
 use instead where the mapping is obvious. It exits non-zero on the first file

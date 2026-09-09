@@ -1,3 +1,11 @@
+/**
+ * The SQL behind each admin panel, one named function per panel.
+ *
+ * Two of them count in the database rather than in this process: documents(count)
+ * on the ingest health join, and quantity.sum() on usage_events. Both need
+ * PostgREST aggregate functions, which Supabase enables by default. A deployment
+ * that turns them off breaks those two queries and nothing else.
+ */
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { Database } from '@/lib/database.types';
@@ -28,10 +36,11 @@ function unwrapCount(result: { count: number | null; error: { message: string } 
   return result.count ?? 0;
 }
 
+/** Midnight UTC at the start of the window, matching how the buckets are keyed. */
 function daysAgoIso(now: Date, days: number): string {
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - days + 1))
-    .toISOString()
-    .replace('.000Z', '.000Z');
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - days + 1),
+  ).toISOString();
 }
 
 function monthStartIso(now: Date): string {
@@ -217,6 +226,12 @@ export type PlanUsage = {
   readonly documents: Meter;
   readonly queries: Meter;
   readonly seats: Meter;
+  /**
+   * No limit: no plan function meters bytes, so this is a running total rather
+   * than a gauge. The ingest worker writes the row when a document lands, which
+   * is why nothing here reads documents.size_bytes.
+   */
+  readonly storageBytes: Meter;
   readonly stripeCustomerId: string | null;
   readonly stripeSubscriptionId: string | null;
 };
@@ -259,11 +274,12 @@ export async function fetchPlanUsage(
     .select('user_id', { count: 'exact', head: true })
     .eq('org_id', orgId);
 
-  const [organization, seats, documentsUsed, queriesUsed] = await Promise.all([
+  const [organization, seats, documentsUsed, queriesUsed, storageUsed] = await Promise.all([
     organizationQuery,
     seatsQuery,
     sumUsage(client, orgId, 'document_ingested', null),
     sumUsage(client, orgId, 'query', monthStartIso(now)),
+    sumUsage(client, orgId, 'storage_bytes', null),
   ]);
 
   const org = unwrap(organization);
@@ -278,6 +294,7 @@ export async function fetchPlanUsage(
     documents: { used: documentsUsed, limit: unwrap(documentLimit) },
     queries: { used: queriesUsed, limit: unwrap(queryLimit) },
     seats: { used: unwrapCount(seats), limit: org.seats },
+    storageBytes: { used: storageUsed, limit: null },
     stripeCustomerId: org.stripe_customer_id,
     stripeSubscriptionId: org.stripe_subscription_id,
   };

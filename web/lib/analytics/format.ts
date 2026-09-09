@@ -42,3 +42,19 @@ export function formatSince(iso: string | null, now: Date): string {
 
   return 'just now';
 }
+
+/** Decimal units, the way storage is sold and the way a bill reads. */
+const BYTE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'] as const;
+
+export function formatBytes(bytes: number): string {
+  if (bytes < 1000) return `${Math.round(bytes)} B`;
+
+  let value = bytes;
+  let unit = 0;
+  while (value >= 1000 && unit < BYTE_UNITS.length - 1) {
+    value /= 1000;
+    unit += 1;
+  }
+
+  return `${value.toFixed(1).replace(/\.0$/, '')} ${BYTE_UNITS[unit]}`;
+}

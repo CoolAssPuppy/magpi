@@ -1,6 +1,6 @@
 import { CHART_COLORS } from './palette';
 import { ChartTable } from './chart-table';
-import { axisTicks, bandCenter, barWidth, niceCeiling, valueToY } from './scale';
+import { axisTicks, bandCenter, barWidth, headingIdFor, niceCeiling, valueToY } from './scale';
 
 export type ColumnPoint = {
   readonly label: string;
@@ -39,10 +39,11 @@ export function ColumnChart({
     points[0],
   );
   const labelEvery = Math.max(1, Math.ceil(points.length / 6));
+  const headingId = headingIdFor(title);
 
   return (
-    <section aria-labelledby="column-chart-title">
-      <h3 id="column-chart-title" className="font-heading text-sm font-medium text-foreground">
+    <section aria-labelledby={headingId}>
+      <h3 id={headingId} className="font-heading text-sm font-medium text-foreground">
         {title}
       </h3>
       <p className="mt-1 text-xs text-foreground-lighter">{description}</p>

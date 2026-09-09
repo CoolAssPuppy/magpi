@@ -1,0 +1,79 @@
+import { Button } from '@/components/ui/button';
+import { planById, type PlanId } from '@/lib/billing/plans';
+
+export type BillingState = {
+  readonly plan: PlanId;
+  readonly seats: number;
+  readonly hasStripeCustomer: boolean;
+  readonly isStripeConfigured: boolean;
+};
+
+/**
+ * The whole billing surface. One card, one button, and a sentence saying where
+ * everything else lives. Stripe already has an invoice viewer and a card form,
+ * and a second one here could only ever disagree with it.
+ */
+export function PlanCard({ state }: { state: BillingState }) {
+  const plan = planById(state.plan);
+
+  return (
+    <div className="max-w-xl rounded-[var(--radius-panel)] border border-border p-6">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <h2 className="font-heading text-lg font-medium text-foreground">{plan.name}</h2>
+        <p className="text-sm text-foreground-light">
+          {plan.price}
+          {plan.cadence ? <span className="text-foreground-lighter"> {plan.cadence}</span> : null}
+        </p>
+      </div>
+
+      <p className="mt-2 max-w-[var(--measure-prose)] text-sm text-foreground-lighter">
+        {plan.summary}
+      </p>
+
+      <p className="mt-4 text-sm text-foreground-light">
+        {state.seats === 1 ? '1 seat' : `${state.seats} seats`} on this plan.
+      </p>
+
+      <div className="mt-6 border-t border-border pt-5">
+        {state.isStripeConfigured ? (
+          <BillingAction state={state} />
+        ) : (
+          <p className="text-sm text-foreground-lighter">
+            Stripe is not configured for this deployment. Set SB_STRIPE_SECRET_KEY and
+            SB_STRIPE_PRICE_TEAM to turn on checkout.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function BillingAction({ state }: { state: BillingState }) {
+  if (state.hasStripeCustomer) {
+    return (
+      <form method="post" action="/api/stripe/portal" className="flex flex-col items-start gap-2">
+        <Button type="submit">Manage billing in Stripe</Button>
+        <p className="text-xs text-foreground-lighter">
+          Cards, invoices, seat counts and cancellation all live in the Stripe customer portal.
+        </p>
+      </form>
+    );
+  }
+
+  if (state.plan === 'enterprise') {
+    return (
+      <p className="text-sm text-foreground-light">
+        Enterprise is billed against a signed agreement. Talk to whoever set it up.
+      </p>
+    );
+  }
+
+  return (
+    <form method="post" action="/api/stripe/checkout" className="flex flex-col items-start gap-2">
+      <Button type="submit">Upgrade to Team</Button>
+      <p className="text-xs text-foreground-lighter">
+        Checkout runs on Stripe. Your plan changes when Stripe confirms the payment, not before.
+      </p>
+    </form>
+  );
+}

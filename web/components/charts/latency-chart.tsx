@@ -1,6 +1,6 @@
 import { CHART_COLORS } from './palette';
 import { ChartTable } from './chart-table';
-import { axisTicks, bandCenter, niceCeiling, seriesPath, valueToY } from './scale';
+import { axisTicks, bandCenter, headingIdFor, niceCeiling, seriesPath, valueToY } from './scale';
 
 export type LatencyPoint = {
   readonly label: string;
@@ -45,10 +45,11 @@ export function LatencyChart({
   const geometry = { width: PLOT.width, height: PLOT.height, ceiling };
   const lastP95 = lastMeasured(p95);
   const labelEvery = Math.max(1, Math.ceil(points.length / 6));
+  const headingId = headingIdFor(title);
 
   return (
-    <section aria-labelledby="latency-chart-title">
-      <h3 id="latency-chart-title" className="font-heading text-sm font-medium text-foreground">
+    <section aria-labelledby={headingId}>
+      <h3 id={headingId} className="font-heading text-sm font-medium text-foreground">
         {title}
       </h3>
       <p className="mt-1 text-xs text-foreground-lighter">{description}</p>

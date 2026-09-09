@@ -149,6 +149,27 @@ describe('meter', () => {
     expect(screen.queryByText('Over the limit')).not.toBeInTheDocument();
   });
 
+  it('leaves out the track where there is no limit to measure against', () => {
+    render(<Meter label="Storage stored" used={1_400_000_000} limit={null} unit="bytes" />);
+
+    expect(screen.queryByRole('meter')).not.toBeInTheDocument();
+    expect(screen.getByText('1,400,000,000')).toBeInTheDocument();
+  });
+
+  it('formats its value the way the caller asks', () => {
+    render(
+      <Meter
+        label="Storage stored"
+        used={1_400_000_000}
+        limit={null}
+        unit="bytes"
+        formatValue={(value) => `${value / 1e9} GB`}
+      />,
+    );
+
+    expect(screen.getByText('1.4 GB')).toBeInTheDocument();
+  });
+
   it('grades severity by how much of the plan is spent', () => {
     expect(meterSeverity(10, 200)).toBe('within');
     expect(meterSeverity(160, 200)).toBe('near');

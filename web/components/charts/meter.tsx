@@ -7,6 +7,8 @@ export type MeterProps = {
   readonly used: number;
   readonly limit: number | null;
   readonly unit: string;
+  /** For values a comma-grouped integer reads badly as, such as bytes. */
+  readonly formatValue?: (value: number) => string;
 };
 
 /** Where the warning starts. Below this the meter says nothing but the number. */
@@ -32,11 +34,18 @@ const SEVERITY_WORD: Record<MeterSeverity, string | null> = {
   over: 'Over the limit',
 };
 
+function defaultFormat(value: number): string {
+  return value.toLocaleString('en-US');
+}
+
 /**
  * A single ratio against a limit. Severity is carried by a word as well as the
  * fill, because a color on its own is not a state anyone can read.
+ *
+ * With no limit there is no ratio, so the track is left out. A bar that can
+ * never fill reads as a broken gauge rather than as an unlimited one.
  */
-export function Meter({ label, used, limit, unit }: MeterProps) {
+export function Meter({ label, used, limit, unit, formatValue = defaultFormat }: MeterProps) {
   const severity = meterSeverity(used, limit);
   const filled = limit === null || limit <= 0 ? 0 : Math.min(used / limit, 1) * 100;
   const word = SEVERITY_WORD[severity];
@@ -46,27 +55,29 @@ export function Meter({ label, used, limit, unit }: MeterProps) {
       <div className="flex items-baseline justify-between gap-4">
         <p className="text-sm text-foreground-light">{label}</p>
         <p className="text-sm text-foreground tabular-nums">
-          {used.toLocaleString('en-US')}
+          {formatValue(used)}
           {limit === null ? null : (
-            <span className="text-foreground-lighter"> / {limit.toLocaleString('en-US')}</span>
+            <span className="text-foreground-lighter"> / {formatValue(limit)}</span>
           )}
           <span className="sr-only"> {unit}</span>
         </p>
       </div>
 
-      <div
-        role="meter"
-        aria-label={label}
-        aria-valuenow={used}
-        aria-valuemin={0}
-        aria-valuemax={limit ?? undefined}
-        className="h-1.5 overflow-hidden rounded-full bg-background-surface-300"
-      >
+      {limit === null ? null : (
         <div
-          className="h-full rounded-full"
-          style={{ width: `${filled}%`, backgroundColor: SEVERITY_COLOR[severity] }}
-        />
-      </div>
+          role="meter"
+          aria-label={label}
+          aria-valuenow={used}
+          aria-valuemin={0}
+          aria-valuemax={limit}
+          className="h-1.5 overflow-hidden rounded-full bg-background-surface-300"
+        >
+          <div
+            className="h-full rounded-full"
+            style={{ width: `${filled}%`, backgroundColor: SEVERITY_COLOR[severity] }}
+          />
+        </div>
+      )}
 
       {word ? <p className="text-xs text-foreground-light">{word}</p> : null}
     </div>

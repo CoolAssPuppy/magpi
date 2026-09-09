@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { PLANS, planById, planForPriceId } from './plans';
+import { PLANS, planById } from './plans';
 
 describe('plan catalogue', () => {
   it('offers exactly the three plans the product sells', () => {
@@ -18,13 +18,5 @@ describe('plan catalogue', () => {
     expect(planById('team').spaceKinds).toEqual(['personal', 'team', 'org']);
     expect(planById('free').allowsConnections).toBe(false);
     expect(planById('team').allowsConnections).toBe(true);
-  });
-
-  it('maps the configured Team price back to the Team plan', () => {
-    expect(planForPriceId('price_team_123', { teamPriceId: 'price_team_123' })).toBe('team');
-  });
-
-  it('refuses to guess at an unknown price', () => {
-    expect(planForPriceId('price_something_else', { teamPriceId: 'price_team_123' })).toBeNull();
   });
 });

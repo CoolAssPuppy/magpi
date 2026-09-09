@@ -85,12 +85,5 @@ export function planById(id: PlanId): Plan {
   return plan;
 }
 
+/** The Stripe prices this deployment sells, read from the environment. */
 export type PriceMap = { readonly teamPriceId: string };
-
-/**
- * Null for a price we did not configure. A subscription on an unknown price is a
- * misconfiguration, and quietly filing it under the paid plan would hide it.
- */
-export function planForPriceId(priceId: string, prices: PriceMap): PlanId | null {
-  return priceId === prices.teamPriceId ? 'team' : null;
-}

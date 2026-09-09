@@ -5,11 +5,10 @@ import type { PlanId } from './plans';
 /**
  * Two POSTs, form encoded, against Stripe's REST API.
  *
- * There is no Stripe SDK in this repo on purpose. The only Stripe surface Recall
- * touches is these two calls plus one HMAC check, all of which are stable and
- * fully specified, and keeping them as plain fetch is what lets the whole
- * billing path be tested with a stubbed fetch and the fixtures in ./fixtures,
- * with no account and no network.
+ * There is no Stripe SDK in the web package on purpose. The only Stripe surface
+ * it touches is these two calls, both stable and fully specified, and keeping
+ * them as plain fetch is what lets them be tested against a stubbed fetch with
+ * no account and no network. Webhooks are an Edge Function and are not here.
  */
 const CHECKOUT_ENDPOINT = 'https://api.stripe.com/v1/checkout/sessions';
 const PORTAL_ENDPOINT = 'https://api.stripe.com/v1/billing_portal/sessions';

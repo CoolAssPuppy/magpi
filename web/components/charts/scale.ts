@@ -77,3 +77,12 @@ export function seriesPath(
 
   return segments.join('');
 }
+
+/**
+ * A stable id for a chart heading, derived from its title. Server components
+ * cannot call useId, and two charts on one page must not share an id or the
+ * aria-labelledby on the second one points at the first one's heading.
+ */
+export function headingIdFor(title: string): string {
+  return `chart-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
+}
