@@ -15,22 +15,26 @@ test, and is committed.
 - [x] Generated database types committed
 - [x] vitest with coverage thresholds
 - [x] Gate scripts, workflow contract check, light gate in CI
-- [ ] Supabase agent skills installed at project scope
-- [ ] shadcn initialised against the Supabase Library registry
-- [ ] `impeccable` skill at `.agents/skills/impeccable`
+- [x] Supabase agent skills installed at project scope
+- [x] shadcn initialised against the Supabase Library registry
+- [x] `impeccable` skill at `.agents/skills/impeccable`
+- [x] Table privileges declared in `95_grants.sql`
+- [x] Function and column privileges as a hand-written migration
+- [x] Raw color check, and the gate step that runs it
 
 ## Phase 2: Auth and organizations
 
-- [ ] `password-based-auth-nextjs` and `social-auth-nextjs` blocks
-- [ ] Sign up, sign in, callback, sign out
-- [ ] Create org, invite, accept
-- [ ] Tests
+- [x] `password-based-auth-nextjs` and `social-auth-nextjs` blocks
+- [x] Sign up, sign in, callback, sign out
+- [x] Org and personal space created by a trigger on signup
+- [ ] Invite and accept
+- [x] Auth lifecycle journey in Playwright
 
 ## Phase 3: Spaces
 
-- [ ] Personal auto-created, team and org spaces
-- [ ] Membership management
-- [ ] pgTAP proving isolation across select, REST and Realtime
+- [x] Personal auto-created, team and org spaces
+- [x] Membership management
+- [x] pgTAP proving isolation, 170 assertions across nine files
 
 ## Phase 4: Upload and ingest
 

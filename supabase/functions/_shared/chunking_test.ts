@@ -76,7 +76,7 @@ Deno.test('consecutive chunks overlap by roughly the overlap budget', () => {
 
 Deno.test('no overlap means no repetition', () => {
   const chunks = chunkText(words(600, 'x'), { targetTokens: 100, overlapTokens: 0 });
-  const total = chunks.reduce((sum, chunk) => sum + chunk.content.split(' ').length, 0);
+  const total = chunks.reduce((sum, chunk) => sum + chunk.content.split(/\s+/).length, 0);
   assertEquals(total, 600);
 });
 
