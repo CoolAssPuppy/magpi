@@ -1,0 +1,9 @@
+supabase/supabase design tokens, vendored.
+
+commit: 83c33e903c920aa40cfc811e2a5bd81c40e0412d
+synced: 2026-09-09
+files:  15
+
+Never hand-edit a file under this directory. Recall overrides live in
+web/styles/tokens.css, which loads last. Re-run scripts/sync-tokens.mjs
+against a newer checkout to take upstream changes as a reviewable diff.

@@ -1,0 +1,424 @@
+-- The one visibility predicate. Every content policy calls it, so there is a
+-- single place where "what can this person see" is decided.
+create or replace function public.visible_space_ids()
+returns setof uuid
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select space_id from public.space_members where user_id = (select auth.uid())
+$$;
+
+grant execute on function public.visible_space_ids() to authenticated;
+
+create or replace function public.is_org_member(p_org_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.org_members
+    where org_id = p_org_id and user_id = (select auth.uid())
+  )
+$$;
+
+grant execute on function public.is_org_member(uuid) to authenticated;
+
+create or replace function public.is_org_admin(p_org_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.org_members
+    where org_id = p_org_id
+      and user_id = (select auth.uid())
+      and role in ('owner', 'admin')
+  )
+$$;
+
+grant execute on function public.is_org_admin(uuid) to authenticated;
+
+create or replace function public.is_space_member(p_space_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.space_members
+    where space_id = p_space_id and user_id = (select auth.uid())
+  )
+$$;
+
+grant execute on function public.is_space_member(uuid) to authenticated;
+
+-- Hybrid retrieval: pgvector similarity plus Postgres full text search, merged
+-- with reciprocal rank fusion.
+--
+-- security invoker, so RLS on chunks applies to whoever calls it. Web, mobile and
+-- the MCP server all call this one function. A second search implementation
+-- anywhere is a bug.
+--
+-- Pure vector search fails visibly on exact-match questions like "what is the SSO
+-- ticket number". The lexical arm is what stops that happening on stage.
+create or replace function public.search(
+  query_embedding extensions.vector(1536),
+  query_text text,
+  space_filter uuid[] default null,
+  match_count integer default 20
+)
+returns table (
+  chunk_id uuid,
+  document_id uuid,
+  space_id uuid,
+  content text,
+  score real
+)
+language sql
+stable
+security invoker
+set search_path = public, extensions
+as $$
+  with
+    -- Over-fetch each arm so fusion has something to rank. RRF only reorders
+    -- what it is given.
+    candidate_depth as (select greatest(match_count * 4, 40) as n),
+    semantic as (
+      select
+        c.id,
+        c.document_id,
+        c.space_id,
+        c.content,
+        row_number() over (order by c.embedding <=> query_embedding) as rank
+      from public.chunks c, candidate_depth d
+      where c.embedding is not null
+        and (space_filter is null or c.space_id = any (space_filter))
+      order by c.embedding <=> query_embedding
+      limit (select n from candidate_depth)
+    ),
+    lexical as (
+      select
+        c.id,
+        c.document_id,
+        c.space_id,
+        c.content,
+        row_number() over (
+          order by ts_rank_cd(c.tsv, websearch_to_tsquery('english', query_text)) desc
+        ) as rank
+      from public.chunks c
+      where query_text is not null
+        and query_text <> ''
+        and c.tsv @@ websearch_to_tsquery('english', query_text)
+        and (space_filter is null or c.space_id = any (space_filter))
+      order by ts_rank_cd(c.tsv, websearch_to_tsquery('english', query_text)) desc
+      limit (select n from candidate_depth)
+    ),
+    fused as (
+      select
+        coalesce(s.id, l.id) as chunk_id,
+        coalesce(s.document_id, l.document_id) as document_id,
+        coalesce(s.space_id, l.space_id) as space_id,
+        coalesce(s.content, l.content) as content,
+        -- k = 60 is the constant from the original RRF paper. It damps the
+        -- contribution of low-ranked hits without tuning per corpus.
+        (coalesce(1.0 / (60 + s.rank), 0) + coalesce(1.0 / (60 + l.rank), 0))::real as score
+      from semantic s
+      full outer join lexical l on l.id = s.id
+    )
+  select chunk_id, document_id, space_id, content, score
+  from fused
+  order by score desc
+  limit match_count;
+$$;
+
+grant execute on function public.search(extensions.vector, text, uuid[], integer) to authenticated;
+
+-- Atomically consumes a state row, returning it only if it exists and has not
+-- expired. Delete-and-return in one statement so two concurrent callbacks with
+-- the same state cannot both succeed.
+create or replace function public.consume_oauth_state(p_state text)
+returns table (user_id uuid, provider text, code_verifier text, space_id uuid, return_to text)
+language sql
+security definer
+set search_path = ''
+as $$
+  delete from public.oauth_states
+  where state = p_state and expires_at > clock_timestamp()
+  returning user_id, provider, code_verifier, space_id, return_to;
+$$;
+
+revoke all on function public.consume_oauth_state(text) from public, anon, authenticated;
+grant execute on function public.consume_oauth_state(text) to service_role;
+
+create or replace function public.prune_oauth_states()
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  delete from public.oauth_states where expires_at < clock_timestamp();
+$$;
+
+revoke all on function public.prune_oauth_states() from public, anon, authenticated;
+grant execute on function public.prune_oauth_states() to service_role;
+
+-- Deliberately does not filter on user id. The caller compares and audits the
+-- mismatch, which is the signal that someone was handed a link they did not
+-- start. Filtering here would make an attack look like an expired ticket.
+create or replace function public.consume_pending_connection(p_ticket_hash text)
+returns table (
+  user_id uuid,
+  provider text,
+  space_id uuid,
+  external_account_id text,
+  access_token_enc bytea,
+  refresh_token_enc bytea,
+  scopes text[],
+  token_expires_at timestamptz,
+  return_to text
+)
+language sql
+security definer
+set search_path = ''
+as $$
+  delete from public.pending_connections
+  where ticket_hash = p_ticket_hash and expires_at > clock_timestamp()
+  returning user_id, provider, space_id, external_account_id, access_token_enc,
+            refresh_token_enc, scopes, token_expires_at, return_to;
+$$;
+
+revoke all on function public.consume_pending_connection(text) from public, anon, authenticated;
+grant execute on function public.consume_pending_connection(text) to service_role;
+
+create or replace function public.prune_pending_connections()
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  delete from public.pending_connections where expires_at <= clock_timestamp();
+$$;
+
+revoke all on function public.prune_pending_connections() from public, anon, authenticated;
+grant execute on function public.prune_pending_connections() to service_role;
+
+-- The insert-on-conflict-update is one atomic statement, so concurrent callers
+-- cannot both observe count < limit and both proceed.
+create or replace function public.consume_rate_limit(
+  p_bucket text,
+  p_limit integer,
+  p_window_s integer
+)
+returns table (allowed boolean, remaining integer, retry_after_s integer)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_window_start timestamptz;
+  v_count integer;
+begin
+  v_window_start := to_timestamp(
+    floor(extract(epoch from clock_timestamp()) / p_window_s) * p_window_s
+  );
+
+  insert into public.rate_limits (bucket, window_start, count)
+  values (p_bucket, v_window_start, 1)
+  on conflict (bucket, window_start)
+    do update set count = public.rate_limits.count + 1
+  returning public.rate_limits.count into v_count;
+
+  return query select
+    v_count <= p_limit,
+    greatest(0, p_limit - v_count),
+    greatest(
+      1,
+      ceil(extract(epoch from (v_window_start + make_interval(secs => p_window_s))
+                              - clock_timestamp()))::integer
+    );
+end;
+$$;
+
+revoke all on function public.consume_rate_limit(text, integer, integer) from public, anon, authenticated;
+grant execute on function public.consume_rate_limit(text, integer, integer) to service_role;
+
+create or replace function public.prune_rate_limits()
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  delete from public.rate_limits where window_start < clock_timestamp() - interval '1 day';
+$$;
+
+revoke all on function public.prune_rate_limits() from public, anon, authenticated;
+grant execute on function public.prune_rate_limits() to service_role;
+
+-- Plan limits live in the database, not the client. An ingest job that would
+-- take an org past its plan is refused here.
+create or replace function public.plan_document_limit(p_plan public.org_plan)
+returns integer
+language sql
+immutable
+set search_path = ''
+as $$
+  select case p_plan
+    when 'free' then 200
+    when 'team' then 25000
+    when 'enterprise' then 1000000
+  end;
+$$;
+
+grant execute on function public.plan_document_limit(public.org_plan) to authenticated, service_role;
+
+create or replace function public.plan_monthly_query_limit(p_plan public.org_plan)
+returns integer
+language sql
+immutable
+set search_path = ''
+as $$
+  select case p_plan
+    when 'free' then 500
+    when 'team' then 50000
+    when 'enterprise' then 5000000
+  end;
+$$;
+
+grant execute on function public.plan_monthly_query_limit(public.org_plan) to authenticated, service_role;
+
+create or replace function public.check_ingest_allowed(p_org_id uuid)
+returns table (allowed boolean, reason text, used bigint, plan_limit integer)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_plan public.org_plan;
+  v_limit integer;
+  v_used bigint;
+begin
+  select plan into v_plan from public.organizations where id = p_org_id;
+  if v_plan is null then
+    return query select false, 'organization not found'::text, 0::bigint, 0;
+    return;
+  end if;
+
+  v_limit := public.plan_document_limit(v_plan);
+  select count(*) into v_used from public.documents where org_id = p_org_id;
+
+  if v_used >= v_limit then
+    return query select false, format('document limit reached for %s plan', v_plan), v_used, v_limit;
+  else
+    return query select true, null::text, v_used, v_limit;
+  end if;
+end;
+$$;
+
+grant execute on function public.check_ingest_allowed(uuid) to authenticated, service_role;
+
+-- Every new user gets an organization and a personal space. Doing it in a trigger
+-- means there is no signed-in state where a user has nowhere to put a document.
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_org_id uuid;
+  v_slug text;
+  v_label text;
+begin
+  v_label := coalesce(nullif(split_part(new.email, '@', 1), ''), 'workspace');
+  v_slug := regexp_replace(lower(v_label), '[^a-z0-9]+', '-', 'g');
+  v_slug := trim(both '-' from v_slug);
+  if char_length(v_slug) < 2 then
+    v_slug := 'workspace';
+  end if;
+  v_slug := left(v_slug, 40) || '-' || left(replace(new.id::text, '-', ''), 8);
+
+  insert into public.organizations (name, slug)
+  values (v_label || '''s workspace', v_slug)
+  returning id into v_org_id;
+
+  insert into public.org_members (org_id, user_id, role) values (v_org_id, new.id, 'owner');
+
+  insert into public.spaces (org_id, kind, name, owner_user_id)
+  values (v_org_id, 'personal', 'Personal', new.id);
+
+  insert into public.spaces (org_id, kind, name)
+  values (v_org_id, 'org', 'Everyone');
+
+  insert into public.space_members (space_id, user_id)
+  select id, new.id from public.spaces where org_id = v_org_id;
+
+  return new;
+end;
+$$;
+
+create or replace trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
+
+-- Joining an org gets you the org space. Leaving it takes the org space away.
+create or replace function public.sync_org_space_membership()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if tg_op = 'INSERT' then
+    insert into public.space_members (space_id, user_id)
+    select s.id, new.user_id
+    from public.spaces s
+    where s.org_id = new.org_id and s.kind = 'org'
+    on conflict do nothing;
+    return new;
+  end if;
+
+  delete from public.space_members sm
+  using public.spaces s
+  where sm.space_id = s.id and s.org_id = old.org_id and sm.user_id = old.user_id;
+  return old;
+end;
+$$;
+
+create or replace trigger org_members_sync_org_space
+  after insert or delete on public.org_members
+  for each row execute function public.sync_org_space_membership();
+
+create or replace function public.touch_updated_at()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+create or replace trigger connections_touch_updated_at
+  before update on public.connections
+  for each row execute function public.touch_updated_at();
+
+create or replace trigger documents_touch_updated_at
+  before update on public.documents
+  for each row execute function public.touch_updated_at();
+
+create or replace trigger ingest_jobs_touch_updated_at
+  before update on public.ingest_jobs
+  for each row execute function public.touch_updated_at();
+
+create or replace trigger conversations_touch_updated_at
+  before update on public.conversations
+  for each row execute function public.touch_updated_at();

@@ -1,0 +1,40 @@
+{
+  "name": "recall",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@11.1.0",
+  "scripts": {
+    "dev": "doppler run -- pnpm --dir web dev",
+    "build": "pnpm --dir web build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "pnpm lint:web && pnpm lint:functions",
+    "lint:web": "pnpm --dir web lint",
+    "lint:functions": "deno lint supabase/functions",
+    "typecheck": "pnpm typecheck:web && pnpm typecheck:functions",
+    "typecheck:web": "pnpm --dir web typecheck",
+    "typecheck:functions": "deno check supabase/functions",
+    "test": "pnpm --dir web test",
+    "test:functions": "deno test --allow-env --allow-read --allow-net supabase/functions",
+    "test:db": "node scripts/db-test.mjs",
+    "test:integration": "node scripts/integration-test.mjs",
+    "test:e2e": "playwright test",
+    "test:coverage": "pnpm --dir web test:coverage",
+    "gate": "node scripts/gate.mjs",
+    "gate:light": "node scripts/gate.mjs --light",
+    "check:mobile-spec": "node scripts/mobile-spec-check.mjs",
+    "check:workflows": "node scripts/workflow-contract-check.mjs",
+    "sync:tokens": "node scripts/sync-tokens.mjs",
+    "db:types": "node scripts/gen-types.mjs",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "husky": "^9.1.7",
+    "prettier": "^3.6.2"
+  }
+}

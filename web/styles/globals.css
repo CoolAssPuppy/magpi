@@ -1,0 +1,8 @@
+@import './supabase/packages/config/tailwind.config.css';
+@import './tokens.css';
+
+/* Tailwind v4 has no content globs. Every directory whose classes must be
+ * generated needs an @source directive. */
+@source '../app';
+@source '../components';
+@source '../lib';
