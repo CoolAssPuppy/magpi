@@ -17,6 +17,12 @@ create table public.ingest_jobs (
   updated_at timestamptz not null default now()
 );
 
+-- A job cannot reach a terminal state with nothing to show the user. Without
+-- this a failed import leaves the page no honest option but a spinner.
+alter table public.ingest_jobs
+  add constraint ingest_jobs_terminal_has_error
+  check (status not in ('failed', 'timeout') or error is not null);
+
 create index ingest_jobs_claim_idx on public.ingest_jobs (status, created_at) where status = 'queued';
 create index ingest_jobs_space_idx on public.ingest_jobs (space_id, updated_at desc);
 create index ingest_jobs_document_idx on public.ingest_jobs (document_id);

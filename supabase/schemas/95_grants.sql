@@ -27,11 +27,17 @@ grant select, insert, delete on public.space_members to authenticated;
 
 grant select on public.providers to authenticated;
 
--- connections is deliberately absent from the table-level select grants. Its
--- token columns are excluded by an explicit column list in
--- supabase/migrations/*_function_and_column_privileges.sql, and a table grant
--- here would put them back.
+-- connections gets a column list rather than a table grant. A column-level
+-- revoke cannot subtract from a table-level grant, so the only way to keep
+-- access_token_enc and refresh_token_enc unreadable is for the table privilege
+-- never to exist. `select *` therefore fails for a client, which is the point:
+-- naming your columns means you cannot ask for a token by accident.
 grant delete on public.connections to authenticated;
+grant select (
+  id, org_id, space_id, user_id, provider, external_account_id, scopes,
+  scope_selection, status, status_detail, cursor, token_expires_at,
+  last_synced_at, created_at, updated_at
+) on public.connections to authenticated;
 grant select, delete on public.documents to authenticated;
 grant select on public.chunks to authenticated;
 grant select on public.entities to authenticated;

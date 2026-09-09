@@ -15,11 +15,23 @@ create table public.dream_runs (
   started_at timestamptz,
   finished_at timestamptz,
   input_document_count integer not null default 0,
-  output_document_id uuid references public.documents (id) on delete set null,
+  output_document_id uuid,
   error text,
   triggered_by uuid references auth.users (id) on delete set null,
   created_at timestamptz not null default now()
 );
+
+-- The write-side half of the rule above. RLS cannot enforce it, because the dream
+-- job runs as service_role and service_role has BYPASSRLS, so no policy is
+-- evaluated for that process at all. Carrying space_id through the foreign key
+-- makes the database refuse a cross-space write outright.
+--
+-- MATCH SIMPLE, the default, because output_document_id is nullable and a run
+-- with no output yet must still be insertable.
+alter table public.dream_runs
+  add constraint dream_runs_output_in_space
+  foreign key (output_document_id, space_id)
+  references public.documents (id, space_id) on delete set null;
 
 create index dream_runs_space_created_idx on public.dream_runs (space_id, created_at desc);
 
@@ -29,8 +41,8 @@ create table public.dream_links (
   id uuid primary key default gen_random_uuid(),
   dream_run_id uuid not null references public.dream_runs (id) on delete cascade,
   space_id uuid not null references public.spaces (id) on delete cascade,
-  document_a uuid not null references public.documents (id) on delete cascade,
-  document_b uuid not null references public.documents (id) on delete cascade,
+  document_a uuid not null,
+  document_b uuid not null,
   similarity real not null,
   rationale text,
   confirmed_at timestamptz,
@@ -39,6 +51,18 @@ create table public.dream_links (
   check (document_a < document_b),
   unique (space_id, document_a, document_b)
 );
+
+-- dream_links.rationale is model-written prose describing both documents, and
+-- dream_links_select_visible shows it to every member of the space the link is
+-- filed in. A link naming a document from another space would hand that space a
+-- written summary of something nobody there can open.
+alter table public.dream_links
+  add constraint dream_links_document_a_in_space
+    foreign key (document_a, space_id) references public.documents (id, space_id)
+    on delete cascade,
+  add constraint dream_links_document_b_in_space
+    foreign key (document_b, space_id) references public.documents (id, space_id)
+    on delete cascade;
 
 create index dream_links_space_idx on public.dream_links (space_id, created_at desc);
 

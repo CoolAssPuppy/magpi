@@ -21,6 +21,8 @@ create index chunks_embedding_idx
   with (m = 16, ef_construction = 64);
 
 create index chunks_tsv_idx on public.chunks using gin (tsv);
+alter table public.chunks add constraint chunks_id_space_key unique (id, space_id);
+
 create index chunks_space_id_idx on public.chunks (space_id);
 create index chunks_document_id_idx on public.chunks (document_id);
 

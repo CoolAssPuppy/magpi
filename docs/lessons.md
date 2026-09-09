@@ -124,3 +124,20 @@ nothing.
 It was not the cause of the failure above, but it would have been the next one.
 
 **Rule.** Spread `process.env` into any `webServer.env`.
+
+## A hand-written migration is only half the job
+
+Three times now a fix landed as a hand-written migration and the schema files
+were left behind, so `supabase db diff` saw the applied database as drift and
+proposed dropping the fix. Storage policies, the realtime publication, the
+function revokes and the connections column grants were all in that state at
+once.
+
+**Rule.** Anything applied by a hand-written migration is also declared in
+`supabase/schemas/`, even when the diff cannot generate it. The shadow database
+the diff builds has to match the real one, or the next routine schema change
+turns destructive.
+
+`supabase db diff` printing "No schema changes found" on a clean tree is the
+check that this holds, and it is worth running deliberately rather than only
+when generating a migration.

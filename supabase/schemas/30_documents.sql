@@ -26,6 +26,11 @@ create unique index documents_connection_external_idx
   on public.documents (connection_id, external_id)
   where connection_id is not null and external_id is not null;
 
+-- The target of the composite foreign keys that keep a dream run inside its own
+-- space. Postgres needs a unique constraint on exactly these two columns before
+-- another table can reference them together.
+alter table public.documents add constraint documents_id_space_key unique (id, space_id);
+
 create index documents_space_id_idx on public.documents (space_id);
 create index documents_org_id_idx on public.documents (org_id);
 create index documents_origin_idx on public.documents (space_id, origin);

@@ -10,7 +10,7 @@ as $$
   select space_id from public.space_members where user_id = (select auth.uid())
 $$;
 
-grant execute on function public.visible_space_ids() to authenticated;
+grant execute on function public.visible_space_ids() to authenticated, service_role;
 
 create or replace function public.is_org_member(p_org_id uuid)
 returns boolean
@@ -25,7 +25,7 @@ as $$
   )
 $$;
 
-grant execute on function public.is_org_member(uuid) to authenticated;
+grant execute on function public.is_org_member(uuid) to authenticated, service_role;
 
 create or replace function public.is_org_admin(p_org_id uuid)
 returns boolean
@@ -42,7 +42,7 @@ as $$
   )
 $$;
 
-grant execute on function public.is_org_admin(uuid) to authenticated;
+grant execute on function public.is_org_admin(uuid) to authenticated, service_role;
 
 create or replace function public.is_space_member(p_space_id uuid)
 returns boolean
@@ -57,7 +57,7 @@ as $$
   )
 $$;
 
-grant execute on function public.is_space_member(uuid) to authenticated;
+grant execute on function public.is_space_member(uuid) to authenticated, service_role;
 
 -- Hybrid retrieval: pgvector similarity plus Postgres full text search, merged
 -- with reciprocal rank fusion.
@@ -138,7 +138,8 @@ as $$
   limit match_count;
 $$;
 
-grant execute on function public.search(extensions.vector, text, uuid[], integer) to authenticated;
+grant execute on function public.search(extensions.vector, text, uuid[], integer)
+  to authenticated, service_role;
 
 -- Atomically consumes a state row, returning it only if it exists and has not
 -- expired. Delete-and-return in one statement so two concurrent callbacks with

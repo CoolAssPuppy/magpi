@@ -76,6 +76,7 @@ schema_paths = [
   "./schemas/70_usage_events.sql",
   "./schemas/80_functions.sql",
   "./schemas/90_policies.sql",
+  "./schemas/91_storage.sql",
   "./schemas/*.sql",
 ]
 
