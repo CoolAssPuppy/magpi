@@ -3,7 +3,7 @@ create type public.document_origin as enum ('upload', 'sync', 'dream');
 create table public.documents (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references public.organizations (id) on delete cascade,
-  space_id uuid not null references public.spaces (id) on delete cascade,
+  space_id uuid not null,
   connection_id uuid references public.connections (id) on delete set null,
   external_id text,
   title text not null default 'Untitled',
@@ -41,6 +41,20 @@ create unique index documents_connection_external_idx
 -- space. Postgres needs a unique constraint on exactly these two columns before
 -- another table can reference them together.
 alter table public.documents add constraint documents_id_space_key unique (id, space_id);
+
+-- org_id carried through the space, the same way space_id is carried through
+-- the document. Without it a row can name a space in one organization and an
+-- org_id in another, and the meters believe the org_id.
+--
+-- It replaces the single-column reference rather than joining it. Two foreign
+-- keys between the same pair of tables give PostgREST two relationships to
+-- choose from and every embed fails as ambiguous, which is how the spaces page
+-- found out. The composite is the stronger of the two: it says the space exists
+-- and that it belongs to the org named on this row.
+alter table public.documents
+  add constraint documents_space_in_org
+  foreign key (space_id, org_id) references public.spaces (id, org_id)
+  on delete cascade;
 
 create index documents_space_id_idx on public.documents (space_id);
 create index documents_org_id_idx on public.documents (org_id);

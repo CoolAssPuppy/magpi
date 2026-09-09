@@ -9,7 +9,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(36);
+select plan(39);
 
 insert into auth.users (id, email, instance_id, aud, role)
 values
@@ -368,7 +368,9 @@ select set_eq(
       ('organizations', 'SELECT'), ('organizations', 'UPDATE'),
       ('org_members', 'SELECT'), ('org_members', 'DELETE'),
       ('org_invites', 'SELECT'), ('org_invites', 'INSERT'), ('org_invites', 'DELETE'),
-      ('spaces', 'SELECT'), ('spaces', 'INSERT'), ('spaces', 'UPDATE'), ('spaces', 'DELETE'),
+      -- No UPDATE. spaces is granted by column list so org_id and kind stay
+      -- out, and a table grant here would put them back.
+      ('spaces', 'SELECT'), ('spaces', 'INSERT'), ('spaces', 'DELETE'),
       ('space_members', 'SELECT'), ('space_members', 'INSERT'), ('space_members', 'DELETE'),
       ('providers', 'SELECT'),
       -- No SELECT. connections is granted by column list so the token columns
@@ -426,6 +428,31 @@ select ok(
 select ok(
   not has_column_privilege('authenticated', 'public.connections', 'access_token_enc', 'select'),
   'but never the provider token stored on it'
+);
+
+-- spaces is the second column-list grant, for the same reason and with a worse
+-- consequence. spaces_update_member tested membership and nothing else, so a
+-- table-wide update let a member run `update spaces set org_id = <another org>`
+-- and carry the space, its documents, its chunks and its usage into an
+-- organization they were never a member of. Renaming is the only thing a member
+-- was ever meant to do here.
+select ok(
+  not has_table_privilege('authenticated', 'public.spaces', 'update'),
+  'a member holds no table-wide update on spaces, only named columns'
+);
+
+select ok(
+  has_column_privilege('authenticated', 'public.spaces', 'name', 'update')
+    and has_column_privilege('authenticated', 'public.spaces', 'dreaming_enabled', 'update'),
+  'a member can rename a space and turn dreaming off'
+);
+
+-- The two columns that decide which organization owns the rows and who can
+-- reach them.
+select ok(
+  not has_column_privilege('authenticated', 'public.spaces', 'org_id', 'update')
+    and not has_column_privilege('authenticated', 'public.spaces', 'kind', 'update'),
+  'but never move it between organizations or change what kind of space it is'
 );
 
 select * from finish();

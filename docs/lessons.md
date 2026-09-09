@@ -396,3 +396,41 @@ below 100 in at least one metric, 46 against 46 out of 137" is worth having.
 
 The discriminating test is the one that would come out differently if the belief
 were false. Setting a flag to its own default cannot be one.
+
+## A second foreign key between the same two tables breaks every PostgREST embed
+
+Fixing F001 meant carrying `org_id` through the content tables, so `documents`,
+`chunks`, `connections` and `ingest_jobs` each gained
+
+```sql
+foreign key (space_id, org_id) references public.spaces (id, org_id)
+```
+
+next to the `space_id uuid references public.spaces (id)` that was already on the
+column. Both are correct. `supabase db reset` succeeded, `supabase db diff`
+reported no drift, and all 211 pgTAP assertions passed.
+
+The spaces page then returned:
+
+```
+Could not embed because more than one relationship was found for 'spaces' and 'documents'
+```
+
+PostgREST resolves `select=*,documents(*)` by looking for exactly one foreign key
+between the two tables. Two is not better than one, it is ambiguous, and the
+request fails at runtime with nothing in the schema to point at. Every embed
+across all four pairs broke at once.
+
+The database was never the thing that noticed. Constraints, migrations and the
+whole pgTAP suite are blind to this, because nothing about it is invalid. Only
+the Playwright test that loads `/spaces` as a real user saw it.
+
+**Rule.** Adding a composite foreign key that includes the column an existing
+single-column key already references means replacing that key, not sitting
+beside it. The composite says strictly more: the row exists, and it belongs to
+the org named on this row. `chunks.document_id` was already built this way, with
+a composite to `documents (id, space_id)` and no single-column key at all. The
+precedent was in the file above the one being edited.
+
+The wider version: a schema change that every schema-level check passes can still
+be caught by the one test that asks for a page.

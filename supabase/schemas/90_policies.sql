@@ -49,6 +49,9 @@ create policy spaces_insert_org_member on public.spaces
   for insert to authenticated
   with check (public.is_org_member(org_id) and kind = 'team');
 
+-- The column grant in 95_grants.sql is what stops org_id and kind being written.
+-- This policy decides which rows, and the with check repeats the membership test
+-- so a row cannot be updated out of the caller's own visibility.
 create policy spaces_update_member on public.spaces
   for update to authenticated
   using (id in (select public.visible_space_ids()))

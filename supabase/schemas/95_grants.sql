@@ -22,7 +22,13 @@ grant delete on public.org_members to authenticated;
 
 grant select, insert, delete on public.org_invites to authenticated;
 
-grant select, insert, update, delete on public.spaces to authenticated;
+-- update is a column list, not the table. A table-wide update grant let a space
+-- member run `update spaces set org_id = <another org>` and flip a team space to
+-- kind 'org'. The policy tested membership and nothing else, so both were
+-- allowed. A column-level revoke cannot subtract from a table grant, so the
+-- table privilege has to be absent for the column list to mean anything.
+grant select, insert, delete on public.spaces to authenticated;
+grant update (name, dreaming_enabled) on public.spaces to authenticated;
 grant select, insert, delete on public.space_members to authenticated;
 
 grant select on public.providers to authenticated;

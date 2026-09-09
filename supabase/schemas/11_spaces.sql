@@ -22,6 +22,12 @@ create unique index spaces_org_kind_idx
 
 create index spaces_org_id_idx on public.spaces (org_id);
 
+-- The target for carrying org_id through every content table, the same way
+-- documents (id, space_id) carries space_id. Without it a space could be moved
+-- between organizations and its content would follow, to be metered, billed and
+-- plan-counted against an org it does not belong to.
+alter table public.spaces add constraint spaces_id_org_key unique (id, org_id);
+
 alter table public.spaces
   add constraint spaces_personal_has_owner
   check ((kind = 'personal') = (owner_user_id is not null));
