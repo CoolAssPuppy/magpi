@@ -31,3 +31,4 @@ playwright-report/
 blob-report/
 .playwright/
 supabase/.env.local
+supabase/.stack-lock

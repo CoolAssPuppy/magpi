@@ -5,7 +5,6 @@ pnpm-lock.yaml
 supabase/migrations
 web/lib/database.types.ts
 web/styles/supabase
-docs/fixtures
 test-results
 playwright-report
 supabase/functions

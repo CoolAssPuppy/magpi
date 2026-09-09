@@ -56,8 +56,8 @@ alter table public.documents
   foreign key (space_id, org_id) references public.spaces (id, org_id)
   on delete cascade;
 
-create index documents_space_id_idx on public.documents (space_id);
-create index documents_org_id_idx on public.documents (org_id);
+-- These two lead on space_id and org_id, so the single-column indexes that
+-- used to sit beside them were doing nothing but slowing every insert.
 create index documents_origin_idx on public.documents (space_id, origin);
 create index documents_dead_content_idx on public.documents (org_id, last_retrieved_at);
 -- Deleting a dream run cascades to the document it wrote.

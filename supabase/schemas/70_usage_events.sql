@@ -13,7 +13,11 @@ create table public.usage_events (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references public.organizations (id) on delete cascade,
   kind public.usage_kind not null,
-  quantity bigint not null default 1,
+  -- Non-negative. Every meter in the product sums this column, so a negative
+  -- row is a smaller invoice and a plan limit that never arrives. No client can
+  -- write here, but service_role can, and 12_admin.test.sql uses -1000 as its
+  -- own illustration of why that matters.
+  quantity bigint not null default 1 check (quantity >= 0),
   occurred_at timestamptz not null default now()
 );
 

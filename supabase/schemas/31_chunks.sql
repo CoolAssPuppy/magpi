@@ -12,6 +12,8 @@ create table public.chunks (
   tsv tsvector generated always as (to_tsvector('english', content)) stored,
   token_count integer,
   created_at timestamptz not null default now(),
+  -- Also the only index chunks needs on document_id: a btree on (a, b) serves
+  -- a lookup on a, and chunks is the hottest write path in the product.
   unique (document_id, ordinal)
 );
 
@@ -47,7 +49,6 @@ alter table public.chunks
   on delete cascade;
 
 create index chunks_space_id_idx on public.chunks (space_id);
-create index chunks_document_id_idx on public.chunks (document_id);
 
 alter table public.chunks enable row level security;
 alter table public.chunks force row level security;

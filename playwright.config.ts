@@ -13,6 +13,8 @@ export default defineConfig({
   // that create accounts run separately from database suites, because concurrent
   // fixtures on one persistent database produce false cleanup failures.
   testIgnore: ['integration/**'],
+  // Takes the lock the integration runner takes, and releases it on the way out.
+  globalSetup: './tests/global-setup.ts',
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: 0,

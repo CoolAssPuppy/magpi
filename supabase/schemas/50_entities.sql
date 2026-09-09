@@ -15,7 +15,6 @@ create table public.entities (
 
 alter table public.entities add constraint entities_id_space_key unique (id, space_id);
 
-create index entities_space_id_idx on public.entities (space_id);
 
 create table public.entity_mentions (
   id uuid primary key default gen_random_uuid(),

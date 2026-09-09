@@ -61,6 +61,12 @@ max_client_conn = 100
 enabled = true
 # Specifies an ordered list of schema files, directories, or glob patterns that describe your database.
 # Supports paths relative to supabase directory: "./schemas/*.sql", "./database".
+#
+# Every file named, and no trailing glob. The glob was the only thing pulling in
+# 95_grants.sql, which landed last by alphabetical accident rather than by
+# intent, and a new 05_*.sql would have landed there too, after the policies
+# that depend on it. A file added to schemas/ and not added here now fails to
+# apply, which is louder than applying in the wrong order.
 schema_paths = [
   "./schemas/00_extensions.sql",
   "./schemas/10_organizations.sql",
@@ -77,7 +83,7 @@ schema_paths = [
   "./schemas/80_functions.sql",
   "./schemas/90_policies.sql",
   "./schemas/91_storage.sql",
-  "./schemas/*.sql",
+  "./schemas/95_grants.sql",
 ]
 
 [db.seed]

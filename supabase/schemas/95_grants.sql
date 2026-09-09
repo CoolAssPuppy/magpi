@@ -49,7 +49,13 @@ grant select on public.chunks to authenticated;
 grant select on public.entities to authenticated;
 grant select on public.entity_mentions to authenticated;
 grant select on public.dream_runs to authenticated;
-grant select, update on public.dream_links to authenticated;
+-- update is a column list for the same reason spaces is. The policy tests the
+-- space and nothing else, so a table-wide grant let a member rewrite
+-- similarity, rationale, dream_run_id and both document ids: a link between two
+-- documents they can see, repointed at a document they cannot, carrying prose
+-- they wrote. Confirming and dismissing is the whole feature.
+grant select on public.dream_links to authenticated;
+grant update (confirmed_at, dismissed_at) on public.dream_links to authenticated;
 grant select on public.ingest_jobs to authenticated;
 
 grant select, insert, update, delete on public.conversations to authenticated;

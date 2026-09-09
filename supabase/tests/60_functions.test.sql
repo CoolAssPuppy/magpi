@@ -9,7 +9,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(40);
+select plan(42);
 
 insert into auth.users (id, email, instance_id, aud, role)
 values
@@ -388,7 +388,10 @@ select set_eq(
       ('entities', 'SELECT'),
       ('entity_mentions', 'SELECT'),
       ('dream_runs', 'SELECT'),
-      ('dream_links', 'SELECT'), ('dream_links', 'UPDATE'),
+      -- No UPDATE. dream_links is the third column-list grant: the policy tests
+      -- the space and nothing else, so a table grant would let a member rewrite
+      -- similarity, rationale and both document ids.
+      ('dream_links', 'SELECT'),
       ('ingest_jobs', 'SELECT'),
       ('conversations', 'SELECT'), ('conversations', 'INSERT'),
       ('conversations', 'UPDATE'), ('conversations', 'DELETE'),
@@ -494,6 +497,21 @@ select ok(
   has_column_privilege('authenticated', 'public.spaces', 'name', 'update')
     and has_column_privilege('authenticated', 'public.spaces', 'dreaming_enabled', 'update'),
   'a member can rename a space and turn dreaming off'
+);
+
+select ok(
+  not has_table_privilege('authenticated', 'public.dream_links', 'update')
+    and has_column_privilege('authenticated', 'public.dream_links', 'confirmed_at', 'update')
+    and has_column_privilege('authenticated', 'public.dream_links', 'dismissed_at', 'update'),
+  'a member can confirm or dismiss a candidate link'
+);
+
+-- Repointing a link at a document the member cannot see, carrying rationale
+-- prose they wrote, would render as the dream job's own output.
+select ok(
+  not has_column_privilege('authenticated', 'public.dream_links', 'document_b', 'update')
+    and not has_column_privilege('authenticated', 'public.dream_links', 'rationale', 'update'),
+  'but never move it to another document or rewrite what it says'
 );
 
 -- The two columns that decide which organization owns the rows and who can

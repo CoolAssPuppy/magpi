@@ -16,6 +16,14 @@
 --
 -- At test-corpus size the planner picks a sequential scan and hides the whole
 -- thing, which is why the assertion forces the index.
+--
+-- Read the two counts above as what was measured on the day this landed, not as
+-- something the suite still checks. The behavioural half was withdrawn soon
+-- after: a pgTAP file is one rolled-back transaction, so it asks an approximate
+-- index about uncommitted rows, and it failed about one run in three in the
+-- full gate while passing every time in isolation. What is still asserted is
+-- that no row leaks and that the setting is on the function. The reasoning is
+-- in supabase/tests/20_search.test.sql and docs/retrieval.md.
 
 -- Required, not decorative. Until a vector operation has run in the session,
 -- hnsw.iterative_scan is an unrecognised placeholder and the ALTER below is

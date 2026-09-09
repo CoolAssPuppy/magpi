@@ -4,13 +4,17 @@
  *
  * Run separately from the browser suites. Concurrent fixtures against one
  * persistent local database produce false cleanup failures, so this runner
- * refuses to start if a Playwright run is already holding the stack.
+ * refuses to start if a browser run is already holding the stack. The lock is
+ * in tests/stack-lock.mjs; this comment used to describe a check that did not
+ * exist.
  */
 
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { releaseStackLock, takeStackLock } from '../tests/stack-lock.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SUITE = resolve(ROOT, 'tests/integration');
@@ -43,11 +47,27 @@ async function main() {
     process.exit(1);
   }
 
-  const child = spawnSync(
-    'npx',
-    ['vitest', 'run', '--root', ROOT, '--config', 'vitest.integration.mts'],
-    { cwd: ROOT, stdio: 'inherit', env: process.env },
-  );
+  const held = takeStackLock(ROOT, 'integration');
+  if (held) {
+    console.error(
+      `the ${held.suite} suite is using the local database (pid ${held.pid}).\n` +
+        "Fixtures from two suites delete each other's accounts. Wait for it to finish.",
+    );
+    process.exit(1);
+  }
+
+  // Released whatever the outcome, including a failing run. A lock left behind
+  // by a red suite would block the next green one.
+  let child;
+  try {
+    child = spawnSync(
+      'npx',
+      ['vitest', 'run', '--root', ROOT, '--config', 'vitest.integration.mts'],
+      { cwd: ROOT, stdio: 'inherit', env: process.env },
+    );
+  } finally {
+    releaseStackLock(ROOT);
+  }
 
   if (child.status !== 0) {
     console.error('\nintegration FAILED');
