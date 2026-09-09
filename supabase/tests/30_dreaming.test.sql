@@ -8,7 +8,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(30);
+select plan(33);
 
 insert into auth.users (id, email, instance_id, aud, role)
 values
@@ -124,6 +124,16 @@ values ('52000000-0000-4000-8000-0000000000aa',
         '50000000-0000-4000-8000-00000000000a', '51000000-0000-4000-8000-0000000000aa',
         0, 'the staff engineer band tops out at 260');
 
+-- The digest cites two chunks: one from its own space, one of Alice's. A dream
+-- job has no business producing the second, but source_chunk_ids is a uuid[] and
+-- an array column cannot carry a foreign key, so nothing declarative can refuse
+-- it. What makes the column safe anyway is that the ids are resolved on read
+-- through RLS, exactly as messages.citations is.
+update public.documents
+set source_chunk_ids = array['52000000-0000-4000-8000-00000000000c',
+                             '52000000-0000-4000-8000-0000000000aa']::uuid[]
+where id = '51000000-0000-4000-8000-0000000000fc';
+
 -- An entity of Alice's, so the mention assertions have something in the wrong
 -- space to reach for.
 insert into public.entities (id, org_id, space_id, kind, name, canonical_name)
@@ -165,6 +175,26 @@ select is(
   (select count(*)::int from public.documents
    where id = '51000000-0000-4000-8000-0000000000fc' and origin = 'dream'),
   1, 'and the digest the run wrote, which is a document like any other'
+);
+
+-- The same rule the spec sets for message citations, on the other citation
+-- column. The ids are stored; the text is resolved on read through RLS. That is
+-- what makes an unenforceable array column safe, and it is the property that
+-- breaks the day somebody adds a denormalised source_text column or resolves
+-- citations through a security definer function.
+select is(
+  (select array_length(source_chunk_ids, 1) from public.documents
+   where id = '51000000-0000-4000-8000-0000000000fc'),
+  2, 'the digest records two source chunk ids'
+);
+
+select is(
+  (select count(*)::int
+   from public.documents d
+   cross join lateral unnest(d.source_chunk_ids) as s(chunk_id)
+   join public.chunks ch on ch.id = s.chunk_id
+   where d.id = '51000000-0000-4000-8000-0000000000fc'),
+  1, 'and a reader resolves only the one that is in a space they can see'
 );
 
 -- A colleague in the same org, outside the space ------------------------------
@@ -492,6 +522,24 @@ select throws_ok(
              '50000000-0000-4000-8000-00000000000c') $$,
   '23503', null,
   'an entity mention cannot cite an entity from another space'
+);
+
+-- There is no uncited synthesis. An empty array is a legitimate answer, meaning
+-- the run found nothing worth writing about; a null is a digest whose citations
+-- were never recorded, which is the same prose with no way to check it.
+-- messages.citations already draws that line, as `jsonb not null default '[]'`
+-- with a check that it is an array. This column wants the same:
+--
+--   alter table public.documents
+--     alter column source_chunk_ids set default '{}',
+--     alter column source_chunk_ids set not null;
+select throws_ok(
+  $$ insert into public.documents (org_id, space_id, title, origin, source_chunk_ids)
+     values (current_setting('recall.org_c')::uuid,
+             '50000000-0000-4000-8000-00000000000c',
+             'Uncited digest', 'dream', null) $$,
+  '23502', null,
+  'a document cannot record a null set of source chunks'
 );
 
 reset role;

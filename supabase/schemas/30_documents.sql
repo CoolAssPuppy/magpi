@@ -23,7 +23,13 @@ create table public.documents (
   -- Every dream document cites the chunks it came from. There is no uncited
   -- synthesis, so a dream output with an empty array is a run that produced
   -- nothing rather than a claim with no source.
-  source_chunk_ids uuid[]
+  --
+  -- not null with a default, matching messages.citations, because empty and null
+  -- are different answers. Empty says the run looked and found nothing worth
+  -- citing. Null says nobody recorded anything, which is the state this column
+  -- exists to make impossible, and it is what a job gets by not setting the
+  -- field, which is the easy path.
+  source_chunk_ids uuid[] not null default '{}'
 );
 
 -- Incremental sync looks a document up by its source identity on every pass.

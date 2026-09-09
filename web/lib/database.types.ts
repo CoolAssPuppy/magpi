@@ -204,7 +204,7 @@ export type Database = {
           origin: Database["public"]["Enums"]["document_origin"]
           retrieval_count: number
           size_bytes: number | null
-          source_chunk_ids: string[] | null
+          source_chunk_ids: string[]
           space_id: string
           storage_path: string | null
           title: string
@@ -225,7 +225,7 @@ export type Database = {
           origin: Database["public"]["Enums"]["document_origin"]
           retrieval_count?: number
           size_bytes?: number | null
-          source_chunk_ids?: string[] | null
+          source_chunk_ids?: string[]
           space_id: string
           storage_path?: string | null
           title?: string
@@ -246,7 +246,7 @@ export type Database = {
           origin?: Database["public"]["Enums"]["document_origin"]
           retrieval_count?: number
           size_bytes?: number | null
-          source_chunk_ids?: string[] | null
+          source_chunk_ids?: string[]
           space_id?: string
           storage_path?: string | null
           title?: string
