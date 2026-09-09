@@ -1,41 +1,11 @@
 import { z } from 'zod';
 
+import { invokeEdgeFunction, type FunctionsClient } from '@/lib/edge/invoke';
 import { err, ok, type Result } from '@/lib/result';
 
 import { parseScopeSelection, type ScopeSelection } from './scope-selection';
 
-/**
- * Every call the web app makes into the connection edge functions, with its
- * response parsed here and nowhere else. Only the `functions` surface is needed,
- * so this stays a pure function of its client and is testable without a server.
- *
- * Also the home of the generic invoke helper the dream calls use. It belongs in
- * a shared module once one exists.
- */
-export type FunctionsClient = {
-  readonly functions: {
-    invoke: (
-      name: string,
-      options: { body: Record<string, unknown> },
-    ) => Promise<{ data: unknown; error: { message: string } | null }>;
-  };
-};
-
-export async function invokeEdgeFunction<T>(
-  client: FunctionsClient,
-  name: string,
-  body: Record<string, unknown>,
-  schema: z.ZodType<T>,
-): Promise<Result<T, string>> {
-  const { data, error } = await client.functions.invoke(name, { body });
-  if (error) return err(`${name} failed: ${error.message}`);
-
-  const parsed = schema.safeParse(data);
-  if (!parsed.success) return err(`${name} answered in a shape this app does not understand.`);
-
-  return ok(parsed.data);
-}
-
+/** Every call the web app makes into the connection edge functions. */
 const beginResponse = z.object({ authorize_url: z.url() });
 const claimResponse = z.object({ connection_id: z.uuid() });
 const syncResponse = z.object({

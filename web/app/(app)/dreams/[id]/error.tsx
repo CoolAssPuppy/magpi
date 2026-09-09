@@ -1,19 +1,15 @@
 'use client';
 
-import { ErrorState } from '@/components/app/error-state';
-import { Button } from '@/components/ui/button';
+import { BoundaryError } from '@/components/app/error-boundary';
 import type { ErrorBoundaryProps } from '@/components/app/error-boundary-props';
 
 export default function DreamRunError({ error, reset }: ErrorBoundaryProps) {
   return (
-    <div className="flex flex-col items-start gap-3">
-      <ErrorState
-        title="This run could not be read"
-        detail={`${error.message} The run itself and everything it wrote are untouched.`}
-      />
-      <Button variant="outline" size="sm" onClick={reset}>
-        Try again
-      </Button>
-    </div>
+    <BoundaryError
+      title="This run could not be read"
+      detail="The run and everything it wrote are untouched. Try again in a moment."
+      error={error}
+      reset={reset}
+    />
   );
 }

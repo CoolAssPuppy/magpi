@@ -98,6 +98,15 @@ None of this is a fork of upstream in any meaningful sense: the behavior is
 unchanged and the diffs are readable. If a future `npx shadcn add` overwrites
 either file, the lint failure is how we will know.
 
+A third fix followed, once the hooks came under test. The upload hook's retry
+built its list by concatenating the files in the error list with the files
+missing from the success list. A file that failed is in both, so every retry
+sent that object twice at once, and with `upsert` off the second write came back
+as an error about a file that had just landed. It is now one filter with an
+`or`, which is the same set in the same order with nothing in it twice. This is
+the only one of the three that changes behavior, and it is the one the tests
+found rather than the linter.
+
 **The Stripe webhook is an Edge Function, not the Next.js route the spec lists.**
 Stripe signature verification needs the exact bytes of the request body, and it
 needs to run whether or not the web app is deployed. An Edge Function gets both:

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import type { ActionState } from '@/lib/actions/state';
 import type { LinkCandidate, LinkedDocument, LinkState } from '@/lib/dreams/view-model';
 
-export type LinkDecision = (linkId: string) => Promise<ActionState<undefined>>;
+type LinkDecision = (linkId: string) => Promise<ActionState<undefined>>;
 
 function DocumentLine({ document }: { document: LinkedDocument }) {
   return (

@@ -3,9 +3,18 @@
 import { useId, useState, useTransition } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import type { ActionState } from '@/lib/actions/state';
 import type { ScopeSelection } from '@/lib/connections/scope-selection';
 import type { ConnectionStatusView } from '@/lib/connections/status';
+import type { SpaceOption } from '@/lib/spaces/spaces';
 
 import { ScopePicker } from './scope-picker';
 import { StatusPill } from '@/components/app/status-pill';
@@ -19,7 +28,7 @@ export type ConnectionScope = {
   readonly selection: ScopeSelection;
 };
 
-export type ProviderSummary = {
+type ProviderSummary = {
   readonly slug: string;
   readonly displayName: string;
   readonly description: string;
@@ -27,9 +36,7 @@ export type ProviderSummary = {
   readonly scopeSelectionKind: string | null;
 };
 
-export type SpaceOption = { readonly id: string; readonly name: string };
-
-export type SaveScope = (
+type SaveScope = (
   connectionId: string,
   selected: readonly string[],
 ) => Promise<ActionState<ScopeSelection>>;
@@ -118,7 +125,7 @@ export function ConnectPanel({
   onSaveScope,
 }: {
   provider: ProviderSummary;
-  spaces: readonly SpaceOption[];
+  spaces: readonly Pick<SpaceOption, 'id' | 'name'>[];
   connections: readonly ConnectionScope[];
   initialSpaceId: string;
   onBegin: (spaceId: string) => Promise<ActionState<undefined>>;
@@ -148,21 +155,19 @@ export function ConnectPanel({
         </h2>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor={spaceFieldId} className="text-sm text-foreground-light">
-            Space
-          </label>
-          <select
-            id={spaceFieldId}
-            value={spaceId}
-            onChange={(event) => setSpaceId(event.target.value)}
-            className="h-9 w-full max-w-xs rounded-[var(--radius-panel)] border border-border-strong bg-background-surface-100 px-3 text-sm text-foreground focus-visible:ring-2 focus-visible:ring-border-strong focus-visible:outline-none"
-          >
-            {spaces.map((space) => (
-              <option key={space.id} value={space.id}>
-                {space.name}
-              </option>
-            ))}
-          </select>
+          <Label htmlFor={spaceFieldId}>Space</Label>
+          <Select value={spaceId} onValueChange={setSpaceId}>
+            <SelectTrigger id={spaceFieldId} className="w-full max-w-xs">
+              <SelectValue placeholder="Choose a space" />
+            </SelectTrigger>
+            <SelectContent>
+              {spaces.map((space) => (
+                <SelectItem key={space.id} value={space.id}>
+                  {space.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <p className="max-w-[var(--measure-prose)] text-xs text-foreground-lighter">
             Everything this connection imports lands in this space, and only people in the space can
             read it.

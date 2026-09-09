@@ -7,7 +7,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-export type ChartTableProps = {
+type ChartTableProps = {
   readonly caption: string;
   readonly columns: readonly string[];
   readonly rows: readonly (readonly string[])[];

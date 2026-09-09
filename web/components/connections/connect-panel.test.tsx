@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { successState } from '@/lib/actions/state';
 
@@ -62,19 +62,37 @@ const getProps = () => ({
   ),
 });
 
+class ResizeObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
+beforeAll(() => {
+  // A Radix select measures and captures the pointer. jsdom does neither.
+  vi.stubGlobal('ResizeObserver', ResizeObserverStub);
+  Element.prototype.hasPointerCapture = () => false;
+  Element.prototype.setPointerCapture = () => {};
+  Element.prototype.releasePointerCapture = () => {};
+  Element.prototype.scrollIntoView = () => {};
+});
+
 describe('the connect screen', () => {
   it('puts the space a connection binds to on the same screen as the choice of what it reads', () => {
     render(<ConnectPanel {...getProps()} connections={[getConnectionScope()]} />);
 
-    expect(screen.getByLabelText(/space/i)).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Space' })).toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: 'general' })).toBeInTheDocument();
   });
 
+  // One control for one decision. A raw select next to the shadcn Select on
+  // the same screen reads as two different kinds of thing.
   it('starts the connection in the space a person picked', async () => {
     const props = getProps();
     render(<ConnectPanel {...props} />);
 
-    await userEvent.selectOptions(screen.getByLabelText(/space/i), 'space-2');
+    await userEvent.click(screen.getByRole('combobox', { name: 'Space' }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Engineering' }));
     await userEvent.click(screen.getByRole('button', { name: /connect slack/i }));
 
     expect(props.onBegin).toHaveBeenCalledWith('space-2');

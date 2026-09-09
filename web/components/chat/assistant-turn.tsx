@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { splitAnswer } from '@/lib/chat/inline-citations';
 import type { Citation } from '@/lib/chat/protocol';
 
-export type AssistantTurnProps = {
+type AssistantTurnProps = {
   readonly content: string;
   readonly citations: readonly Citation[];
   readonly streaming: boolean;

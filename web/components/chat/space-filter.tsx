@@ -17,7 +17,7 @@ export type SpaceOption = {
   readonly name: string;
 };
 
-export type SpaceFilterProps = {
+type SpaceFilterProps = {
   readonly spaces: readonly SpaceOption[];
   readonly selected: readonly string[];
   readonly onChange: (selected: readonly string[]) => void;

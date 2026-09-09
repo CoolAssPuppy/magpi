@@ -1,16 +1,15 @@
 'use client';
 
-import { ErrorState } from '@/components/app/error-state';
-import { Button } from '@/components/ui/button';
+import { BoundaryError } from '@/components/app/error-boundary';
 import type { ErrorBoundaryProps } from '@/components/app/error-boundary-props';
 
 export default function EntitiesError({ error, reset }: ErrorBoundaryProps) {
   return (
-    <div className="flex flex-col items-start gap-3">
-      <ErrorState title="The entities could not be read" detail={error.message} />
-      <Button variant="outline" size="sm" onClick={reset}>
-        Try again
-      </Button>
-    </div>
+    <BoundaryError
+      title="The entities could not be read"
+      detail="Nothing was changed by this. Try again, and check the most recent dream run if it keeps failing."
+      error={error}
+      reset={reset}
+    />
   );
 }

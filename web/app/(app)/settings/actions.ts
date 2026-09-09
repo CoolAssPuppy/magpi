@@ -11,14 +11,17 @@ const SETTINGS_PATH = '/settings';
 const displayNameSchema = z.object({ displayName: z.string().trim().min(1).max(80) });
 const spaceNameSchema = z.object({ name: z.string().trim().min(1).max(120) });
 
+// Parsing happens inside withSession in every action file, so a signed-out
+// caller is told to sign in whatever they sent.
+
 export async function updateDisplayName(
   _previous: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const parsed = displayNameSchema.safeParse({ displayName: formData.get('displayName') });
-  if (!parsed.success) return errorState('A display name is between 1 and 80 characters.');
-
   return withSession(async ({ supabase }) => {
+    const parsed = displayNameSchema.safeParse({ displayName: formData.get('displayName') });
+    if (!parsed.success) return errorState('A display name is between 1 and 80 characters.');
+
     const { error } = await supabase.auth.updateUser({
       data: { display_name: parsed.data.displayName },
     });
@@ -32,10 +35,10 @@ export async function renamePersonalSpace(
   _previous: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const parsed = spaceNameSchema.safeParse({ name: formData.get('name') });
-  if (!parsed.success) return errorState('A space name is between 1 and 120 characters.');
-
   return withSession(async ({ supabase, userId, orgId }) => {
+    const parsed = spaceNameSchema.safeParse({ name: formData.get('name') });
+    if (!parsed.success) return errorState('A space name is between 1 and 120 characters.');
+
     const { error } = await supabase
       .from('spaces')
       .update({ name: parsed.data.name })

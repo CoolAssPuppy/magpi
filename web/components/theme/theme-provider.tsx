@@ -3,7 +3,7 @@
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
 import type { ReactNode } from 'react';
 
-export const THEMES = ['dark', 'light', 'classic-dark'] as const;
+const THEMES = ['dark', 'light', 'classic-dark'] as const;
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   return (

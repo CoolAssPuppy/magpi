@@ -48,6 +48,7 @@ type OrganizationRow = {
 
 type Team = {
   readonly isAdmin: boolean;
+  readonly adminCheckError: { readonly message: string } | null;
   readonly organization: OrganizationRow | null;
   readonly memberCount: number | null;
 };
@@ -59,6 +60,7 @@ const reads: RecordedRead[] = [];
 function team(overrides: Partial<Team> = {}): Team {
   return {
     isAdmin: true,
+    adminCheckError: null,
     organization: { stripe_customer_id: null, seats: 3 },
     memberCount: 5,
     ...overrides,
@@ -72,7 +74,7 @@ function team(overrides: Partial<Team> = {}): Team {
  */
 function callerFor(state: Team): SessionContext {
   const supabase = {
-    rpc: async () => ({ data: state.isAdmin, error: null }),
+    rpc: async () => ({ data: state.isAdmin, error: state.adminCheckError }),
     from: (table: string) => ({
       select: () => ({
         eq: (column: string, value: unknown) => {
@@ -180,6 +182,22 @@ describe('who is allowed to start a paid flow', () => {
 
     expect(response.headers.get('location')).toBe(`${APP_ORIGIN}/admin/billing?error=not-admin`);
     expect(stripe.portals).toEqual([]);
+  });
+
+  // The check failing is not the same as the check saying no, and telling an
+  // admin they are not an admin sends them looking for the wrong person.
+  it('says the check did not run when the database refuses the question', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    sessionState.context = callerFor(
+      team({ adminCheckError: { message: 'permission denied for function is_org_admin' } }),
+    );
+
+    const response = await startCheckout(fromTheApp('/api/stripe/checkout'));
+
+    expect(response.headers.get('location')).toBe(`${APP_ORIGIN}/admin/billing?error=check-failed`);
+    expect(stripe.checkouts).toEqual([]);
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 
   it('sends a signed-out caller away from the portal too', async () => {

@@ -1,8 +1,7 @@
 import type { Enums } from '@/lib/database.types';
+import type { StatusTone } from '@/lib/ui/status-tone';
 
 export type ConnectionStatus = Enums<'connection_status'>;
-
-export type StatusTone = 'neutral' | 'positive' | 'progress' | 'warning' | 'destructive';
 
 /**
  * What a person can do about the state the connection is in. A union rather than

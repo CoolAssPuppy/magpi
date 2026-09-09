@@ -1,6 +1,6 @@
 import type { Enums } from '@/lib/database.types';
-import type { StatusTone } from '@/lib/connections/status';
 import { asSentence } from '@/lib/text/sentence';
+import type { StatusTone } from '@/lib/ui/status-tone';
 
 export type DreamStatus = Enums<'dream_status'>;
 export type DreamKind = Enums<'dream_kind'>;

@@ -1,18 +1,15 @@
 'use client';
 
-import { ErrorState } from '@/components/app/error-state';
-import { Button } from '@/components/ui/button';
+import { BoundaryError } from '@/components/app/error-boundary';
+import type { ErrorBoundaryProps } from '@/components/app/error-boundary-props';
 
-export default function BillingError({ reset }: { error: Error; reset: () => void }) {
+export default function BillingError({ error, reset }: ErrorBoundaryProps) {
   return (
-    <div className="flex flex-col items-start gap-4">
-      <ErrorState
-        title="Billing did not load"
-        detail="Nothing was charged. Your plan and your subscription are held by Stripe, so nothing here can have changed them."
-      />
-      <Button variant="outline" onClick={reset}>
-        Try again
-      </Button>
-    </div>
+    <BoundaryError
+      title="Billing did not load"
+      detail="Nothing was charged. Your plan and your subscription are held by Stripe, so nothing here can have changed them."
+      error={error}
+      reset={reset}
+    />
   );
 }

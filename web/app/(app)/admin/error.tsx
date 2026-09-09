@@ -1,18 +1,15 @@
 'use client';
 
-import { ErrorState } from '@/components/app/error-state';
-import { Button } from '@/components/ui/button';
+import { BoundaryError } from '@/components/app/error-boundary';
+import type { ErrorBoundaryProps } from '@/components/app/error-boundary-props';
 
-export default function AdminError({ reset }: { error: Error; reset: () => void }) {
+export default function AdminError({ error, reset }: ErrorBoundaryProps) {
   return (
-    <div className="flex flex-col items-start gap-4">
-      <ErrorState
-        title="The analytics queries did not come back"
-        detail="These panels read straight from the primary database. If this keeps happening, check the ingest jobs before you check the queries."
-      />
-      <Button variant="outline" onClick={reset}>
-        Try again
-      </Button>
-    </div>
+    <BoundaryError
+      title="The analytics queries did not come back"
+      detail="These panels read straight from the primary database. If this keeps happening, check the ingest jobs before you check the queries."
+      error={error}
+      reset={reset}
+    />
   );
 }

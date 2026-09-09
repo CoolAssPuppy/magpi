@@ -21,13 +21,16 @@ const conversationSchema = z.object({ conversationId: z.uuid() });
 
 const INVALID = 'That is not something we can do with a conversation.';
 
+// Parsing happens inside withSession in every action file, so a signed-out
+// caller is told to sign in whatever they sent.
+
 export async function createConversationAction(
   input: z.input<typeof createSchema>,
 ): Promise<ActionState<string>> {
-  const parsed = createSchema.safeParse(input);
-  if (!parsed.success) return errorState(INVALID);
-
   return withSession(async ({ supabase, userId, orgId }) => {
+    const parsed = createSchema.safeParse(input);
+    if (!parsed.success) return errorState(INVALID);
+
     const { data, error } = await supabase
       .from('conversations')
       .insert({
@@ -50,10 +53,10 @@ export async function createConversationAction(
 export async function renameConversationAction(
   input: z.input<typeof renameSchema>,
 ): Promise<ActionState<string>> {
-  const parsed = renameSchema.safeParse(input);
-  if (!parsed.success) return errorState(INVALID);
-
   return withSession(async ({ supabase }) => {
+    const parsed = renameSchema.safeParse(input);
+    if (!parsed.success) return errorState(INVALID);
+
     const { error } = await supabase
       .from('conversations')
       .update({ title: parsed.data.title })
@@ -71,10 +74,10 @@ export async function renameConversationAction(
 export async function deleteConversationAction(
   input: z.input<typeof conversationSchema>,
 ): Promise<ActionState<string>> {
-  const parsed = conversationSchema.safeParse(input);
-  if (!parsed.success) return errorState(INVALID);
-
   return withSession(async ({ supabase }) => {
+    const parsed = conversationSchema.safeParse(input);
+    if (!parsed.success) return errorState(INVALID);
+
     const { error } = await supabase
       .from('conversations')
       .delete()

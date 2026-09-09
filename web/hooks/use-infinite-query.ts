@@ -36,7 +36,7 @@ type SupabaseQueryHandler<T extends SupabaseTableName> = (
   query: SupabaseSelectBuilder<T>,
 ) => SupabaseSelectBuilder<T>;
 
-interface UseInfiniteQueryProps<T extends SupabaseTableName, Query extends string = '*'> {
+interface UseInfiniteQueryProps<T extends SupabaseTableName> {
   // The table name to query
   tableName: T;
   // The columns to select, defaults to `*`
@@ -221,10 +221,4 @@ function useInfiniteQuery<
   };
 }
 
-export {
-  useInfiniteQuery,
-  type SupabaseQueryHandler,
-  type SupabaseTableData,
-  type SupabaseTableName,
-  type UseInfiniteQueryProps,
-};
+export { useInfiniteQuery, type SupabaseQueryHandler, type SupabaseTableData };

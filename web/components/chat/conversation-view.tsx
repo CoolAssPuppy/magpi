@@ -9,7 +9,7 @@ import { chatReducer, initialChatState, type ChatTurn } from '@/lib/chat/turns';
 import { Composer } from './composer';
 import { MessageList } from './message-list';
 
-export type ConversationViewProps = {
+type ConversationViewProps = {
   readonly conversationId: string;
   readonly initialTurns: readonly ChatTurn[];
   readonly initialTitle: string | null;

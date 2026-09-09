@@ -1,5 +1,4 @@
 import { MODELS, type ModelPurpose } from '@/lib/models';
-import type { Database } from '@/lib/database.types';
 
 export type ModelUsage = {
   readonly inputTokens: number;
@@ -29,26 +28,6 @@ export type ModelCallInput<T> = {
   readonly orgId: string;
   readonly run: (model: string) => Promise<ModelCallOutcome<T>>;
 };
-
-type UsageKind = Database['public']['Enums']['usage_kind'];
-
-export function usageKindFor(
-  purpose: ModelPurpose,
-): Extract<UsageKind, 'embedding_tokens' | 'chat_tokens'> {
-  switch (purpose) {
-    case 'embedding':
-      return 'embedding_tokens';
-    case 'chat':
-    case 'condense':
-    case 'title':
-    case 'dream':
-      return 'chat_tokens';
-    default: {
-      const unhandled: never = purpose;
-      return unhandled;
-    }
-  }
-}
 
 /**
  * Imported at call time rather than at the top of the file. The recorder reaches
@@ -120,34 +99,29 @@ export async function* callModelStreaming<T>(
   const model = MODELS[input.purpose];
   const startedAt = Date.now();
   let usage = NO_USAGE;
+  let succeeded = false;
 
   try {
     for await (const chunk of input.run(model)) {
       if (chunk.usage) usage = chunk.usage;
       yield chunk.delta;
     }
-  } catch (error) {
+    succeeded = true;
+    return usage;
+  } finally {
+    // A reader who closes the tab unwinds this generator at a yield, which
+    // reaches neither a catch nor a statement after the loop. OpenAI has
+    // already billed for everything streamed by then, so the write happens
+    // here, on the one path every ending goes through.
     await report(record, {
       orgId: input.orgId,
       purpose: input.purpose,
       model,
       usage,
       latencyMs: Date.now() - startedAt,
-      succeeded: false,
+      succeeded,
     });
-    throw error;
   }
-
-  await report(record, {
-    orgId: input.orgId,
-    purpose: input.purpose,
-    model,
-    usage,
-    latencyMs: Date.now() - startedAt,
-    succeeded: true,
-  });
-
-  return usage;
 }
 
 /** A telemetry write must never turn a finished answer into a failed request. */

@@ -23,5 +23,3 @@ export const CHART_COLORS = {
   warning: 'var(--color-warning-600)',
   critical: 'var(--color-destructive-600)',
 } as const;
-
-export type ChartColor = (typeof CHART_COLORS)[keyof typeof CHART_COLORS];

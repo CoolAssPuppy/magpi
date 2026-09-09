@@ -25,11 +25,24 @@ export type BillingConfig = {
   readonly prices: PriceMap;
 };
 
-export function billingConfig(): BillingConfig {
-  const env = schema.parse({
+function readEnv(): Record<string, string | undefined> {
+  return {
     SB_STRIPE_SECRET_KEY: process.env.SB_STRIPE_SECRET_KEY,
     SB_STRIPE_PRICE_TEAM: process.env.SB_STRIPE_PRICE_TEAM,
-  });
+  };
+}
+
+/**
+ * Whether this deployment can start a paid flow at all. The same schema
+ * billingConfig() parses, so a page that draws an upgrade button on a true here
+ * cannot hand the reader a form that throws on submit.
+ */
+export function isBillingConfigured(): boolean {
+  return schema.safeParse(readEnv()).success;
+}
+
+export function billingConfig(): BillingConfig {
+  const env = schema.parse(readEnv());
 
   return {
     secretKey: env.SB_STRIPE_SECRET_KEY,

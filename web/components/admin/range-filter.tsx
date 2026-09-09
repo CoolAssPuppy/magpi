@@ -2,10 +2,10 @@ import Link from 'next/link';
 
 import { cn } from '@/lib/utils';
 
-export const RANGE_OPTIONS = [7, 30, 90] as const;
+const RANGE_OPTIONS = [7, 30, 90] as const;
 export type RangeDays = (typeof RANGE_OPTIONS)[number];
 
-export const DEFAULT_RANGE: RangeDays = 30;
+const DEFAULT_RANGE: RangeDays = 30;
 
 export function parseRange(value: string | undefined): RangeDays {
   const parsed = Number(value);

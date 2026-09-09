@@ -128,6 +128,17 @@ describe('createConversationAction', () => {
 
     expect(state.status).toBe('error');
   });
+
+  // Whether the caller is signed in is settled before their input is read, so
+  // a signed-out caller gets one answer whatever they sent.
+  it('tells a signed-out caller to sign in even when the input is also wrong', async () => {
+    dbState.signedIn = false;
+
+    const state = await createConversationAction({ spaceFilter: ['not-a-space'] });
+
+    expect(state).toEqual({ status: 'error', message: 'You need to sign in to do that.' });
+    expect(dbState.writes).toEqual([]);
+  });
 });
 
 describe('renameConversationAction', () => {

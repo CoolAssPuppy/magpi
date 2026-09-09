@@ -8,11 +8,14 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./test/setup.ts'],
-    include: ['{app,components,lib,test}/**/*.{test,spec}.{ts,tsx}'],
+    include: ['{app,components,hooks,lib,test}/**/*.{test,spec}.{ts,tsx}'],
     coverage: {
       provider: 'v8',
+      // Without this the run prints no coverage at all when a test fails, so a
+      // red suite hides how far the number moved.
+      reportOnFailure: true,
       reporter: ['text-summary', 'json-summary', 'lcov'],
-      include: ['app/**', 'components/**', 'lib/**'],
+      include: ['app/**', 'components/**', 'hooks/**', 'lib/**'],
       exclude: [
         '**/*.test.{ts,tsx}',
         'lib/database.types.ts',

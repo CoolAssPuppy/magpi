@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { invokeEdgeFunction, type FunctionsClient } from '@/lib/connections/edge';
+import { invokeEdgeFunction, type FunctionsClient } from '@/lib/edge/invoke';
 import { ok, type Result } from '@/lib/result';
 
 import type { DreamKind } from './status';

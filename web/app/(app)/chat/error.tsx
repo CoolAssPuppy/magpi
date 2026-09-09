@@ -1,19 +1,15 @@
 'use client';
 
-import { ErrorState } from '@/components/app/error-state';
-import { Button } from '@/components/ui/button';
+import { BoundaryError } from '@/components/app/error-boundary';
 import type { ErrorBoundaryProps } from '@/components/app/error-boundary-props';
 
-export default function ChatError({ reset }: ErrorBoundaryProps) {
+export default function ChatError({ error, reset }: ErrorBoundaryProps) {
   return (
-    <div className="flex flex-col items-start gap-4">
-      <ErrorState
-        title="Chat could not be opened"
-        detail="Your conversations are safe. This screen failed to load them."
-      />
-      <Button variant="outline" onClick={reset}>
-        Try again
-      </Button>
-    </div>
+    <BoundaryError
+      title="Chat could not be opened"
+      detail="Your conversations are safe. This screen failed to load them."
+      error={error}
+      reset={reset}
+    />
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import {
   applyJobEvent,
@@ -25,13 +25,24 @@ export function SyncActivity({ spaceIds }: { spaceIds: readonly string[] }) {
   const [jobs, setJobs] = useState<JobsById>(() => new Map());
   const router = useRouter();
 
+  // The parent builds this list fresh on every render, so depending on the
+  // array itself resubscribes constantly and loses every event that lands while
+  // the socket is being rebuilt. The handler reads the current list from here
+  // instead, and the effect below turns over only when the spaces really change.
+  const watched = useRef(spaceIds);
+  const watchedKey = spaceIds.join(',');
+
+  useEffect(() => {
+    watched.current = spaceIds;
+  }, [spaceIds]);
+
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
       .channel('connections-activity')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ingest_jobs' }, (payload) => {
         const job = parseIngestJobEvent(payload.new);
-        if (job) setJobs((current) => applyJobEvent(current, job, spaceIds));
+        if (job) setJobs((current) => applyJobEvent(current, job, watched.current));
       })
       // The payload is ignored on purpose and this handler takes no argument so
       // that it cannot be read. connections is `replica identity full`, so the
@@ -48,7 +59,7 @@ export function SyncActivity({ spaceIds }: { spaceIds: readonly string[] }) {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [router, spaceIds]);
+  }, [router, watchedKey]);
 
   const summary = summarizeJobs([...jobs.values()]);
   const description = describeActivity(summary);

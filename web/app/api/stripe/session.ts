@@ -2,6 +2,7 @@ import 'server-only';
 
 import { NextResponse } from 'next/server';
 
+import { isOrgAdmin } from '@/lib/auth/admin';
 import { getSessionContext, type SessionContext } from '@/lib/supabase/context';
 
 export const BILLING_PATH = '/admin/billing';
@@ -47,11 +48,14 @@ export async function resolveBillingCaller(request: Request): Promise<BillingCal
     return { kind: 'refused', response: billingRedirect(request, '?error=signed-out') };
   }
 
-  const { data: isAdmin } = await context.supabase.rpc('is_org_admin', {
-    p_org_id: context.orgId,
-  });
+  const admin = await isOrgAdmin(context.supabase, context.orgId);
 
-  if (isAdmin !== true) {
+  if (!admin.ok) {
+    console.error('the admin check did not run', { orgId: context.orgId, error: admin.error });
+    return { kind: 'refused', response: billingRedirect(request, '?error=check-failed') };
+  }
+
+  if (!admin.data) {
     return { kind: 'refused', response: billingRedirect(request, '?error=not-admin') };
   }
 

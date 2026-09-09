@@ -2,7 +2,8 @@ import 'server-only';
 
 import { createServiceClient } from '@/lib/supabase/service';
 
-import { usageKindFor, type ModelCallRecord } from './call';
+import type { ModelCallRecord } from './call';
+import { usageKindFor } from './usage-kind';
 
 /**
  * Writes through the service client. A user has no insert grant on model_calls

@@ -1,4 +1,4 @@
-import type { StatusTone } from '@/lib/connections/status';
+import type { StatusTone } from '@/lib/ui/status-tone';
 import { cn } from '@/lib/utils';
 
 const TONE_CLASSES: Record<StatusTone, string> = {

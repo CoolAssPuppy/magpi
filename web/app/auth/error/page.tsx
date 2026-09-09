@@ -2,14 +2,16 @@ import Link from 'next/link';
 
 import { AuthShell } from '@/components/auth/auth-shell';
 
+import { signInFailureCopy } from './messages';
+
 export const metadata = { title: 'Sign in failed' };
 
 export default async function AuthErrorPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; error_code?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, error_code: errorCode } = await searchParams;
 
   return (
     <AuthShell
@@ -21,9 +23,7 @@ export default async function AuthErrorPage({
         </Link>
       }
     >
-      <p className="text-sm text-foreground-light">
-        {error ?? 'The link was missing the token needed to finish signing in.'}
-      </p>
+      <p className="text-sm text-foreground-light">{signInFailureCopy({ error, errorCode })}</p>
     </AuthShell>
   );
 }

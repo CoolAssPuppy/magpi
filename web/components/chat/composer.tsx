@@ -6,7 +6,7 @@ import { useState, type FormEvent, type KeyboardEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 
-export type ComposerProps = {
+type ComposerProps = {
   readonly onAsk: (question: string) => void;
   readonly busy: boolean;
   readonly placeholder: string;

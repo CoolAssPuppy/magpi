@@ -1,8 +1,8 @@
 import { CHART_COLORS } from './palette';
 
-export type MeterSeverity = 'within' | 'near' | 'over';
+type MeterSeverity = 'within' | 'near' | 'over';
 
-export type MeterProps = {
+type MeterProps = {
   readonly label: string;
   readonly used: number;
   readonly limit: number | null;

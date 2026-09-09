@@ -434,3 +434,38 @@ precedent was in the file above the one being edited.
 
 The wider version: a schema change that every schema-level check passes can still
 be caught by the one test that asks for a page.
+
+## The duplicate that looked redundant was the one worth keeping
+
+F015 named `OAuthDriver.refreshTokens` as dead code duplicating
+`refreshWithTokenEndpoint`, and offered a choice: delete it, or route the live
+path through it. The audit's reason for hesitating was that the surviving copy
+did not know the `basicAuthForToken` and `normalizePayload` quirks, which reads
+as an argument for keeping the one that did.
+
+It did not. `refreshTokens` applied `normalizePayload` and passed no extra
+headers to `postForToken`, so it never knew `basicAuthForToken` either. Routing
+the live path through it would have gained one quirk out of two and lost three
+things:
+
+`expiresAtFrom` accepts any finite number, so `expires_in: 0` becomes an expiry
+equal to now. `isSpent` reads that as spent, and the connection would be renewed
+on every single pass, forever. The live path's `expiresIn > 0` guard is what
+stops it. Twenty connections a tick, each buying a token it discards, against a
+provider that rate limits the grant.
+
+Its failures are `ApiError` throws on their way to an HTTP response, while
+`connections.status_detail` needs a string a user can read. Three distinct
+details, unreachable, unreadable, refused, would have collapsed into one.
+
+And `refresh(deps, input)` has no `ProviderRecord` to give it.
+
+**Rule.** When two implementations of the same call have drifted, "which one
+knows more" is the wrong question, because the answer is usually neither and the
+audit note saying otherwise was written from the shape of the code rather than
+from reading both bodies. Read both, list what each knows and what each would
+lose, and expect the shorter one to be shorter because its caller needed less.
+The quirks belong in one table either way; that is a separate move from choosing
+which body survives.
+
+The failure mode here is invisible until it is a bill.

@@ -15,9 +15,9 @@ export type DreamingSpace = {
   readonly dreaming_enabled: boolean;
 };
 
-export type ToggleDreaming = (spaceId: string, enabled: boolean) => Promise<ActionState<undefined>>;
+type ToggleDreaming = (spaceId: string, enabled: boolean) => Promise<ActionState<undefined>>;
 
-export type RunDream = (spaceId: string, kind: DreamKind) => Promise<ActionState<DreamRunOutcome>>;
+type RunDream = (spaceId: string, kind: DreamKind) => Promise<ActionState<DreamRunOutcome>>;
 
 function describeOutcome(outcome: DreamRunOutcome): string {
   switch (outcome.status) {

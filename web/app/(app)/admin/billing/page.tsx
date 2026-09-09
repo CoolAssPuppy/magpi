@@ -2,10 +2,13 @@ import { Panel } from '@/components/admin/panel';
 import { ErrorState } from '@/components/app/error-state';
 import { PlanCard } from '@/components/billing/plan-card';
 import { resolveAdminAccess } from '@/lib/analytics/access';
+import { isBillingConfigured } from '@/lib/billing/config';
 
 const BILLING_ERRORS: Record<string, string> = {
   'signed-out': 'Your session expired before Stripe could be reached. Sign in and try again.',
   'not-admin': 'Only an owner or an admin can change the plan.',
+  'check-failed':
+    'Your role could not be confirmed, so nothing was sent to Stripe. Try again in a moment.',
   'no-customer': 'This organization has no Stripe customer yet. Start a subscription first.',
   'no-organization': 'This organization could not be read, so nothing was sent to Stripe.',
 };
@@ -57,7 +60,7 @@ export default async function BillingPage({
             plan: organization.plan,
             seats: organization.seats,
             hasStripeCustomer: organization.stripe_customer_id !== null,
-            isStripeConfigured: Boolean(process.env.SB_STRIPE_SECRET_KEY),
+            isStripeConfigured: isBillingConfigured(),
           }}
         />
       </Panel>

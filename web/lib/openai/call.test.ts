@@ -5,6 +5,7 @@ import { MODELS } from '@/lib/models';
 import {
   callModel,
   callModelStreaming,
+  NO_USAGE,
   type ModelCallRecord,
   type StreamedChunk,
   type UsageRecorder,
@@ -210,6 +211,36 @@ describe('callModelStreaming', () => {
     await expect(drain(stream)).rejects.toThrow('connection reset');
     expect(records[0]).toMatchObject({ succeeded: false });
   });
+
+  it('records a stream the reader walked away from, because OpenAI billed for it anyway', async () => {
+    const { records, record } = collectingRecorder();
+
+    const stream = callModelStreaming(
+      {
+        purpose: 'chat',
+        orgId: 'org-9',
+        run: async function* () {
+          yield { delta: 'half an ', usage: { inputTokens: 200, outputTokens: 4 } };
+          yield { delta: 'answer', usage: null };
+        },
+      },
+      record,
+    );
+
+    const first = await stream.next();
+    expect(first.value).toBe('half an ');
+
+    await stream.return(NO_USAGE);
+
+    expect(records).toHaveLength(1);
+    expect(records[0]).toMatchObject({
+      orgId: 'org-9',
+      purpose: 'chat',
+      model: MODELS.chat,
+      usage: { inputTokens: 200, outputTokens: 4 },
+      succeeded: false,
+    });
+  });
 });
 
 describe('the recorder a caller gets for free', () => {
@@ -229,17 +260,5 @@ describe('the recorder a caller gets for free', () => {
         succeeded: true,
       }),
     ]);
-  });
-});
-
-describe('usageKindFor', () => {
-  it('meters embeddings and chat separately', async () => {
-    const { usageKindFor } = await import('./call');
-
-    expect(usageKindFor('embedding')).toBe('embedding_tokens');
-    expect(usageKindFor('chat')).toBe('chat_tokens');
-    expect(usageKindFor('condense')).toBe('chat_tokens');
-    expect(usageKindFor('title')).toBe('chat_tokens');
-    expect(usageKindFor('dream')).toBe('chat_tokens');
   });
 });

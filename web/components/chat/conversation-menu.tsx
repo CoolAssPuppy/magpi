@@ -25,7 +25,7 @@ import { Label } from '@/components/ui/label';
 
 type MenuDialog = 'closed' | 'rename' | 'delete';
 
-export type ConversationMenuProps = {
+type ConversationMenuProps = {
   readonly conversationId: string;
   readonly title: string;
 };

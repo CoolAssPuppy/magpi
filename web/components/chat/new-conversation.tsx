@@ -8,7 +8,7 @@ import { createConversationAction } from '@/app/(app)/chat/actions';
 import { Composer } from './composer';
 import { SpaceFilter, type SpaceOption } from './space-filter';
 
-export type NewConversationProps = {
+type NewConversationProps = {
   readonly spaces: readonly SpaceOption[];
 };
 

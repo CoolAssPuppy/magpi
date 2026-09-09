@@ -2,6 +2,7 @@ import 'server-only';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import { isOrgAdmin } from '@/lib/auth/admin';
 import type { Database } from '@/lib/database.types';
 import { getSessionContext, type SessionContext } from '@/lib/supabase/context';
 import { createServiceClient } from '@/lib/supabase/service';
@@ -31,9 +32,9 @@ export async function resolveAdminAccess(): Promise<AdminAccess> {
   const context = await getSessionContext();
   if (!context) return { kind: 'signed-out' };
 
-  const { data, error } = await context.supabase.rpc('is_org_admin', { p_org_id: context.orgId });
-  if (error) throw new Error(error.message);
-  if (data !== true) return { kind: 'forbidden', context };
+  const admin = await isOrgAdmin(context.supabase, context.orgId);
+  if (!admin.ok) throw new Error(admin.error);
+  if (!admin.data) return { kind: 'forbidden', context };
 
   return { kind: 'granted', context, elevated: createServiceClient() };
 }

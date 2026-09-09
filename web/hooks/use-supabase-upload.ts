@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useDropzone, type FileError, type FileRejection } from 'react-dropzone';
 
 import { createClient } from '@/lib/supabase/client';
@@ -136,12 +136,16 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
     // [Joshen] This is to support handling partial successes
     // If any files didn't upload for any reason, hitting "Upload" again will only upload the files that had errors
     const filesWithErrors = errors.map((x) => x.name);
+    // One pass rather than one filtered list per reason. A file that failed is
+    // in the error list and is also missing from the success list, so
+    // concatenating the two put it in twice: two concurrent writes of the same
+    // object, and with upsert off the second comes back as an error about a
+    // file that had just landed.
     const filesToUpload =
       filesWithErrors.length > 0
-        ? [
-            ...files.filter((f) => filesWithErrors.includes(f.name)),
-            ...files.filter((f) => !successes.includes(f.name)),
-          ]
+        ? files.filter(
+            (file) => filesWithErrors.includes(file.name) || !successes.includes(file.name),
+          )
         : files;
 
     const supabase = createClient();
