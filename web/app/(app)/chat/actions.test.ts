@@ -103,16 +103,22 @@ describe('createConversationAction', () => {
     expect(dbState.writes).toEqual([]);
   });
 
-  it('answers with the failure rather than a conversation id', async () => {
+  // The reader gets copy they can act on. `new row violates row-level security
+  // policy for table "conversations"` names a table, says nothing they can do,
+  // and describes the permission model to anyone probing it.
+  it('answers with copy for the reader rather than the schema refusal', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     dbState.error = { message: 'new row violates row-level security' };
 
     const state = await createConversationAction({ spaceFilter: null });
 
     expect(state).toEqual({
       status: 'error',
-      message: 'new row violates row-level security',
+      message: 'That conversation could not be started.',
     });
     expect(dbState.revalidated).toEqual([]);
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 
   it('refuses a caller with no session', async () => {

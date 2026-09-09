@@ -184,15 +184,15 @@ describe('recording an uploaded file as a document', () => {
     expect(state).toEqual({ status: 'error', message: 'This plan is full.' });
   });
 
-  it('passes on a plan check that could not run at all', async () => {
+  it('reports a plan check that could not run at all, without naming the function', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     dbState.allowanceError = { message: 'function check_ingest_allowed does not exist' };
 
     const state = await enqueueUploadedDocument(upload());
 
-    expect(state).toEqual({
-      status: 'error',
-      message: 'function check_ingest_allowed does not exist',
-    });
+    expect(state).toEqual({ status: 'error', message: 'That upload could not be recorded.' });
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 
   it("files the document in the chosen space, under the uploader's organization", async () => {
@@ -258,27 +258,30 @@ describe('recording an uploaded file as a document', () => {
   });
 
   it('reports a document that could not be written instead of a success nobody has', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     dbState.documentError = { message: 'duplicate key value violates unique constraint' };
 
     const state = await enqueueUploadedDocument(upload());
 
-    expect(state).toEqual({
-      status: 'error',
-      message: 'duplicate key value violates unique constraint',
-    });
+    expect(state).toEqual({ status: 'error', message: 'That upload could not be recorded.' });
     expect(writesTo('ingest_jobs')).toEqual([]);
+    consoleError.mockRestore();
   });
 
+  // The document row is in by this point, so the copy has to say what the reader
+  // is looking at: a file that will sit there unread until they upload it again.
   it('reports a document nothing was queued to read, which would otherwise sit there forever', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     dbState.jobError = { message: 'insert or update on table ingest_jobs violates check' };
 
     const state = await enqueueUploadedDocument(upload());
 
     expect(state).toEqual({
       status: 'error',
-      message: 'insert or update on table ingest_jobs violates check',
+      message: 'That file was saved but nothing was queued to read it. Upload it again.',
     });
     expect(writesTo('usage_events')).toEqual([]);
+    consoleError.mockRestore();
   });
 
   it('puts the new document on the documents screen once it is in', async () => {
@@ -311,11 +314,14 @@ describe('deleting a document a dream run wrote', () => {
     expect(dbState.writes).toEqual([]);
   });
 
-  it('passes the refusal back when the database will not delete it', async () => {
-    dbState.deleteError = { message: 'Only a dream document can be deleted.' };
+  it('reports a refusal in terms the reader can act on when the database will not delete it', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    dbState.deleteError = { message: 'new row violates row-level security policy' };
 
     const state = await deleteDreamDocument(form(DOCUMENT_ID));
 
-    expect(state).toEqual({ status: 'error', message: 'Only a dream document can be deleted.' });
+    expect(state).toEqual({ status: 'error', message: 'That document could not be deleted.' });
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 });

@@ -206,6 +206,46 @@ describe('runAnswerTurn', () => {
     consoleError.mockRestore();
   });
 
+  // The answer is already on the reader's screen and already stored by the
+  // time either of these runs. Turning a failed housekeeping write into an
+  // error event takes the delivered answer off the screen and replaces it with
+  // "ask again", which asks the reader to pay for it twice.
+  it('keeps a delivered answer when naming the conversation fails', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { deps } = fakeDeps({
+      generateTitle: async () => {
+        throw new Error('rate limited');
+      },
+    });
+
+    const events = await collect(runAnswerTurn(turnInput({ needsTitle: true }), deps));
+
+    expect(events.at(-1)).toEqual({ type: 'done', messageId: ASSISTANT_MESSAGE_ID });
+    expect(events.some((event) => event.type === 'error')).toBe(false);
+    consoleError.mockRestore();
+  });
+
+  it('keeps a delivered answer when storing the rewritten question fails', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { deps } = fakeDeps({
+      condense: async () => ({ kind: 'rewritten', text: 'What blocks SSO rollout?' }),
+      store: {
+        addUserMessage: async () => USER_MESSAGE_ID,
+        addAssistantMessage: async () => ASSISTANT_MESSAGE_ID,
+        setCondensedQuery: async () => {
+          throw new Error('write failed');
+        },
+        setTitle: async () => {},
+      },
+    });
+
+    const events = await collect(runAnswerTurn(turnInput(), deps));
+
+    expect(events.at(-1)).toEqual({ type: 'done', messageId: ASSISTANT_MESSAGE_ID });
+    expect(events.some((event) => event.type === 'error')).toBe(false);
+    consoleError.mockRestore();
+  });
+
   it('leaves a recoverable conversation when the reader drops the connection', async () => {
     const { deps, calls } = fakeDeps({
       streamAnswer: async function* () {

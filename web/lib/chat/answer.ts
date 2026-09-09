@@ -47,13 +47,16 @@ export async function* runAnswerTurn(
   input: AnswerTurnInput,
   deps: AnswerDeps,
 ): AsyncGenerator<ChatEvent> {
+  let userMessageId: string;
+  let condensed: CondensedQuery;
+
   try {
-    const userMessageId = await deps.store.addUserMessage({
+    userMessageId = await deps.store.addUserMessage({
       conversationId: input.conversationId,
       content: input.question,
     });
 
-    const condensed = await deps.condense({
+    condensed = await deps.condense({
       question: input.question,
       history: input.history,
       orgId: input.orgId,
@@ -97,9 +100,19 @@ export async function* runAnswerTurn(
     });
 
     yield { type: 'done', messageId };
+  } catch (error) {
+    console.error('answer turn failed', { conversationId: input.conversationId, error });
+    yield { type: 'error', message: ANSWER_FAILED };
+    return;
+  }
 
-    // Both of these follow the closed answer, because neither is worth a
-    // millisecond of the reader's time waiting for a token.
+  // Both of these follow the closed answer, because neither is worth a
+  // millisecond of the reader's time waiting for a token. They have their own
+  // try for the same reason: the answer is on screen and stored by the time
+  // either runs, so a failed rewrite or a rate-limited title has nothing left
+  // to tell the reader. Inside the block above, a failed title write yielded an
+  // error event and took the delivered answer off the screen.
+  try {
     if (condensed.kind === 'rewritten') {
       await deps.store.setCondensedQuery(userMessageId, condensed.text);
     }
@@ -110,7 +123,9 @@ export async function* runAnswerTurn(
       yield { type: 'title', title };
     }
   } catch (error) {
-    console.error('answer turn failed', { conversationId: input.conversationId, error });
-    yield { type: 'error', message: ANSWER_FAILED };
+    console.error('answer housekeeping failed', {
+      conversationId: input.conversationId,
+      error,
+    });
   }
 }

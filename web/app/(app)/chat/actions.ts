@@ -2,6 +2,7 @@
 
 import { z } from 'zod';
 
+import { databaseErrorState } from '@/lib/actions/database-error';
 import { errorState, successState, type ActionState } from '@/lib/actions/state';
 import { withSession } from '@/lib/actions/with-session';
 
@@ -37,7 +38,11 @@ export async function createConversationAction(
       .select('id')
       .single();
 
-    if (error) return errorState(error.message);
+    if (error) {
+      return databaseErrorState('creating a conversation', error, {
+        fallback: 'That conversation could not be started.',
+      });
+    }
     return successState(data.id);
   }, CHAT_PATH);
 }
@@ -54,7 +59,11 @@ export async function renameConversationAction(
       .update({ title: parsed.data.title })
       .eq('id', parsed.data.conversationId);
 
-    if (error) return errorState(error.message);
+    if (error) {
+      return databaseErrorState('renaming a conversation', error, {
+        fallback: 'That conversation could not be renamed.',
+      });
+    }
     return successState(parsed.data.title);
   }, CHAT_PATH);
 }
@@ -71,7 +80,11 @@ export async function deleteConversationAction(
       .delete()
       .eq('id', parsed.data.conversationId);
 
-    if (error) return errorState(error.message);
+    if (error) {
+      return databaseErrorState('deleting a conversation', error, {
+        fallback: 'That conversation could not be deleted.',
+      });
+    }
     return successState(parsed.data.conversationId);
   }, CHAT_PATH);
 }

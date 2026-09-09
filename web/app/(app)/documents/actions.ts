@@ -2,6 +2,7 @@
 
 import { z } from 'zod';
 
+import { databaseErrorState } from '@/lib/actions/database-error';
 import { errorState, successState, type ActionState } from '@/lib/actions/state';
 import { ACCEPTED_MIME_TYPES, storagePathFor } from '@/lib/documents/uploads';
 import { withSession } from '@/lib/actions/with-session';
@@ -53,7 +54,11 @@ export async function enqueueUploadedDocument(
       .rpc('check_ingest_allowed', { p_org_id: orgId })
       .single();
 
-    if (allowanceError) return errorState(allowanceError.message);
+    if (allowanceError) {
+      return databaseErrorState('checking the ingest allowance', allowanceError, {
+        fallback: 'That upload could not be recorded.',
+      });
+    }
     if (!allowance.allowed) return errorState(allowance.reason ?? 'This plan is full.');
 
     const service = createServiceClient();
@@ -71,7 +76,11 @@ export async function enqueueUploadedDocument(
       .select('id')
       .single();
 
-    if (documentError) return errorState(documentError.message);
+    if (documentError) {
+      return databaseErrorState('recording an uploaded document', documentError, {
+        fallback: 'That upload could not be recorded.',
+      });
+    }
 
     const { error: jobError } = await service.from('ingest_jobs').insert({
       org_id: orgId,
@@ -80,7 +89,13 @@ export async function enqueueUploadedDocument(
       stage: 'extract',
     });
 
-    if (jobError) return errorState(jobError.message);
+    if (jobError) {
+      // The document row is already in. Saying so is the difference between a
+      // file that looks queued and a file the reader knows to upload again.
+      return databaseErrorState('queuing an uploaded document', jobError, {
+        fallback: 'That file was saved but nothing was queued to read it. Upload it again.',
+      });
+    }
 
     await service
       .from('usage_events')
@@ -99,7 +114,11 @@ export async function deleteDreamDocument(formData: FormData): Promise<ActionSta
     if (!parsed.success) return errorState('That document could not be deleted.');
 
     const { error } = await supabase.from('documents').delete().eq('id', parsed.data.documentId);
-    if (error) return errorState(error.message);
+    if (error) {
+      return databaseErrorState('deleting a dream document', error, {
+        fallback: 'That document could not be deleted.',
+      });
+    }
 
     return successState(undefined);
   }, '/documents');

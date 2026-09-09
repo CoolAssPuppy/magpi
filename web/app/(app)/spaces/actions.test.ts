@@ -15,19 +15,22 @@ type Write = {
   values?: Record<string, unknown>;
   match?: Match;
 };
-type DbError = { message: string } | null;
+type DbError = { message: string; code?: string } | null;
 
 const dbState = {
   writes: [] as Write[],
   /** Keyed `table:operation`, so a failing join reads differently to a failing insert. */
   failures: {} as Record<string, string>,
+  /** Keyed the same way. Only the codes a caller writes copy for need setting. */
+  failureCodes: {} as Record<string, string>,
   signedIn: true,
   revalidated: [] as string[],
 };
 
 const failureFor = (table: string, operation: string): DbError => {
-  const message = dbState.failures[`${table}:${operation}`];
-  return message ? { message } : null;
+  const key = `${table}:${operation}`;
+  const message = dbState.failures[key];
+  return message ? { message, code: dbState.failureCodes[key] } : null;
 };
 
 function fakeSupabase() {
@@ -102,6 +105,7 @@ const form = (fields: Record<string, string>): FormData => {
 beforeEach(() => {
   dbState.writes = [];
   dbState.failures = {};
+  dbState.failureCodes = {};
   dbState.signedIn = true;
   dbState.revalidated = [];
 });
@@ -146,26 +150,33 @@ describe('creating a team space', () => {
     expect(dbState.writes).toEqual([]);
   });
 
-  it('answers with the database refusal rather than an id nobody can use', async () => {
+  it('answers in terms the reader can act on rather than with an id nobody can use', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     dbState.failures['spaces:insert'] = 'new row violates row-level security';
+
+    const state = await createTeamSpace(form({ name: 'Growth' }));
+
+    expect(state).toEqual({ status: 'error', message: 'That space could not be created.' });
+    expect(dbState.writes.map((write) => write.table)).toEqual(['spaces']);
+    expect(dbState.revalidated).toEqual([]);
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
+  // The space exists at this point and its author cannot see it, so the copy has
+  // to say that rather than report a failure to create anything.
+  it('reports a space whose author could not be joined to it, rather than claiming success', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    dbState.failures['space_members:insert'] = 'duplicate key value';
 
     const state = await createTeamSpace(form({ name: 'Growth' }));
 
     expect(state).toEqual({
       status: 'error',
-      message: 'new row violates row-level security',
+      message: 'The space was created but you were not added to it.',
     });
-    expect(dbState.writes.map((write) => write.table)).toEqual(['spaces']);
     expect(dbState.revalidated).toEqual([]);
-  });
-
-  it('reports a space whose author could not be joined to it, rather than claiming success', async () => {
-    dbState.failures['space_members:insert'] = 'duplicate key value';
-
-    const state = await createTeamSpace(form({ name: 'Growth' }));
-
-    expect(state).toEqual({ status: 'error', message: 'duplicate key value' });
-    expect(dbState.revalidated).toEqual([]);
+    consoleError.mockRestore();
   });
 
   it('turns away a caller with no session', async () => {
@@ -207,16 +218,28 @@ describe('adding someone to a space', () => {
     expect(dbState.writes).toEqual([]);
   });
 
-  it('passes on a refusal from row level security rather than reporting a join', async () => {
+  it('reports a refusal from row level security rather than a join that did not happen', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     dbState.failures['space_members:insert'] = 'new row violates row-level security';
 
     const state = await addSpaceMember(form({ spaceId: SPACE_ID, userId: OTHER_USER_ID }));
 
-    expect(state).toEqual({
-      status: 'error',
-      message: 'new row violates row-level security',
-    });
+    expect(state).toEqual({ status: 'error', message: 'That member could not be added.' });
     expect(dbState.revalidated).toEqual([]);
+    consoleError.mockRestore();
+  });
+
+  // A unique violation is the one refusal here the reader can do something
+  // about, and what they should do is nothing.
+  it('says they are already in the space rather than that adding them failed', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    dbState.failures['space_members:insert'] = 'duplicate key value violates unique constraint';
+    dbState.failureCodes['space_members:insert'] = '23505';
+
+    const state = await addSpaceMember(form({ spaceId: SPACE_ID, userId: OTHER_USER_ID }));
+
+    expect(state).toEqual({ status: 'error', message: 'They are already in this space.' });
+    consoleError.mockRestore();
   });
 });
 
@@ -245,16 +268,15 @@ describe('taking someone out of a space', () => {
     expect(dbState.writes).toEqual([]);
   });
 
-  it('passes on a refusal from row level security rather than reporting a removal', async () => {
+  it('reports a refusal from row level security rather than a removal that did not happen', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     dbState.failures['space_members:delete'] = 'permission denied for table space_members';
 
     const state = await removeSpaceMember(form({ spaceId: SPACE_ID, userId: OTHER_USER_ID }));
 
-    expect(state).toEqual({
-      status: 'error',
-      message: 'permission denied for table space_members',
-    });
+    expect(state).toEqual({ status: 'error', message: 'That member could not be removed.' });
     expect(dbState.revalidated).toEqual([]);
+    consoleError.mockRestore();
   });
 });
 
