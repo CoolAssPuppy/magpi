@@ -469,3 +469,39 @@ The quirks belong in one table either way; that is a separate move from choosing
 which body survives.
 
 The failure mode here is invisible until it is a bill.
+
+## The claims that were wrong were the ones nobody ran
+
+Four readers audited this repo and produced 94 findings. Of the ones that turned
+out to be false, every single one came from reasoning about what code appeared to
+do rather than from executing it.
+
+Three examples, all from the same reader, who had a psql session open throughout:
+
+- "The 1,005-chunk fixture in `20_search.test.sql` is dead weight, the assertion
+  under it duplicates the one a hundred lines up." It does not. The earlier one
+  runs on the small fixture, where the planner picks a sequential scan and
+  filters perfectly, so it says nothing about the index path, which is the whole
+  question. One `explain` settles it: `Index Scan using chunks_embedding_idx`.
+- "`docs/limits.md` disagrees with `vercel.json` about cron intervals." Two greps
+  settle it. They agree.
+- "`documents.last_retrieved_at` is written by nothing." One insert and one
+  function call settle it. Null and 0 before, a timestamp and 1 after.
+
+The same reader's best findings were the ones it ran. It reproduced a privilege
+escalation in a rolled-back transaction and read the result, and that one was
+exactly right.
+
+I did it too, in the other direction: I marked a finding fixed because an agent
+reported it fixed, and wrote that into the audit. Reading the code took thirty
+seconds and showed four unchanged call sites.
+
+**Rule.** State which claims you ran and which you read, in the claim itself. A
+finding that says "verified by running X" and a finding that says "appears to" are
+different kinds of object, and collapsing them is how a wrong one gets acted on.
+The cost of running it is almost always seconds, and the tool is almost always
+already open.
+
+The tell for this failure is a claim about equivalence: this duplicates that,
+this is covered by that, this is written by nothing. Equivalence is the thing
+reading is worst at and executing is best at.
