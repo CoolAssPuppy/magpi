@@ -98,7 +98,7 @@ export function DreamOutput({
             className="rounded-[var(--radius-panel)] border border-border-warning bg-warning-200 px-4 py-3"
           >
             <p className="max-w-[var(--measure-prose)] text-sm text-warning-600">
-              This run produced nothing. It wrote a document that cites no source, and Recall does
+              This run produced nothing. It wrote a document that cites no source, and Magpi does
               not show synthesis it cannot trace back to a chunk.
             </p>
           </div>

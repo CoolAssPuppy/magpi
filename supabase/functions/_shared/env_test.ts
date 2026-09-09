@@ -122,8 +122,8 @@ Deno.test('the callback origin is the public functions url, never the internal g
 
 Deno.test('the web origin falls back to the local dev server', () => {
   assertEquals(
-    webBaseUrl(source({ SB_WEB_BASE_URL: 'https://recall.dev/' })),
-    'https://recall.dev',
+    webBaseUrl(source({ SB_WEB_BASE_URL: 'https://magpi.dev/' })),
+    'https://magpi.dev',
   );
   assertEquals(webBaseUrl(source({})), 'http://localhost:3000');
 });

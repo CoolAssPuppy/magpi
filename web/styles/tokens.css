@@ -1,5 +1,5 @@
 /*
- * Recall's own tokens. Loads last, so it wins over the vendored Supabase layers.
+ * Magpi's own tokens. Loads last, so it wins over the vendored Supabase layers.
  * Every token here is justified in docs/design.md. Nothing goes in this file
  * that the upstream system already answers.
  */
@@ -25,4 +25,73 @@
 
   /* Prose measure. Section 4 caps body copy at 65-75ch. */
   --measure-prose: 68ch;
+}
+
+/*
+ * The folded magpie.
+ *
+ * The mark is the same bird as the magpi badge project, at the same
+ * proportions, so the two agree wherever they appear together. Each plane is
+ * flat and meets the next at a hard crease, which is why these are separate
+ * tokens rather than a gradient: paper does not blend.
+ *
+ * Defined here rather than taken from the Supabase scales because the bird is
+ * an identity mark and its values are fixed. Everything else on the page still
+ * comes from the vendored tokens. These are the only literals in the repo
+ * outside the primitive scales, which is why this file is the one place
+ * scripts/check-raw-color.mjs exempts.
+ *
+ * Light theme first, then the dark override. In light the paper is black on a
+ * pale ground; in dark it is white paper on near-black. The belly stays chalk
+ * in both, because that is what the real bird does.
+ */
+:root {
+  --paper-body: #0f1114;
+  --paper-body-shade: #33383f;
+  --paper-body-mid: #22262b;
+  --paper-wing: #0f1114;
+  --paper-head: #0f1114;
+  --paper-head-shade: #22262b;
+  --paper-tail: #22262b;
+  --paper-tail-dark: #0f1114;
+  --paper-underwing: #4a5058;
+  --paper-underwing-dark: #22262b;
+  --paper-crease: #4a5058;
+  --paper-sheen: #0c9b89;
+  --paper-sheen-quiet: #0a7c6e;
+}
+
+:root:not([data-theme='light']) {
+  @media (prefers-color-scheme: dark) {
+    --paper-body: #f7f6f2;
+    --paper-body-shade: #c6c9ce;
+    --paper-body-mid: #e2e4e7;
+    --paper-wing: #ffffff;
+    --paper-head: #efede7;
+    --paper-head-shade: #e4e1d9;
+    --paper-tail: #33383f;
+    --paper-tail-dark: #15181c;
+    --paper-underwing: #e4e1d9;
+    --paper-underwing-dark: #efede7;
+    --paper-crease: #f7f6f2;
+    --paper-sheen: #0fbfa8;
+    --paper-sheen-quiet: #2ed3bc;
+  }
+}
+
+[data-theme='dark'],
+[data-theme='classic-dark'] {
+  --paper-body: #f7f6f2;
+  --paper-body-shade: #c6c9ce;
+  --paper-body-mid: #e2e4e7;
+  --paper-wing: #ffffff;
+  --paper-head: #efede7;
+  --paper-head-shade: #e4e1d9;
+  --paper-tail: #33383f;
+  --paper-tail-dark: #15181c;
+  --paper-underwing: #e4e1d9;
+  --paper-underwing-dark: #efede7;
+  --paper-crease: #f7f6f2;
+  --paper-sheen: #0fbfa8;
+  --paper-sheen-quiet: #2ed3bc;
 }

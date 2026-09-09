@@ -30,8 +30,9 @@ holding only `REFERENCES, TRIGGER, TRUNCATE` on every table.
 
 A stock Supabase project's default privileges for new tables in `public` give
 those roles nothing but those four, so RLS was doing its job and the outer gate
-was shut. The tables that worked were the three where the ported magpi schema
-happened to carry an explicit `grant ... to service_role` line.
+was shut. The tables that worked were the three where the schema ported from the
+magpi badge project happened to carry an explicit `grant ... to service_role`
+line.
 
 **Rule.** Table privileges are declared, in `supabase/schemas/95_grants.sql`,
 never inherited. A new table gets its grants in the same commit as its policies,

@@ -7,8 +7,8 @@ import type { SessionContext } from '@/lib/supabase/context';
 
 vi.mock('server-only', () => ({}));
 
-const APP_ORIGIN = 'https://recall.test';
-const APP_HOST = 'recall.test';
+const APP_ORIGIN = 'https://magpi.test';
+const APP_HOST = 'magpi.test';
 const ORG_ID = '11111111-1111-4111-8111-111111111111';
 const USER_ID = '77777777-7777-4777-8777-777777777777';
 const CHECKOUT_URL = 'https://checkout.stripe.test/c/session_1';

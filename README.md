@@ -1,22 +1,22 @@
-# Recall
+# Magpi
 
 A team knowledge base with a chat interface, built on stock Supabase.
 
-Connect Notion, Linear, Slack and Google Drive, or upload files directly. Recall chunks the content, embeds it, and stores it in Postgres. You ask questions in a conversation and get answers with citations back to the source.
+Connect Notion, Linear, Slack and Google Drive, or upload files directly. Magpi chunks the content, embeds it, and stores it in Postgres. You ask questions in a conversation and get answers with citations back to the source.
 
 Overnight, it dreams. A scheduled job re-reads what came in that day, extracts entities, links documents that are about the same thing, and writes a digest back into the space.
 
 Everything here runs on Supabase as it ships today. Postgres with pgvector, Row Level Security, Storage, Realtime, Auth, and Edge Functions. No mocked services, no unreleased features, no hidden infrastructure.
 
-Recall is the demo application for the Supabase Select 2026 keynote. It is also MIT licensed and meant to be cloned and run.
+Magpi is the demo application for the Supabase Select 2026 keynote. It is also MIT licensed and meant to be cloned and run.
 
 ## Quick start
 
 You need Node 22, pnpm 11, Docker, the [Supabase CLI](https://supabase.com/docs/guides/cli), and an OpenAI API key.
 
 ```bash
-git clone https://github.com/supabase-community/recall
-cd recall
+git clone https://github.com/supabase-community/magpi
+cd magpi
 pnpm install
 supabase start
 cp .env.example .env.local   # fill in the keys supabase start printed
@@ -39,7 +39,7 @@ Every document lives in exactly one **space**. There are three kinds.
 
 You pick the space when you connect a source or upload a file. Spaces are flat: no nesting, no inheritance, no per-document sharing.
 
-Recall owns this boundary rather than mirroring the boundaries of the tools it reads from. Glean and Dropbox Dash take the other route, and permission changes always propagate late when you do.
+Magpi owns this boundary rather than mirroring the boundaries of the tools it reads from. Glean and Dropbox Dash take the other route, and permission changes always propagate late when you do.
 
 Enforcement is RLS, forced on every table, deny by default. `chunks` carries a denormalized `space_id` so a permission check evaluates against a single indexed column with no join, which means the filter runs inside the vector search rather than after it.
 

@@ -32,7 +32,7 @@ export default async function ConnectionsPage() {
       {connected === 0 ? (
         <EmptyState
           title="Nothing is connected yet"
-          description="Recall answers from what you connect to it. Start with the source your team writes in most, pick the space it lands in, and the first import runs straight away."
+          description="Magpi answers from what you connect to it. Start with the source your team writes in most, pick the space it lands in, and the first import runs straight away."
           action={
             first ? (
               <Button asChild>

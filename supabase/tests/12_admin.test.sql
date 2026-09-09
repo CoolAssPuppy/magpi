@@ -10,11 +10,11 @@ select plan(24);
 
 insert into auth.users (id, email, instance_id, aud, role)
 values
-  ('a0000000-0000-4000-8000-000000000001', 'alice@recall.test',
+  ('a0000000-0000-4000-8000-000000000001', 'alice@magpi.test',
    '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated'),
-  ('b0000000-0000-4000-8000-000000000002', 'bob@recall.test',
+  ('b0000000-0000-4000-8000-000000000002', 'bob@magpi.test',
    '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated'),
-  ('c0000000-0000-4000-8000-000000000003', 'carol@recall.test',
+  ('c0000000-0000-4000-8000-000000000003', 'carol@magpi.test',
    '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated');
 
 -- Alice owns her org. Bob is an admin in it and an owner of his own. Carol is a
@@ -194,13 +194,13 @@ insert into public.org_invites (id, org_id, email, role, token_hash, invited_by,
                                 expires_at, created_at)
 values
   ('5e000000-0000-4000-8000-00000000000a', current_setting('recall.org_a')::uuid,
-   'newmember@recall.test', 'member', 'hash-a1',
+   'newmember@magpi.test', 'member', 'hash-a1',
    'a0000000-0000-4000-8000-000000000001', '2099-01-01 00:00:00+00', '2026-02-01 00:00:00+00'),
   ('5e000000-0000-4000-8000-00000000001a', current_setting('recall.org_a')::uuid,
-   'newadmin@recall.test', 'admin', 'hash-a2',
+   'newadmin@magpi.test', 'admin', 'hash-a2',
    'a0000000-0000-4000-8000-000000000001', '2099-01-01 00:00:00+00', '2026-02-01 00:00:00+00'),
   ('5e000000-0000-4000-8000-00000000000b', current_setting('recall.org_b')::uuid,
-   'elsewhere@recall.test', 'member', 'hash-b1',
+   'elsewhere@magpi.test', 'member', 'hash-b1',
    'b0000000-0000-4000-8000-000000000002', '2099-01-01 00:00:00+00', '2026-02-01 00:00:00+00');
 
 set local role authenticated;
@@ -238,7 +238,7 @@ select is(
 
 select throws_ok(
   $$ insert into public.org_invites (org_id, email, role, token_hash, invited_by, expires_at)
-     values (current_setting('recall.org_a')::uuid, 'stranger@recall.test', 'owner',
+     values (current_setting('recall.org_a')::uuid, 'stranger@magpi.test', 'owner',
              'hash-forged', 'c0000000-0000-4000-8000-000000000003',
              '2099-01-01 00:00:00+00') $$,
   '42501', null, 'and cannot invite anyone, least of all as an owner'
@@ -250,7 +250,7 @@ set local request.jwt.claims to '{"sub":"b0000000-0000-4000-8000-000000000002","
 
 select throws_ok(
   $$ insert into public.org_invites (org_id, email, role, token_hash, invited_by, expires_at)
-     values (current_setting('recall.org_a')::uuid, 'attributed@recall.test', 'member',
+     values (current_setting('recall.org_a')::uuid, 'attributed@magpi.test', 'member',
              'hash-attributed', 'a0000000-0000-4000-8000-000000000001',
              '2099-01-01 00:00:00+00') $$,
   '42501', null, 'an admin cannot issue an invite in another admin''s name'
@@ -258,7 +258,7 @@ select throws_ok(
 
 select lives_ok(
   $$ insert into public.org_invites (org_id, email, role, token_hash, invited_by, expires_at)
-     values (current_setting('recall.org_a')::uuid, 'genuine@recall.test', 'member',
+     values (current_setting('recall.org_a')::uuid, 'genuine@magpi.test', 'member',
              'hash-genuine', 'b0000000-0000-4000-8000-000000000002',
              '2099-01-01 00:00:00+00') $$,
   'an admin may issue one in their own name'

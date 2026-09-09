@@ -16,7 +16,7 @@ create extension if not exists pgtap with schema extensions;
 select plan(8);
 
 insert into auth.users (id, email, instance_id, aud, role)
-values ('a0000000-0000-4000-8000-000000000001', 'alice@recall.test',
+values ('a0000000-0000-4000-8000-000000000001', 'alice@magpi.test',
         '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated');
 
 insert into public.spaces (id, org_id, kind, name)

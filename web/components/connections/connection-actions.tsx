@@ -69,7 +69,7 @@ export function ConnectionActions({
             <DialogHeader>
               <DialogTitle>Disconnect {connection.spaceName} from this source?</DialogTitle>
               <DialogDescription>
-                Recall stops reading this account. Documents already imported stay in the space and
+                Magpi stops reading this account. Documents already imported stay in the space and
                 stay searchable.
               </DialogDescription>
             </DialogHeader>

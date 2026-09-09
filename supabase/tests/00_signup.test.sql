@@ -11,12 +11,12 @@ select plan(12);
 
 -- Fixed ids and a fixed instance id. Nothing in this file depends on the clock.
 insert into auth.users (id, email, instance_id, aud, role)
-values ('a0000000-0000-4000-8000-000000000001', 'alice@recall.test',
+values ('a0000000-0000-4000-8000-000000000001', 'alice@magpi.test',
         '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated');
 
 -- Bob signs up second. Alice's org must be untouched by it.
 insert into auth.users (id, email, instance_id, aud, role)
-values ('b0000000-0000-4000-8000-000000000002', 'bob@recall.test',
+values ('b0000000-0000-4000-8000-000000000002', 'bob@magpi.test',
         '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated');
 
 select is(

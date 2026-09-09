@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { MagpieMark } from '@/components/brand/magpie-mark';
 
 /**
  * One frame for every auth screen. A single centered panel is the right
@@ -18,8 +19,12 @@ export function AuthShell({
 }) {
   return (
     <div className="flex min-h-svh w-full flex-col items-center justify-center gap-8 p-6">
-      <Link href="/" className="font-heading text-lg tracking-tight text-foreground">
-        Recall
+      <Link
+        href="/"
+        className="flex items-center gap-2.5 font-heading text-lg tracking-tight text-foreground"
+      >
+        <MagpieMark size={28} />
+        Magpi
       </Link>
 
       <div className="w-full max-w-sm rounded-[var(--radius-panel)] border border-border bg-background-surface-100 p-6">

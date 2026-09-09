@@ -60,7 +60,7 @@ function PlanCallToAction({ plan }: { plan: Plan }) {
     case 'contact':
       return (
         <Button variant="outline" asChild>
-          <a href="mailto:sales@recall.example">Talk to us</a>
+          <a href="mailto:sales@magpi.example">Talk to us</a>
         </Button>
       );
     default: {

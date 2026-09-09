@@ -10,7 +10,7 @@ export type DreamKind = Enums<'dream_kind'>;
  * screen. Everywhere after that, the word is used without apology.
  */
 export const DREAM_DEFINITION =
-  'Dreaming is overnight processing: once a night, per space, Recall re-reads what came in that day, extracts entities, links documents about the same thing, and writes a digest back into the space.';
+  'Dreaming is overnight processing: once a night, per space, Magpi re-reads what came in that day, extracts entities, links documents about the same thing, and writes a digest back into the space.';
 
 /**
  * The stages a dream job moves through. dream_runs has no stage column, so the

@@ -29,8 +29,8 @@ describe('creating a checkout session', () => {
         seats: 4,
         customerEmail: 'ada@example.com',
         customerId: null,
-        successUrl: 'https://recall.test/admin/billing?checkout=done',
-        cancelUrl: 'https://recall.test/admin/billing',
+        successUrl: 'https://magpi.test/admin/billing?checkout=done',
+        cancelUrl: 'https://magpi.test/admin/billing',
       },
       stripeFetch,
     );
@@ -60,8 +60,8 @@ describe('creating a checkout session', () => {
         seats: 1,
         customerEmail: 'ada@example.com',
         customerId: 'cus_existing',
-        successUrl: 'https://recall.test/admin/billing',
-        cancelUrl: 'https://recall.test/admin/billing',
+        successUrl: 'https://magpi.test/admin/billing',
+        cancelUrl: 'https://magpi.test/admin/billing',
       },
       stripeFetch,
     );
@@ -86,8 +86,8 @@ describe('creating a checkout session', () => {
           seats: 1,
           customerEmail: null,
           customerId: null,
-          successUrl: 'https://recall.test/admin/billing',
-          cancelUrl: 'https://recall.test/admin/billing',
+          successUrl: 'https://magpi.test/admin/billing',
+          cancelUrl: 'https://magpi.test/admin/billing',
         },
         stripeFetch,
       ),
@@ -107,8 +107,8 @@ describe('creating a checkout session', () => {
           seats: 1,
           customerEmail: null,
           customerId: null,
-          successUrl: 'https://recall.test/admin/billing',
-          cancelUrl: 'https://recall.test/admin/billing',
+          successUrl: 'https://magpi.test/admin/billing',
+          cancelUrl: 'https://magpi.test/admin/billing',
         },
         stripeFetch,
       ),
@@ -124,7 +124,7 @@ describe('creating a customer portal session', () => {
       {
         secretKey: 'sk_test',
         customerId: 'cus_existing',
-        returnUrl: 'https://recall.test/admin/billing',
+        returnUrl: 'https://magpi.test/admin/billing',
       },
       stripeFetch,
     );
@@ -134,7 +134,7 @@ describe('creating a customer portal session', () => {
     const params = paramsOf(stripeFetch.mock.calls[0]);
     expect(stripeFetch.mock.calls[0][0]).toBe('https://api.stripe.com/v1/billing_portal/sessions');
     expect(params.get('customer')).toBe('cus_existing');
-    expect(params.get('return_url')).toBe('https://recall.test/admin/billing');
+    expect(params.get('return_url')).toBe('https://magpi.test/admin/billing');
   });
 
   it('reports the message Stripe gave when it refuses', async () => {
@@ -144,7 +144,7 @@ describe('creating a customer portal session', () => {
 
     await expect(
       createPortalSession(
-        { secretKey: 'sk_test', customerId: 'cus_gone', returnUrl: 'https://recall.test' },
+        { secretKey: 'sk_test', customerId: 'cus_gone', returnUrl: 'https://magpi.test' },
         stripeFetch,
       ),
     ).rejects.toThrow('No such customer');

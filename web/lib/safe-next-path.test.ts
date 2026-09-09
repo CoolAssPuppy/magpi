@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { safeNextPath } from './safe-next-path';
 
-const ORIGIN = 'https://recall.test';
+const ORIGIN = 'https://magpi.test';
 
 describe('redirect targets', () => {
   it('keeps a same-origin path with its query and hash', () => {

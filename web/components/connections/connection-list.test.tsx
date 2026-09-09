@@ -80,7 +80,7 @@ describe('the connections list', () => {
                   status: 'revoked',
                   label: 'Access revoked',
                   tone: 'destructive',
-                  reason: 'The workspace owner removed Recall.',
+                  reason: 'The workspace owner removed Magpi.',
                   recovery: { kind: 'reconnect', label: 'Reconnect' },
                 },
               }),
@@ -91,7 +91,7 @@ describe('the connections list', () => {
       />,
     );
 
-    expect(screen.getByText('The workspace owner removed Recall.')).toBeInTheDocument();
+    expect(screen.getByText('The workspace owner removed Magpi.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /reconnect/i })).toHaveAttribute(
       'href',
       '/connections/notion?space=space-1',

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { authServer } from '../test-support';
 
-const ORIGIN = 'https://recall.test';
+const ORIGIN = 'https://magpi.test';
 const TOKEN_HASH = 'pkce_9f2c4a1b';
 
 const server = { current: authServer() };

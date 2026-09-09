@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SocialSignIn } from './social-sign-in';
 import { authClient, type AuthClientOptions } from './test-support';
 
-const PAGE_ORIGIN = 'https://recall.test';
+const PAGE_ORIGIN = 'https://magpi.test';
 
 const client = { current: authClient() };
 

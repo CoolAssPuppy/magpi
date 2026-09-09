@@ -78,9 +78,9 @@ export function describeScopeSelection(selection: ScopeSelection): string {
 export function describeEmptySelection(kind: ScopeSelectionKind): string | null {
   switch (kind) {
     case 'channel':
-      return 'With no channels selected, Recall reads nothing from this source.';
+      return 'With no channels selected, Magpi reads nothing from this source.';
     case 'folder':
-      return 'With no folders selected, Recall reads everything this account can see.';
+      return 'With no folders selected, Magpi reads everything this account can see.';
     case 'workspace':
       return null;
     default: {

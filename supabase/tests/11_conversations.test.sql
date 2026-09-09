@@ -12,9 +12,9 @@ select plan(15);
 
 insert into auth.users (id, email, instance_id, aud, role)
 values
-  ('a0000000-0000-4000-8000-000000000001', 'alice@recall.test',
+  ('a0000000-0000-4000-8000-000000000001', 'alice@magpi.test',
    '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated'),
-  ('b0000000-0000-4000-8000-000000000002', 'bob@recall.test',
+  ('b0000000-0000-4000-8000-000000000002', 'bob@magpi.test',
    '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated');
 
 insert into public.spaces (id, org_id, kind, name)

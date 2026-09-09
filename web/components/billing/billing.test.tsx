@@ -69,7 +69,7 @@ describe('pricing table', () => {
     expect(screen.getByRole('link', { name: 'Start on Team' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Talk to us' })).toHaveAttribute(
       'href',
-      'mailto:sales@recall.example',
+      'mailto:sales@magpi.example',
     );
   });
 });

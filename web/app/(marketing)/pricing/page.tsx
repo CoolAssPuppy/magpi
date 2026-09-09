@@ -1,7 +1,7 @@
 import { PricingTable } from '@/components/billing/pricing-table';
 
 export const metadata = {
-  title: 'Pricing | Recall',
+  title: 'Pricing | Magpi',
   description: 'Free for one personal space. Team is per person, per month.',
 };
 
@@ -14,7 +14,7 @@ export default function PricingPage() {
         </h1>
         <p className="mt-5 text-base text-foreground-light">
           Every plan reads the same way and answers with the same citations. What changes is how
-          many people you can bring, and whether Recall goes and fetches your sources for you.
+          many people you can bring, and whether Magpi goes and fetches your sources for you.
         </p>
       </section>
 
@@ -32,7 +32,7 @@ export default function PricingPage() {
           <div>
             <dt className="text-sm font-medium text-foreground">What happens at the limit?</dt>
             <dd className="mt-1.5 max-w-[var(--measure-prose)] text-sm text-foreground-lighter">
-              New ingest is refused and everything already in Recall keeps answering. The check runs
+              New ingest is refused and everything already in Magpi keeps answering. The check runs
               in the database, so it is the same answer everywhere.
             </dd>
           </div>

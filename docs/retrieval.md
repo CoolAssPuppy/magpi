@@ -1,6 +1,6 @@
 # Retrieval
 
-How Recall finds the chunks that answer a question, and what its recall actually
+How Magpi finds the chunks that answer a question, and what its recall actually
 is once a permission filter is applied.
 
 ## The design
@@ -206,7 +206,7 @@ trivial cast above it.
 What remains to be measured is the cost, not the correctness. The table
 below is where that measurement goes.
 
-## Recall measurement
+## Magpi measurement
 
 Every value here is `not measured` as of 2026-09-09. Filter selectivity is the
 fraction of chunks in the corpus that the querying user can see, which is the

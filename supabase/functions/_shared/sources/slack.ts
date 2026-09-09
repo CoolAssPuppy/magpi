@@ -294,7 +294,7 @@ export const slackDriver: SourceDriver = {
   },
 
   // Slack user tokens do not expire unless token rotation is turned on for the
-  // app, and Recall's app does not use it, so there is nothing to trade.
+  // app, and Magpi's app does not use it, so there is nothing to trade.
   refresh(_deps: SourceDeps): Promise<RefreshOutcome> {
     return Promise.resolve({ kind: 'not_supported' });
   },

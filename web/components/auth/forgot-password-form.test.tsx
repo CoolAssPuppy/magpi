@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ForgotPasswordForm } from './forgot-password-form';
 import { authClient, type AuthClientOptions } from './test-support';
 
-const PAGE_ORIGIN = 'https://recall.test';
+const PAGE_ORIGIN = 'https://magpi.test';
 
 const client = { current: authClient() };
 

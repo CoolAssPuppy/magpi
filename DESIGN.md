@@ -1,6 +1,6 @@
-# Recall: the visual system
+# Magpi: the visual system
 
-Recall uses the Supabase design system. Not a system inspired by it, not a reinterpretation of it. The actual tokens, vendored from `supabase/supabase` and refreshed by `scripts/sync-tokens.mjs`. A Supabase designer should open this app and find the system they already maintain.
+Magpi uses the Supabase design system. Not a system inspired by it, not a reinterpretation of it. The actual tokens, vendored from `supabase/supabase` and refreshed by `scripts/sync-tokens.mjs`. A Supabase designer should open this app and find the system they already maintain.
 
 ## Sources, in order
 
@@ -22,7 +22,7 @@ Dark mode is a custom variant, not Tailwind's default:
 
 Semantic tokens only. `--color-background`, `--color-foreground`, `--color-border`, `--color-brand-*`, `--color-destructive-*`, `--color-warning-*`. Never a raw hex, never a Tailwind default palette class like `bg-slate-800`. `scripts/check-raw-color.mjs` fails the gate on either.
 
-Overrides local to Recall live in `web/styles/tokens.css`, which loads last and is documented in `docs/design.md` with a justification per token.
+Overrides local to Magpi live in `web/styles/tokens.css`, which loads last and is documented in `docs/design.md` with a justification per token.
 
 ## Type
 

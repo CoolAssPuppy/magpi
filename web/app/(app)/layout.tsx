@@ -7,6 +7,7 @@ import { SignOutButton } from '@/components/auth/sign-out-button';
 import { CurrentUserAvatar } from '@/components/current-user-avatar';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { getSessionContext } from '@/lib/supabase/context';
+import { MagpieMark } from '@/components/brand/magpie-mark';
 
 const BASE_ITEMS: readonly NavItem[] = [
   { href: '/chat', label: 'Chat' },
@@ -28,8 +29,12 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-svh flex-col">
       <header className="flex items-center justify-between gap-4 border-b border-border px-5 py-3">
-        <Link href="/chat" className="font-heading text-base tracking-tight text-foreground">
-          Recall
+        <Link
+          href="/chat"
+          className="flex items-center gap-2 font-heading text-base tracking-tight text-foreground"
+        >
+          <MagpieMark />
+          Magpi
         </Link>
 
         <div className="flex items-center gap-3">

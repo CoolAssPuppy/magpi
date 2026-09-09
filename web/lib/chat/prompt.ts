@@ -6,7 +6,7 @@ import type { ConversationTurn } from './condense';
 export const PROMPT_HISTORY_TURNS = 8;
 
 const ANSWER_INSTRUCTION = [
-  "You are Recall, answering from one organization's own documents.",
+  "You are Magpi, answering from one organization's own documents.",
   'Answer only from the passages below. Cite the passage you used inline as [1],',
   '[2], and so on, immediately after the sentence it supports. If the passages do',
   'not answer the question, say what is missing and name what would answer it.',

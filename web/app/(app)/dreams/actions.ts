@@ -25,7 +25,7 @@ export async function startDreamRun(
   kind: 'entities' | 'digest' | 'connections',
 ): Promise<ActionState<DreamRunOutcome>> {
   const input = z.object({ spaceId: idSchema, kind: kindSchema }).safeParse({ spaceId, kind });
-  if (!input.success) return errorState('That is not a space and a kind of dream Recall runs.');
+  if (!input.success) return errorState('That is not a space and a kind of dream Magpi runs.');
 
   return withSession(async (context) => {
     const { data: space } = await context.supabase

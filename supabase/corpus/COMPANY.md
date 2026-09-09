@@ -2,7 +2,7 @@
 
 Everything in `supabase/corpus/` is fiction. Alderwick does not exist, Portside
 does not exist, and none of the people named here are real. The documents were
-written for Recall so the demo has something with structure in it. This file is
+written for Magpi so the demo has something with structure in it. This file is
 the reference the rest of the corpus is consistent with. Read it before adding
 a document.
 

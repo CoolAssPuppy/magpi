@@ -7,30 +7,30 @@ import { AuthShell } from './auth-shell';
 describe('the frame every auth screen sits in', () => {
   it('gives the screen one first-level heading and says underneath what it is for', () => {
     render(
-      <AuthShell title="Welcome back" description="Sign in to your Recall account.">
+      <AuthShell title="Welcome back" description="Sign in to your Magpi account.">
         <form />
       </AuthShell>,
     );
 
     expect(screen.getByRole('heading', { level: 1, name: 'Welcome back' })).toBeInTheDocument();
-    expect(screen.getByText('Sign in to your Recall account.')).toBeInTheDocument();
+    expect(screen.getByText('Sign in to your Magpi account.')).toBeInTheDocument();
   });
 
   it('offers a way back to the marketing page from a signed-out screen', () => {
     render(
-      <AuthShell title="Welcome back" description="Sign in to your Recall account.">
+      <AuthShell title="Welcome back" description="Sign in to your Magpi account.">
         <form />
       </AuthShell>,
     );
 
-    expect(screen.getByRole('link', { name: 'Recall' })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: 'Magpi' })).toHaveAttribute('href', '/');
   });
 
   it('shows the way on to the other auth screen when one is offered', () => {
     render(
       <AuthShell
         title="Welcome back"
-        description="Sign in to your Recall account."
+        description="Sign in to your Magpi account."
         footer={<Link href="/sign-up">Create an account</Link>}
       >
         <form />

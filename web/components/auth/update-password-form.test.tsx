@@ -22,7 +22,7 @@ async function saveNewPassword() {
 
 beforeEach(() => {
   goTrue();
-  vi.stubGlobal('location', { origin: 'https://recall.test', assign });
+  vi.stubGlobal('location', { origin: 'https://magpi.test', assign });
 });
 
 afterEach(() => {

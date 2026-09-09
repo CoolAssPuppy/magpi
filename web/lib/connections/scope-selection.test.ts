@@ -94,13 +94,13 @@ describe('describing a selection', () => {
 describe('what an empty selection means', () => {
   it('says a channel source reads nothing, because that is what Slack does', () => {
     expect(describeEmptySelection('channel')).toBe(
-      'With no channels selected, Recall reads nothing from this source.',
+      'With no channels selected, Magpi reads nothing from this source.',
     );
   });
 
   it('says a folder source reads everything, because that is what Drive does', () => {
     expect(describeEmptySelection('folder')).toBe(
-      'With no folders selected, Recall reads everything this account can see.',
+      'With no folders selected, Magpi reads everything this account can see.',
     );
   });
 

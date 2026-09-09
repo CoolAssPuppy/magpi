@@ -16,13 +16,13 @@ select plan(42);
 -- test that org membership alone grants nothing.
 insert into auth.users (id, email, instance_id, aud, role)
 values
-  ('a0000000-0000-4000-8000-000000000001', 'alice@recall.test',
+  ('a0000000-0000-4000-8000-000000000001', 'alice@magpi.test',
    '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated'),
-  ('b0000000-0000-4000-8000-000000000002', 'bob@recall.test',
+  ('b0000000-0000-4000-8000-000000000002', 'bob@magpi.test',
    '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated'),
-  ('c0000000-0000-4000-8000-000000000003', 'carol@recall.test',
+  ('c0000000-0000-4000-8000-000000000003', 'carol@magpi.test',
    '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated'),
-  ('d0000000-0000-4000-8000-000000000004', 'dave@recall.test',
+  ('d0000000-0000-4000-8000-000000000004', 'dave@magpi.test',
    '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated');
 
 -- Dave joins Carol's organization. The trigger puts him in its org space.

@@ -4,7 +4,7 @@ import { AuthShell } from '@/components/auth/auth-shell';
 import { SignInForm } from '@/components/auth/sign-in-form';
 import { safeNextPath } from '@/lib/safe-next-path';
 
-export const metadata = { title: 'Sign in to Recall' };
+export const metadata = { title: 'Sign in to Magpi' };
 
 export default async function SignInPage({
   searchParams,

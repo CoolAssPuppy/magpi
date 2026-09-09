@@ -7,7 +7,7 @@ import type { InvitedMember } from '@/app/(app)/admin/members/actions';
 
 import { InviteForm, type InviteAction } from './invite-form';
 
-const BASE_URL = 'https://recall.test';
+const BASE_URL = 'https://magpi.test';
 const TOKEN = 'JJvJj0kZ7Yc2mWl8pQ3sR1tU4vX7yA0bC3dE6fG9hI';
 
 /** Typing key by key at the default delay times the suite out under load. */
@@ -66,7 +66,7 @@ describe('inviting a colleague', () => {
 
     expect(await screen.findByText(`${BASE_URL}/invite/${TOKEN}`)).toBeInTheDocument();
     expect(
-      screen.getByText('This is the only time the link is shown. Recall stores a hash of it.'),
+      screen.getByText('This is the only time the link is shown. Magpi stores a hash of it.'),
     ).toBeInTheDocument();
   });
 

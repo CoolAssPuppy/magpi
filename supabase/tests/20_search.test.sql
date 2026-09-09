@@ -14,11 +14,11 @@ select plan(12);
 
 insert into auth.users (id, email, instance_id, aud, role)
 values
-  ('a0000000-0000-4000-8000-000000000001', 'alice@recall.test',
+  ('a0000000-0000-4000-8000-000000000001', 'alice@magpi.test',
    '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated'),
-  ('b0000000-0000-4000-8000-000000000002', 'bob@recall.test',
+  ('b0000000-0000-4000-8000-000000000002', 'bob@magpi.test',
    '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated'),
-  ('c0000000-0000-4000-8000-000000000003', 'carol@recall.test',
+  ('c0000000-0000-4000-8000-000000000003', 'carol@magpi.test',
    '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated');
 
 insert into public.spaces (id, org_id, kind, name)
@@ -168,7 +168,7 @@ select throws_ok(
 
 reset role;
 
--- Recall under a filtered index scan -------------------------------------------
+-- Magpi under a filtered index scan -------------------------------------------
 --
 -- Everything above proves the filter is applied. It does not say where. An HNSW
 -- scan with hnsw.iterative_scan off returns hnsw.ef_search candidates and only
@@ -200,7 +200,7 @@ select (select org_id from public.spaces where id = '50000000-0000-4000-8000-000
        ('[0,0,0.5,0.5,' || repeat('0,', 1531) || '0]')::extensions.vector(1536)
 from generate_series(1, 5) as n;
 
-select set_config('recall.qdense',
+select set_config('magpi.qdense',
   '[0,0,1,' || repeat('0,', 1532) || '0]', true);
 
 set local role authenticated;
@@ -213,7 +213,7 @@ set local enable_seqscan = off;
 
 select is(
   (select count(*)::int from public.search(
-     current_setting('recall.qdense')::extensions.vector(1536),
+     current_setting('magpi.qdense')::extensions.vector(1536),
      'zzzznomatch', null, 20)
    where space_id = '50000000-0000-4000-8000-00000000000c'),
   0, 'an index scan never returns a row from a space the caller cannot see'

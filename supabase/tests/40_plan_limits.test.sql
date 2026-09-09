@@ -23,7 +23,7 @@ select is(public.plan_monthly_query_limit('enterprise'), 5000000,
   'the enterprise plan allows 5000000 queries a month');
 
 insert into auth.users (id, email, instance_id, aud, role)
-values ('a0000000-0000-4000-8000-000000000001', 'alice@recall.test',
+values ('a0000000-0000-4000-8000-000000000001', 'alice@magpi.test',
         '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated');
 
 insert into public.spaces (id, org_id, kind, name)

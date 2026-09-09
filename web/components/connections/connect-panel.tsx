@@ -170,7 +170,7 @@ export function ConnectPanel({
         </div>
 
         <p className="max-w-[var(--measure-prose)] text-sm text-foreground-lighter">
-          You will be sent to {provider.displayName} to authorize Recall, then brought back here to
+          You will be sent to {provider.displayName} to authorize Magpi, then brought back here to
           choose what it reads.
         </p>
 
@@ -185,7 +185,7 @@ export function ConnectPanel({
               rel="noreferrer noopener"
               target="_blank"
             >
-              What {provider.displayName} gives Recall
+              What {provider.displayName} gives Magpi
             </a>
           ) : null}
         </div>
@@ -197,8 +197,8 @@ export function ConnectPanel({
         ) : null}
       </section>
 
-      <section aria-label="What Recall reads" className="flex flex-col gap-1">
-        <h2 className="font-heading text-sm font-medium text-foreground">What Recall reads</h2>
+      <section aria-label="What Magpi reads" className="flex flex-col gap-1">
+        <h2 className="font-heading text-sm font-medium text-foreground">What Magpi reads</h2>
         {connections.length === 0 ? (
           <p className="max-w-[var(--measure-prose)] text-sm text-foreground-lighter">
             There is no connection to {provider.displayName} yet. Once one exists, the channels and

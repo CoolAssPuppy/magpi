@@ -84,7 +84,7 @@ export default async function MembersPage() {
     <div className="flex flex-col gap-8">
       <Panel
         title="Invite someone"
-        description="An invitation is a one-time link. Recall stores a hash of it, so it can only be read once."
+        description="An invitation is a one-time link. Magpi stores a hash of it, so it can only be read once."
       >
         <InviteForm action={inviteMember} baseUrl={baseUrl} />
       </Panel>

@@ -24,7 +24,7 @@ const API_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'http://127.0.0.1:55321'
 const SERVICE_KEY = process.env.SB_SERVICE_ROLE_KEY;
 
 /** Published in the README. This is a local demo, not a deployment. */
-const PASSWORD = 'recall-demo-password';
+const PASSWORD = 'magpi-demo-password';
 
 const PEOPLE = [
   { email: 'diane@alderwick.test', label: 'Diane', leadership: true },

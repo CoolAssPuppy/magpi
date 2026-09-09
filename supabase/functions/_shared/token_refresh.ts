@@ -1,6 +1,7 @@
 // Keeping a connection's access token alive.
 //
-// This is the thing magpi does not have: `refresh()` is defined on the driver
+// This is the thing the magpi badge project does not have: `refresh()` is
+// defined on the driver
 // interface there and never called, so `refresh_token_enc` is stored and unused
 // and a long-lived sync stops working an hour after it was set up, silently.
 //

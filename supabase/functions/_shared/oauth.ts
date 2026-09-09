@@ -162,7 +162,7 @@ interface DriverQuirks {
   /**
    * Which query parameter carries the scopes. Slack v2 splits them: `scope`
    * buys a bot token, `user_scope` buys one that acts as the person, and
-   * everything Recall reads is the person's.
+   * everything Magpi reads is the person's.
    */
   scopeParam?: string;
   /** Lifts the token out of a non-standard envelope before the shared path. */

@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SignUpForm } from './sign-up-form';
 import { authClient, type AuthClientOptions } from './test-support';
 
-const PAGE_ORIGIN = 'https://recall.test';
+const PAGE_ORIGIN = 'https://magpi.test';
 
 const client = { current: authClient() };
 const push = vi.fn();

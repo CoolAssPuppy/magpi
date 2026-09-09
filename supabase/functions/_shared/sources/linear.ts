@@ -41,14 +41,14 @@ const CREDENTIAL_CODE = /auth|forbidden|permission/i;
 const RECONNECT_MESSAGE = `${DISPLAY_NAME} refused this connection, reconnect it.`;
 const FAILURE_MESSAGE = `${DISPLAY_NAME} could not be read, the next sync will try again.`;
 
-const CHANGES_QUERY = `query RecallChanges($first: Int!, $filter: IssueFilter) {
+const CHANGES_QUERY = `query MagpiChanges($first: Int!, $filter: IssueFilter) {
   issues(first: $first, filter: $filter, orderBy: updatedAt) {
     nodes { id identifier title url updatedAt }
     pageInfo { hasNextPage endCursor }
   }
 }`;
 
-const ISSUE_QUERY = `query RecallIssue($id: String!, $comments: Int!) {
+const ISSUE_QUERY = `query MagpiIssue($id: String!, $comments: Int!) {
   issue(id: $id) {
     id
     identifier
@@ -62,7 +62,7 @@ const ISSUE_QUERY = `query RecallIssue($id: String!, $comments: Int!) {
   }
 }`;
 
-const TEAMS_QUERY = `query RecallTeams($first: Int!) {
+const TEAMS_QUERY = `query MagpiTeams($first: Int!) {
   teams(first: $first) {
     nodes { id name }
   }

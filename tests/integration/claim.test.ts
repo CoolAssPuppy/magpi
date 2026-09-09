@@ -26,8 +26,8 @@ describe('claiming ingest jobs', () => {
 
   beforeAll(async () => {
     const { data, error } = await db.auth.admin.createUser({
-      email: `claim-${RUN_ID}@recall.test`,
-      password: 'recall-integration-password-1',
+      email: `claim-${RUN_ID}@magpi.test`,
+      password: 'magpi-integration-password-1',
       email_confirm: true,
     });
     if (error) throw new Error(error.message);

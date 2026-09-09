@@ -1,5 +1,5 @@
 /**
- * Every model id in Recall. Nowhere else.
+ * Every model id in Magpi. Nowhere else.
  *
  * Pinned to exact ids, never a floating alias, so a provider changing what
  * "latest" means cannot change our behavior between two deploys. Costs and

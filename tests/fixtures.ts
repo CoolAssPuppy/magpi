@@ -10,10 +10,10 @@ export const RUN_ID = process.env.TEST_RUN_ID ?? Math.random().toString(36).slic
 /** Fixed, so nothing in a fixture depends on when the suite runs. */
 export const FIXED_DATE = '2026-03-01T09:00:00.000Z';
 
-export const PASSWORD = 'recall-test-password-1';
+export const PASSWORD = 'magpi-test-password-1';
 
 export function identity(label: string) {
-  return { email: `${label}-${RUN_ID}@recall.test`, password: PASSWORD };
+  return { email: `${label}-${RUN_ID}@magpi.test`, password: PASSWORD };
 }
 
 export function serviceClient(): SupabaseClient {

@@ -14,11 +14,11 @@ select plan(13);
 
 insert into auth.users (id, email, instance_id, aud, role)
 values
-  ('a0000000-0000-4000-8000-000000000001', 'alice@recall.test',
+  ('a0000000-0000-4000-8000-000000000001', 'alice@magpi.test',
    '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated'),
-  ('c0000000-0000-4000-8000-000000000003', 'carol@recall.test',
+  ('c0000000-0000-4000-8000-000000000003', 'carol@magpi.test',
    '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated'),
-  ('d0000000-0000-4000-8000-000000000004', 'dave@recall.test',
+  ('d0000000-0000-4000-8000-000000000004', 'dave@magpi.test',
    '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated');
 
 insert into public.org_members (org_id, user_id, role)

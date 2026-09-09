@@ -141,7 +141,7 @@ describe('the connect screen', () => {
     const props = getProps();
     props.onSaveScope.mockResolvedValue({
       status: 'error',
-      message: 'That channel is no longer shared with Recall.',
+      message: 'That channel is no longer shared with Magpi.',
     });
     render(<ConnectPanel {...props} connections={[getConnectionScope()]} />);
 
@@ -149,7 +149,7 @@ describe('the connect screen', () => {
     await userEvent.click(screen.getByRole('button', { name: /save/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'That channel is no longer shared with Recall.',
+      'That channel is no longer shared with Magpi.',
     );
   });
 
@@ -171,7 +171,7 @@ describe('the connect screen', () => {
       />,
     );
 
-    const existing = screen.getByRole('region', { name: /what recall reads/i });
+    const existing = screen.getByRole('region', { name: /what magpi reads/i });
     expect(within(existing).getByText('Access expired')).toBeInTheDocument();
     expect(
       within(existing).getByText('The access token expired and could not be refreshed.'),
@@ -182,9 +182,7 @@ describe('the connect screen', () => {
     const props = getProps();
     render(<ConnectPanel {...props} provider={{ ...getProvider(), docsUrl: null }} />);
 
-    expect(
-      screen.queryByRole('link', { name: /what slack gives recall/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /what slack gives magpi/i })).not.toBeInTheDocument();
   });
 
   it('offers no save button for a source that reads a whole workspace, since there is no choice', () => {

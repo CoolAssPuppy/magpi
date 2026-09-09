@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { authServer } from '../test-support';
 
-const ORIGIN = 'https://recall.test';
+const ORIGIN = 'https://magpi.test';
 const CODE = 'e1b0c44298fc';
 
 const server = { current: authServer() };
@@ -69,17 +69,17 @@ describe('coming back from GitHub', () => {
 
   it('lands the reader on the host they typed, not the load balancer behind it', async () => {
     const landing = await comeBackFromGitHub(`?code=${CODE}&next=/chat/abc`, {
-      'x-forwarded-host': 'recall.app',
+      'x-forwarded-host': 'magpi.app',
     });
 
-    expect(landing).toBe('https://recall.app/chat/abc');
+    expect(landing).toBe('https://magpi.app/chat/abc');
   });
 
   it('ignores a forwarded host in development, where nothing sits in front of the app', async () => {
     vi.stubEnv('NODE_ENV', 'development');
 
     const landing = await comeBackFromGitHub(`?code=${CODE}&next=/chat/abc`, {
-      'x-forwarded-host': 'recall.app',
+      'x-forwarded-host': 'magpi.app',
     });
 
     expect(landing).toBe(`${ORIGIN}/chat/abc`);

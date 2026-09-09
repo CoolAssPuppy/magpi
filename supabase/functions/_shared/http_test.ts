@@ -37,9 +37,9 @@ Deno.test('a body that is not json reads as null rather than throwing', async ()
 });
 
 Deno.test('an allowed origin is echoed back and a disallowed one is not', () => {
-  const source = envSource({ SB_WEB_ORIGINS: 'https://recall.dev,https://staging.recall.dev' });
-  const allowed = corsHeadersFor(new Headers({ origin: 'https://recall.dev' }), source);
-  assertEquals(allowed['Access-Control-Allow-Origin'], 'https://recall.dev');
+  const source = envSource({ SB_WEB_ORIGINS: 'https://magpi.dev,https://staging.magpi.dev' });
+  const allowed = corsHeadersFor(new Headers({ origin: 'https://magpi.dev' }), source);
+  assertEquals(allowed['Access-Control-Allow-Origin'], 'https://magpi.dev');
 
   const refused = corsHeadersFor(new Headers({ origin: 'https://evil.example' }), source);
   assertEquals(refused['Access-Control-Allow-Origin'], undefined);

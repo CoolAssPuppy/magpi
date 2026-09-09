@@ -70,7 +70,7 @@ export function InviteForm({ action, baseUrl }: { action: InviteAction; baseUrl:
             {`${baseUrl}/invite/${state.data.token}`}
           </code>
           <p className="mt-2 text-xs text-foreground-lighter">
-            This is the only time the link is shown. Recall stores a hash of it.
+            This is the only time the link is shown. Magpi stores a hash of it.
           </p>
         </div>
       ) : null}

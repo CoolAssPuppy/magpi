@@ -6,7 +6,7 @@ const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? '';
 const SERVICE_KEY = process.env.SB_SERVICE_ROLE_KEY ?? '';
 
 const RUN_ID = process.env.TEST_RUN_ID ?? Math.random().toString(36).slice(2, 8);
-const PASSWORD = 'recall-integration-password-1';
+const PASSWORD = 'magpi-integration-password-1';
 
 type Person = { email: string; userId: string; client: SupabaseClient };
 
@@ -17,7 +17,7 @@ function serviceClient() {
 }
 
 async function createPerson(label: string): Promise<Person> {
-  const email = `${label}-${RUN_ID}@recall.test`;
+  const email = `${label}-${RUN_ID}@magpi.test`;
   const service = serviceClient();
 
   const { data, error } = await service.auth.admin.createUser({

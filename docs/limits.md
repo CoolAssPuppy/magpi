@@ -22,7 +22,7 @@ the codebase, so a model change is a one-file change plus a line in this table.
 
 Prices are OpenAI's published standard-tier list prices, read from
 `developers.openai.com/api/docs/pricing` on 2026-09-09. Cached input and batch
-rates are lower and Recall uses neither today, so the standard rate is the one
+rates are lower and Magpi uses neither today, so the standard rate is the one
 that applies to every call the app makes.
 
 Two caveats on that table:
@@ -147,7 +147,7 @@ Cloud project and their own OAuth client, so their instance is not affected by
 where ours sits in Google's queue.
 
 Notion, Linear and Slack apps are faster to register than Google and none of
-them requires this kind of review for the scopes Recall asks for.
+them requires this kind of review for the scopes Magpi asks for.
 
 ## Running the background workers
 

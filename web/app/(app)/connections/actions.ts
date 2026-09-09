@@ -26,7 +26,7 @@ export async function startConnection(
     providerSlug,
     spaceId,
   });
-  if (!input.success) return errorState('That is not a source and a space Recall can connect.');
+  if (!input.success) return errorState('That is not a source and a space Magpi can connect.');
 
   let authorizeUrl: string | null = null;
 

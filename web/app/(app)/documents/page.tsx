@@ -27,7 +27,7 @@ export default async function DocumentsPage() {
       {documents.length === 0 ? (
         <EmptyState
           title="Nothing in here yet"
-          description="Upload a file above and Recall reads it, splits it up, and makes it answerable. A connected source does the same thing on a schedule."
+          description="Upload a file above and Magpi reads it, splits it up, and makes it answerable. A connected source does the same thing on a schedule."
         />
       ) : (
         <DocumentList documents={documents} />

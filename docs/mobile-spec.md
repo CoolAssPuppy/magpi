@@ -14,7 +14,7 @@ Every entry has the same eleven fields. A field that genuinely does not apply
 says `n/a` and why. A field that has not been decided is a bug in this file.
 
 - **Web route.** The path under `web/app/(app)/`.
-- **Deep link.** `recall://` scheme plus path. Universal links map the same
+- **Deep link.** `magpi://` scheme plus path. Universal links map the same
   paths off the web origin.
 - **Data contract.** The exact RPC or table, and the generated type name from
   `web/lib/database.types.ts`.
@@ -56,14 +56,14 @@ in the same commit.
 
 - **Screen name.** Chat
 - **Web route.** `/chat`
-- **Deep link.** `recall://chat`
+- **Deep link.** `magpi://chat`
 - **Data contract.** `conversations` filtered to `user_id = auth.uid()`, type
   `Database['public']['Tables']['conversations']['Row']`. History paginates
   through the `infinite-query-hook` block on web; native pages with a cursor on
   `created_at`.
 - **Loading.** Three skeleton rows in the history list, composer disabled.
 - **Empty.** The primary screen for a new user. Title, one sentence on what
-  Recall does, and two actions: upload a document, connect a source. It does
+  Magpi does, and two actions: upload a document, connect a source. It does
   not apologize for being empty.
 - **Error.** The error text from the failed query, plus a retry.
 - **Content.** The composer, the space filter, and the conversation list.
@@ -86,7 +86,7 @@ one line for line, so the transport is spelled out.
 
 - **Screen name.** Conversation
 - **Web route.** `/chat/[id]`
-- **Deep link.** `recall://chat/{conversationId}`
+- **Deep link.** `magpi://chat/{conversationId}`
 - **Data contract.** `messages` for the conversation, type
   `Database['public']['Tables']['messages']['Row']`. Citations are chunk ids in
   `messages.citations` and are resolved on read through
@@ -162,7 +162,7 @@ one line for line, so the transport is spelled out.
 
 - **Screen name.** Spaces
 - **Web route.** `/spaces`
-- **Deep link.** `recall://spaces`
+- **Deep link.** `magpi://spaces`
 - **Data contract.** `spaces` with `space_members(count)` and
   `documents(count)`, type `Database['public']['Tables']['spaces']['Row']`.
   Ordering is personal, then org, then teams alphabetically, from
@@ -186,7 +186,7 @@ one line for line, so the transport is spelled out.
 
 - **Screen name.** Space
 - **Web route.** `/spaces/[id]`
-- **Deep link.** `recall://spaces/{spaceId}`
+- **Deep link.** `magpi://spaces/{spaceId}`
 - **Data contract.** `spaces` by id, `space_members` for the space, and a head
   count on `documents`. Types
   `Database['public']['Tables']['spaces']['Row']` and
@@ -211,7 +211,7 @@ one line for line, so the transport is spelled out.
 
 - **Screen name.** Documents
 - **Web route.** `/documents`
-- **Deep link.** `recall://documents`
+- **Deep link.** `magpi://documents`
 - **Data contract.** `documents` joined to `spaces(name)` and
   `ingest_jobs(status, stage, error)`, type
   `Database['public']['Tables']['documents']['Row']`. Ingest status text comes
@@ -233,7 +233,7 @@ one line for line, so the transport is spelled out.
   `documents.ingest.running`, `documents.ingest.failed`,
   `documents.ingest.timeout`.
 - **Permissions.** iOS: none for `.fileImporter`. Photo library access, only if
-  image upload ships, reason string "Recall needs access to add a photo to your
+  image upload ships, reason string "Magpi needs access to add a photo to your
   knowledge base." Android: none on API 33 and above for SAF.
 - **Offline and refresh.** The list is cached. An upload started offline is
   refused with a clear message rather than queued, because the storage upload
@@ -244,7 +244,7 @@ one line for line, so the transport is spelled out.
 
 - **Screen name.** Document
 - **Web route.** `/documents/[id]`
-- **Deep link.** `recall://documents/{documentId}`, with an optional
+- **Deep link.** `magpi://documents/{documentId}`, with an optional
   `?chunk={chunkId}` fragment that a citation opens directly.
 - **Data contract.** `documents` by id, `chunks` for the document ordered by
   `ordinal`, and the latest `ingest_jobs` row. Types
@@ -269,7 +269,7 @@ one line for line, so the transport is spelled out.
 
 - **Screen name.** Connections
 - **Web route.** `/connections`
-- **Deep link.** `recall://connections`
+- **Deep link.** `magpi://connections`
 - **Data contract.** `providers` for the registry and `connections` for what is
   already linked, types
   `Database['public']['Tables']['providers']['Row']` and
@@ -303,7 +303,7 @@ one line for line, so the transport is spelled out.
 
 - **Screen name.** Connect
 - **Web route.** `/connections/[provider]`
-- **Deep link.** `recall://connections/{providerSlug}`
+- **Deep link.** `magpi://connections/{providerSlug}`
 - **Data contract.** `providers` by slug, plus `connections.scope_selection`
   once the connection exists. `providers.scope_selection_kind` says whether the
   picker lists channels, folders, or a whole workspace.
@@ -326,7 +326,7 @@ one line for line, so the transport is spelled out.
 
 - **Screen name.** Dreams
 - **Web route.** `/dreams`
-- **Deep link.** `recall://dreams`
+- **Deep link.** `magpi://dreams`
 - **Data contract.** `dream_runs` for the visible spaces, type
   `Database['public']['Tables']['dream_runs']['Row']`.
 - **Loading.** Run list skeleton.
@@ -348,7 +348,7 @@ one line for line, so the transport is spelled out.
 
 - **Screen name.** Entities
 - **Web route.** `/dreams/entities`
-- **Deep link.** `recall://dreams/entities`, with an optional `?space={spaceId}`
+- **Deep link.** `magpi://dreams/entities`, with an optional `?space={spaceId}`
   filter that mirrors the web query parameter.
 - **Data contract.** `entities` joined to `entity_mentions` and `documents`,
   grouped by `entity_kind`. Types
@@ -379,7 +379,7 @@ one line for line, so the transport is spelled out.
 
 - **Screen name.** Dream run
 - **Web route.** `/dreams/[id]`
-- **Deep link.** `recall://dreams/{runId}`
+- **Deep link.** `magpi://dreams/{runId}`
 - **Data contract.** `dream_runs` by id, `dream_links` for the run, and
   `documents` for the output. Types
   `Database['public']['Tables']['dream_runs']['Row']` and
@@ -405,7 +405,7 @@ one line for line, so the transport is spelled out.
 
 - **Screen name.** Admin
 - **Web route.** `/admin`
-- **Deep link.** `recall://admin`
+- **Deep link.** `magpi://admin`
 - **Data contract.** `usage_events`, `model_calls`, `messages`, `connections`,
   `ingest_jobs` and `documents.last_retrieved_at`. Access is
   `org_members.role in ('owner','admin')` and it is enforced in RLS, so a
@@ -432,7 +432,7 @@ one line for line, so the transport is spelled out.
 
 - **Screen name.** Members
 - **Web route.** `/admin/members`
-- **Deep link.** `recall://admin/members`
+- **Deep link.** `magpi://admin/members`
 - **Data contract.** `org_members` and `org_invites`, types
   `Database['public']['Tables']['org_members']['Row']` and
   `Database['public']['Tables']['org_invites']['Row']`.
@@ -452,7 +452,7 @@ one line for line, so the transport is spelled out.
 
 - **Screen name.** Billing
 - **Web route.** `/admin/billing`
-- **Deep link.** `recall://admin/billing`
+- **Deep link.** `magpi://admin/billing`
 - **Data contract.** `organizations.plan`, `stripe_customer_id`,
   `stripe_subscription_id`, `seats`, type
   `Database['public']['Tables']['organizations']['Row']`.
@@ -476,7 +476,7 @@ one line for line, so the transport is spelled out.
 
 - **Screen name.** Settings
 - **Web route.** `/settings`
-- **Deep link.** `recall://settings`
+- **Deep link.** `magpi://settings`
 - **Data contract.** `auth.users` through `supabase.auth.getUser()`, plus the
   personal space from `spaces` where `kind = 'personal'`.
 - **Loading.** Form skeleton.
