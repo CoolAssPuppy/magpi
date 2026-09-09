@@ -50,3 +50,14 @@ diff proposes a drop of something a hand-written migration created, regenerate
 from an empty database instead of accepting it. That is only safe while nothing
 is deployed, so hand-written migrations that the diff cannot see are worth
 keeping to the two the spec already names.
+
+## `git add -A` while other work is in flight breaks atomic commits
+
+A commit meant to carry the README swept in half-finished files from three
+parallel workstreams, so its message describes a third of its diff. Nothing was
+lost and nothing broke, but the commit stopped being one logical change and the
+history stopped being useful for finding where something went wrong.
+
+**Rule.** Stage explicit paths. `git add -A` is safe only when nothing else is
+writing to the tree. The same applies to `pnpm format` at the repo root, which
+rewrites files another workstream is mid-edit on.
