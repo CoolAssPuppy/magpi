@@ -61,3 +61,23 @@ history stopped being useful for finding where something went wrong.
 **Rule.** Stage explicit paths. `git add -A` is safe only when nothing else is
 writing to the tree. The same applies to `pnpm format` at the repo root, which
 rewrites files another workstream is mid-edit on.
+
+## `typedRoutes` reintroduced the cold-checkout trap I had already written up
+
+I turned on `typedRoutes` in `next.config.ts`, and every dynamic href across
+three parallel workstreams stopped typechecking. `href={`/dreams/${id}`}` is a
+template string, and the typed `Link` wants a member of a route union that Next
+derives from `.next/types`. That directory does not exist until a build has run,
+so `tsc --noEmit` on a cold checkout fails on work that is correct.
+
+This is the same failure as the `LayoutProps` one two entries up, and I caused
+it myself after writing that entry down.
+
+**Rule.** No gate step may depend on a generated artifact that a build produces.
+If `tsc --noEmit` does not pass on a freshly cloned tree with no `.next`, the
+configuration is wrong, not the code. Broken links are the Playwright journeys'
+job.
+
+Clearing `.next` was also part of the fix: the stale generated types from the
+build that ran while the flag was on kept the errors alive after the flag came
+back off.
