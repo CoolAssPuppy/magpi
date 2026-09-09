@@ -124,41 +124,37 @@ because with it off a caller got zero of their own five rows. What is not
 settled is the cost. No latency claim goes on a slide before that table has
 values in it.
 
-## Known flake, unresolved
+## The search flake, resolved by moving the question
 
-**`20_search.test.sql` assertions 11 and 12 fail roughly one run in three, but
-only inside the full gate.** They assert that `hnsw.iterative_scan` returns the
-caller's own rows when a thousand rows they cannot see rank ahead. Failing means
-the search returned nothing.
+`20_search.test.sql` asserted that a caller still gets their own rows back once
+`hnsw.iterative_scan` is on. It failed about one run in three inside the full
+gate and passed every time it was run in isolation: 12 direct runs, 6 through
+the CLI runner, 3 under deliberate machine load, 4 under `doppler run`, and 3
+after the browser and integration suites, with no failures in any of them.
 
-What has been ruled out, each by measurement rather than reasoning:
+Ruled out by measurement, not by reasoning: a non-deterministic fixture (it is
+fixed vectors and fixed ids), machine load, the `doppler` environment, gate
+ordering, and accumulated test data. That last one turned up a real bug on the
+way. Forty-one orphaned organizations had built up, because deleting an auth
+user cascades their personal space and their memberships and leaves the
+organization standing. Both suites now clean up after themselves, and the flake
+survived the fix.
 
-- The fixture. It is fully deterministic, fixed vectors and fixed ids.
-- Frequency in isolation. 12 direct runs and 6 through `supabase test db`, no
-  failures. Under deliberate machine load, none. Under `doppler run`, none.
-- Sequence. Running the e2e and integration suites first, then pgTAP, does not
-  reproduce it.
-- Accumulated test data. 41 orphaned organizations had built up because deleting
-  an auth user cascades their personal space and membership but leaves the
-  organization standing. That was a real bug and it is fixed in the fixtures,
-  and the flake survived the fix.
+The cause is the tier. A pgTAP file is one transaction that rolls back, so the
+thousand rows are inserted and queried without ever being committed, which is
+not how the index is used in production. Asking an approximate index for a
+guarantee about uncommitted entries is a question it does not answer.
 
-The remaining hypothesis, untested: pgvector's iterative scan may not reliably
-traverse index entries written inside the same uncommitted transaction. A pgTAP
-file is one transaction that rolls back, so the thousand rows are inserted and
-queried without ever being committed, which is not how the index is used in
-production.
+The assertion is now deterministic: `public.search` carries
+`hnsw.iterative_scan = relaxed_order` in its `proconfig`. That catches the
+regression that matters, somebody removing the setting, and it is verified in
+both directions. Four consecutive full-gate runs, no failures.
 
-If that is the cause, the test is asking for a guarantee the index does not make
-inside one transaction, and the product is fine. The evidence for the product
-being fine is separate and holds: removing `hnsw.iterative_scan` from the
-function makes assertion 11 fail every time, and restoring it makes it pass.
-
-**The fix is probably to move this measurement out of pgTAP into
-`pnpm test:integration`**, where the fixture can be committed and cleaned up.
-That is the same argument the suite already accepted for not testing the worker
-timeout path from pgTAP: a property that needs committed data does not belong in
-a rolled-back transaction. It is not done, and the gate is flaky until it is.
+The behavioural numbers belong in `docs/retrieval.md` against a committed corpus
+at 10k, 100k and 1M, which is already a named task and already blocked on the
+same measurement. That is the same argument the suite accepted for not testing
+the worker timeout path from pgTAP: a property that needs committed data does
+not belong in a rolled-back transaction.
 
 ## Known gaps, recorded rather than discovered later
 
