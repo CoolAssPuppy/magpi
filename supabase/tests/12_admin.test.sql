@@ -6,7 +6,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(24);
+select plan(28);
 
 insert into auth.users (id, email, instance_id, aud, role)
 values
@@ -294,6 +294,39 @@ select is(
    where id = '5e000000-0000-4000-8000-00000000000a'),
   1, 'and cancels nothing, which is what that success meant'
 );
+
+-- org_member_emails is security definer and reads auth.users, so the is_org_admin
+-- test inside it is the only thing between a plain member and a list of every
+-- address in the organization. A member of a different org gets nothing at all.
+set local role authenticated;
+set local request.jwt.claims to '{"sub":"a0000000-0000-4000-8000-000000000001","role":"authenticated"}';
+
+select is(
+  (select count(*) from public.org_member_emails(current_setting('recall.org_a')::uuid)),
+  3::bigint, 'an owner reads an address for every member of their organization'
+);
+
+select ok(
+  (select email from public.org_member_emails(current_setting('recall.org_a')::uuid)
+   where user_id = 'c0000000-0000-4000-8000-000000000003') = 'carol@magpi.test',
+  'and it is the address on the account, not a placeholder'
+);
+
+set local request.jwt.claims to '{"sub":"b0000000-0000-4000-8000-000000000002","role":"authenticated"}';
+
+select is(
+  (select count(*) from public.org_member_emails(current_setting('recall.org_a')::uuid)),
+  3::bigint, 'an admin reads them too, because the members page is an admin page'
+);
+
+set local request.jwt.claims to '{"sub":"c0000000-0000-4000-8000-000000000003","role":"authenticated"}';
+
+select is(
+  (select count(*) from public.org_member_emails(current_setting('recall.org_a')::uuid)),
+  0::bigint, 'a plain member of the same organization reads nothing'
+);
+
+reset role;
 
 select * from finish();
 

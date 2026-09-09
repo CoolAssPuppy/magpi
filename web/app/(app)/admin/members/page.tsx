@@ -9,7 +9,13 @@ import { ErrorState } from '@/components/app/error-state';
 import { resolveAdminAccess } from '@/lib/analytics/access';
 
 import { inviteMember, removeMember, revokeInvite } from './actions';
-import { memberPageCount, memberPageRange, parseMemberPage, resolveEmails } from './directory';
+import {
+  memberPageCount,
+  memberPageRange,
+  parseMemberPage,
+  resolveEmails,
+  UNKNOWN_ADDRESS,
+} from './directory';
 
 async function siteOrigin(): Promise<string> {
   const requestHeaders = await headers();
@@ -26,7 +32,7 @@ export default async function MembersPage({
   const [access, query] = await Promise.all([resolveAdminAccess(), searchParams]);
   if (access.kind !== 'granted') return null;
 
-  const { context, elevated } = access;
+  const { context } = access;
   const now = new Date();
   const page = parseMemberPage(query.page);
   const { from, to } = memberPageRange(page);
@@ -61,17 +67,14 @@ export default async function MembersPage({
     );
   }
 
-  // Addresses live in auth.users, which no policy exposes, so they are resolved
-  // with the service client after the database has already confirmed this caller
-  // is an admin of this organization.
-  const emails = await resolveEmails(
-    elevated.auth.admin,
-    memberships.data.map((membership) => membership.user_id),
-  );
+  // Addresses live in auth.users, which no policy exposes. org_member_emails
+  // reads them in one query and repeats the admin test itself rather than
+  // trusting this page to have done it.
+  const emails = await resolveEmails(context.supabase, context.orgId);
 
   const members: readonly MemberRow[] = memberships.data.map((membership) => ({
     userId: membership.user_id,
-    email: emails.get(membership.user_id) ?? 'Unknown address',
+    email: emails.get(membership.user_id) ?? UNKNOWN_ADDRESS,
     role: membership.role,
     joinedAt: membership.created_at,
     isSelf: membership.user_id === context.userId,

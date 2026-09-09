@@ -1158,6 +1158,13 @@ export type Database = {
       is_org_admin: { Args: { p_org_id: string }; Returns: boolean }
       is_org_member: { Args: { p_org_id: string }; Returns: boolean }
       is_space_member: { Args: { p_space_id: string }; Returns: boolean }
+      org_member_emails: {
+        Args: { p_org_id: string }
+        Returns: {
+          email: string
+          user_id: string
+        }[]
+      }
       plan_document_limit: {
         Args: { p_plan: Database["public"]["Enums"]["org_plan"] }
         Returns: number
