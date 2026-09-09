@@ -19,6 +19,7 @@ const dbState = {
   allowanceError: null as { message: string } | null,
   documentError: null as { message: string } | null,
   jobError: null as { message: string } | null,
+  usageError: null as { message: string } | null,
   deleteError: null as { message: string } | null,
   revalidated: [] as string[],
 };
@@ -72,7 +73,12 @@ vi.mock('@/lib/supabase/service', () => ({
     from: (table: string) => ({
       insert: (values: unknown) => {
         dbState.writes.push({ table, operation: 'insert', values });
-        const error = table === 'documents' ? dbState.documentError : dbState.jobError;
+        const error =
+          table === 'documents'
+            ? dbState.documentError
+            : table === 'usage_events'
+              ? dbState.usageError
+              : dbState.jobError;
         return {
           select: () => ({
             single: async () => ({
@@ -119,6 +125,7 @@ beforeEach(() => {
   dbState.allowanceError = null;
   dbState.documentError = null;
   dbState.jobError = null;
+  dbState.usageError = null;
   dbState.deleteError = null;
   dbState.revalidated = [];
 });
@@ -281,6 +288,23 @@ describe('recording an uploaded file as a document', () => {
       message: 'That file was saved but nothing was queued to read it. Upload it again.',
     });
     expect(writesTo('usage_events')).toEqual([]);
+    consoleError.mockRestore();
+  });
+
+  // The row the document meter is computed from. Discarding its error meant an
+  // organization could pass its plan limit without a single meter row saying
+  // so, and the upload reported success either way.
+  it('reports a meter that did not record, rather than a clean success', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    dbState.usageError = { message: 'permission denied for table usage_events' };
+
+    const state = await enqueueUploadedDocument(upload());
+
+    expect(state).toEqual({
+      status: 'error',
+      message: 'That file was saved and queued, but it was not counted against your plan.',
+    });
+    expect(consoleError).toHaveBeenCalled();
     consoleError.mockRestore();
   });
 

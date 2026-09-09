@@ -97,9 +97,17 @@ export async function enqueueUploadedDocument(
       });
     }
 
-    await service
+    // The row the plan meter is computed from. Discarding this error let an
+    // organization pass its document limit with nothing recording that it had.
+    const { error: usageError } = await service
       .from('usage_events')
       .insert({ org_id: orgId, kind: 'document_ingested', quantity: 1 });
+
+    if (usageError) {
+      return databaseErrorState('metering an uploaded document', usageError, {
+        fallback: 'That file was saved and queued, but it was not counted against your plan.',
+      });
+    }
 
     return successState({ documentId: document.id });
   }, '/documents');

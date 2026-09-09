@@ -38,6 +38,23 @@ alter table public.connections
   foreign key (space_id, org_id) references public.spaces (id, org_id)
   on delete cascade;
 
+-- Reconnecting the same account in the same space replaces its token rather
+-- than filing a second connection, and connections-claim looks the existing one
+-- up before it writes. That lookup used `.eq('external_account_id', null)`,
+-- which never matches, so a provider that returns no account label filed a
+-- fresh connection carrying a live token on every reconnect.
+--
+-- Two indexes, not one: a unique index treats every null as distinct, so a
+-- single index over the nullable column would not constrain the case that
+-- actually broke. The partial pair says the same rule for both halves.
+create unique index connections_account_idx
+  on public.connections (space_id, user_id, provider, external_account_id)
+  where external_account_id is not null;
+
+create unique index connections_no_account_idx
+  on public.connections (space_id, user_id, provider)
+  where external_account_id is null;
+
 create index connections_space_id_idx on public.connections (space_id);
 create index connections_org_id_idx on public.connections (org_id);
 create index connections_user_id_idx on public.connections (user_id);

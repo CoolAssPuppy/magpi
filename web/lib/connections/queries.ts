@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { listSpaceOptions } from '@/lib/spaces/spaces';
 import type { SessionContext } from '@/lib/supabase/context';
 
 import { parseScopeSelection, type ScopeSelection } from './scope-selection';
@@ -27,14 +28,12 @@ const PROVIDER_COLUMNS =
 
 type OwnedConnectionRecord = ConnectionRecord & { readonly user_id: string };
 
-async function fetchSpaces(context: SessionContext): Promise<readonly SpaceRecord[]> {
-  const { data, error } = await context.supabase
-    .from('spaces')
-    .select('id, name, kind')
-    .order('name');
-  if (error) throw new Error(`Could not read spaces: ${error.message}`);
-  return data;
-}
+// The same three columns listSpaceOptions already reads, so this calls it
+// rather than keeping a second query of the spaces table. It also picks up that
+// function's ordering, personal first and then alphabetical within a kind,
+// which is what every other space list in the app shows.
+const fetchSpaces = (context: SessionContext): Promise<readonly SpaceRecord[]> =>
+  listSpaceOptions(context.supabase);
 
 async function fetchProviders(context: SessionContext): Promise<readonly ProviderRecord[]> {
   const { data, error } = await context.supabase

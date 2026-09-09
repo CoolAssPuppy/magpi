@@ -9,7 +9,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(46);
+select plan(48);
 
 -- Four users. Alice and Bob are in separate organizations. Carol and Dave are in
 -- the same organization, and only Carol is in the team space, so Dave is the
@@ -499,6 +499,41 @@ select is(
 select isnt(
   (select last_retrieved_at from public.documents where id = '51000000-0000-4000-8000-00000000000a'),
   null, 'and the panel now has a date to read'
+);
+
+-- One connection per account per provider per space, including the account that
+-- has no label. connections-claim matched an existing one with
+-- `external_account_id = null`, which never matches, so every reconnect of a
+-- provider that names no account filed another row holding a live token.
+select throws_ok(
+  $$ insert into public.connections (org_id, space_id, user_id, provider, external_account_id)
+     values (
+       (select org_id from public.spaces where id = '50000000-0000-4000-8000-00000000000a'),
+       '50000000-0000-4000-8000-00000000000a', 'a0000000-0000-4000-8000-000000000001',
+       'notion', 'alice-workspace') $$,
+  '23505',
+  null,
+  'the same provider account cannot be connected twice in one space'
+);
+
+insert into public.connections (org_id, space_id, user_id, provider, external_account_id)
+values (
+  (select org_id from public.spaces where id = '50000000-0000-4000-8000-00000000000a'),
+  '50000000-0000-4000-8000-00000000000a', 'a0000000-0000-4000-8000-000000000001',
+  'notion', null);
+
+-- A unique index counts every null as distinct, so this is the half a single
+-- index over the nullable column would have let through, and it is the half
+-- that actually broke.
+select throws_ok(
+  $$ insert into public.connections (org_id, space_id, user_id, provider, external_account_id)
+     values (
+       (select org_id from public.spaces where id = '50000000-0000-4000-8000-00000000000a'),
+       '50000000-0000-4000-8000-00000000000a', 'a0000000-0000-4000-8000-000000000001',
+       'notion', null) $$,
+  '23505',
+  null,
+  'nor can a provider that names no account at all'
 );
 
 select * from finish();
