@@ -163,7 +163,7 @@ Deno.test('a file type with no text extraction is refused without a reconnect', 
   const error = await assertRejects(
     () => googleDriver.fetchDocument(creds(), stub, REVIEW_ID),
     SourceError,
-    'that file type is not indexed yet',
+    'That file type is not indexed yet.',
   );
 
   assertEquals(error.needsReconnect, false);

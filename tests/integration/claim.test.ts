@@ -79,10 +79,21 @@ describe('claiming ingest jobs', () => {
     const queued = new Set((jobs.data ?? []).map((job) => job.id));
     expect(queued.size).toBe(12);
 
+    // The queue is not ours alone. A seeded corpus leaves older jobs in it and
+    // the claim takes the oldest first, so asking for twelve claimed twelve rows
+    // belonging to somebody else and none of ours. This test passed for an hour
+    // only because the queue happened to be empty.
+    const { count: queuedAhead } = await db
+      .from('ingest_jobs')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'queued');
+
+    const depth = (queuedAhead ?? 0) + 12;
+
     // Four workers, each asking for the whole queue at the same instant. With a
-    // plain select-then-update every one of them would take all twelve.
+    // plain select-then-update every one of them would take all of it.
     const workers = await Promise.all(
-      Array.from({ length: 4 }, () => serviceClient().rpc('claim_ingest_jobs', { p_limit: 12 })),
+      Array.from({ length: 4 }, () => serviceClient().rpc('claim_ingest_jobs', { p_limit: depth })),
     );
 
     const claimed: string[] = [];
@@ -96,7 +107,7 @@ describe('claiming ingest jobs', () => {
     expect(new Set(ours).size).toBe(12);
   });
 
-  it('leaves nothing queued and marks every claim running', async () => {
+  it('marks every claim running, with a claim time and one attempt', async () => {
     const { data } = await db
       .from('ingest_jobs')
       .select('status, claimed_at, attempts')

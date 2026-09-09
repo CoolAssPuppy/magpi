@@ -161,9 +161,7 @@ describe('the dreams page', () => {
     const { context } = recordingContext({
       responses: {
         spaces: [{ data: [getSpace()] }],
-        dream_runs: [
-          { data: [getRun(), getRun({ id: 'run-hidden', space_id: OTHER_SPACE_ID })] },
-        ],
+        dream_runs: [{ data: [getRun(), getRun({ id: 'run-hidden', space_id: OTHER_SPACE_ID })] }],
       },
     });
 
@@ -230,7 +228,12 @@ describe('opening one dream run', () => {
         spaces: [{ data: [getSpace()] }],
         documents: [{ data: getOutputDocument() }],
         chunks: [
-          { data: [{ content: 'Second half.', ordinal: 1 }, { content: 'First half.', ordinal: 0 }] },
+          {
+            data: [
+              { content: 'Second half.', ordinal: 1 },
+              { content: 'First half.', ordinal: 0 },
+            ],
+          },
           {
             data: [
               getCitedChunk({ id: 'chunk-b', content: 'Billing moved to Stripe.' }),
@@ -311,10 +314,7 @@ describe('opening one dream run', () => {
         dream_runs: [{ data: getRun() }],
         spaces: [{ data: [getSpace()] }],
         documents: [{ data: getOutputDocument({ source_chunk_ids: ['chunk-a'] }) }],
-        chunks: [
-          { data: [] },
-          { data: [getCitedChunk({ content: `  ${sentence.repeat(6)}  ` })] },
-        ],
+        chunks: [{ data: [] }, { data: [getCitedChunk({ content: `  ${sentence.repeat(6)}  ` })] }],
       },
     });
 
@@ -409,7 +409,14 @@ describe('opening one dream run', () => {
       responses: detailResponses({
         dream_runs: [{ data: getRun({ kind: 'connections', output_document_id: null }) }],
         dream_links: [{ data: [getLink()] }],
-        documents: [{ data: [getLinkedDocument(), getLinkedDocument({ id: 'doc-b', title: 'Slack: sso thread' })] }],
+        documents: [
+          {
+            data: [
+              getLinkedDocument(),
+              getLinkedDocument({ id: 'doc-b', title: 'Slack: sso thread' }),
+            ],
+          },
+        ],
       }),
     });
 
@@ -441,6 +448,18 @@ describe('opening one dream run', () => {
       responses: detailResponses({
         dream_runs: [{ data: getRun({ kind: 'connections', output_document_id: null }) }],
         dream_links: [{ error: { message: 'permission denied' } }],
+      }),
+    });
+
+    expect((await loadDreamRun(context, RUN_ID))?.candidates).toEqual([]);
+  });
+
+  it('holds back a pair whose documents came back empty, since it cannot be judged', async () => {
+    const { context } = recordingContext({
+      responses: detailResponses({
+        dream_runs: [{ data: getRun({ kind: 'connections', output_document_id: null }) }],
+        dream_links: [{ data: [getLink()] }],
+        documents: [{ error: { message: 'permission denied' } }],
       }),
     });
 

@@ -50,6 +50,20 @@ describe('provider listings', () => {
     expect(listings.map((listing) => listing.slug)).toEqual(['notion', 'slack']);
   });
 
+  it('orders two providers at the same position by name, so the page never reshuffles', () => {
+    const listings = buildProviderListings({
+      providers: [
+        getProvider({ slug: 'slack', display_name: 'Slack', position: 2 }),
+        getProvider({ slug: 'drive', display_name: 'Drive', position: 2 }),
+      ],
+      connections: [],
+      spaces: [getSpace()],
+      now: NOW,
+    });
+
+    expect(listings.map((listing) => listing.slug)).toEqual(['drive', 'slack']);
+  });
+
   it('leaves out a provider that is not enabled yet', () => {
     const listings = buildProviderListings({
       providers: [getProvider({ slug: 'drive', enabled: false })],

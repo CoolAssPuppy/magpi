@@ -167,7 +167,9 @@ describe('the connections page', () => {
       },
     });
 
-    await expect(loadConnectionsPage(context)).rejects.toThrow('permission denied for table spaces');
+    await expect(loadConnectionsPage(context)).rejects.toThrow(
+      'permission denied for table spaces',
+    );
   });
 });
 

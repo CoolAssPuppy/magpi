@@ -127,6 +127,19 @@ describe('a dream output', () => {
     expect(remove).toHaveBeenCalledWith('doc-1');
   });
 
+  it('keeps the document when a person backs out of the dialog', async () => {
+    const remove = onDelete();
+    render(<DreamOutput output={getCited()} onDelete={remove} />);
+
+    await userEvent.click(screen.getByRole('button', { name: /delete this document/i }));
+    await userEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: /keep it/i }),
+    );
+
+    expect(remove).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
   it('reports a refused delete rather than hiding it', async () => {
     const remove = vi
       .fn()

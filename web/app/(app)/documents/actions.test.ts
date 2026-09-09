@@ -149,7 +149,9 @@ describe('recording an uploaded file as a document', () => {
   it('asks the organization, not the space, whether another document fits in the plan', async () => {
     await enqueueUploadedDocument(upload());
 
-    expect(dbState.rpcCalls).toEqual([{ name: 'check_ingest_allowed', args: { p_org_id: ORG_ID } }]);
+    expect(dbState.rpcCalls).toEqual([
+      { name: 'check_ingest_allowed', args: { p_org_id: ORG_ID } },
+    ]);
   });
 
   it('stops a full plan at the door and says which limit was hit', async () => {
@@ -183,7 +185,7 @@ describe('recording an uploaded file as a document', () => {
     });
   });
 
-  it('files the document in the space that was chosen, against the caller organization', async () => {
+  it("files the document in the chosen space, under the uploader's organization", async () => {
     await enqueueUploadedDocument(
       upload({ title: 'Q3 platform notes', storagePath: `${SPACE_ID}/q3.pdf` }),
     );
@@ -258,7 +260,7 @@ describe('deleting a document a dream run wrote', () => {
     return data;
   };
 
-  it('deletes through the caller own client, so the database decides what may go', async () => {
+  it('deletes as the person asking, so the database decides what may go', async () => {
     const state = await deleteDreamDocument(form(DOCUMENT_ID));
 
     expect(dbState.writes).toEqual([

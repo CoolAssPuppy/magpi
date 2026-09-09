@@ -34,8 +34,8 @@ const MAX_SCOPE_PAGES = 5;
  */
 const MAX_CHANNELS_PER_PASS = 20;
 
-const RECONNECT_MESSAGE = `${DISPLAY_NAME} refused this connection, reconnect it`;
-const FAILURE_MESSAGE = `${DISPLAY_NAME} could not be read, the next sync will try again`;
+const RECONNECT_MESSAGE = `${DISPLAY_NAME} refused this connection, reconnect it.`;
+const FAILURE_MESSAGE = `${DISPLAY_NAME} could not be read, the next sync will try again.`;
 
 /** Slack error codes where reconnecting is the only fix the user has. */
 const RECONNECT_ERRORS = new Set([
@@ -188,7 +188,7 @@ async function readChannel(
 function splitExternalId(externalId: string): { channel: string; ts: string } {
   const divider = externalId.indexOf(':');
   if (divider <= 0 || divider === externalId.length - 1) {
-    throw new SourceError(PROVIDER, 'that Slack message reference is not one this driver wrote');
+    throw new SourceError(PROVIDER, 'That Slack message reference is not one this driver wrote.');
   }
   return { channel: externalId.slice(0, divider), ts: externalId.slice(divider + 1) };
 }

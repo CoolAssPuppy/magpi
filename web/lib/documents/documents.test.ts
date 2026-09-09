@@ -27,6 +27,12 @@ describe('what an import says while it is happening', () => {
     );
   });
 
+  it('says a queued document is waiting rather than leaving it looking finished', () => {
+    expect(describeIngest(ingest({ status: 'queued', stage: 'extract' }))).toBe(
+      'Waiting to be read',
+    );
+  });
+
   it('says nothing once the document is in', () => {
     expect(describeIngest(ingest({ status: 'succeeded' }))).toBeNull();
   });
@@ -187,7 +193,9 @@ describe('the documents a reader is shown', () => {
     const { supabase } = documentsTable({
       rows: [
         documentRow({
-          ingest_jobs: [{ status: 'failed', stage: 'extract', error: 'The PDF has no text layer.' }],
+          ingest_jobs: [
+            { status: 'failed', stage: 'extract', error: 'The PDF has no text layer.' },
+          ],
         }),
       ],
     });

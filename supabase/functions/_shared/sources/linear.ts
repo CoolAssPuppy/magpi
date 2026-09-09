@@ -38,8 +38,8 @@ const API_KEY_PREFIX = 'lin_api_';
 /** An error code naming the credential rather than the request. */
 const CREDENTIAL_CODE = /auth|forbidden|permission/i;
 
-const RECONNECT_MESSAGE = `${DISPLAY_NAME} refused this connection, reconnect it`;
-const FAILURE_MESSAGE = `${DISPLAY_NAME} could not be read, the next sync will try again`;
+const RECONNECT_MESSAGE = `${DISPLAY_NAME} refused this connection, reconnect it.`;
+const FAILURE_MESSAGE = `${DISPLAY_NAME} could not be read, the next sync will try again.`;
 
 const CHANGES_QUERY = `query RecallChanges($first: Int!, $filter: IssueFilter) {
   issues(first: $first, filter: $filter, orderBy: updatedAt) {
@@ -227,7 +227,7 @@ export const linearDriver: SourceDriver = {
     if (asString(issue.id).length === 0) {
       // A deleted or moved issue is a normal thing to meet mid-sync, and asking
       // the user to reconnect over it would be wrong.
-      throw new SourceError(PROVIDER, 'that Linear issue is no longer available', false);
+      throw new SourceError(PROVIDER, 'That Linear issue is no longer available.', false);
     }
 
     const ref = toDocumentRef(issue, deps);

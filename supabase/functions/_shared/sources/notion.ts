@@ -33,8 +33,8 @@ const NOTION_VERSION = '2022-06-28';
 // whole history to prove it.
 const MAX_REQUESTS = 5;
 
-const RECONNECT_MESSAGE = `${DISPLAY_NAME} refused this connection, reconnect it`;
-const FAILURE_MESSAGE = `${DISPLAY_NAME} could not be read, the next sync will try again`;
+const RECONNECT_MESSAGE = `${DISPLAY_NAME} refused this connection, reconnect it.`;
+const FAILURE_MESSAGE = `${DISPLAY_NAME} could not be read, the next sync will try again.`;
 
 /** Notion error codes that mean the credential, not the moment, is the problem. */
 const RECONNECT_CODES = /unauthorized|restricted|invalid_token/;

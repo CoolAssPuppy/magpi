@@ -126,6 +126,16 @@ describe('dreaming, per space', () => {
     expect(await screen.findByText(/produced nothing/i)).toBeInTheDocument();
   });
 
+  it('says what the chosen kind does, so the button is not a mystery', async () => {
+    render(<SpaceDreaming spaces={[getSpace()]} {...getActions()} />);
+
+    expect(screen.getByText(/writes one document back into the space/i)).toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByLabelText(/kind/i), 'connections');
+
+    expect(screen.getByText(/pairs of documents from different sources/i)).toBeInTheDocument();
+  });
+
   it('reports a refused run', async () => {
     const actions = getActions();
     actions.onRun.mockResolvedValue({ status: 'error', message: 'A run is already going.' });

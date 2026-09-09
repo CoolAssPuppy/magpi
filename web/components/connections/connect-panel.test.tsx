@@ -178,6 +178,36 @@ describe('the connect screen', () => {
     ).toBeInTheDocument();
   });
 
+  it('leaves out the documentation link for a provider that has none', () => {
+    const props = getProps();
+    render(<ConnectPanel {...props} provider={{ ...getProvider(), docsUrl: null }} />);
+
+    expect(
+      screen.queryByRole('link', { name: /what slack gives recall/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('offers no save button for a source that reads a whole workspace, since there is no choice', () => {
+    render(
+      <ConnectPanel
+        {...getProps()}
+        connections={[
+          getConnectionScope({
+            selection: {
+              kind: 'set',
+              selectionKind: 'workspace',
+              available: [{ id: 'W1', name: 'Acme' }],
+              selected: ['W1'],
+            },
+          }),
+        ]}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: /save selection/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/the whole workspace/i)).toBeInTheDocument();
+  });
+
   it('says there is nothing to configure yet on a first connection', () => {
     render(<ConnectPanel {...getProps()} />);
 

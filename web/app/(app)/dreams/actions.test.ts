@@ -36,13 +36,8 @@ vi.mock('@/lib/actions/with-session', () => ({
   },
 }));
 
-const {
-  confirmDreamLink,
-  deleteDreamOutput,
-  dismissDreamLink,
-  setSpaceDreaming,
-  startDreamRun,
-} = await import('./actions');
+const { confirmDreamLink, deleteDreamOutput, dismissDreamLink, setSpaceDreaming, startDreamRun } =
+  await import('./actions');
 
 function database(responses: Record<string, readonly StubResponse[]>): RecordingContext {
   const recorder = recordingContext({ responses });

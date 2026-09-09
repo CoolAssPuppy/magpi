@@ -50,6 +50,12 @@ describe('scope selection parsing', () => {
     expect(result.ok).toBe(false);
   });
 
+  it('refuses a stored scope that is not an object at all', () => {
+    expect(parseScopeSelection(null).ok).toBe(false);
+    expect(parseScopeSelection(['general']).ok).toBe(false);
+    expect(parseScopeSelection('general').ok).toBe(false);
+  });
+
   it('refuses an available list that is not a list of items', () => {
     const result = parseScopeSelection(getPopulatedSelection({ available: ['general'] }));
 

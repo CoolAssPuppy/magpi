@@ -122,14 +122,14 @@ export async function refreshWithTokenEndpoint(
       }),
     });
   } catch {
-    return { kind: 'failed', detail: `${provider} could not be reached to renew the connection` };
+    return { kind: 'failed', detail: `${provider} could not be reached to renew the connection.` };
   }
 
   let payload: unknown = null;
   try {
     payload = await response.json();
   } catch {
-    return { kind: 'failed', detail: `${provider} returned an unreadable renewal response` };
+    return { kind: 'failed', detail: `${provider} returned an unreadable renewal response.` };
   }
 
   const record = asRecord(payload);
@@ -138,7 +138,10 @@ export async function refreshWithTokenEndpoint(
     // The provider's own wording is not forwarded: it can quote the request,
     // and status_detail is shown to the user.
     console.error('token refresh refused', { provider, status: response.status });
-    return { kind: 'failed', detail: `${provider} refused to renew this connection, reconnect it` };
+    return {
+      kind: 'failed',
+      detail: `${provider} refused to renew this connection, reconnect it.`,
+    };
   }
 
   const expiresIn = asNumber(record.expires_in, 0);

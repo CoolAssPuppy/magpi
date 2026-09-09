@@ -194,6 +194,29 @@ async function userFacingText(
 }
 
 for (const provider of SOURCE_PROVIDERS) {
+  Deno.test(`${provider} writes status_detail as a finished sentence`, async () => {
+    // This column is rendered standalone, in its own paragraph under the status
+    // pill, with nothing before it. So unlike a dream error, which is joined
+    // onto a prefix the client owns, it has to arrive terminated. Two
+    // connections side by side differing by a trailing full stop is the tell
+    // that one of them was written for a different slot.
+    const driver = driverFor(provider);
+    for (const call of CALLS) {
+      for (const status of [401, 500]) {
+        const spoken = await userFacingText(call, driver, depsAnswering(status));
+        if (spoken === '') continue;
+        assert(
+          spoken.endsWith('.'),
+          `${provider}.${call.name} left status_detail unterminated: ${spoken}`,
+        );
+        assert(
+          /^[A-Z]/.test(spoken),
+          `${provider}.${call.name} did not open status_detail with a capital: ${spoken}`,
+        );
+      }
+    }
+  });
+
   Deno.test(`${provider} names itself the way a person would, not by its slug`, async () => {
     const driver = driverFor(provider);
     for (const call of CALLS) {

@@ -65,19 +65,21 @@ export function recordingContext({
   // Claimed when the query is created rather than when it is awaited, so a
   // reader that issues its queries concurrently still reads them back in the
   // order the source file writes them.
-  function claim(source: string, call: RecordedCall): { data: unknown; error: unknown } {
+  function claim(
+    source: string,
+    call: RecordedCall,
+  ): { recorded: RecordedCall[]; settled: { data: unknown; error: unknown } } {
     const recorded = calls.get(source) ?? [];
     recorded.push(call);
     calls.set(source, recorded);
 
     const next = queues.get(source)?.shift();
     if (!next) throw new Error(`The test queued no response for ${source}`);
-    return { data: next.data ?? null, error: next.error ?? null };
+    return { recorded, settled: { data: next.data ?? null, error: next.error ?? null } };
   }
 
   function builderFor(table: string): unknown {
-    const settled = claim(table, ['from', table]);
-    const recorded = calls.get(table) ?? [];
+    const { recorded, settled } = claim(table, ['from', table]);
 
     const builder: Record<string, unknown> = {
       then: (resolve: (value: unknown) => unknown) => Promise.resolve(settled).then(resolve),
@@ -97,7 +99,7 @@ export function recordingContext({
     from: (table: string) => builderFor(table),
     functions: {
       invoke: (name: string, options: { body: Record<string, unknown> }) =>
-        Promise.resolve(claim(name, ['invoke', name, options.body])),
+        Promise.resolve(claim(name, ['invoke', name, options.body]).settled),
     },
   } as unknown as SupabaseClient<Database>;
 

@@ -42,8 +42,8 @@ const PAGE_SIZE = 100;
  */
 const MAX_PAGES = 10;
 
-const RECONNECT_MESSAGE = `${DISPLAY_NAME} refused this connection, reconnect it`;
-const FAILURE_MESSAGE = `${DISPLAY_NAME} could not be read, the next sync will try again`;
+const RECONNECT_MESSAGE = `${DISPLAY_NAME} refused this connection, reconnect it.`;
+const FAILURE_MESSAGE = `${DISPLAY_NAME} could not be read, the next sync will try again.`;
 
 const CHANGE_FIELDS = 'nextPageToken,newStartPageToken,changes(fileId,removed,' +
   'file(id,name,mimeType,modifiedTime,webViewLink,trashed,parents))';
@@ -186,7 +186,7 @@ function textUrl(externalId: string, mimeType: string): string {
   // Known gap: a PDF, an image or a binary office file needs the extraction that
   // today only the upload path runs. Wiring Drive into it is follow-up work
   // (prashant), so until then the sync says what happened instead of storing bytes.
-  throw new SourceError(PROVIDER, 'that file type is not indexed yet');
+  throw new SourceError(PROVIDER, 'That file type is not indexed yet.');
 }
 
 async function walkFolders(creds: SourceCredentials, deps: SourceDeps): Promise<ScopeOption[]> {

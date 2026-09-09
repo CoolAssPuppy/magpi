@@ -71,7 +71,7 @@ export async function resolveCredentials(
   const scopeSelection = selectedIdsOf(connection.scope_selection);
 
   if (!connection.access_token_enc) {
-    return await expire(deps, connection, 'this connection holds no token, connect it again');
+    return await expire(deps, connection, 'This connection holds no token, connect it again.');
   }
 
   const ctx = { userId: connection.user_id, provider: connection.provider };
@@ -86,7 +86,7 @@ export async function resolveCredentials(
       deps,
       connection,
       `${driverFor(connection.provider).displayName} did not issue a renewal token, ` +
-        'connect it again',
+        'connect it again.',
     );
   }
 
@@ -95,7 +95,7 @@ export async function resolveCredentials(
     return await expire(
       deps,
       connection,
-      `${driverFor(connection.provider).displayName} is no longer available`,
+      `${driverFor(connection.provider).displayName} is no longer available.`,
     );
   }
 
@@ -138,7 +138,7 @@ export async function resolveCredentials(
       // A renewed token that was not stored works for this pass and is lost for
       // the next one, and the provider may have already retired the old one.
       if (error) {
-        return await expire(deps, connection, 'the renewed token could not be stored');
+        return await expire(deps, connection, 'The renewed token could not be stored.');
       }
 
       return {
