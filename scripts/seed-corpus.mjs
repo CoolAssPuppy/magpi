@@ -199,7 +199,9 @@ async function ensureBucket(db) {
 
   const { error } = await db.storage.createBucket(BUCKET, {
     public: false,
-    fileSizeLimit: '50MiB',
+    // MB, not MiB. config.toml accepts MiB and the storage API does not:
+    // "Invalid file size format, hint: use 20GB / 20MB / 30KB / 3B".
+    fileSizeLimit: '50MB',
     allowedMimeTypes: ['text/markdown', 'text/plain', 'application/pdf'],
   });
   if (error && !/already exists/i.test(error.message)) {
