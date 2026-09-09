@@ -80,10 +80,10 @@ describe('top questions', () => {
     expect(screen.getByText('Last asked 2 hours ago')).toBeInTheDocument();
   });
 
-  it('explains the panel before anyone has asked anything', () => {
+  it('shows an empty state before anyone has asked anything', () => {
     render(<TopQuestions now={NOW} questions={[]} />);
 
-    expect(screen.getByText('Nobody has asked anything yet')).toBeInTheDocument();
+    expect(screen.getByText('No questions yet')).toBeInTheDocument();
   });
 });
 
@@ -122,7 +122,7 @@ describe('dead content', () => {
       <DeadContent now={NOW} content={deadContent({ totalDocuments: 0, neverRetrieved: 0 })} />,
     );
 
-    expect(screen.getByText('Nothing ingested yet')).toBeInTheDocument();
+    expect(screen.getByText('No documents yet')).toBeInTheDocument();
   });
 });
 

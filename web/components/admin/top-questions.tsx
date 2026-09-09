@@ -11,12 +11,7 @@ export function TopQuestions({
   now: Date;
 }) {
   if (questions.length === 0) {
-    return (
-      <EmptyState
-        title="Nobody has asked anything yet"
-        description="Every question anyone asks in chat lands here, grouped by what was actually asked. It is the fastest way to see what your team keeps looking for."
-      />
-    );
+    return <EmptyState title="No questions yet" />;
   }
 
   return (

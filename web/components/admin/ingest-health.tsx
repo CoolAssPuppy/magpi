@@ -49,7 +49,7 @@ export function IngestHealth({ rows, now }: { rows: readonly IngestHealthRow[]; 
     return (
       <EmptyState
         title="No sources connected"
-        description="Ingest health starts reporting once a connection has run. Until then every document in this organization arrived by upload."
+        description="Connect a source to see its imports here."
       />
     );
   }

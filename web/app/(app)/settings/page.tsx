@@ -30,10 +30,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader
-        title="Settings"
-        description="Your account and your personal space. Everything about the organization lives under Admin."
-      />
+      <PageHeader title="Settings" description="Your account and your personal space." />
 
       <Panel title="Profile" description={`Signed in as ${context.email ?? 'an unknown address'}.`}>
         <NameForm
@@ -48,10 +45,7 @@ export default async function SettingsPage() {
         />
       </Panel>
 
-      <Panel
-        title="Your personal space"
-        description="Nothing you put here is visible to anyone else in the organization."
-      >
+      <Panel title="Your personal space" description="Only you can see what is in this space.">
         {personalSpace ? (
           <NameForm
             action={renamePersonalSpace}
@@ -71,10 +65,7 @@ export default async function SettingsPage() {
         )}
       </Panel>
 
-      <Panel
-        title="Sessions"
-        description="Signs you out of every browser and every device this account is signed in on."
-      >
+      <Panel title="Sessions" description="Signs you out on every device.">
         <ActionButton
           action={signOutEverywhere}
           label="Sign out everywhere"

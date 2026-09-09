@@ -25,7 +25,7 @@ export async function startDreamRun(
   kind: 'entities' | 'digest' | 'connections',
 ): Promise<ActionState<DreamRunOutcome>> {
   const input = z.object({ spaceId: idSchema, kind: kindSchema }).safeParse({ spaceId, kind });
-  if (!input.success) return errorState('That is not a space and a kind of dream Magpi runs.');
+  if (!input.success) return errorState('Choose a space and a kind of run.');
 
   return withSession(async (context) => {
     const { data: space } = await context.supabase
@@ -33,7 +33,7 @@ export async function startDreamRun(
       .select('id, dreaming_enabled')
       .eq('id', input.data.spaceId)
       .maybeSingle();
-    if (!space) return errorState('That space is not one you can run a dream in.');
+    if (!space) return errorState('You are not in that space.');
     if (!space.dreaming_enabled) {
       return errorState('Dreaming is switched off for this space. Turn it on first.');
     }

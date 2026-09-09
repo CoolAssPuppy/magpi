@@ -26,7 +26,7 @@ export async function startConnection(
     providerSlug,
     spaceId,
   });
-  if (!input.success) return errorState('That is not a source and a space Magpi can connect.');
+  if (!input.success) return errorState('Choose a source and a space.');
 
   let authorizeUrl: string | null = null;
 
@@ -38,7 +38,7 @@ export async function startConnection(
       .select('id')
       .eq('id', input.data.spaceId)
       .maybeSingle();
-    if (!space) return errorState('That space is not one you can connect a source to.');
+    if (!space) return errorState('You are not in that space.');
 
     const result = await beginConnection(context.supabase, {
       provider: input.data.providerSlug,
@@ -83,7 +83,7 @@ export async function saveScopeSelection(
   const input = z
     .object({ connectionId: idSchema, selected: z.array(z.string().min(1).max(256)).max(500) })
     .safeParse({ connectionId, selected });
-  if (!input.success) return errorState('That selection is not one this app can save.');
+  if (!input.success) return errorState('That selection could not be saved.');
 
   return withSession(async (context) => {
     const result = await requestScopes(context.supabase, {

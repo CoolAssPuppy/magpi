@@ -19,7 +19,7 @@ const renameSchema = z.object({
 
 const conversationSchema = z.object({ conversationId: z.uuid() });
 
-const INVALID = 'That is not something we can do with a conversation.';
+const INVALID = 'That conversation could not be changed.';
 
 // Parsing happens inside withSession in every action file, so a signed-out
 // caller is told to sign in whatever they sent.

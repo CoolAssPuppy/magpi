@@ -9,7 +9,7 @@ export default function SignUpPage() {
   return (
     <AuthShell
       title="Create an account"
-      description="You get a workspace and a personal space straight away."
+      description="You get a workspace and a personal space."
       footer={
         <>
           Already have one?{' '}

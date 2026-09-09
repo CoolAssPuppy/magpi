@@ -6,8 +6,8 @@ import type { ErrorBoundaryProps } from '@/components/app/error-boundary-props';
 export default function MembersError({ error, reset }: ErrorBoundaryProps) {
   return (
     <BoundaryError
-      title="The member list did not load"
-      detail="Nothing was changed. Try again, and if it keeps failing check whether your role in this organization changed."
+      title="Members did not load"
+      detail="Ask an owner whether your role changed."
       error={error}
       reset={reset}
     />

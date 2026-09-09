@@ -5,12 +5,7 @@ import type { DeadContent as DeadContentData } from '@/lib/analytics/queries';
 
 export function DeadContent({ content, now }: { content: DeadContentData; now: Date }) {
   if (content.totalDocuments === 0) {
-    return (
-      <EmptyState
-        title="Nothing ingested yet"
-        description="Once documents arrive, this panel shows which of them no answer has ever cited. In most knowledge bases that is about half of it."
-      />
-    );
+    return <EmptyState title="No documents yet" />;
   }
 
   const share = Math.round((content.neverRetrieved / content.totalDocuments) * 100);

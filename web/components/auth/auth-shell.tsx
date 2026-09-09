@@ -13,7 +13,7 @@ export function AuthShell({
   footer,
 }: {
   title: string;
-  description: string;
+  description?: string;
   children: ReactNode;
   footer?: ReactNode;
 }) {
@@ -29,7 +29,9 @@ export function AuthShell({
 
       <div className="w-full max-w-sm rounded-[var(--radius-panel)] border border-border bg-card p-6">
         <h1 className="font-heading text-lg leading-tight font-medium text-foreground">{title}</h1>
-        <p className="mt-1 text-sm text-tertiary-foreground">{description}</p>
+        {description ? (
+          <p className="mt-1 text-sm text-tertiary-foreground">{description}</p>
+        ) : null}
         <div className="mt-6">{children}</div>
       </div>
 

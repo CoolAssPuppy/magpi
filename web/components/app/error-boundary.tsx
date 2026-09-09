@@ -11,13 +11,16 @@ import { Button } from '@/components/ui/button';
  * it belongs to, because in production Next replaces `error.message` with
  * generic digest text and any sentence built around it reads as nonsense.
  * The digest goes to the logs, which is the only place it is worth anything.
+ *
+ * `detail` is optional. The button below already says "Try again", so a screen
+ * with no second action to offer says nothing rather than filling the space.
  */
 export function BoundaryError({
   title,
   detail,
   error,
   reset,
-}: ErrorBoundaryProps & { readonly title: string; readonly detail: string }) {
+}: ErrorBoundaryProps & { readonly title: string; readonly detail?: string }) {
   useEffect(() => {
     console.error(title, error.digest ?? error.message);
   }, [title, error]);

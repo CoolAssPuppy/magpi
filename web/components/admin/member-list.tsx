@@ -47,8 +47,8 @@ export function MemberList({
   if (members.length === 0) {
     return (
       <EmptyState
-        title="Nobody here yet"
-        description="Invite someone above and they will show up in this list as soon as they accept."
+        title="No members yet"
+        description="Members appear here once they accept an invitation."
       />
     );
   }

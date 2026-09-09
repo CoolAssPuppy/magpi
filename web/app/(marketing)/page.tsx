@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 
 export const metadata = {
   title: 'Magpi',
-  description: 'A team knowledge base with a chat interface.',
+  description: 'Ask your team documents a question and get a cited answer.',
 };
 
 const SOURCES = ['Notion', 'Linear', 'Slack', 'Google Drive', 'Direct upload'] as const;
@@ -25,9 +25,8 @@ export default function LandingPage() {
             Ask your team&apos;s knowledge base a question.
           </h1>
           <p className="mt-5 text-base text-muted-foreground">
-            Magpi reads Notion, Linear, Slack and Google Drive, and answers in a conversation with
-            citations back to the source. Overnight it re-reads what came in, links what is about
-            the same thing, and writes a digest.
+            Connect Notion, Linear, Slack and Google Drive. Ask a question, get an answer with
+            citations to the documents it came from.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Button asChild>
@@ -62,8 +61,7 @@ export default function LandingPage() {
             Every document lives in one space
           </h3>
           <p className="mt-2 text-sm text-tertiary-foreground">
-            Personal, team, or everyone. You pick when you put it in, and that is the whole
-            permission model.
+            Personal, team, or everyone. You choose the space when you add the document.
           </p>
         </div>
         <div>
@@ -71,17 +69,17 @@ export default function LandingPage() {
             Answers cite their sources
           </h3>
           <p className="mt-2 text-sm text-tertiary-foreground">
-            Citations are stored as chunk ids and resolved when you read the message, so a person
-            who lost access to a space stops seeing the quote.
+            Every citation resolves when you open the message. Lose access to a space and its quotes
+            stop appearing.
           </p>
         </div>
         <div>
           <h3 className="font-heading text-base font-medium text-foreground">
-            It dreams overnight
+            Dreaming runs overnight
           </h3>
           <p className="mt-2 text-sm text-tertiary-foreground">
-            Dreaming is a nightly pass that re-reads the day, extracts entities, links documents
-            about the same thing, and writes a digest back into the space.
+            A nightly pass re-reads the day, links documents covering the same thing, and writes a
+            digest into the space.
           </p>
         </div>
       </section>

@@ -60,10 +60,10 @@ describe('member list', () => {
     expect(screen.getByRole('button', { name: 'Remove' })).toBeInTheDocument();
   });
 
-  it('explains an empty organization instead of showing an empty table', () => {
+  it('shows an empty state rather than an empty table', () => {
     render(<MemberList members={[]} now={NOW} removeAction={noop} />);
 
-    expect(screen.getByText('Nobody here yet')).toBeInTheDocument();
+    expect(screen.getByText('No members yet')).toBeInTheDocument();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
 });

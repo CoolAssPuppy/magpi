@@ -6,7 +6,7 @@ Connect Notion, Linear, Slack and Google Drive, or upload files directly. Magpi 
 
 Overnight, it dreams. A scheduled job re-reads what came in that day, extracts entities, links documents that are about the same thing, and writes a digest back into the space.
 
-Everything here runs on Supabase as it ships today. Postgres with pgvector, Row Level Security, Storage, Realtime, Auth, and Edge Functions. No mocked services, no unreleased features, no hidden infrastructure.
+Everything here runs on Supabase as it ships today: Postgres with pgvector, Row Level Security, Storage, Realtime, Auth, and Edge Functions. Nothing is mocked and nothing is unreleased.
 
 Magpi is the demo application for the Supabase Select 2026 keynote. It is also MIT licensed and meant to be cloned and run.
 

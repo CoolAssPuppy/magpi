@@ -15,8 +15,7 @@ export default async function AuthErrorPage({
 
   return (
     <AuthShell
-      title="That did not work"
-      description="Sign in failed before a session was created."
+      title="Sign in failed"
       footer={
         <Link href="/sign-in" className="text-foreground underline underline-offset-4">
           Try again

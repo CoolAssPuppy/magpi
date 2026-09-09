@@ -27,7 +27,8 @@ vi.mock('@/app/(app)/spaces/actions', () => ({
 
 const { DreamingToggle } = await import('./dreaming-toggle');
 
-const theSwitch = () => screen.getByRole('switch', { name: 'Dream over this space overnight' });
+const theSwitch = () =>
+  screen.getByRole('switch', { name: 'Run dreaming on this space overnight' });
 
 beforeEach(() => {
   change.submitted = [];

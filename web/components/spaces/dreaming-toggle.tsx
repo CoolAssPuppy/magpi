@@ -39,7 +39,7 @@ export function DreamingToggle({ spaceId, enabled }: { spaceId: string; enabled:
         checked={enabled}
         disabled={isPending}
         onCheckedChange={toggle}
-        aria-label="Dream over this space overnight"
+        aria-label="Run dreaming on this space overnight"
       />
     </div>
   );

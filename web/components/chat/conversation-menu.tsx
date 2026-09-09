@@ -94,7 +94,7 @@ export function ConversationMenu({ conversationId, title }: ConversationMenuProp
             </DialogTitle>
             {dialog === 'delete' ? (
               <DialogDescription>
-                The questions and answers in it go with it. Documents are untouched.
+                This deletes the questions and answers in this conversation.
               </DialogDescription>
             ) : null}
           </DialogHeader>

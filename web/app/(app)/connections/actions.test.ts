@@ -100,7 +100,7 @@ describe('connecting a source to a space', () => {
 
     expect(state).toEqual({
       status: 'error',
-      message: 'That space is not one you can connect a source to.',
+      message: 'You are not in that space.',
     });
     expect(callsFor('connections-begin')).toEqual([]);
     expect(caller.sentTo).toEqual([]);
@@ -235,7 +235,7 @@ describe('choosing what a connection reads', () => {
 
     expect(state).toEqual({
       status: 'error',
-      message: 'That selection is not one this app can save.',
+      message: 'That selection could not be saved.',
     });
     expect(callsFor('connections-scopes')).toEqual([]);
   });

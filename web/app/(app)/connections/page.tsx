@@ -24,7 +24,7 @@ export default async function ConnectionsPage() {
     <>
       <PageHeader
         title="Connections"
-        description="A connection reads one account of one source into one space. Only people in that space can see what it brings in."
+        description="A connection imports one account of one source into one space."
       />
 
       <SyncActivity spaceIds={spaceIds} />
@@ -32,7 +32,7 @@ export default async function ConnectionsPage() {
       {connected === 0 ? (
         <EmptyState
           title="Nothing is connected yet"
-          description="Magpi answers from what you connect to it. Start with the source your team writes in most, pick the space it lands in, and the first import runs straight away."
+          description="Choose a source and the space it imports into. The first import starts right away."
           action={
             first ? (
               <Button asChild>
@@ -52,7 +52,7 @@ export default async function ConnectionsPage() {
       ) : (
         <EmptyState
           title="No sources are available"
-          description="Providers are rows in the database and none are enabled on this deployment yet."
+          description="No providers are enabled on this deployment."
         />
       )}
     </>

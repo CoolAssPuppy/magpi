@@ -112,7 +112,7 @@ export default async function AdminOverviewPage({
 
       <Panel
         title="Ingest health"
-        description="One row per connection. A job that ran out of wall clock names the stage it died in."
+        description="One row per connection, with the stage any failed job stopped at."
       >
         <Suspense fallback={<PanelSkeleton rows={4} />}>
           <IngestHealthPanel {...wide} />
@@ -128,22 +128,19 @@ export default async function AdminOverviewPage({
         </Suspense>
       </Panel>
 
-      <Panel title="Top questions" description="What people actually ask, grouped by wording.">
+      <Panel title="Top questions" description="Questions grouped by wording.">
         <Suspense fallback={<PanelSkeleton rows={6} />}>
           <TopQuestionsPanel {...wide} days={days} />
         </Suspense>
       </Panel>
 
-      <Panel
-        title="Dead content"
-        description="Documents no answer has ever cited. In most knowledge bases this is about half of it."
-      >
+      <Panel title="Dead content" description="Documents no answer has ever cited.">
         <Suspense fallback={<PanelSkeleton rows={5} />}>
           <DeadContentPanel {...wide} />
         </Suspense>
       </Panel>
 
-      <Panel title="Usage against plan" description="Read from metered usage, never from a scan.">
+      <Panel title="Usage against plan" description="Usage against your plan this month.">
         <Suspense fallback={<PanelSkeleton rows={3} />}>
           <PlanUsagePanel {...own} />
         </Suspense>

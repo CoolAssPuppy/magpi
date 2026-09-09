@@ -121,7 +121,7 @@ describe('running a dream by hand', () => {
 
     expect(state).toEqual({
       status: 'error',
-      message: 'That space is not one you can run a dream in.',
+      message: 'You are not in that space.',
     });
     expect(callsFor('dream-run')).toEqual([]);
     expect(callsFor('spaces')).toContainEqual(['eq', 'id', SPACE_ID]);

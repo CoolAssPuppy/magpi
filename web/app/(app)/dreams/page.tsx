@@ -22,8 +22,8 @@ export default async function DreamsPage() {
         <h2 className="font-heading text-sm font-medium text-foreground">Runs</h2>
         {runs.length === 0 ? (
           <EmptyState
-            title="Nothing has been dreamed yet"
-            description="Runs appear here after the first overnight pass, or as soon as you run one by hand above. Every run records what it read, how long it took and what it wrote."
+            title="No runs yet"
+            description="Dreaming runs overnight. Start one now with the button above."
           />
         ) : (
           <DreamRunList runs={runs} />

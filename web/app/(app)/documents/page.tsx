@@ -21,17 +21,14 @@ export default async function DocumentsPage() {
 
   return (
     <>
-      <PageHeader
-        title="Documents"
-        description="Drop files in, or connect a source. Progress and failures show here as they happen."
-      />
+      <PageHeader title="Documents" description="Upload files, or connect a source." />
 
       <UploadPanel spaces={spaces} />
 
       {documents.length === 0 ? (
         <EmptyState
           title="Nothing in here yet"
-          description="Upload a file above and Magpi reads it, splits it up, and makes it answerable. A connected source does the same thing on a schedule."
+          description="Upload a file, or connect a source to import on a schedule."
         />
       ) : (
         <DocumentList documents={documents} />

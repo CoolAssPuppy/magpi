@@ -19,7 +19,7 @@ export default async function SpacesPage() {
     <>
       <PageHeader
         title="Spaces"
-        description="Every document lives in exactly one space. You pick which when you put it in, and that is the whole permission model."
+        description="Every document lives in exactly one space. You choose the space when you add the document."
       />
 
       <div className="max-w-md">
@@ -29,7 +29,7 @@ export default async function SpacesPage() {
       {spaces.length === 0 ? (
         <EmptyState
           title="No spaces yet"
-          description="You should have a personal space and an organization space already. If neither is here, sign out and back in to rebuild them."
+          description="Sign out and back in if your personal space is missing."
         />
       ) : (
         <SpaceList spaces={spaces} />

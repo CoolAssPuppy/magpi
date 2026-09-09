@@ -75,7 +75,7 @@ describe('ConversationMenu', () => {
     await openMenuItem('Delete');
 
     expect(
-      screen.getByText('The questions and answers in it go with it. Documents are untouched.'),
+      screen.getByText('This deletes the questions and answers in this conversation.'),
     ).toBeInTheDocument();
     expect(actions.removeInput).toBeNull();
   });

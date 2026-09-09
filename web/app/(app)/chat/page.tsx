@@ -35,8 +35,8 @@ export default async function ChatPage() {
 function FirstRun() {
   return (
     <EmptyState
-      title="Give Magpi something to read"
-      description="Upload a document or connect a source. Magpi indexes what it finds and answers from it, with the passage it used attached to every answer."
+      title="No documents yet"
+      description="Upload a document or connect a source to get started."
       action={
         <div className="flex items-center gap-2">
           <Button asChild size="sm">
