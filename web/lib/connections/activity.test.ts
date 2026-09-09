@@ -43,9 +43,44 @@ describe('import activity', () => {
     ]);
 
     expect(summary.failures).toEqual([
-      { id: 'job-4', documentId: 'doc-1', stage: 'extract', reason: 'The PDF has no text.' },
+      {
+        id: 'job-4',
+        documentId: 'doc-1',
+        stage: 'extract',
+        reason: 'Failed during extract. The PDF has no text.',
+      },
     ]);
     expect(describeActivity(summary)).toBe('1 import failed');
+  });
+
+  it('finishes a clause the driver wrote, so a timeout reads as a sentence', () => {
+    const summary = summarizeJobs([
+      getJob({
+        id: 'job-7',
+        status: 'timeout',
+        stage: 'embed',
+        error: 'ran out of time after 148s, past the 45s budget for one run',
+      }),
+    ]);
+
+    expect(summary.failures[0].reason).toBe(
+      'Timed out during embed. Ran out of time after 148s, past the 45s budget for one run.',
+    );
+  });
+
+  it('leaves a message that already reads as a sentence alone', () => {
+    const summary = summarizeJobs([
+      getJob({
+        id: 'job-8',
+        status: 'failed',
+        stage: 'fetch',
+        error: 'Notion refused this connection, reconnect it.',
+      }),
+    ]);
+
+    expect(summary.failures[0].reason).toBe(
+      'Failed during fetch. Notion refused this connection, reconnect it.',
+    );
   });
 
   it('still names the stage if a terminal job somehow arrives with no error', () => {

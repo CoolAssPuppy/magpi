@@ -40,14 +40,31 @@ export type ActivitySummary = {
 };
 
 /**
- * A check constraint makes a failed or timed-out job without an error
- * impossible, so the first line is the real path. The rest keeps the function
- * total, because the generated type still says the column is nullable.
+ * The stage comes first because ingest_jobs records it as a column, and a
+ * stalled import is only legible if it says where it stalled.
+ *
+ * The driver's message follows, and finishing it is this side's job because this
+ * side owns the words in front of it. Drivers write a clause for a timeout and a
+ * whole sentence for a failure, and both read correctly after a full stop.
+ *
+ * A check constraint makes a terminal job without an error impossible, so the
+ * bare prefix is only there to keep the function total against a column the
+ * generated type still calls nullable.
+ *
+ * Duplicated from asSentence in lib/dreams/status.ts, which joins the dream
+ * equivalent. Four lines, two callers, and it wants a shared module the way the
+ * status pill did.
  */
+function asSentence(message: string): string {
+  const trimmed = message.trim();
+  const opened = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+  return opened.endsWith('.') ? opened : `${opened}.`;
+}
+
 function failureReason(job: IngestJobRecord): string {
-  if (job.error) return job.error;
-  if (job.status === 'timeout') return `Timed out during ${job.stage}.`;
-  return `Failed during ${job.stage}.`;
+  const prefix =
+    job.status === 'timeout' ? `Timed out during ${job.stage}.` : `Failed during ${job.stage}.`;
+  return job.error ? `${prefix} ${asSentence(job.error)}` : prefix;
 }
 
 export function summarizeJobs(jobs: readonly IngestJobRecord[]): ActivitySummary {
