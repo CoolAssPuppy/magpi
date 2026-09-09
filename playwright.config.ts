@@ -9,6 +9,10 @@ const runId = process.env.TEST_RUN_ID ?? Math.random().toString(36).slice(2, 8);
 
 export default defineConfig({
   testDir: './tests',
+  // The integration suite is vitest and lives under tests/ too. Browser suites
+  // that create accounts run separately from database suites, because concurrent
+  // fixtures on one persistent database produce false cleanup failures.
+  testIgnore: ['integration/**'],
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: 0,
@@ -27,6 +31,9 @@ export default defineConfig({
     url: 'http://127.0.0.1:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
-    env: { TEST_RUN_ID: runId },
+    // Spread process.env. Playwright replaces the child environment with this
+    // object rather than merging, so a bare { TEST_RUN_ID } starts the dev
+    // server with no Supabase keys and every sign-in silently does nothing.
+    env: { ...process.env, TEST_RUN_ID: runId },
   },
 });

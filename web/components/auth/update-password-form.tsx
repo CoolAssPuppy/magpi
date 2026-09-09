@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,6 @@ import { createClient } from '@/lib/supabase/client';
 import { FormError } from './form-error';
 
 export function UpdatePasswordForm() {
-  const router = useRouter();
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
@@ -30,8 +28,7 @@ export function UpdatePasswordForm() {
       return;
     }
 
-    router.push('/chat');
-    router.refresh();
+    window.location.assign('/chat');
   }
 
   return (

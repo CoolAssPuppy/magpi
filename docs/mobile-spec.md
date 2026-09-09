@@ -303,6 +303,37 @@ one line for line, so the transport is spelled out.
 - **Offline and refresh.** Cached. Triggering a run requires a network.
 - **Analytics.** `dream_triggered`, `dream_opened`.
 
+### Entities
+
+- **Screen name.** Entities
+- **Web route.** `/dreams/entities`
+- **Deep link.** `recall://dreams/entities`, with an optional `?space={spaceId}`
+  filter that mirrors the web query parameter.
+- **Data contract.** `entities` joined to `entity_mentions` and `documents`,
+  grouped by `entity_kind`. Types
+  `Database['public']['Tables']['entities']['Row']` and
+  `Database['public']['Tables']['entity_mentions']['Row']`. Loaded through
+  `loadEntities` in `web/lib/dreams/queries.ts`.
+- **Loading.** Four group skeletons, one per entity kind, holding their heights
+  so the page does not jump when they resolve.
+- **Empty.** The common case before the first entities run. It says what an
+  entities run does and offers the two ways to get one: trigger it from Runs, or
+  wait for tonight.
+- **Error.** Query error text plus retry.
+- **Content.** People, projects, customers and decisions, each with the
+  documents it was mentioned in. Tapping a mention opens the document at the
+  cited chunk.
+- **Navigation.** Subtab under Dreams, second after Runs. Subtabs sit outside
+  cards and the strip stays put through every content state.
+- **Components.** Web `components/dreams/entity-groups.tsx`. iOS `List` with a
+  `Section` per kind. Android `LazyColumn` with sticky headers.
+- **String keys.** `entities.empty.title`, `entities.empty.body`,
+  `entities.kind.person`, `entities.kind.project`, `entities.kind.customer`,
+  `entities.kind.decision`, `entities.mentions.count`.
+- **Permissions.** None.
+- **Offline and refresh.** Cached and readable offline. Pull-to-refresh refetches.
+- **Analytics.** `entities_opened`, `entity_mention_opened`.
+
 ### Dream run
 
 - **Screen name.** Dream run

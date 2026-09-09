@@ -81,3 +81,46 @@ job.
 Clearing `.next` was also part of the fix: the stale generated types from the
 build that ran while the flag was on kept the errors alive after the flag came
 back off.
+
+## Next 16 blocks its own dev chunks on 127.0.0.1, so nothing hydrates
+
+The sign-in journey timed out waiting for `/chat`. The page rendered, the form
+accepted input, and clicking Sign in navigated to `/sign-in?`, which is a native
+GET form submission. `event.preventDefault()` had not run, because the client
+component never hydrated.
+
+The dev server was saying so the whole time, in a log line that reads like
+advice rather than an error:
+
+```
+Blocked cross-origin request to Next.js dev resource /_next/hmr from "127.0.0.1".
+```
+
+The Supabase CLI prints `127.0.0.1` URLs and Playwright drives that host, while
+the dev server treats anything other than `localhost` as cross-origin.
+
+**Rule.** `allowedDevOrigins` in `next.config.ts` lists both spellings. When a
+form does a native submit in a test, the component did not hydrate, and the
+cause is upstream of the form.
+
+## `router.push()` followed by `router.refresh()` cancels the navigation
+
+With hydration fixed, sign-in returned 200, the session cookie was written, and
+the browser stayed on `/sign-in` for six seconds. Navigating to `/chat` by hand
+in the same session worked immediately, which ruled out the proxy and the
+session.
+
+The cause is the pair of calls. `router.refresh()` immediately after
+`router.push()` aborts the pending soft navigation.
+
+**Rule.** An auth transition uses `window.location.assign()`. A full document
+request is the only thing guaranteed to carry a just-written session cookie to
+the proxy on the very next hop, and the cost of one reload at sign-in is
+nothing.
+
+## `webServer.env` in Playwright replaces the environment, it does not merge
+
+`env: { TEST_RUN_ID: runId }` starts the dev server with no Supabase keys at all.
+It was not the cause of the failure above, but it would have been the next one.
+
+**Rule.** Spread `process.env` into any `webServer.env`.

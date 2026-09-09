@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -14,7 +13,6 @@ import { FormError } from './form-error';
 import { SocialSignIn } from './social-sign-in';
 
 export function SignInForm({ next }: { next: string }) {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -34,8 +32,11 @@ export function SignInForm({ next }: { next: string }) {
       return;
     }
 
-    router.push(safeNextPath(next, '/chat'));
-    router.refresh();
+    // A full navigation rather than router.push. The session cookie was written
+    // by the client during sign-in, and only a fresh document request is
+    // guaranteed to carry it to the proxy on the very next hop. A soft push
+    // followed by refresh races the two and lands back on this page.
+    window.location.assign(safeNextPath(next, '/chat'));
   }
 
   return (
