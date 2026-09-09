@@ -39,23 +39,23 @@ describe('what a dream run produced', () => {
     });
   });
 
-  it('separates a reader who can see no source from a run that had none', () => {
+  it('separates sources that have gone away from a run that cited none', () => {
     const output = describeDreamOutput(getOutput({ visibleChunkIds: [] }));
 
     expect(output).toEqual({
-      kind: 'sources-hidden',
+      kind: 'sources-gone',
       documentId: 'doc-1',
       title: 'Engineering digest, 9 September',
       citedCount: 2,
     });
   });
 
-  it('counts what the run cited, not what this reader can open', () => {
+  it('counts what the run cited, not what still resolves', () => {
     const output = describeDreamOutput(
       getOutput({ sourceChunkIds: [CHUNK_A, CHUNK_B], visibleChunkIds: [] }),
     );
 
-    expect(output.kind === 'sources-hidden' && output.citedCount).toBe(2);
+    expect(output.kind === 'sources-gone' && output.citedCount).toBe(2);
   });
 
   it('shows a document whose sources are only partly readable, with the rest dropped', () => {

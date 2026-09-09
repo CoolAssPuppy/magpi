@@ -56,7 +56,7 @@ export type DreamOutputView =
   | { readonly kind: 'none' }
   | { readonly kind: 'uncited'; readonly documentId: string; readonly title: string }
   | {
-      readonly kind: 'sources-hidden';
+      readonly kind: 'sources-gone';
       readonly documentId: string;
       readonly title: string;
       readonly body: string;
@@ -129,12 +129,12 @@ async function loadOutput(
 
   if (described.kind === 'none' || described.kind === 'uncited') return described;
 
-  // A reader who can open none of the sources still sees the digest, the way an
-  // old conversation shows its answer with the citation dropped. Withholding the
-  // text here would read as the run having invented it.
-  if (described.kind === 'sources-hidden') {
+  // The digest still shows, the way an old conversation shows its answer with
+  // the citation dropped. Withholding it would read as the run having invented
+  // the text, when what actually happened is that its evidence was deleted.
+  if (described.kind === 'sources-gone') {
     return {
-      kind: 'sources-hidden',
+      kind: 'sources-gone',
       documentId: described.documentId,
       title: described.title,
       body,

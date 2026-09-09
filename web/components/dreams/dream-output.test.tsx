@@ -55,11 +55,11 @@ describe('a dream output', () => {
     expect(screen.queryByText(/billing slipped/i)).not.toBeInTheDocument();
   });
 
-  it('tells a reader who can open none of the sources that they exist, and how many', () => {
+  it('says the sources were deleted, and how many the run cited', () => {
     render(
       <DreamOutput
         output={{
-          kind: 'sources-hidden',
+          kind: 'sources-gone',
           documentId: 'doc-1',
           title: 'Engineering digest',
           body: 'Billing slipped a week.',
@@ -69,15 +69,15 @@ describe('a dream output', () => {
       />,
     );
 
-    expect(screen.getByText(/cites 4 sources/i)).toBeInTheDocument();
-    expect(screen.getByText(/not available to you/i)).toBeInTheDocument();
+    expect(screen.getByText(/4 sources this digest was built from/i)).toBeInTheDocument();
+    expect(screen.getByText(/since been deleted or re-imported/i)).toBeInTheDocument();
   });
 
-  it('still shows the text to that reader, so it does not read as invented', () => {
+  it('still shows the text, so a digest whose evidence went away does not read as invented', () => {
     render(
       <DreamOutput
         output={{
-          kind: 'sources-hidden',
+          kind: 'sources-gone',
           documentId: 'doc-1',
           title: 'Engineering digest',
           body: 'Billing slipped a week.',
@@ -90,11 +90,11 @@ describe('a dream output', () => {
     expect(screen.getByText(/billing slipped a week/i)).toBeInTheDocument();
   });
 
-  it('never tells that reader the run produced nothing, which would be a lie about the run', () => {
+  it('never says the run produced nothing, which would be a lie about the run', () => {
     render(
       <DreamOutput
         output={{
-          kind: 'sources-hidden',
+          kind: 'sources-gone',
           documentId: 'doc-1',
           title: 'Engineering digest',
           body: 'Billing slipped a week.',

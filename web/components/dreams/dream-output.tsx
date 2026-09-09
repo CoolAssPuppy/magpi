@@ -106,7 +106,7 @@ export function DreamOutput({
         </div>
       );
 
-    case 'sources-hidden':
+    case 'sources-gone':
       return (
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -123,9 +123,10 @@ export function DreamOutput({
             className="rounded-[var(--radius-panel)] border border-border bg-background-surface-100 px-4 py-3"
           >
             <p className="max-w-[var(--measure-prose)] text-sm text-foreground-light">
-              This document cites {output.citedCount} source
-              {output.citedCount === 1 ? '' : 's'} that are not available to you. The run cited them
-              when it wrote this, and someone who can open them sees them listed here.
+              The {output.citedCount} source{output.citedCount === 1 ? '' : 's'} this digest was
+              built from {output.citedCount === 1 ? 'has' : 'have'} since been deleted or
+              re-imported. The run cited {output.citedCount === 1 ? 'it' : 'them'} when it wrote
+              this.
             </p>
           </div>
         </div>

@@ -12,12 +12,15 @@ export type DreamOutput =
    */
   | { readonly kind: 'uncited'; readonly documentId: string; readonly title: string }
   /**
-   * The run cited sources this reader cannot open. A fact about the reader, not
-   * about the run, and it has to read as one: a reader told only "no sources"
-   * concludes the synthesis was invented.
+   * The run cited sources that no longer resolve. Not a permission problem: a
+   * digest and its chunks are always in the same space, and both policies key on
+   * that same space_id, so a reader who can open the digest can open its
+   * sources. What empties the list is the evidence going away, by a source
+   * document being deleted or re-imported. The digest was honestly cited when it
+   * was written, and it has to read that way rather than as invention.
    */
   | {
-      readonly kind: 'sources-hidden';
+      readonly kind: 'sources-gone';
       readonly documentId: string;
       readonly title: string;
       readonly citedCount: number;
@@ -54,7 +57,7 @@ export function describeDreamOutput({
 
   if (chunkIds.length === 0) {
     return {
-      kind: 'sources-hidden',
+      kind: 'sources-gone',
       documentId,
       title: resolvedTitle,
       citedCount: sourceChunkIds.length,
