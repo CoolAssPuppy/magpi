@@ -269,6 +269,20 @@ The verification command could not distinguish a pass from a failure. That is
 the vacuous-assertion problem one level up: not the test that cannot fail, but
 the thing checking whether the test failed.
 
-**Rule.** Verify with exit codes, not by grepping output. A grep that matches
-nothing and a run with nothing to match look identical, and coloured output has
-invisible characters in the middle of the words you are matching on.
+The first version of this entry said: verify with exit codes, not by grepping
+output. That is right and incomplete, and the same agent proved it incomplete
+within minutes by making the identical mistake inside the check for the mistake.
+Confirming every test file was discovered, it grepped for `^running .* from` and
+got zero files loaded, because the ANSI codes sit at the start of the line and
+`^running` can never match. Stripping the escapes first gives 30 of 30.
+
+Sometimes you genuinely have to inspect output. So the rule has two halves:
+
+**Strip ANSI before matching.** The escape sequences sit inside and around the
+words you are matching on, and they are invisible in a terminal.
+
+**Make the check report a number you can sanity-check.** "0 files loaded" is
+obviously wrong on its face and it is what caught the second instance. "0
+failures" is not, and it is what nearly ended the first. A check whose failure
+mode is indistinguishable from success is the thing to avoid; grep is only the
+most common way to build one.

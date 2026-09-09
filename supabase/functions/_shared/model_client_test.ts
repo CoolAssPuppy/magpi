@@ -177,9 +177,13 @@ Deno.test('a short embedding batch is refused rather than silently misaligned', 
   // Two texts and one vector would file the second chunk under the first vector.
   const h = harness(() => json({ data: [{ embedding: vector() }], usage: {} }));
   try {
-    await asyncApiErrorFrom(() =>
+    const err = await asyncApiErrorFrom(() =>
       createModelRunner(h.deps).embed({ orgId: ORG, texts: ['one', 'two'] })
     );
+    assertEquals(err.code, 'model_error');
+    // Nothing was stored, so the second chunk cannot end up under the first
+    // chunk's vector.
+    assertEquals(modelCallRows(h.stub)[0].succeeded, false);
   } finally {
     await h.stub.close();
   }

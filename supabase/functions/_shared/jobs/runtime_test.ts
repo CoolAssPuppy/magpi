@@ -13,7 +13,10 @@ function headers(authorization?: string): Headers {
 }
 
 Deno.test('the scheduler holding the service role key may start a worker', () => {
-  requireWorkerCaller(headers('Bearer service-role-key'), ENV);
+  // Explicitly that it returned, not merely that the line ran. If this check
+  // ever answered with a boolean instead of throwing, a bare call would pass
+  // here forever while refusing every real caller.
+  assertEquals(requireWorkerCaller(headers('Bearer service-role-key'), ENV), undefined);
 });
 
 Deno.test('a signed-in user cannot start a worker', () => {
