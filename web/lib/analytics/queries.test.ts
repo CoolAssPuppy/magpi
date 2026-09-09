@@ -72,16 +72,26 @@ function createStub(responses: Readonly<Record<string, readonly StubResponse[]>>
     rpc: (name: string, args: unknown) => builderFor(name, ['rpc', name, args]),
   } as unknown as AnalyticsClient;
 
+  // Table reads only. An rpc closes the current group rather than opening an
+  // empty one: it used to push `[]`, so a chained call on an rpc landed in that
+  // empty group and the group survived as a query with no table and no filter.
   function tableQueries(): readonly (readonly RecordedCall[])[] {
     const queries: RecordedCall[][] = [];
+    let current: RecordedCall[] | null = null;
+
     for (const recorded of calls.values()) {
       for (const call of recorded) {
-        if (call[0] === 'from') queries.push([call]);
-        else if (call[0] === 'rpc') queries.push([]);
-        else queries.at(-1)?.push(call);
+        if (call[0] === 'from') {
+          current = [call];
+          queries.push(current);
+        } else if (call[0] === 'rpc') {
+          current = null;
+        } else {
+          current?.push(call);
+        }
       }
     }
-    return queries.filter((query) => query.length > 0);
+    return queries;
   }
 
   return { client, callsFor: (source) => calls.get(source) ?? [], tableQueries };
@@ -342,11 +352,7 @@ describe('usage against plan', () => {
         },
       ],
       org_members: [{ count: 3 }],
-      usage_events: [
-        { data: [{ kind: 'document_ingested', sum: 88 }] },
-        { data: [{ kind: 'query', sum: 140 }] },
-        { data: [{ kind: 'storage_bytes', sum: 1_400_000_000 }] },
-      ],
+      org_usage_totals: [{ data: { documents: 88, queries: 140, storage_bytes: 1_400_000_000 } }],
       plan_document_limit: [{ data: 200 }],
       plan_monthly_query_limit: [{ data: 500 }],
     });
@@ -378,17 +384,19 @@ describe('usage against plan', () => {
         },
       ],
       org_members: [{ count: 5 }],
-      usage_events: [{ data: [] }, { data: [] }, { data: [] }],
+      org_usage_totals: [{ data: { documents: 0, queries: 0, storage_bytes: 0 } }],
       plan_document_limit: [{ data: 25000 }],
       plan_monthly_query_limit: [{ data: 50000 }],
     });
 
     const usage = await fetchPlanUsage(stub.client, ORG, { now: NOW });
 
-    expect(stub.callsFor('usage_events')).toContainEqual([
-      'gte',
-      'occurred_at',
-      '2026-09-01T00:00:00.000Z',
+    // The window is the database function's argument now, so this is what
+    // proves a monthly limit is not read over all time.
+    expect(stub.callsFor('org_usage_totals')).toContainEqual([
+      'rpc',
+      'org_usage_totals',
+      { p_org_id: ORG, p_month_start: '2026-09-01T00:00:00.000Z' },
     ]);
     expect(usage.documents.used).toBe(0);
     expect(usage.stripeCustomerId).toBe('cus_1');
@@ -398,7 +406,7 @@ describe('usage against plan', () => {
     const stub = createStub({
       organizations: [{ error: { message: 'permission denied' } }],
       org_members: [{ count: 0 }],
-      usage_events: [{ data: [] }, { data: [] }, { data: [] }],
+      org_usage_totals: [{ data: { documents: 0, queries: 0, storage_bytes: 0 } }],
     });
 
     await expect(fetchPlanUsage(stub.client, ORG, { now: NOW })).rejects.toThrow(
@@ -439,11 +447,22 @@ describe('organization scoping', () => {
         },
       ],
       org_members: [{ count: 0 }],
-      usage_events: [empty, empty, empty],
+      org_usage_totals: [{ data: { documents: 0, queries: 0, storage_bytes: 0 } }],
       plan_document_limit: [{ data: 200 }],
       plan_monthly_query_limit: [{ data: 500 }],
     });
   }
+
+  // The meters moved from three table reads to one rpc, and tableQueries only
+  // sees table reads. Without this the sweep above would pass while saying
+  // nothing about the query that carries the plan numbers.
+  it('scopes the usage totals to one organization through its argument', async () => {
+    const stub = emptyStub();
+    await fetchPlanUsage(stub.client, ORG, { now: NOW });
+
+    const [call] = stub.callsFor('org_usage_totals');
+    expect(call?.[2]).toMatchObject({ p_org_id: ORG });
+  });
 
   for (const [name, run] of panels) {
     it(`filters every table query in ${name} to one organization`, async () => {

@@ -1155,6 +1155,10 @@ export type Database = {
           retry_after_s: number
         }[]
       }
+      invoke_worker: {
+        Args: { p_batch: number; p_worker: string }
+        Returns: undefined
+      }
       is_org_admin: { Args: { p_org_id: string }; Returns: boolean }
       is_org_member: { Args: { p_org_id: string }; Returns: boolean }
       is_space_member: { Args: { p_space_id: string }; Returns: boolean }
@@ -1163,6 +1167,14 @@ export type Database = {
         Returns: {
           email: string
           user_id: string
+        }[]
+      }
+      org_usage_totals: {
+        Args: { p_month_start: string; p_org_id: string }
+        Returns: {
+          documents: number
+          queries: number
+          storage_bytes: number
         }[]
       }
       plan_document_limit: {
@@ -1180,6 +1192,7 @@ export type Database = {
         Args: { p_document_ids: string[] }
         Returns: undefined
       }
+      schedule_workers: { Args: never; Returns: undefined }
       search: {
         Args: {
           match_count?: number

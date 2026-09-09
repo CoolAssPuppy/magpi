@@ -84,6 +84,7 @@ schema_paths = [
   "./schemas/90_policies.sql",
   "./schemas/91_storage.sql",
   "./schemas/95_grants.sql",
+  "./schemas/96_schedules.sql",
 ]
 
 [db.seed]

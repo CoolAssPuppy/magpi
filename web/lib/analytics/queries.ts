@@ -236,23 +236,6 @@ export type PlanUsage = {
   readonly stripeSubscriptionId: string | null;
 };
 
-async function sumUsage(
-  client: AnalyticsClient,
-  orgId: string,
-  kind: Enums['usage_kind'],
-  since: string | null,
-): Promise<number> {
-  const base = client
-    .from('usage_events')
-    .select('kind, quantity.sum()')
-    .eq('org_id', orgId)
-    .eq('kind', kind);
-
-  const result = await (since ? base.gte('occurred_at', since) : base);
-
-  return unwrap(result)[0]?.sum ?? 0;
-}
-
 /**
  * Usage is read from usage_events and the limits from the plan functions, so a
  * page load never scans documents and the numbers on screen are the same ones
@@ -274,15 +257,22 @@ export async function fetchPlanUsage(
     .select('user_id', { count: 'exact', head: true })
     .eq('org_id', orgId);
 
-  const [organization, seats, documentsUsed, queriesUsed, storageUsed] = await Promise.all([
+  // One call, not three. This read the three meters with PostgREST's
+  // `quantity.sum()`, and a PostgREST with aggregate functions off answers
+  // "Use of aggregate functions is not allowed" to every one of them, which is
+  // how the Supabase CLI ships.
+  const totalsQuery = client
+    .rpc('org_usage_totals', { p_org_id: orgId, p_month_start: monthStartIso(now) })
+    .single();
+
+  const [organization, seats, totals] = await Promise.all([
     organizationQuery,
     seatsQuery,
-    sumUsage(client, orgId, 'document_ingested', null),
-    sumUsage(client, orgId, 'query', monthStartIso(now)),
-    sumUsage(client, orgId, 'storage_bytes', null),
+    totalsQuery,
   ]);
 
   const org = unwrap(organization);
+  const used = unwrap(totals);
 
   const [documentLimit, queryLimit] = await Promise.all([
     client.rpc('plan_document_limit', { p_plan: org.plan }),
@@ -291,10 +281,10 @@ export async function fetchPlanUsage(
 
   return {
     plan: org.plan,
-    documents: { used: documentsUsed, limit: unwrap(documentLimit) },
-    queries: { used: queriesUsed, limit: unwrap(queryLimit) },
+    documents: { used: used.documents, limit: unwrap(documentLimit) },
+    queries: { used: used.queries, limit: unwrap(queryLimit) },
     seats: { used: unwrapCount(seats), limit: org.seats },
-    storageBytes: { used: storageUsed, limit: null },
+    storageBytes: { used: used.storage_bytes, limit: null },
     stripeCustomerId: org.stripe_customer_id,
     stripeSubscriptionId: org.stripe_subscription_id,
   };

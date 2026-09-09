@@ -111,22 +111,27 @@ measurement has to exist before the claim does.
 
 ## PostgREST aggregate functions
 
-Three queries count in the database rather than in the web process, and all
-three stop working if a deployment turns off PostgREST's aggregate functions.
+Two queries count in the database rather than in the web process, and both stop
+working if a deployment turns off PostgREST's aggregate functions.
 
-| Query                                         | Where                                                  | What it uses                               |
-| --------------------------------------------- | ------------------------------------------------------ | ------------------------------------------ |
-| Members and documents, per space              | `listVisibleSpaces`, `web/lib/spaces/spaces.ts:56`     | `space_members(count)`, `documents(count)` |
-| Documents pulled, per connection              | `fetchIngestHealth`, `web/lib/analytics/queries.ts:78` | `documents(count)`                         |
-| Documents, questions and storage against plan | `fetchPlanUsage`, same file                            | `quantity.sum()`                           |
+| Query                            | Where                                                  | What it uses                               |
+| -------------------------------- | ------------------------------------------------------ | ------------------------------------------ |
+| Members and documents, per space | `listVisibleSpaces`, `web/lib/spaces/spaces.ts:56`     | `space_members(count)`, `documents(count)` |
+| Documents pulled, per connection | `fetchIngestHealth`, `web/lib/analytics/queries.ts:78` | `documents(count)`                         |
 
 The first one is the Spaces page, which every signed-in person opens, so this is
 not only an admin concern.
 
-Supabase enables aggregates by default, on the platform and in the CLI, so
-neither this repo nor a normal self-hosted install has to do anything. A
+The plan usage panel used to be a third, reading three meters with
+`quantity.sum()`. It is `public.org_usage_totals` now, one call that sums in
+SQL, because the Supabase CLI ships with aggregate functions off and the panel
+was broken on every local run of this repo. Embedded counts, the two above, are
+a different PostgREST feature and do work by default.
+
+The platform enables aggregates by default. The CLI does not, which is what the
+usage panel found. A
 self-hosted PostgREST with `db-aggregates-enabled = false` is the case that
-breaks, and it breaks loudly: the three queries return an error rather than a
+breaks, and it breaks loudly: the two queries return an error rather than a
 wrong number, and the screens around them fall to their error states.
 
 The alternative was to fetch the rows and count them in Node, which is what
