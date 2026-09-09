@@ -44,6 +44,7 @@ export type IngestResult =
   | { kind: 'succeeded'; chunkCount: number }
   | { kind: 'unchanged' }
   | { kind: 'timeout'; stage: IngestStage }
+  | { kind: 'retrying'; stage: IngestStage; detail: string }
   | { kind: 'failed'; stage: IngestStage; detail: string };
 
 interface DocumentRow {
@@ -293,6 +294,20 @@ export async function runIngestJob(job: IngestJobRecord, deps: JobDeps): Promise
     }
 
     const detail = detailOf(err);
+
+    // A provider that failed for the moment is not a document that cannot be
+    // imported, and the driver's message says as much to the user. Writing a
+    // terminal status here makes that message false and leaves the three
+    // attempts claim_ingest_jobs budgets for with no path that reaches them.
+    // Back on the queue, where the attempt cap retires it if the moment lasts.
+    //
+    // A refused credential is the other half: retrying it spends three more
+    // round trips to be refused three more times, and reconnecting is the fix.
+    if (err instanceof SourceError && !err.needsReconnect) {
+      await finish(deps, job, { status: 'queued', stage, error: detail });
+      return { kind: 'retrying', stage, detail };
+    }
+
     await finish(deps, job, { status: 'failed', stage, error: detail });
     return { kind: 'failed', stage, detail };
   }

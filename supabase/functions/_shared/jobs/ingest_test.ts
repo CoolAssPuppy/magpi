@@ -96,6 +96,56 @@ function harness(options: {
   };
 }
 
+/**
+ * A live Notion connection, as loadConnection reads it.
+ *
+ * The token is really encrypted because the job body really decrypts it, so a
+ * placeholder string fails before the driver is ever called.
+ */
+async function notionConnection(): Promise<Record<string, unknown>> {
+  const provider = 'notion';
+  return {
+    id: 'connection-1',
+    org_id: ORG,
+    space_id: SPACE,
+    user_id: USER,
+    provider,
+    external_account_id: 'workspace-1',
+    access_token_enc: await encryptProviderToken('ntn_token', { userId: USER, provider }, ENV),
+    refresh_token_enc: null,
+    scopes: [],
+    scope_selection: { ids: [] },
+    status: 'active',
+    status_detail: null,
+    cursor: null,
+    token_expires_at: null,
+    last_synced_at: null,
+  };
+}
+
+/** A document with no bytes of its own, read through a connection. */
+function sourceDocument(): Record<string, unknown> {
+  return uploadDocument({
+    storage_path: null,
+    connection_id: 'connection-1',
+    external_id: 'page-1',
+    mime_type: null,
+  });
+}
+
+/** The connection path, with a provider that answers however the test needs. */
+async function sourceHarness(fetch: typeof globalThis.fetch): Promise<Harness> {
+  const connection = await notionConnection();
+  return harness({
+    document: sourceDocument(),
+    reply: (request) =>
+      request.table === 'connections' && request.method === 'GET'
+        ? { body: [connection] }
+        : undefined,
+    fetch,
+  });
+}
+
 Deno.test('an uploaded document is extracted, chunked, embedded and stored', async () => {
   const h = harness({});
   try {
@@ -279,24 +329,7 @@ Deno.test('a timed out job stores no chunks', async () => {
 });
 
 Deno.test('a document from a source is fetched through its connection', async () => {
-  const provider = 'notion';
-  const connectionRow = {
-    id: 'connection-1',
-    org_id: ORG,
-    space_id: SPACE,
-    user_id: USER,
-    provider,
-    external_account_id: 'workspace-1',
-    access_token_enc: await encryptProviderToken('ntn_token', { userId: USER, provider }, ENV),
-    refresh_token_enc: null,
-    scopes: [],
-    scope_selection: { ids: [] },
-    status: 'active',
-    status_detail: null,
-    cursor: null,
-    token_expires_at: null,
-    last_synced_at: null,
-  };
+  const connectionRow = await notionConnection();
 
   const h = harness({
     document: uploadDocument({
@@ -409,24 +442,7 @@ Deno.test('a re-import meters only what the file grew by', async () => {
 Deno.test('a synced document weighs its text and meters no storage', async () => {
   // Nothing from a source occupies a bucket, so metering it would report storage
   // the organization is not using.
-  const provider = 'notion';
-  const connectionRow = {
-    id: 'connection-1',
-    org_id: ORG,
-    space_id: SPACE,
-    user_id: USER,
-    provider,
-    external_account_id: 'workspace-1',
-    access_token_enc: await encryptProviderToken('ntn_token', { userId: USER, provider }, ENV),
-    refresh_token_enc: null,
-    scopes: [],
-    scope_selection: { ids: [] },
-    status: 'active',
-    status_detail: null,
-    cursor: null,
-    token_expires_at: null,
-    last_synced_at: null,
-  };
+  const connectionRow = await notionConnection();
 
   const h = harness({
     document: uploadDocument({
@@ -470,6 +486,55 @@ Deno.test('a synced document weighs its text and meters no storage', async () =>
       rowsInserted(h.stub, 'usage_events').map((row) => row.kind),
       ['document_ingested', 'chunk_embedded'],
     );
+  } finally {
+    await h.stub.close();
+  }
+});
+
+Deno.test('a source that failed for the moment goes back on the queue', async () => {
+  // The driver's own message promises the next pass will try again. A terminal
+  // row makes that false, and leaves the three attempts claim_ingest_jobs
+  // budgets for with no path that can reach them.
+  const h = await sourceHarness(() => Promise.resolve(new Response('{}', { status: 500 })));
+  try {
+    const result = await runIngestJob({ ...JOB, connection_id: 'connection-1' }, h.deps);
+    assertEquals(result.kind, 'retrying');
+
+    const final = writes(h.stub, 'ingest_jobs').at(-1);
+    assertEquals(final?.status, 'queued');
+    // The reason stays on the row, so a job the cap gives up on has something
+    // written before the cap overwrites it.
+    assert(String(final?.error).includes('try again'), String(final?.error));
+  } finally {
+    await h.stub.close();
+  }
+});
+
+Deno.test('a source that refused the credential is terminal rather than retried', async () => {
+  // Three more attempts against a revoked token cost three more round trips and
+  // end the same way. Reconnecting is the only fix, and the message says so.
+  const h = await sourceHarness(() => Promise.resolve(new Response('{}', { status: 401 })));
+  try {
+    const result = await runIngestJob({ ...JOB, connection_id: 'connection-1' }, h.deps);
+    assertEquals(result.kind, 'failed');
+
+    const final = writes(h.stub, 'ingest_jobs').at(-1);
+    assertEquals(final?.status, 'failed');
+    assert(String(final?.error).includes('reconnect'), String(final?.error));
+  } finally {
+    await h.stub.close();
+  }
+});
+
+Deno.test('a requeued job does not touch the claim columns', async () => {
+  // attempts is what retires the job in the end. Rewriting it from the body
+  // would either reset the budget or spend it twice for one failure.
+  const h = await sourceHarness(() => Promise.resolve(new Response('{}', { status: 500 })));
+  try {
+    await runIngestJob({ ...JOB, connection_id: 'connection-1' }, h.deps);
+    const final = writes(h.stub, 'ingest_jobs').at(-1);
+    assertEquals(final?.attempts, undefined);
+    assertEquals(final?.claimed_at, undefined);
   } finally {
     await h.stub.close();
   }

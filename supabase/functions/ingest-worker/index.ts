@@ -11,7 +11,6 @@ import { jsonResponse } from '../_shared/errors.ts';
 import { serveFunction } from '../_shared/http.ts';
 import { parseBody, workerBatchSchema } from '../_shared/validate.ts';
 import { type IngestResult, runIngestJob } from '../_shared/jobs/ingest.ts';
-import { retireAbandoned } from '../_shared/jobs/claim.ts';
 import { jobDepsFromEnv, requireWorkerCaller } from '../_shared/jobs/runtime.ts';
 
 const DEFAULT_BATCH = 5;
@@ -30,21 +29,16 @@ serveFunction('ingest-worker', async (core) => {
   const input = parseBody(workerBatchSchema, core.body ?? {});
   const deps = jobDepsFromEnv();
 
-  // Before claiming anything, retire what a killed isolate left behind. The
-  // budget writes a timeout for a job that runs long; only this catches one that
-  // was interrupted, and claim_ingest_jobs takes queued rows so it would never
-  // come back on its own.
-  const retired = await retireAbandoned(deps.db, {
-    table: 'ingest_jobs',
-    startedColumn: 'claimed_at',
-    error: 'the import was interrupted and did not finish',
-  }, deps.http.now());
-
   // claim_ingest_jobs, not a select: it marks the rows running behind
   // `for update skip locked` in one statement, so two overlapping invocations
   // take different jobs instead of both importing the same document. A plain
   // select and a later update cannot do that, and the scheduler will overlap
   // the moment a batch runs longer than its interval.
+  //
+  // It also takes back a claim whose worker never came back, putting the row on
+  // the queue rather than retiring it, and gives up on one that has spent its
+  // three attempts. A sweep here would reach those rows first and settle them
+  // the other way, so the reclaim inside the function would never match one.
   const { data, error } = await deps.db.rpc('claim_ingest_jobs', {
     p_limit: input.batch ?? DEFAULT_BATCH,
   });
@@ -58,5 +52,5 @@ serveFunction('ingest-worker', async (core) => {
     results.push({ job_id: job.id, ...(await runIngestJob(job, deps)) });
   }
 
-  return jsonResponse({ claimed: results.length, retired, results });
+  return jsonResponse({ claimed: results.length, results });
 });
