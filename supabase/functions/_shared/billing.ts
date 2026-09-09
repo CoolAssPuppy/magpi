@@ -111,6 +111,9 @@ const checkoutCompletedSchema = z.object({
   type: z.literal('checkout.session.completed'),
   data: z.object({
     object: z.object({
+      // Permissive like the rest of this object. A field this handler can do
+      // without must not turn a real event into a permanent 400.
+      id: z.string().nullish(),
       customer: stripeRef,
       // Null on a session that bought something other than a subscription.
       subscription: stripeRef.nullish(),
@@ -118,7 +121,10 @@ const checkoutCompletedSchema = z.object({
       // rejecting the event when it is absent is how a session created by any
       // other path, the dashboard included, becomes a permanent 400.
       client_reference_id: z.string().nullish(),
-      metadata: z.object({ org_id: z.string() }).partial().nullish(),
+      // 'paid', 'unpaid' or 'no_payment_required'. Absent on older API versions,
+      // which is read as unpaid rather than waved through.
+      payment_status: z.string().nullish(),
+      metadata: z.object({ org_id: z.string(), plan: z.string() }).partial().nullish(),
     }),
   }),
 });
@@ -283,6 +289,37 @@ function orgNotFound(type: HandledEventType, target: string): StripeEventResult 
 
 type CheckoutSession = z.infer<typeof checkoutCompletedSchema>['data']['object'];
 
+/** A session that has been paid for, or one Stripe took no payment for. */
+const SETTLED_PAYMENT_STATUSES = ['paid', 'no_payment_required'];
+
+/**
+ * The plan a completed checkout puts the organization on, or nothing.
+ *
+ * This wrote `plan: 'team'` for every completed session, so a one-off product,
+ * a session abandoned before payment, and a session created in the Stripe
+ * dashboard for something else all upgraded the organization.
+ *
+ * The plan the checkout route wrote into metadata is the one field here that
+ * says what was bought. A session carrying a subscription also produces
+ * customer.subscription.updated, which resolves the plan from the price, so
+ * saying nothing here leaves the better-informed event to answer.
+ */
+function planForCheckout(session: CheckoutSession): { plan?: 'free' | 'team' } {
+  const status = session.payment_status ?? 'unpaid';
+  if (!SETTLED_PAYMENT_STATUSES.includes(status)) return {};
+
+  if (session.metadata?.plan === 'team') return { plan: 'team' };
+
+  // Loud for the same reason the unrecognized price is: the alternative to
+  // noticing is a customer who paid and stayed on free.
+  audit({
+    action: 'billing.checkout_plan_unrecognized',
+    target: session.id ?? session.customer,
+    meta: { plan: session.metadata?.plan ?? null, payment_status: status },
+  });
+  return {};
+}
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 async function applyCheckout(
@@ -306,7 +343,7 @@ async function applyCheckout(
     // A session that bought no subscription leaves the column alone rather than
     // clearing one an earlier event set.
     ...(session.subscription ? { stripe_subscription_id: session.subscription } : {}),
-    plan: 'team',
+    ...planForCheckout(session),
   });
   if (!found) return orgNotFound('checkout.session.completed', orgId);
   return { kind: 'applied', type: 'checkout.session.completed', orgId };

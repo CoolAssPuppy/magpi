@@ -21,7 +21,7 @@ import { enforceRateLimits } from '../_shared/rate_limit.ts';
 import { encryptProviderToken } from '../_shared/provider_tokens.ts';
 import { randomToken, sha256Hex } from '../_shared/crypto.ts';
 import { loadProvider } from '../_shared/providers.ts';
-import { isValidSlug } from '../_shared/validate.ts';
+import { isValidSlug, parseOAuthStateRow } from '../_shared/validate.ts';
 import { oauthCredentials, webBaseUrl } from '../_shared/env.ts';
 import { callbackUrl, oauthDriverFor, PENDING_TTL_SECONDS } from '../_shared/oauth.ts';
 
@@ -35,14 +35,6 @@ function back(path: string, params: Record<string, string>): Response {
   const url = new URL(webBaseUrl() + path);
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
   return new Response(null, { status: 303, headers: { location: url.toString() } });
-}
-
-interface StateRow {
-  user_id: string;
-  provider: string;
-  code_verifier: string;
-  space_id: string;
-  return_to: string | null;
 }
 
 Deno.serve(async (req: Request) => {
@@ -76,7 +68,7 @@ Deno.serve(async (req: Request) => {
     });
     if (stateError) return back(CONNECTIONS, { connection: 'error', code: 'state_lookup_failed' });
 
-    const pending = (Array.isArray(rows) ? rows[0] : null) as StateRow | null;
+    const pending = parseOAuthStateRow(rows);
     if (!pending) {
       // Unknown, expired, or already used. Indistinguishable on purpose.
       return back(CONNECTIONS, { connection: 'expired', code: 'state_expired' });

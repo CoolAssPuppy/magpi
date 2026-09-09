@@ -18,23 +18,16 @@ import { requireUser } from '../_shared/auth.ts';
 import { sha256Hex } from '../_shared/crypto.ts';
 import { claimConnection, type ClaimPort, type PendingConnection } from '../_shared/claim.ts';
 import { storeConnection } from './store.ts';
-import { connectionsClaimSchema, parseBody } from '../_shared/validate.ts';
+import {
+  connectionsClaimSchema,
+  parseBody,
+  parsePendingConnectionRow,
+} from '../_shared/validate.ts';
 import { liveHttp } from '../_shared/deps.ts';
 import { buildScopeSelection } from '../_shared/scope_selection.ts';
 import { decryptProviderToken } from '../_shared/provider_tokens.ts';
 import { driverFor, hasDriver } from '../_shared/sources/index.ts';
-
-interface PendingRow {
-  user_id: string;
-  provider: string;
-  space_id: string;
-  external_account_id: string | null;
-  access_token_enc: string;
-  refresh_token_enc: string | null;
-  scopes: string[] | null;
-  token_expires_at: string | null;
-  return_to: string | null;
-}
+import { SourceError } from '../_shared/sources/contract.ts';
 
 serveFunction('connections-claim', async (core) => {
   const input = parseBody(connectionsClaimSchema, core.body);
@@ -56,19 +49,19 @@ serveFunction('connections-claim', async (core) => {
       });
       if (error) throw new ApiError(500, 'internal', 'the connection could not be claimed');
 
-      const row = (Array.isArray(data) ? data[0] : null) as PendingRow | null;
+      const row = parsePendingConnectionRow(data);
       if (!row) return null;
 
       return {
         userId: row.user_id,
         provider: row.provider,
         spaceId: row.space_id,
-        externalAccountId: row.external_account_id,
+        externalAccountId: row.external_account_id ?? null,
         accessTokenEnc: row.access_token_enc,
-        refreshTokenEnc: row.refresh_token_enc,
+        refreshTokenEnc: row.refresh_token_enc ?? null,
         scopes: row.scopes ?? [],
-        tokenExpiresAt: row.token_expires_at,
-        returnTo: row.return_to,
+        tokenExpiresAt: row.token_expires_at ?? null,
+        returnTo: row.return_to ?? null,
       };
     },
 
@@ -88,6 +81,11 @@ serveFunction('connections-claim', async (core) => {
  * Best effort and never fatal: the connection is already stored and usable, and
  * connections-scopes refreshes this on demand anyway. Doing it here only saves
  * the user watching a spinner on the screen they are already looking at.
+ *
+ * The catch is narrow. A provider having a bad minute is what best effort is
+ * for. A token that will not decrypt is a connection that can never sync, and
+ * catching that alongside the rest returned a successful claim with an empty
+ * picker and nothing anywhere saying why.
  */
 async function populatePicker(
   db: ReturnType<typeof serviceClient>,
@@ -123,6 +121,21 @@ async function populatePicker(
       })
       .eq('id', connectionId);
   } catch (err) {
-    console.error('scope listing after claim failed', provider, err);
+    if (err instanceof SourceError) {
+      console.error('scope listing after claim failed', provider, err.message);
+      return;
+    }
+
+    // Anything else is the connection itself being unusable, most often a token
+    // that will not decrypt. The row says so rather than the screen showing an
+    // empty picker the user is expected to interpret.
+    console.error('connection unusable after claim', provider, err);
+    await db
+      .from('connections')
+      .update({
+        status: 'error',
+        status_detail: 'the connection was stored but could not be read back',
+      })
+      .eq('id', connectionId);
   }
 }

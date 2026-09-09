@@ -97,3 +97,21 @@ out to be smaller than the override would have been:
 None of this is a fork of upstream in any meaningful sense: the behavior is
 unchanged and the diffs are readable. If a future `npx shadcn add` overwrites
 either file, the lint failure is how we will know.
+
+**The Stripe webhook is an Edge Function, not the Next.js route the spec lists.**
+Stripe signature verification needs the exact bytes of the request body, and it
+needs to run whether or not the web app is deployed. An Edge Function gets both:
+`supabase/functions/stripe-webhook` reads the raw body once and verifies against
+`SB_STRIPE_WEBHOOK_SECRET`, and billing keeps working during a Vercel outage or
+a bad web deploy. The route in the spec would have shared a runtime with the
+thing most likely to be broken when a payment lands.
+
+It also keeps the secret out of the web app's environment entirely. The Vercel
+project has no Stripe signing secret to leak, and the one place that can verify
+an event is the one place that writes to `organizations.plan`.
+
+The cost is that `verify_jwt = false` has to be set for that function in
+`config.toml`, so the signature check is the only thing standing between a
+stranger and the billing tables. That check is tested against recorded Stripe
+payloads in `supabase/functions/_shared/billing_test.ts`, including a replayed
+event and one signed with a different secret.

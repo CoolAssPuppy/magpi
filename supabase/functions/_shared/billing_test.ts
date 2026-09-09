@@ -46,9 +46,18 @@ function verify(
   return verifyStripeSignature({ payload, header, secret: SECRET, now });
 }
 
-function checkoutEvent(orgId: string = ORG): unknown {
-  const metadata = { org_id: orgId };
-  const object = { id: 'cs_1', customer: 'cus_1', subscription: 'sub_1', metadata };
+function checkoutEvent(
+  orgId: string = ORG,
+  overrides: { plan?: string; paymentStatus?: string } = {},
+): unknown {
+  const metadata = { org_id: orgId, plan: overrides.plan ?? 'team' };
+  const object = {
+    id: 'cs_1',
+    customer: 'cus_1',
+    subscription: 'sub_1',
+    payment_status: overrides.paymentStatus ?? 'paid',
+    metadata,
+  };
   return { id: 'evt_checkout_1', type: 'checkout.session.completed', data: { object } };
 }
 
@@ -151,6 +160,40 @@ Deno.test('a header carrying several v1 values verifies when any one matches', a
   const mine = await hmacHex(SECRET, `${SIGNED_AT}.${payload}`);
   const header = `t=${SIGNED_AT},v1=${'0'.repeat(64)},v1=${mine}`;
   assertEquals(await verify(payload, header), { ok: true });
+});
+
+// applyCheckout wrote plan: 'team' unconditionally, so a session that bought a
+// one-off product, or one abandoned before payment, upgraded the organization
+// anyway. The plan the checkout route put in metadata is the one thing here that
+// says what was bought.
+Deno.test('a checkout session that was never paid changes no plan', async () => {
+  const stub = orgFound();
+  try {
+    await handleStripeEvent(checkoutEvent(ORG, { paymentStatus: 'unpaid' }), deps(stub));
+
+    const orgs = requestsFor(stub, 'organizations');
+    assertEquals(orgs[0].body, {
+      stripe_customer_id: 'cus_1',
+      stripe_subscription_id: 'sub_1',
+    });
+  } finally {
+    await stub.close();
+  }
+});
+
+Deno.test('a paid session for something we do not sell changes no plan', async () => {
+  const stub = orgFound();
+  try {
+    await handleStripeEvent(checkoutEvent(ORG, { plan: 'gift_card' }), deps(stub));
+
+    const orgs = requestsFor(stub, 'organizations');
+    assertEquals(orgs[0].body, {
+      stripe_customer_id: 'cus_1',
+      stripe_subscription_id: 'sub_1',
+    });
+  } finally {
+    await stub.close();
+  }
 });
 
 Deno.test('a completed checkout session puts the organization on the team plan', async () => {
@@ -415,7 +458,7 @@ Deno.test('an item with no quantity counts as one seat', async () => {
   }
 });
 
-Deno.test('a checkout session naming its organization only by reference still applies', async () => {
+Deno.test('a checkout session naming its organization only by reference records its ids', async () => {
   const stub = fixtureOrgFound();
   try {
     const result = await handleStripeEvent(
@@ -427,10 +470,13 @@ Deno.test('a checkout session naming its organization only by reference still ap
       type: 'checkout.session.completed',
       orgId: FIXTURE_ORG,
     });
+    // No plan. This session carries no metadata at all, so nothing in it says
+    // what was bought, and the customer.subscription.updated event it produces
+    // resolves that from the price. Guessing team here is what put an
+    // organization on the paid plan for buying anything.
     assertEquals(requestsFor(stub, 'organizations')[0].body, {
       stripe_customer_id: 'cus_TestTeam01',
       stripe_subscription_id: 'sub_TestTeam01',
-      plan: 'team',
     });
   } finally {
     await stub.close();

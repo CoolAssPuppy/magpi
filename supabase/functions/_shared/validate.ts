@@ -96,3 +96,66 @@ export function isUploadInSpace(storagePath: string, spaceId: string): boolean {
 export function isValidSlug(value: string): boolean {
   return value.length <= 64 && SLUG_RE.test(value);
 }
+
+/**
+ * The rows the two single-use RPCs hand back.
+ *
+ * Both carry a secret out of the database: `consume_pending_connection` returns
+ * an encrypted provider token and `consume_oauth_state` returns a PKCE
+ * verifier. They were the two results in the codebase read by assertion rather
+ * than by parse, which is backwards: the third RPC, which carries least, was
+ * the one being parsed.
+ *
+ * A cast on a shape this important buys nothing. If `consume_oauth_state` ever
+ * returns a row without `code_verifier`, the assertion says it did and the
+ * exchange fails somewhere further along with a message about OAuth.
+ */
+const pendingConnectionRowSchema = z.object({
+  user_id: z.uuid(),
+  provider: slug,
+  space_id: z.uuid(),
+  external_account_id: z.string().nullish(),
+  access_token_enc: z.string().min(1),
+  refresh_token_enc: z.string().nullish(),
+  scopes: z.array(z.string()).nullish(),
+  token_expires_at: z.string().nullish(),
+  return_to: z.string().nullish(),
+});
+
+const oauthStateRowSchema = z.object({
+  user_id: z.uuid(),
+  provider: slug,
+  code_verifier: z.string().min(1),
+  space_id: z.uuid(),
+  return_to: z.string().nullish(),
+});
+
+export type PendingConnectionRow = z.infer<typeof pendingConnectionRowSchema>;
+export type OAuthStateRow = z.infer<typeof oauthStateRowSchema>;
+
+/**
+ * The single row a consuming RPC returns, or null when it consumed nothing.
+ *
+ * Null and malformed are different answers. Nothing to consume is the ordinary
+ * case, a used ticket or an expired state, and the caller has copy for it. A row
+ * that came back the wrong shape is a schema change nobody noticed, and it
+ * raises.
+ */
+function parseConsumedRow<T>(schema: z.ZodType<T>, data: unknown, what: string): T | null {
+  const row = Array.isArray(data) ? data[0] : null;
+  if (row === null || row === undefined) return null;
+
+  const parsed = schema.safeParse(row);
+  if (!parsed.success) {
+    throw new ApiError(500, 'internal', `${what} returned a row this function cannot read`);
+  }
+  return parsed.data;
+}
+
+export function parsePendingConnectionRow(data: unknown): PendingConnectionRow | null {
+  return parseConsumedRow(pendingConnectionRowSchema, data, 'consume_pending_connection');
+}
+
+export function parseOAuthStateRow(data: unknown): OAuthStateRow | null {
+  return parseConsumedRow(oauthStateRowSchema, data, 'consume_oauth_state');
+}

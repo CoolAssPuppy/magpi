@@ -59,8 +59,12 @@ function readUsage(payload: Record<string, unknown>): Usage {
  *
  * A model outage that leaves no trace is the one an operator cannot see, and
  * `succeeded` is what separates a slow day from a broken one on the analytics
- * page. The insert is fire and forget: a logging failure must not turn a
- * successful answer into an error.
+ * page.
+ *
+ * The insert is awaited and its failure is logged rather than thrown. Awaited
+ * because an edge isolate can be torn down the moment the response is written,
+ * and a promise still in flight then is a row that never arrives. Not thrown
+ * because a logging failure must not turn a successful answer into an error.
  */
 async function record(
   deps: ModelRunnerDeps,

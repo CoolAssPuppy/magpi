@@ -13,11 +13,27 @@ export interface CoreRequest {
 }
 
 /**
- * Takes the rightmost X-Forwarded-For entry. The leftmost is client-supplied,
- * so reading it lets a caller present a fresh IP per request and never reach a
- * limit. Correct for one trusted proxy hop; behind more, skip one per hop.
+ * Who a per-IP rate limit rule counts against.
+ *
+ * cf-connecting-ip first. The edge writes it over whatever the caller sent, so
+ * it is both the real client address and one the caller cannot choose. This was
+ * the last resort rather than the first, and since every request on the
+ * deployed runtime carries x-forwarded-for, it was never read: the rightmost
+ * forwarded entry is the platform's own proxy, the same value for every caller
+ * in the world, so each per-IP rule was one global rule wearing a per-IP name.
+ *
+ * The forwarded header is the fallback, for a local `supabase functions serve`
+ * where nothing sets cf-connecting-ip. Rightmost rather than leftmost there,
+ * because the leftmost is whatever the caller typed.
+ *
+ * When neither header names anyone, every caller shares the `unknown` bucket.
+ * That is a shared limit rather than no limit, which is the safe direction to
+ * be wrong in.
  */
 export function clientIp(headers: Headers): string {
+  const resolved = headers.get('cf-connecting-ip')?.trim();
+  if (resolved) return resolved;
+
   const forwarded = headers.get('x-forwarded-for');
   if (forwarded) {
     const nearest = forwarded
@@ -27,7 +43,7 @@ export function clientIp(headers: Headers): string {
       .at(-1);
     if (nearest) return nearest;
   }
-  return headers.get('cf-connecting-ip')?.trim() ?? 'unknown';
+  return 'unknown';
 }
 
 /** Parses a fetch Request into the framework-free shape the handlers take. */
