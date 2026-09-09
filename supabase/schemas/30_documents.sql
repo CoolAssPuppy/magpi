@@ -19,7 +19,11 @@ create table public.documents (
   dream_run_id uuid,
   last_retrieved_at timestamptz,
   retrieval_count bigint not null default 0,
-  size_bytes bigint
+  size_bytes bigint,
+  -- Every dream document cites the chunks it came from. There is no uncited
+  -- synthesis, so a dream output with an empty array is a run that produced
+  -- nothing rather than a claim with no source.
+  source_chunk_ids uuid[]
 );
 
 -- Incremental sync looks a document up by its source identity on every pass.

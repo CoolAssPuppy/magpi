@@ -157,7 +157,53 @@ rows survive the filter:
 `hnsw.max_scan_tuples` bounds the work so a query against a filter matching
 nothing cannot walk the entire index.
 
-Which setting Recall ships with is decided by measurement. The table
+### Measured, and settled
+
+This is no longer hypothetical. pgTAP measured it on 2026-09-09 with a thousand
+chunks in a space the caller cannot see, every one ranking nearer the query than
+the five that are theirs, and query text matching nothing so the lexical arm
+could not rescue the result:
+
+| Configuration                    | Rows the caller gets, of 5 | Rows leaked |
+| -------------------------------- | -------------------------- | ----------- |
+| index scan, `iterative` off      | 0                          | 0           |
+| index scan, `iterative` on       | 5                          | 0           |
+| sequential scan, `iterative` off | 5                          | 0           |
+
+Two things that table settles.
+
+**It was never a leak.** Rows from the other space were invisible in every
+configuration. A post-filter discards rows after the scan, so the worst it can do
+is drop rows the caller was entitled to. The permission model held throughout.
+
+**It was a total recall failure, not a partial one.** The caller's own document
+existed, matched semantically, and the answer came back empty. It fails on the
+paraphrase, which is the case vector search exists for, while the lexical arm
+keeps the keyword case working and hides it.
+
+The third row is why this needed measuring rather than reasoning about. At
+test-corpus size the planner picks a sequential scan, which filters perfectly, so
+any version of this test written without forcing the index passes forever and
+proves nothing.
+
+`public.search` therefore ships with the setting on the function itself:
+
+```sql
+alter function public.search(extensions.vector, text, uuid[], integer)
+  set hnsw.iterative_scan = relaxed_order;
+```
+
+On the function rather than the role or the database, so web, mobile and the MCP
+server all inherit it from the one implementation they already share.
+`relaxed_order` rather than `strict_order` because `search` re-ranks with
+reciprocal rank fusion afterwards, so paying for exact scan order buys nothing.
+
+One gotcha worth writing down: until a vector operation has run in the session,
+`hnsw.iterative_scan` is an unrecognised placeholder and the `alter function` is
+refused with "permission denied to set parameter". The migration performs a
+trivial cast above it.
+
+What remains to be measured is the cost, not the correctness. The table
 below is where that measurement goes.
 
 ## Recall measurement

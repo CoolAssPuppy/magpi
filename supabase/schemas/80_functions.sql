@@ -138,6 +138,28 @@ as $$
   limit match_count;
 $$;
 
+-- Without this, a filtered vector search returns nothing at all rather than
+-- fewer rows. The HNSW scan takes its ef_search nearest neighbours and only then
+-- does RLS discard them, so a caller whose own chunks all rank below a thousand
+-- they cannot see gets an empty answer to a question their own document answers.
+-- pgTAP measured it: 0 of 5 with the setting off, 5 of 5 with it on.
+--
+-- It goes on the function rather than the role or the database so it travels to
+-- web, mobile and the MCP server together. relaxed_order because search()
+-- re-ranks with reciprocal rank fusion afterwards, so scan order buys nothing.
+--
+-- The cast above the ALTER is required, not decorative. Until a vector operation
+-- has run in the session, hnsw.iterative_scan is an unrecognised placeholder and
+-- the ALTER is refused with "permission denied to set parameter".
+do $$
+begin
+  perform '[1]'::extensions.vector;
+end;
+$$;
+
+alter function public.search(extensions.vector, text, uuid[], integer)
+  set hnsw.iterative_scan = relaxed_order;
+
 grant execute on function public.search(extensions.vector, text, uuid[], integer)
   to authenticated, service_role;
 

@@ -10,7 +10,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(10);
+select plan(13);
 
 insert into auth.users (id, email, instance_id, aud, role)
 values
@@ -164,6 +164,84 @@ select throws_ok(
        current_setting('recall.qvec')::extensions.vector(1536),
        'when does the roadmap ship', null, 20) $$,
   '42501', null, 'a signed-out caller cannot run the search at all'
+);
+
+reset role;
+
+-- Recall under a filtered index scan -------------------------------------------
+--
+-- Everything above proves the filter is applied. It does not say where. An HNSW
+-- scan with hnsw.iterative_scan off returns hnsw.ef_search candidates and only
+-- then discards the ones the caller cannot see, so a caller whose own rows all
+-- rank below that cutoff gets nothing back at all.
+--
+-- Separate the two things that get run together here. Security holds either
+-- way: discarding rows after the scan cannot leak them, it can only lose your
+-- own. What is at risk is recall, and the failure is total rather than partial.
+-- The spec calls this out under Known risk and says to enable iterative scans.
+--
+-- A thousand rows the caller cannot see, all nearer to the query than the five
+-- that are theirs, and a query text that matches nothing, so the lexical arm
+-- cannot quietly rescue the result and hide the behavior under test.
+
+reset role;
+
+insert into public.chunks (org_id, space_id, document_id, ordinal, content, embedding)
+select (select org_id from public.spaces where id = '50000000-0000-4000-8000-00000000000c'),
+       '50000000-0000-4000-8000-00000000000c', '51000000-0000-4000-8000-00000000000c', n,
+       'leadership filler line ' || n,
+       ('[0,0,1,' || (n::numeric / 1000000) || ',' || repeat('0,', 1531) || '0]')::extensions.vector(1536)
+from generate_series(1, 1000) as n;
+
+insert into public.chunks (org_id, space_id, document_id, ordinal, content, embedding)
+select (select org_id from public.spaces where id = '50000000-0000-4000-8000-00000000000a'),
+       '50000000-0000-4000-8000-00000000000a', '51000000-0000-4000-8000-00000000000a', n,
+       'quarterly compensation memorandum ' || n,
+       ('[0,0,0.5,0.5,' || repeat('0,', 1531) || '0]')::extensions.vector(1536)
+from generate_series(1, 5) as n;
+
+select set_config('recall.qdense',
+  '[0,0,1,' || repeat('0,', 1532) || '0]', true);
+
+set local role authenticated;
+set local request.jwt.claims to '{"sub":"a0000000-0000-4000-8000-000000000001","role":"authenticated"}';
+
+-- At a thousand rows the planner would choose a sequential scan, which filters
+-- perfectly and would make all three of these pass while proving nothing about
+-- production. Forcing the index is what puts the real plan under test.
+set local enable_seqscan = off;
+
+select is(
+  (select count(*)::int from public.search(
+     current_setting('recall.qdense')::extensions.vector(1536),
+     'zzzznomatch', null, 20)
+   where space_id = '50000000-0000-4000-8000-00000000000c'),
+  0, 'an index scan never returns a row from a space the caller cannot see'
+);
+
+select is(
+  (select count(*)::int from public.search(
+     current_setting('recall.qdense')::extensions.vector(1536),
+     'zzzznomatch', null, 20)
+   where content like 'quarterly compensation%'),
+  5, 'and it still returns the caller''s own matches when a thousand rows they cannot see rank ahead'
+);
+
+-- Naming the remedy in the suite, so the assertion above reads as a missing
+-- setting rather than a mystery. The fix belongs on the function itself:
+--
+--   alter function public.search(extensions.vector, text, uuid[], integer)
+--     set hnsw.iterative_scan = relaxed_order;
+--
+-- so it travels to web, mobile and the MCP server together.
+set local hnsw.iterative_scan = relaxed_order;
+
+select is(
+  (select count(*)::int from public.search(
+     current_setting('recall.qdense')::extensions.vector(1536),
+     'zzzznomatch', null, 20)
+   where content like 'quarterly compensation%'),
+  5, 'which is what an iterative scan restores'
 );
 
 reset role;
