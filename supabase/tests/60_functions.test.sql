@@ -9,7 +9,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(34);
+select plan(35);
 
 insert into auth.users (id, email, instance_id, aud, role)
 values
@@ -308,6 +308,75 @@ select ok(
        from pg_class c join pg_namespace n on n.oid = c.relnamespace
        where n.nspname = 'public' and c.relkind = 'r'),
   'anon holds select on nothing in public'
+);
+
+-- Migration drift ---------------------------------------------------------------------
+--
+-- Both security bugs this suite has caught so far had the same root cause: the
+-- schema files said one thing and the applied database said another, because
+-- pg-delta dropped something on the way through. Everything above catches a
+-- consequence we already know to look for. This catches the disagreement itself.
+--
+-- The expected set is written out by hand from supabase/schemas/95_grants.sql
+-- rather than read back from the database, because an expectation derived from
+-- the thing under test proves nothing. Getting a grant wrong now takes the same
+-- mistake made twice, in two files, by two people.
+--
+-- It is a set comparison rather than a per-grant existence check so that it fails
+-- in both directions: a grant that went missing, and a grant nobody declared.
+--
+-- TRUNCATE, REFERENCES, TRIGGER and MAINTAIN are excluded. Those come from the
+-- stock Supabase defaults for every new table and say nothing about intent.
+select set_eq(
+  $$ select grantee::text || ' ' || table_name::text || ' ' || privilege_type::text
+     from information_schema.role_table_grants
+     where table_schema = 'public'
+       and grantee in ('anon', 'authenticated', 'service_role')
+       and privilege_type in ('SELECT', 'INSERT', 'UPDATE', 'DELETE') $$,
+  $$
+    -- anon is absent on purpose. There is no unauthenticated surface, so any
+    -- row appearing for it on the left is itself the failure.
+    select 'authenticated ' || t || ' ' || p
+    from (values
+      ('organizations', 'SELECT'), ('organizations', 'UPDATE'),
+      ('org_members', 'SELECT'), ('org_members', 'DELETE'),
+      ('org_invites', 'SELECT'), ('org_invites', 'INSERT'), ('org_invites', 'DELETE'),
+      ('spaces', 'SELECT'), ('spaces', 'INSERT'), ('spaces', 'UPDATE'), ('spaces', 'DELETE'),
+      ('space_members', 'SELECT'), ('space_members', 'INSERT'), ('space_members', 'DELETE'),
+      ('providers', 'SELECT'),
+      -- No SELECT. connections is granted by column list so the token columns
+      -- stay out, and a table grant here would put them back.
+      ('connections', 'DELETE'),
+      ('documents', 'SELECT'), ('documents', 'DELETE'),
+      ('chunks', 'SELECT'),
+      ('entities', 'SELECT'),
+      ('entity_mentions', 'SELECT'),
+      ('dream_runs', 'SELECT'),
+      ('dream_links', 'SELECT'), ('dream_links', 'UPDATE'),
+      ('ingest_jobs', 'SELECT'),
+      ('conversations', 'SELECT'), ('conversations', 'INSERT'),
+      ('conversations', 'UPDATE'), ('conversations', 'DELETE'),
+      ('messages', 'SELECT'), ('messages', 'INSERT'),
+      ('usage_events', 'SELECT'),
+      ('model_calls', 'SELECT')
+    ) as g(t, p)
+    union all
+    -- service_role holds all four on every table it touches, so the tables are
+    -- listed once and crossed with the privileges rather than repeated 88 times.
+    select 'service_role ' || t || ' ' || p
+    from (values
+      ('organizations'), ('org_members'), ('org_invites'), ('spaces'),
+      ('space_members'), ('providers'), ('connections'), ('documents'),
+      ('chunks'), ('entities'), ('entity_mentions'), ('dream_runs'),
+      ('dream_links'), ('ingest_jobs'), ('conversations'), ('messages'),
+      ('usage_events'), ('model_calls'),
+      -- Granted in their own schema files, not in 95_grants.sql, and reachable
+      -- by no other role at all.
+      ('oauth_states'), ('pending_connections'), ('rate_limits'), ('stripe_events')
+    ) as s(t)
+    cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE')) as pr(p)
+  $$,
+  'the applied table privileges are exactly the ones the schema files declare'
 );
 
 -- connections is the one table granted by column list rather than whole, because

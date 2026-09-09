@@ -109,6 +109,28 @@ same query as a one-person free plan against several orders of magnitude more
 rows. That crossover is the setup for the Pipelines part of the keynote, so the
 measurement has to exist before the claim does.
 
+## PostgREST aggregate functions
+
+Two admin panels count in the database rather than in the web process, and both
+stop working if a deployment turns off PostgREST's aggregate functions.
+
+| Query                                         | Where                                               | What it uses       |
+| --------------------------------------------- | --------------------------------------------------- | ------------------ |
+| Documents pulled, per connection              | `fetchIngestHealth`, `web/lib/analytics/queries.ts` | `documents(count)` |
+| Documents, questions and storage against plan | `fetchPlanUsage`, same file                         | `quantity.sum()`   |
+
+Supabase enables aggregates by default, on the platform and in the CLI, so
+neither this repo nor a normal self-hosted install has to do anything. A
+self-hosted PostgREST with `db-aggregates-enabled = false` is the case that
+breaks, and it breaks loudly: the two queries return an error rather than a
+wrong number, and the panels around them fall to their error states.
+
+The alternative was to fetch the rows and count them in Node, which is what
+section 12 of the spec forbids for usage and what the ingest health panel would
+have to do to every document in the organization on every page load. The
+aggregate is the correct query. This note exists so that someone self-hosting
+knows which switch to look at rather than reading it as a bug.
+
 ## Google OAuth verification
 
 Google Drive read scopes are sensitive scopes. Verification takes weeks, and it
