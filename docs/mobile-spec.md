@@ -461,9 +461,9 @@ one line for line, so the transport is spelled out.
 - **Empty.** An organization with no traffic yet says which number will appear
   first.
 - **Error.** Query error text plus retry.
-- **Content.** Ingest health, search volume and latency, top questions, dead
-  content, usage against plan.
-- **Navigation.** Tab 6, present only for owners and admins.
+- **Content.** Ingest health, dead content, usage against plan.
+- **Navigation.** Tab 6, present only for owners and admins. Web shows the admin
+  sections in a side nav rather than a tab strip.
 - **Components.** Web `components/admin/*` and `components/charts/*` following
   the `dataviz` rules. iOS Swift Charts. Android Vico.
 - **Proposed string keys.** `admin.ingest.title`, `admin.latency.title`,
@@ -472,6 +472,30 @@ one line for line, so the transport is spelled out.
 - **Offline and refresh.** Last fetched values are cached with their timestamp
   shown, so a stale number is never presented as live.
 - **Proposed analytics events.** `admin_opened`.
+
+### Admin searches
+
+- **Screen name.** Searches
+- **Web route.** `/admin/searches`
+- **Deep link.** `magpi://admin/searches`
+- **Data contract.** `messages` and `model_calls`, read through the elevated
+  client for the whole organization. Access is
+  `org_members.role in ('owner','admin')`, enforced in RLS.
+- **Loading.** Chart skeletons that hold their final height, so the page does
+  not jump.
+- **Empty.** An organization with no questions yet says so in place of the list.
+- **Error.** Query error text plus retry.
+- **Content.** Search activity, questions per day, answer latency, top
+  questions, over a range the reader picks.
+- **Navigation.** Under Admin, present only for owners and admins.
+- **Components.** Web `components/admin/*` and `components/charts/*` following
+  the `dataviz` rules. iOS Swift Charts. Android Vico.
+- **Proposed string keys.** `admin.searches.title`, `admin.latency.title`,
+  `admin.questions.title`.
+- **Permissions.** None.
+- **Offline and refresh.** Last fetched values are cached with their timestamp
+  shown, so a stale number is never presented as live.
+- **Proposed analytics events.** `admin_searches_opened`.
 
 ### Admin members
 

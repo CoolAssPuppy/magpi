@@ -22,6 +22,9 @@
   /* Prose measure. Section 4 caps body copy at 65-75ch. */
   --measure-prose: 68ch;
 
+  /* One shell width for every row of the site, header and footer included. */
+  --measure-shell: 72rem;
+
   /* Copied unchanged from the compat layer, which computes this value rather than aliasing it. */
   --border-stronger: oklch(
     from var(--foreground) l calc(c * 0.5) h / calc(5% + 45% * var(--contrast-border))

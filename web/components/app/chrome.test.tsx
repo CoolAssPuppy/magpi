@@ -7,7 +7,7 @@ const route = { pathname: '/chat' };
 
 vi.mock('next/navigation', () => ({ usePathname: () => route.pathname }));
 
-const { Nav } = await import('./nav');
+const { Nav, SideNav } = await import('./nav');
 const { ErrorState } = await import('./error-state');
 const { PageHeader } = await import('./page-header');
 
@@ -46,6 +46,29 @@ describe('the section tabs', () => {
     render(<Nav items={SECTIONS} />);
 
     expect(screen.queryByRole('link', { current: 'page' })).not.toBeInTheDocument();
+  });
+});
+
+describe('the admin side nav', () => {
+  const ADMIN: readonly NavItem[] = [
+    { href: '/admin', label: 'Overview' },
+    { href: '/admin/searches', label: 'Searches' },
+    { href: '/admin/members', label: 'Members' },
+  ];
+
+  it('marks the deepest section the reader is in, not its parent as well', () => {
+    route.pathname = '/admin/members';
+    render(<SideNav items={ADMIN} label="Admin sections" />);
+
+    expect(screen.getByRole('link', { name: 'Members' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Overview' })).not.toHaveAttribute('aria-current');
+  });
+
+  it('marks the parent when the reader is on it', () => {
+    route.pathname = '/admin';
+    render(<SideNav items={ADMIN} label="Admin sections" />);
+
+    expect(screen.getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page');
   });
 });
 

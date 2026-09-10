@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { ShellRow } from '@/components/app/shell-row';
 import { FoldedMagpie } from '@/components/brand/magpie-mark';
 import { Button } from '@/components/ui/button';
 
@@ -12,21 +13,16 @@ const SOURCES = ['Notion', 'Linear', 'Slack', 'Google Drive', 'Direct upload'] a
 
 export default function LandingPage() {
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-20 px-5 py-16 md:py-24">
-      {/*
-        The bird sits beside the sentence rather than above it, so on a wide
-        screen the eye lands on the fold and reads across. It drops below on
-        narrow screens because a 660-wide drawing shrunk to phone width stops
-        being legible as paper.
-      */}
+    <ShellRow className="flex flex-col gap-20 py-16 md:py-24">
+      {/* Bird beside the headline on desktop, below it on mobile. */}
       <section className="flex flex-col-reverse items-center gap-12 md:flex-row md:items-center md:gap-16">
         <div className="max-w-[var(--measure-prose)] md:flex-1">
           <h1 className="font-heading text-4xl leading-[1.1] font-medium tracking-tight text-foreground md:text-5xl">
-            Ask your team&apos;s knowledge base a question.
+            Your team deserves better answers.
           </h1>
           <p className="mt-5 text-base text-muted-foreground">
-            Connect Notion, Linear, Slack and Google Drive. Ask a question, get an answer with
-            citations to the documents it came from.
+            Connect Notion, Linear, Slack and Google Drive. Search gives you raw pages. A digital
+            brain gives you answers and context.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Button asChild>
@@ -42,7 +38,9 @@ export default function LandingPage() {
       </section>
 
       <section className="flex flex-col gap-4">
-        <h2 className="font-heading text-lg font-medium text-foreground">Where it reads from</h2>
+        <h2 className="font-heading text-lg font-medium text-foreground">
+          Pull data and context from everywhere you already work
+        </h2>
         <ul className="flex flex-wrap gap-2">
           {SOURCES.map((source) => (
             <li
@@ -58,31 +56,29 @@ export default function LandingPage() {
       <section className="grid gap-10 md:grid-cols-3">
         <div>
           <h3 className="font-heading text-base font-medium text-foreground">
-            Every document lives in one space
+            Document access is controlled by spaces
           </h3>
           <p className="mt-2 text-sm text-tertiary-foreground">
-            Personal, team, or everyone. You choose the space when you add the document.
+            Create spaces with personal, team, or public scopes. Store your documents and
+            connections within spaces.
           </p>
         </div>
         <div>
           <h3 className="font-heading text-base font-medium text-foreground">
-            Answers cite their sources
+            Answers always tell you where they came from
           </h3>
           <p className="mt-2 text-sm text-tertiary-foreground">
-            Every citation resolves when you open the message. Lose access to a space and its quotes
-            stop appearing.
+            Get answers with full context and citations for how they were reasoned.
           </p>
         </div>
         <div>
-          <h3 className="font-heading text-base font-medium text-foreground">
-            Dreaming runs overnight
-          </h3>
+          <h3 className="font-heading text-base font-medium text-foreground">Dare to dream</h3>
           <p className="mt-2 text-sm text-tertiary-foreground">
-            A nightly pass re-reads the day, links documents covering the same thing, and writes a
-            digest into the space.
+            Digital brains run overnight to ingest your work from the day. Processing during dreams
+            helps build better answers.
           </p>
         </div>
       </section>
-    </div>
+    </ShellRow>
   );
 }

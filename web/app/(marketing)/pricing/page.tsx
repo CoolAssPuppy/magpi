@@ -1,3 +1,4 @@
+import { ShellRow } from '@/components/app/shell-row';
 import { PricingTable } from '@/components/billing/pricing-table';
 
 export const metadata = {
@@ -7,7 +8,7 @@ export const metadata = {
 
 export default function PricingPage() {
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-12 px-5 py-20">
+    <ShellRow className="flex flex-col gap-12 py-20">
       <section className="max-w-[var(--measure-prose)]">
         <h1 className="font-heading text-4xl leading-[1.1] font-medium tracking-tight text-foreground">
           Pay for the team, not the documents.
@@ -50,6 +51,6 @@ export default function PricingPage() {
           </div>
         </dl>
       </section>
-    </div>
+    </ShellRow>
   );
 }

@@ -2,14 +2,15 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 
+import { Breadcrumbs } from '@/components/app/breadcrumbs';
 import { Nav, type NavItem } from '@/components/app/nav';
-import { SignOutButton } from '@/components/auth/sign-out-button';
-import { CurrentUserAvatar } from '@/components/current-user-avatar';
+import { ShellRow } from '@/components/app/shell-row';
+import { UserMenu } from '@/components/app/user-menu';
+import { MagpieMark } from '@/components/brand/magpie-mark';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { getSessionContext } from '@/lib/supabase/context';
-import { MagpieMark } from '@/components/brand/magpie-mark';
 
-const BASE_ITEMS: readonly NavItem[] = [
+const SECTIONS: readonly NavItem[] = [
   { href: '/chat', label: 'Chat' },
   { href: '/spaces', label: 'Spaces' },
   { href: '/documents', label: 'Documents' },
@@ -17,41 +18,53 @@ const BASE_ITEMS: readonly NavItem[] = [
   { href: '/dreams', label: 'Dreams' },
 ];
 
-const ADMIN_ITEM: NavItem = { href: '/admin', label: 'Admin' };
-
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const context = await getSessionContext();
   if (!context) redirect('/sign-in');
 
-  const items =
-    context.role === 'owner' || context.role === 'admin' ? [...BASE_ITEMS, ADMIN_ITEM] : BASE_ITEMS;
+  const canAdminister = context.role === 'owner' || context.role === 'admin';
 
   return (
     <div className="flex min-h-svh flex-col">
-      <header className="flex items-center justify-between gap-4 border-b border-border px-5 py-3">
-        <Link
-          href="/chat"
-          className="flex items-center gap-2 font-heading text-base tracking-tight text-foreground"
-        >
-          <MagpieMark />
-          Magpi
-        </Link>
-
-        <div className="flex items-center gap-3">
-          <ThemeToggle />
-          <Link href="/settings" className="text-sm text-tertiary-foreground hover:text-foreground">
-            Settings
+      <header className="sticky top-0 z-[var(--z-sticky)] border-b border-border bg-background">
+        <ShellRow className="flex h-14 items-center gap-6">
+          <Link
+            href="/chat"
+            className="flex shrink-0 items-center gap-2 font-heading text-base tracking-tight text-foreground"
+          >
+            <MagpieMark />
+            Magpi
           </Link>
-          <SignOutButton />
-          <CurrentUserAvatar />
+
+          <div className="min-w-0 flex-1 overflow-x-auto">
+            <Nav items={SECTIONS} />
+          </div>
+
+          <UserMenu email={context.email} canAdminister={canAdminister} />
+        </ShellRow>
+
+        <div className="border-t border-border">
+          <ShellRow>
+            <Breadcrumbs />
+          </ShellRow>
         </div>
       </header>
 
-      <div className="px-5">
-        <Nav items={items} />
-      </div>
+      <main className="flex-1">
+        <ShellRow className="flex flex-col gap-6 py-6">{children}</ShellRow>
+      </main>
 
-      <main className="flex flex-1 flex-col gap-6 px-5 py-6">{children}</main>
+      <footer className="border-t border-border">
+        <ShellRow className="flex items-center justify-between gap-4 py-4 text-xs text-tertiary-foreground">
+          <Link
+            href="https://github.com/supabase-community/magpi"
+            className="transition-colors hover:text-foreground motion-reduce:transition-none"
+          >
+            Source
+          </Link>
+          <ThemeToggle />
+        </ShellRow>
+      </footer>
     </div>
   );
 }

@@ -2,12 +2,13 @@ import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 
 import { ErrorState } from '@/components/app/error-state';
-import { Nav, type NavItem } from '@/components/app/nav';
+import { SideNav, type NavItem } from '@/components/app/nav';
 import { PageHeader } from '@/components/app/page-header';
 import { resolveAdminAccess } from '@/lib/analytics/access';
 
-const ADMIN_TABS: readonly NavItem[] = [
+const ADMIN_SECTIONS: readonly NavItem[] = [
   { href: '/admin', label: 'Overview' },
+  { href: '/admin/searches', label: 'Searches' },
   { href: '/admin/members', label: 'Members' },
   { href: '/admin/billing', label: 'Billing' },
 ];
@@ -35,8 +36,14 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         title="Admin"
         description="Whether the brain is working, who is in the organization, and what it costs."
       />
-      <Nav items={ADMIN_TABS} />
-      {children}
+
+      <div className="flex flex-col gap-6 md:flex-row md:gap-8">
+        <aside className="md:w-44 md:shrink-0">
+          <SideNav items={ADMIN_SECTIONS} label="Admin sections" />
+        </aside>
+
+        <div className="min-w-0 flex-1">{children}</div>
+      </div>
     </>
   );
 }
