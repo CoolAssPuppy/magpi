@@ -80,16 +80,16 @@
 :root:not([data-theme='light']) {
   @media (prefers-color-scheme: dark) {
     --paper-body: #f7f6f2;
-    --paper-body-shade: #c6c9ce;
-    --paper-body-mid: #e2e4e7;
+    --paper-body-mid: #ddddd6;
+    --paper-body-shade: #bdbfc4;
     --paper-wing: #ffffff;
     --paper-head: #efede7;
-    --paper-head-shade: #e4e1d9;
+    --paper-head-shade: #d6d3ca;
     --paper-tail: #33383f;
     --paper-tail-dark: #15181c;
-    --paper-underwing: #e4e1d9;
-    --paper-underwing-dark: #efede7;
-    --paper-crease: #f7f6f2;
+    --paper-underwing: #cdc9c0;
+    --paper-underwing-dark: #b1ada4;
+    --paper-crease: #c9c5bc;
     --paper-sheen: #0fbfa8;
     --paper-sheen-quiet: #2ed3bc;
   }
@@ -98,16 +98,16 @@
 [data-theme='dark'],
 [data-theme='classic-dark'] {
   --paper-body: #f7f6f2;
-  --paper-body-shade: #c6c9ce;
-  --paper-body-mid: #e2e4e7;
+  --paper-body-mid: #ddddd6;
+  --paper-body-shade: #bdbfc4;
   --paper-wing: #ffffff;
   --paper-head: #efede7;
-  --paper-head-shade: #e4e1d9;
+  --paper-head-shade: #d6d3ca;
   --paper-tail: #33383f;
   --paper-tail-dark: #15181c;
-  --paper-underwing: #e4e1d9;
-  --paper-underwing-dark: #efede7;
-  --paper-crease: #f7f6f2;
+  --paper-underwing: #cdc9c0;
+  --paper-underwing-dark: #b1ada4;
+  --paper-crease: #c9c5bc;
   --paper-sheen: #0fbfa8;
   --paper-sheen-quiet: #2ed3bc;
 }
