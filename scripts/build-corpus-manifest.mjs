@@ -62,7 +62,8 @@ const titleOf = (body, slug) => {
 const LAST_DAY = '2026-09-09';
 
 /** Rows and lines that state when a document was last touched. */
-const STAMP = /^\|?\s*(?:Updated|Last edited|Created|Signed|Date issued)\s*\|?\s*(\d{4}-\d{2}-\d{2})/gim;
+const STAMP =
+  /^\|?\s*(?:Updated|Last edited|Created|Signed|Date issued)\s*\|?\s*(\d{4}-\d{2}-\d{2})/gim;
 
 /** A date alone on a line near the top, which is how the Drive exports carry their byline. */
 const BYLINE = /^(\d{4}-\d{2}-\d{2})\s*$/m;
@@ -77,10 +78,9 @@ const updatedAtOf = (body, name) => {
   const byline = BYLINE.exec(body.split('\n').slice(0, 10).join('\n'));
   const mentioned = [...body.matchAll(/(\d{4}-\d{2}-\d{2})/g)].map((match) => match[1]).sort();
 
-  const edited =
-    fromName?.[1] ?? stamps.at(-1) ?? byline?.[1] ?? mentioned.at(-1) ?? '2026-09-01';
+  const edited = fromName?.[1] ?? stamps.at(-1) ?? byline?.[1] ?? mentioned.at(-1) ?? '2026-09-01';
 
-  return `${(edited > LAST_DAY ? LAST_DAY : edited)}T09:00:00.000Z`;
+  return `${edited > LAST_DAY ? LAST_DAY : edited}T09:00:00.000Z`;
 };
 
 function main() {
