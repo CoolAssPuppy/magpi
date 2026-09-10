@@ -195,6 +195,7 @@ export type Database = {
           connection_id: string | null
           content_hash: string | null
           created_at: string
+          created_by: string | null
           dream_run_id: string | null
           external_id: string | null
           id: string
@@ -216,6 +217,7 @@ export type Database = {
           connection_id?: string | null
           content_hash?: string | null
           created_at?: string
+          created_by?: string | null
           dream_run_id?: string | null
           external_id?: string | null
           id?: string
@@ -237,6 +239,7 @@ export type Database = {
           connection_id?: string | null
           content_hash?: string | null
           created_at?: string
+          created_by?: string | null
           dream_run_id?: string | null
           external_id?: string | null
           id?: string

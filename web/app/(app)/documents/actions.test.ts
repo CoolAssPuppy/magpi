@@ -6,6 +6,7 @@ import type { SessionContext } from '@/lib/supabase/context';
 const ORG_ID = '11111111-1111-4111-8111-111111111111';
 const SPACE_ID = '33333333-3333-4333-8333-333333333333';
 const DOCUMENT_ID = '55555555-5555-4555-8555-555555555555';
+const USER_ID = '77777777-7777-4777-8777-777777777777';
 
 type Write = { table: string; operation: string; values?: unknown; match?: unknown };
 type Read = { table: string; columns: string; match?: unknown };
@@ -56,7 +57,7 @@ vi.mock('@/lib/actions/with-session', () => ({
     revalidate: string,
   ): Promise<ActionState<T>> => {
     const result = await run({
-      userId: '77777777-7777-4777-8777-777777777777',
+      userId: USER_ID,
       email: 'reader@example.com',
       orgId: ORG_ID,
       role: 'member',
@@ -208,6 +209,7 @@ describe('recording an uploaded file as a document', () => {
       mime_type: 'application/pdf',
       storage_path: `${SPACE_ID}/q3.pdf`,
       origin: 'upload',
+      created_by: USER_ID,
     });
   });
 

@@ -259,7 +259,8 @@ one line for line, so the transport is spelled out.
   `ingest_jobs(status, stage, error)`, type
   `Database['public']['Tables']['documents']['Row']`. Ingest status text comes
   from `describeIngest` in `web/lib/documents/documents.ts` and native
-  reimplements the same five cases.
+  reimplements the same five cases. `documents.created_by` is the person who
+  uploaded it, and is null for a sync or a dream, which no person uploaded.
 - **Loading.** Upload panel skeleton plus a list skeleton.
 - **Empty.** The other screen most new users see first. It names the two ways
   content arrives: upload a file, or connect a source.

@@ -25,7 +25,7 @@ const enqueueSchema = z.object({
 export async function enqueueUploadedDocument(
   input: z.input<typeof enqueueSchema>,
 ): Promise<ActionState<{ documentId: string }>> {
-  return withSession(async ({ supabase, orgId }) => {
+  return withSession(async ({ supabase, orgId, userId }) => {
     const parsed = enqueueSchema.safeParse(input);
     if (!parsed.success) return errorState('That upload could not be recorded.');
 
@@ -61,6 +61,7 @@ export async function enqueueUploadedDocument(
         mime_type: mimeType,
         storage_path: storagePathFor(spaceId, objectName),
         origin: 'upload',
+        created_by: userId,
       })
       .select('id')
       .single();

@@ -21,7 +21,9 @@ create table public.documents (
   retrieval_count bigint not null default 0,
   size_bytes bigint,
   -- The chunks a dream document cites. Not null with a default, so empty and null stay distinct.
-  source_chunk_ids uuid[] not null default '{}'
+  source_chunk_ids uuid[] not null default '{}',
+  -- Who added it. Null for a sync or a dream, which no person uploaded.
+  created_by uuid references auth.users (id) on delete set null
 );
 
 -- Incremental sync looks a document up by its source identity on every pass.

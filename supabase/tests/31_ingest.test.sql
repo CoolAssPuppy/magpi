@@ -4,7 +4,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(8);
+select plan(10);
 
 insert into auth.users (id, email, instance_id, aud, role)
 values ('a0000000-0000-4000-8000-000000000001', 'alice@magpi.test',
@@ -19,10 +19,11 @@ insert into public.space_members (space_id, user_id, created_at)
 values ('50000000-0000-4000-8000-00000000000a', 'a0000000-0000-4000-8000-000000000001',
         '2026-01-02 00:00:00+00');
 
-insert into public.documents (id, org_id, space_id, title, origin, created_at, updated_at)
+insert into public.documents (id, org_id, space_id, title, origin, created_by, created_at, updated_at)
 values ('51000000-0000-4000-8000-00000000000a',
         (select org_id from public.spaces where id = '50000000-0000-4000-8000-00000000000a'),
         '50000000-0000-4000-8000-00000000000a', 'A large PDF', 'upload',
+        'a0000000-0000-4000-8000-000000000001',
         '2026-01-03 00:00:00+00', '2026-01-03 00:00:00+00');
 
 insert into public.ingest_jobs (id, org_id, space_id, document_id, stage, status,
@@ -114,6 +115,21 @@ select is(
   (select attempts from public.ingest_jobs
    where id = '58000000-0000-4000-8000-00000000001a'),
   2, 'and that claim, unlike the reclaim, does count an attempt'
+);
+
+-- Who uploaded a document, and what happens to the document when they leave.
+select is(
+  (select created_by from public.documents where id = '51000000-0000-4000-8000-00000000000a'),
+  'a0000000-0000-4000-8000-000000000001'::uuid,
+  'an uploaded document records who added it'
+);
+
+-- 'n' is SET NULL. A departing employee must not take the company's documents with them.
+select is(
+  (select confdeltype::text from pg_constraint
+   where conname = 'documents_created_by_fkey'),
+  'n',
+  'and deleting that person clears the name rather than the document'
 );
 
 select * from finish();
