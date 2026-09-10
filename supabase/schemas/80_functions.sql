@@ -605,6 +605,10 @@ $$;
 
 revoke all on function public.touch_updated_at() from public, anon, authenticated;
 
+create or replace trigger conversation_folders_touch_updated_at
+  before update on public.conversation_folders
+  for each row execute function public.touch_updated_at();
+
 create or replace trigger connections_touch_updated_at
   before update on public.connections
   for each row execute function public.touch_updated_at();

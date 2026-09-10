@@ -21,7 +21,9 @@ create table public.org_members (
   primary key (org_id, user_id)
 );
 
-create index org_members_user_id_idx on public.org_members (user_id);
+-- An address has one account and that account has one organization, so membership is unique on
+-- the user alone. Everything that files a row by organization can then read it off the person.
+create unique index org_members_user_id_idx on public.org_members (user_id);
 
 create table public.org_invites (
   id uuid primary key default gen_random_uuid(),

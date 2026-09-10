@@ -103,24 +103,41 @@ or tapped a citation.
 - **Data contract.** `conversations` filtered to `user_id = auth.uid()`, type
   `Database['public']['Tables']['conversations']['Row']`. History paginates
   through the `infinite-query-hook` block on web; native pages with a cursor on
-  `created_at`.
+  `created_at`. Folders come from `conversation_folders`, type
+  `Database['public']['Tables']['conversation_folders']['Row']`, ordered by
+  `position` then `name`. A conversation's `folder_id` is null when it sits at
+  the top level, which is a destination rather than a missing value. Colours are
+  the `folder_color` enum and resolve through `lib/chat/folder-colors.ts`, so a
+  client stores the name and never a value.
 - **Loading.** Three skeleton rows in the history list, composer disabled.
 - **Empty.** The primary screen for a new user. Title, one sentence on what
   Magpi does, and two actions: upload a document, connect a source. It does
   not apologize for being empty.
 - **Error.** The error text from the failed query, plus a retry.
-- **Content.** The composer, the space filter, and the conversation list.
+- **Content.** The composer, the space filter, and the conversation list grouped
+  into folders. Each folder shows its colour as a dot and its name, then its
+  conversations, and unfiled conversations sit above or below the folders as one
+  ungrouped list. A folder with no conversations still shows, because somebody
+  made it deliberately. Deleting a folder keeps its conversations and moves them
+  to the top level.
 - **Navigation.** Tab 1. Root of its own stack.
 - **Components.** Web uses `components/chat/*` over the Library
   `realtime-chat-nextjs` block, adapted for assistant turns. iOS is a
   `List` in a `NavigationStack`. Android is a `LazyColumn` in a `Scaffold`.
+  A folder row carries a menu matching the conversation menu: rename, which also
+  changes the colour, and delete. iOS uses a `Section` per folder with a `Menu`,
+  Android a sticky header per folder with a `DropdownMenu`.
 - **Proposed string keys.** `chat.empty.title`, `chat.empty.body`, `chat.empty.upload`,
-  `chat.empty.connect`, `chat.composer.placeholder`, `chat.filter.allSpaces`.
+  `chat.empty.connect`, `chat.composer.placeholder`, `chat.filter.allSpaces`,
+  `chat.folder.new`, `chat.folder.rename`, `chat.folder.delete`,
+  `chat.folder.deleteKeepsChats`, `chat.folder.none`, `chat.folder.move`,
+  `chat.folder.nameTaken`.
 - **Permissions.** None.
 - **Offline and refresh.** Conversation list is cached and readable offline.
   The composer is disabled with an offline notice. Pull-to-refresh refetches
   the list.
-- **Proposed analytics events.** `chat_opened`, `conversation_created`.
+- **Proposed analytics events.** `chat_opened`, `conversation_created`,
+  `folder_created`, `folder_renamed`, `folder_deleted`, `conversation_moved`.
 
 ### Chat conversation
 

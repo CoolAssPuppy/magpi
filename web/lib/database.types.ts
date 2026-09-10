@@ -83,7 +83,6 @@ export type Database = {
           refresh_token_enc: string | null
           scope_selection: Json
           scopes: string[]
-          space_id: string
           status: Database["public"]["Enums"]["connection_status"]
           status_detail: string | null
           token_expires_at: string | null
@@ -102,7 +101,6 @@ export type Database = {
           refresh_token_enc?: string | null
           scope_selection?: Json
           scopes?: string[]
-          space_id: string
           status?: Database["public"]["Enums"]["connection_status"]
           status_detail?: string | null
           token_expires_at?: string | null
@@ -121,7 +119,6 @@ export type Database = {
           refresh_token_enc?: string | null
           scope_selection?: Json
           scopes?: string[]
-          space_id?: string
           status?: Database["public"]["Enums"]["connection_status"]
           status_detail?: string | null
           token_expires_at?: string | null
@@ -143,18 +140,53 @@ export type Database = {
             referencedRelation: "providers"
             referencedColumns: ["slug"]
           },
+        ]
+      }
+      conversation_folders: {
+        Row: {
+          color: Database["public"]["Enums"]["folder_color"]
+          created_at: string
+          id: string
+          name: string
+          org_id: string
+          position: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: Database["public"]["Enums"]["folder_color"]
+          created_at?: string
+          id?: string
+          name: string
+          org_id: string
+          position?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: Database["public"]["Enums"]["folder_color"]
+          created_at?: string
+          id?: string
+          name?: string
+          org_id?: string
+          position?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
           {
-            foreignKeyName: "connections_space_in_org"
-            columns: ["space_id", "org_id"]
+            foreignKeyName: "conversation_folders_org_id_fkey"
+            columns: ["org_id"]
             isOneToOne: false
-            referencedRelation: "spaces"
-            referencedColumns: ["id", "org_id"]
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
           },
         ]
       }
       conversations: {
         Row: {
           created_at: string
+          folder_id: string | null
           id: string
           org_id: string
           space_filter: string[] | null
@@ -164,6 +196,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          folder_id?: string | null
           id?: string
           org_id: string
           space_filter?: string[] | null
@@ -173,6 +206,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          folder_id?: string | null
           id?: string
           org_id?: string
           space_filter?: string[] | null
@@ -181,6 +215,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "conversations_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_folders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "conversations_org_id_fkey"
             columns: ["org_id"]
@@ -699,7 +740,6 @@ export type Database = {
           expires_at: string
           provider: string
           return_to: string | null
-          space_id: string
           state: string
           user_id: string
         }
@@ -709,7 +749,6 @@ export type Database = {
           expires_at: string
           provider: string
           return_to?: string | null
-          space_id: string
           state: string
           user_id: string
         }
@@ -719,7 +758,6 @@ export type Database = {
           expires_at?: string
           provider?: string
           return_to?: string | null
-          space_id?: string
           state?: string
           user_id?: string
         }
@@ -730,13 +768,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "providers"
             referencedColumns: ["slug"]
-          },
-          {
-            foreignKeyName: "oauth_states_space_id_fkey"
-            columns: ["space_id"]
-            isOneToOne: false
-            referencedRelation: "spaces"
-            referencedColumns: ["id"]
           },
         ]
       }
@@ -856,7 +887,6 @@ export type Database = {
           refresh_token_enc: string | null
           return_to: string | null
           scopes: string[]
-          space_id: string
           ticket_hash: string
           token_expires_at: string | null
           user_id: string
@@ -870,7 +900,6 @@ export type Database = {
           refresh_token_enc?: string | null
           return_to?: string | null
           scopes?: string[]
-          space_id: string
           ticket_hash: string
           token_expires_at?: string | null
           user_id: string
@@ -884,7 +913,6 @@ export type Database = {
           refresh_token_enc?: string | null
           return_to?: string | null
           scopes?: string[]
-          space_id?: string
           ticket_hash?: string
           token_expires_at?: string | null
           user_id?: string
@@ -896,13 +924,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "providers"
             referencedColumns: ["slug"]
-          },
-          {
-            foreignKeyName: "pending_connections_space_id_fkey"
-            columns: ["space_id"]
-            isOneToOne: false
-            referencedRelation: "spaces"
-            referencedColumns: ["id"]
           },
         ]
       }
@@ -995,6 +1016,7 @@ export type Database = {
       spaces: {
         Row: {
           created_at: string
+          description: string | null
           dreaming_enabled: boolean
           id: string
           kind: Database["public"]["Enums"]["space_kind"]
@@ -1004,6 +1026,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          description?: string | null
           dreaming_enabled?: boolean
           id?: string
           kind: Database["public"]["Enums"]["space_kind"]
@@ -1013,6 +1036,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          description?: string | null
           dreaming_enabled?: boolean
           id?: string
           kind?: Database["public"]["Enums"]["space_kind"]
@@ -1132,7 +1156,6 @@ export type Database = {
           code_verifier: string
           provider: string
           return_to: string
-          space_id: string
           user_id: string
         }[]
       }
@@ -1145,7 +1168,6 @@ export type Database = {
           refresh_token_enc: string
           return_to: string
           scopes: string[]
-          space_id: string
           token_expires_at: string
           user_id: string
         }[]
@@ -1159,7 +1181,7 @@ export type Database = {
         }[]
       }
       create_team_space: {
-        Args: { p_name: string; p_org_id: string }
+        Args: { p_description?: string; p_name: string; p_org_id: string }
         Returns: string
       }
       invoke_worker: {
@@ -1199,6 +1221,10 @@ export type Database = {
         Args: { p_document_ids: string[] }
         Returns: undefined
       }
+      routes_into_visible_space: {
+        Args: { p_scope_selection: Json }
+        Returns: boolean
+      }
       schedule_workers: { Args: never; Returns: undefined }
       search: {
         Args: {
@@ -1223,6 +1249,17 @@ export type Database = {
       dream_kind: "entities" | "digest" | "connections"
       dream_status: "queued" | "running" | "succeeded" | "failed" | "timeout"
       entity_kind: "person" | "project" | "customer" | "decision"
+      folder_color:
+        | "gray"
+        | "brand"
+        | "blue"
+        | "indigo"
+        | "purple"
+        | "pink"
+        | "crimson"
+        | "orange"
+        | "amber"
+        | "green"
       ingest_stage: "fetch" | "extract" | "chunk" | "embed" | "store"
       ingest_status: "queued" | "running" | "succeeded" | "failed" | "timeout"
       message_role: "user" | "assistant"
@@ -1369,6 +1406,18 @@ export const Constants = {
       dream_kind: ["entities", "digest", "connections"],
       dream_status: ["queued", "running", "succeeded", "failed", "timeout"],
       entity_kind: ["person", "project", "customer", "decision"],
+      folder_color: [
+        "gray",
+        "brand",
+        "blue",
+        "indigo",
+        "purple",
+        "pink",
+        "crimson",
+        "orange",
+        "amber",
+        "green",
+      ],
       ingest_stage: ["fetch", "extract", "chunk", "embed", "store"],
       ingest_status: ["queued", "running", "succeeded", "failed", "timeout"],
       message_role: ["user", "assistant"],

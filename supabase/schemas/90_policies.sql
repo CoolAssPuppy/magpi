@@ -141,6 +141,23 @@ create policy ingest_jobs_select_visible on public.ingest_jobs
 
 -- Conversations ------------------------------------------------------------
 
+create policy conversation_folders_select_own on public.conversation_folders
+  for select to authenticated
+  using (user_id = (select auth.uid()));
+
+create policy conversation_folders_insert_own on public.conversation_folders
+  for insert to authenticated
+  with check (user_id = (select auth.uid()) and public.is_org_member(org_id));
+
+create policy conversation_folders_update_own on public.conversation_folders
+  for update to authenticated
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
+
+create policy conversation_folders_delete_own on public.conversation_folders
+  for delete to authenticated
+  using (user_id = (select auth.uid()));
+
 create policy conversations_select_own on public.conversations
   for select to authenticated
   using (user_id = (select auth.uid()));

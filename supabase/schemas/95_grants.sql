@@ -35,6 +35,7 @@ grant select on public.dream_links to authenticated;
 grant update (confirmed_at, dismissed_at) on public.dream_links to authenticated;
 grant select on public.ingest_jobs to authenticated;
 
+grant select, insert, update, delete on public.conversation_folders to authenticated;
 grant select, insert, update, delete on public.conversations to authenticated;
 grant select, insert on public.messages to authenticated;
 
@@ -56,6 +57,7 @@ grant select, insert, update, delete on public.entity_mentions to service_role;
 grant select, insert, update, delete on public.dream_runs to service_role;
 grant select, insert, update, delete on public.dream_links to service_role;
 grant select, insert, update, delete on public.ingest_jobs to service_role;
+grant select, insert, update, delete on public.conversation_folders to service_role;
 grant select, insert, update, delete on public.conversations to service_role;
 grant select, insert, update, delete on public.messages to service_role;
 grant select, insert, update, delete on public.usage_events to service_role;

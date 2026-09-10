@@ -1,16 +1,51 @@
 create type public.message_role as enum ('user', 'assistant');
 
+-- The colours a folder may take. Names, not values: the value lives in the token file, so a
+-- folder keeps its meaning when the theme changes and the raw-color check stays satisfied.
+create type public.folder_color as enum (
+  'gray', 'brand', 'blue', 'indigo', 'purple', 'pink', 'crimson', 'orange', 'amber', 'green'
+);
+
+-- A person's own filing for their own chats. Never shared, because a conversation is not either.
+create table public.conversation_folders (
+  id uuid primary key default gen_random_uuid(),
+  org_id uuid not null references public.organizations (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  name text not null,
+  color public.folder_color not null default 'gray',
+  -- Where it sits in the sidebar. Ties break on name, so the order is never arbitrary.
+  position integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint conversation_folders_name_not_blank check (btrim(name) <> ''),
+  constraint conversation_folders_name_length check (char_length(name) <= 60)
+);
+
+create unique index conversation_folders_user_name_idx
+  on public.conversation_folders (user_id, lower(btrim(name)));
+
+create index conversation_folders_user_position_idx
+  on public.conversation_folders (user_id, position, name);
+
+alter table public.conversation_folders enable row level security;
+alter table public.conversation_folders force row level security;
+
 create table public.conversations (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references public.organizations (id) on delete cascade,
   user_id uuid not null references auth.users (id) on delete cascade,
   space_filter uuid[],
+  -- Null is the top level of the sidebar, not an error. Deleting a folder unfiles its chats.
+  folder_id uuid references public.conversation_folders (id) on delete set null,
   title text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 create index conversations_user_created_idx on public.conversations (user_id, created_at desc);
+
+create index conversations_folder_idx on public.conversations (folder_id, updated_at desc)
+  where folder_id is not null;
 
 create table public.messages (
   id uuid primary key default gen_random_uuid(),

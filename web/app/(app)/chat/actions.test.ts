@@ -10,7 +10,7 @@ type Write = { table: string; operation: string; values?: unknown; match?: unkno
 
 const dbState = {
   writes: [] as Write[],
-  error: null as { message: string } | null,
+  error: null as { message: string; code?: string } | null,
   signedIn: true,
   revalidated: [] as string[],
 };
@@ -64,8 +64,15 @@ vi.mock('@/lib/actions/with-session', () => ({
   },
 }));
 
-const { createConversationAction, deleteConversationAction, renameConversationAction } =
-  await import('./actions');
+const {
+  createConversationAction,
+  createFolderAction,
+  deleteConversationAction,
+  deleteFolderAction,
+  moveConversationAction,
+  renameConversationAction,
+  renameFolderAction,
+} = await import('./actions');
 
 beforeEach(() => {
   dbState.writes = [];
@@ -183,5 +190,133 @@ describe('deleteConversationAction', () => {
 
     expect(state.status).toBe('error');
     expect(dbState.writes).toEqual([]);
+  });
+});
+
+const FOLDER_ID = '55555555-5555-4555-8555-555555555555';
+const USER_ID = '77777777-7777-4777-8777-777777777777';
+
+describe('createFolderAction', () => {
+  it('files a folder against the caller and their organization', async () => {
+    const state = await createFolderAction({ name: 'Launch', color: 'crimson' });
+
+    expect(state.status).toBe('success');
+    expect(dbState.writes[0]).toEqual({
+      table: 'conversation_folders',
+      operation: 'insert',
+      values: { org_id: 'org-1', user_id: USER_ID, name: 'Launch', color: 'crimson' },
+    });
+  });
+
+  it('trims the name rather than storing the spaces somebody typed', async () => {
+    await createFolderAction({ name: '  Launch  ', color: 'gray' });
+
+    expect((dbState.writes[0].values as { name: string }).name).toBe('Launch');
+  });
+
+  it('refuses a colour outside the ones a folder may take', async () => {
+    const state = await createFolderAction({
+      name: 'Launch',
+      color: 'chartreuse' as never,
+    });
+
+    expect(state).toEqual({ status: 'error', message: 'That folder could not be changed.' });
+    expect(dbState.writes).toHaveLength(0);
+  });
+
+  it('refuses a blank name without asking the database', async () => {
+    const state = await createFolderAction({ name: '   ', color: 'gray' });
+
+    expect(state.status).toBe('error');
+    expect(dbState.writes).toHaveLength(0);
+  });
+
+  it('says the name is taken rather than reporting a database fault', async () => {
+    dbState.error = { message: 'duplicate key value', code: '23505' };
+
+    const state = await createFolderAction({ name: 'Launch', color: 'gray' });
+
+    expect(state).toEqual({
+      status: 'error',
+      message: 'You already have a folder with that name.',
+    });
+  });
+});
+
+describe('renameFolderAction', () => {
+  it('writes the new name and the new colour together', async () => {
+    const state = await renameFolderAction({
+      folderId: FOLDER_ID,
+      name: 'Shipped',
+      color: 'green',
+    });
+
+    expect(state).toEqual({ status: 'success', data: 'Shipped' });
+    expect(dbState.writes[0]).toEqual({
+      table: 'conversation_folders',
+      operation: 'update',
+      values: { name: 'Shipped', color: 'green' },
+      match: ['id', FOLDER_ID],
+    });
+  });
+
+  it('says the name is taken rather than reporting a database fault', async () => {
+    dbState.error = { message: 'duplicate key value', code: '23505' };
+
+    const state = await renameFolderAction({ folderId: FOLDER_ID, name: 'Launch', color: 'gray' });
+
+    expect(state).toEqual({
+      status: 'error',
+      message: 'You already have a folder with that name.',
+    });
+  });
+});
+
+describe('deleteFolderAction', () => {
+  it('deletes the folder and nothing else, so the conversations survive', async () => {
+    const state = await deleteFolderAction({ folderId: FOLDER_ID });
+
+    expect(state).toEqual({ status: 'success', data: FOLDER_ID });
+    expect(dbState.writes).toEqual([
+      { table: 'conversation_folders', operation: 'delete', match: ['id', FOLDER_ID] },
+    ]);
+  });
+});
+
+describe('moveConversationAction', () => {
+  it('files a conversation into a folder', async () => {
+    const state = await moveConversationAction({
+      conversationId: CONVERSATION_ID,
+      folderId: FOLDER_ID,
+    });
+
+    expect(state).toEqual({ status: 'success', data: FOLDER_ID });
+    expect(dbState.writes[0]).toEqual({
+      table: 'conversations',
+      operation: 'update',
+      values: { folder_id: FOLDER_ID },
+      match: ['id', CONVERSATION_ID],
+    });
+  });
+
+  // The top level is a destination, so null is a move and not a rejected input.
+  it('moves a conversation back to the top level', async () => {
+    const state = await moveConversationAction({
+      conversationId: CONVERSATION_ID,
+      folderId: null,
+    });
+
+    expect(state).toEqual({ status: 'success', data: null });
+    expect((dbState.writes[0].values as { folder_id: string | null }).folder_id).toBeNull();
+  });
+
+  it('refuses a folder id that is not an id', async () => {
+    const state = await moveConversationAction({
+      conversationId: CONVERSATION_ID,
+      folderId: 'launch',
+    });
+
+    expect(state.status).toBe('error');
+    expect(dbState.writes).toHaveLength(0);
   });
 });

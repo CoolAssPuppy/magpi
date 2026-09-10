@@ -31,6 +31,7 @@ const getRow = (id: string, overrides: Partial<ConversationRow> = {}): Conversat
   title: id,
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-01T00:00:00Z',
+  folder_id: null,
   org_id: 'org-1',
   user_id: 'user-1',
   space_filter: null,

@@ -55,13 +55,11 @@ export async function requireOrgMembership(
   db: SupabaseClient,
   userId: string,
 ): Promise<{ orgId: string }> {
+  // One organization per user, enforced by org_members_user_id_idx, so there is nothing to choose.
   const { data, error } = await db
     .from('org_members')
     .select('org_id')
     .eq('user_id', userId)
-    .order('created_at', { ascending: true })
-    .order('org_id', { ascending: true })
-    .limit(1)
     .maybeSingle<{ org_id: string }>();
 
   if (error) throw new ApiError(500, 'internal', 'org lookup failed');
