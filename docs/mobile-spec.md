@@ -440,7 +440,7 @@ one line for line, so the transport is spelled out.
 - **Empty.** An organization with no traffic yet says which number will appear
   first.
 - **Error.** Query error text plus retry.
-- **Content.** Ingest health, dead content, usage against plan.
+- **Content.** Ingest health and dead content.
 - **Navigation.** Tab 6, present only for owners and admins. Web shows the admin
   sections in a side nav rather than a tab strip.
 - **Components.** Web `components/admin/*` and `components/charts/*` following
@@ -495,6 +495,32 @@ one line for line, so the transport is spelled out.
 - **Permissions.** None.
 - **Offline and refresh.** Cached. Inviting requires a network.
 - **Proposed analytics events.** `member_invited`, `member_removed`.
+
+### Admin consumption
+
+- **Screen name.** Consumption
+- **Web route.** `/admin/consumption`
+- **Deep link.** `magpi://admin/consumption`
+- **Data contract.** `usage_events` summed through `org_usage_totals`, plus
+  `organizations.plan`, read through the caller's own client rather than the
+  elevated one, because a plan meter is the caller's own organization by
+  definition.
+- **Loading.** Meter skeletons that hold their final height.
+- **Empty.** An organization that has used nothing shows zeroes against its
+  limits rather than an empty state, because zero of a limit is the answer.
+- **Error.** Query error text plus retry.
+- **Content.** Documents ingested, questions this month, seats used and storage,
+  each against the plan limit, with a link to billing.
+- **Navigation.** Under Admin, directly above Billing, present only for owners
+  and admins.
+- **Components.** Web `components/admin/plan-usage.tsx` and
+  `components/charts/meter.tsx`. iOS `Gauge`. Android `LinearProgressIndicator`.
+- **Proposed string keys.** `admin.usage.title`, `admin.usage.documents`,
+  `admin.usage.queries`, `admin.usage.seats`, `admin.usage.storage`.
+- **Permissions.** None.
+- **Offline and refresh.** Last fetched values are cached with their timestamp
+  shown, so a stale number is never presented as live.
+- **Proposed analytics events.** `admin_consumption_opened`.
 
 ### Admin billing
 

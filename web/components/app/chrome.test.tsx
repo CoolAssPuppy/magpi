@@ -54,6 +54,7 @@ describe('the admin side nav', () => {
     { href: '/admin', label: 'Overview' },
     { href: '/admin/searches', label: 'Searches' },
     { href: '/admin/members', label: 'Members' },
+    { href: '/admin/consumption', label: 'Consumption' },
   ];
 
   it('marks the deepest section the reader is in, not its parent as well', () => {

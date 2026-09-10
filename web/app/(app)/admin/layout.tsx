@@ -10,6 +10,7 @@ const ADMIN_SECTIONS: readonly NavItem[] = [
   { href: '/admin', label: 'Overview' },
   { href: '/admin/searches', label: 'Searches' },
   { href: '/admin/members', label: 'Members' },
+  { href: '/admin/consumption', label: 'Consumption' },
   { href: '/admin/billing', label: 'Billing' },
 ];
 

@@ -50,10 +50,7 @@ export default async function BillingPage({
         </p>
       ) : null}
 
-      <Panel
-        title="Plan"
-        description="Stripe is the source of truth. Magpi stores the plan, the seat count and two Stripe ids, and nothing else."
-      >
+      <Panel title="Plan" description="Choose your usage level">
         <PlanCard
           state={{
             plan: organization.plan,

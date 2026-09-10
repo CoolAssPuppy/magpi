@@ -4,14 +4,8 @@ import { DeadContent } from '@/components/admin/dead-content';
 import { IngestHealth } from '@/components/admin/ingest-health';
 import { Panel } from '@/components/admin/panel';
 import { PanelSkeleton } from '@/components/admin/panel-skeleton';
-import { PlanUsage } from '@/components/admin/plan-usage';
 import { resolveAdminAccess } from '@/lib/analytics/access';
-import {
-  fetchDeadContent,
-  fetchIngestHealth,
-  fetchPlanUsage,
-  type AnalyticsClient,
-} from '@/lib/analytics/queries';
+import { fetchDeadContent, fetchIngestHealth, type AnalyticsClient } from '@/lib/analytics/queries';
 
 const DEAD_CONTENT_SAMPLE = 8;
 
@@ -31,10 +25,6 @@ async function DeadContentPanel({ client, orgId, now }: PanelProps) {
   return <DeadContent content={content} now={now} />;
 }
 
-async function PlanUsagePanel({ client, orgId, now }: PanelProps) {
-  return <PlanUsage usage={await fetchPlanUsage(client, orgId, { now })} />;
-}
-
 export default async function AdminOverviewPage() {
   const access = await resolveAdminAccess();
   if (access.kind !== 'granted') return null;
@@ -42,9 +32,7 @@ export default async function AdminOverviewPage() {
   const now = new Date();
   const orgId = access.context.orgId;
 
-  // Org-wide panels read through the elevated client; plan usage stays on the caller's own.
   const wide = { client: access.elevated, orgId, now };
-  const own = { client: access.context.supabase, orgId, now };
 
   return (
     <div className="flex flex-col gap-8">
@@ -64,12 +52,6 @@ export default async function AdminOverviewPage() {
       <Panel title="Dead content" description="Documents no answer has ever cited.">
         <Suspense fallback={<PanelSkeleton rows={5} />}>
           <DeadContentPanel {...wide} />
-        </Suspense>
-      </Panel>
-
-      <Panel title="Usage against plan" description="Usage against your plan this month.">
-        <Suspense fallback={<PanelSkeleton rows={3} />}>
-          <PlanUsagePanel {...own} />
         </Suspense>
       </Panel>
     </div>

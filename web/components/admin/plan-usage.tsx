@@ -20,7 +20,7 @@ export function PlanUsage({ usage }: { usage: PlanUsageData }) {
         </Button>
       </div>
 
-      <div className="grid gap-x-10 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-x-10 gap-y-6 sm:grid-cols-2 xl:grid-cols-4">
         <Meter
           label="Documents ingested"
           used={usage.documents.used}
