@@ -25,6 +25,11 @@
   /* One shell width for every row of the site, header and footer included. */
   --measure-shell: 72rem;
 
+  /* The only colour off the derived palette, and the only one that should be. The demo sign-in
+     button has to look unlike the product so nobody reads it as a way real people get in. */
+  --color-demo: oklch(0.52 0.19 295);
+  --color-demo-foreground: oklch(0.99 0 295);
+
   /* Copied unchanged from the compat layer, which computes this value rather than aliasing it. */
   --border-stronger: oklch(
     from var(--foreground) l calc(c * 0.5) h / calc(5% + 45% * var(--contrast-border))

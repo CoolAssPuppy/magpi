@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AuthShell } from '@/components/auth/auth-shell';
+import { DemoSignIn } from '@/components/auth/demo-sign-in';
 import { SignInForm } from '@/components/auth/sign-in-form';
 import { safeNextPath } from '@/lib/safe-next-path';
 
@@ -12,6 +13,10 @@ export default async function SignInPage({
   searchParams: Promise<{ next?: string }>;
 }) {
   const { next } = await searchParams;
+
+  // Off unless a deployment turns it on. NODE_ENV would be wrong here: a preview build runs in
+  // production mode, so the button would appear on every preview and never locally.
+  const isDemo = process.env.SB_DEMO_LOGIN === 'true';
 
   return (
     <AuthShell
@@ -27,6 +32,9 @@ export default async function SignInPage({
       }
     >
       <SignInForm next={safeNextPath(next, '/chat', 'http://placeholder.invalid')} />
+      {isDemo ? (
+        <DemoSignIn next={safeNextPath(next, '/chat', 'http://placeholder.invalid')} />
+      ) : null}
     </AuthShell>
   );
 }

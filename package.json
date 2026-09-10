@@ -32,6 +32,7 @@
     "check:workflows": "node scripts/workflow-contract-check.mjs",
     "sync:tokens": "node scripts/sync-tokens.mjs",
     "db:types": "node scripts/gen-types.mjs",
+    "corpus:manifest": "node scripts/build-corpus-manifest.mjs",
     "prepare": "husky",
     "format:check:functions": "deno fmt --config supabase/functions/deno.json --check supabase/functions",
     "check:colors": "node scripts/check-raw-color.mjs",

@@ -13,11 +13,19 @@ const CORPUS_DIR = join(ROOT, 'supabase/corpus');
 const MANIFEST = join(CORPUS_DIR, 'manifest.json');
 const BUCKET = 'documents';
 
-/** Team spaces the corpus needs, in the order they are created. */
+/** Team spaces the corpus needs. Membership is seeded by scripts/seed-demo.mjs. */
 const TEAM_SPACES = [
+  { key: 'marketing', name: 'Marketing' },
   { key: 'engineering', name: 'Engineering' },
-  { key: 'leadership', name: 'Leadership' },
+  { key: 'finance', name: 'Finance' },
 ];
+
+/** Personal folders in the corpus, and whose personal space each one loads into. */
+const PERSONAL_FOLDERS = {
+  'personal-jane': 'jane@example.com',
+  'personal-sam': 'sam@example.com',
+  'personal-john': 'john@example.com',
+};
 
 /** Sources that arrive through a connection rather than a person's browser. */
 const SYNCED_SOURCES = new Set(['notion', 'linear', 'slack', 'drive']);
@@ -72,7 +80,7 @@ async function resolveOrg(db, slug) {
   return rows[0];
 }
 
-/** The org members, oldest first. The first two own the personal spaces. */
+/** The org members keyed by email, so the manifest can name an author by address. */
 async function resolveMembers(db, orgId) {
   const rows = unwrap(
     await db
@@ -85,7 +93,18 @@ async function resolveMembers(db, orgId) {
   if (rows.length < 2) {
     throw new SeedError(`org needs at least two members for the corpus, found ${rows.length}`);
   }
-  return rows;
+
+  const byEmail = new Map();
+  for (let page = 1; page <= 20; page += 1) {
+    const { data, error } = await db.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error) throw new SeedError(`reading the user directory: ${error.message}`);
+    for (const user of data.users) {
+      if (user.email) byEmail.set(user.email, user.id);
+    }
+    if (data.users.length < 1000) break;
+  }
+
+  return { rows, byEmail };
 }
 
 /** Finds a space by a filter, or creates it. Returns its id either way. */
@@ -116,8 +135,8 @@ async function addSpaceMembers(db, spaceId, userIds) {
   }
 }
 
-/** Maps manifest `space` values to space ids, creating the team and personal spaces. */
-async function resolveSpaces(db, orgId, members) {
+/** Maps manifest `space` values to space ids. Team membership belongs to seed-demo.mjs. */
+async function resolveSpaces(db, orgId, byEmail) {
   const spaces = {};
 
   const orgSpace = unwrap(
@@ -125,23 +144,16 @@ async function resolveSpaces(db, orgId, members) {
     'reading org space',
   );
   if (orgSpace.length === 0) throw new SeedError('org has no org space');
-  spaces.everyone = orgSpace[0].id;
+  spaces.company = orgSpace[0].id;
 
   for (const team of TEAM_SPACES) {
     spaces[team.key] = await findOrCreateSpace(db, { orgId, kind: 'team', name: team.name });
   }
 
-  // Both members in engineering, the first member alone in leadership.
-  await addSpaceMembers(
-    db,
-    spaces.engineering,
-    members.slice(0, 2).map((m) => m.user_id),
-  );
-  await addSpaceMembers(db, spaces.leadership, [members[0].user_id]);
+  for (const [key, email] of Object.entries(PERSONAL_FOLDERS)) {
+    const userId = byEmail.get(email);
+    if (!userId) throw new SeedError(`${email} has no account, run scripts/seed-demo.mjs first`);
 
-  const personalKeys = ['personal-a', 'personal-b'];
-  for (const [index, key] of personalKeys.entries()) {
-    const userId = members[index].user_id;
     spaces[key] = await findOrCreateSpace(db, {
       orgId,
       kind: 'personal',
@@ -200,7 +212,7 @@ async function uploadBody(db, storagePath, body) {
 }
 
 /** Writes one manifest entry. Returns 'created' or 'skipped'. */
-async function loadEntry(db, { entry, orgId, spaceId }) {
+async function loadEntry(db, { entry, orgId, spaceId, authorId }) {
   const existing = unwrap(
     await db
       .from('documents')
@@ -230,6 +242,8 @@ async function loadEntry(db, { entry, orgId, spaceId }) {
         storage_path: storagePath,
         content_hash: createHash('sha256').update(body).digest('hex'),
         origin: SYNCED_SOURCES.has(entry.source) ? 'sync' : 'upload',
+        // Who added it. A synced document has no uploader, the same as in the real ingest path.
+        created_by: SYNCED_SOURCES.has(entry.source) ? null : (authorId ?? null),
         updated_at: entry.updatedAt,
       })
       .select('id')
@@ -266,8 +280,8 @@ async function main() {
   const manifest = JSON.parse(readFileSync(MANIFEST, 'utf8'));
   if (await ensureBucket(db)) console.log(`created the ${BUCKET} storage bucket`);
   const org = await resolveOrg(db, slug);
-  const members = await resolveMembers(db, org.id);
-  const spaces = await resolveSpaces(db, org.id, members);
+  const { rows: members, byEmail } = await resolveMembers(db, org.id);
+  const spaces = await resolveSpaces(db, org.id, byEmail);
 
   console.log(`org ${org.name} (${org.slug})`);
   console.log(`members ${members.length}, spaces ${Object.keys(spaces).length}`);
@@ -278,7 +292,11 @@ async function main() {
     const spaceId = spaces[entry.space];
     if (!spaceId)
       throw new SeedError(`manifest entry ${entry.path} names unknown space ${entry.space}`);
-    const outcome = await loadEntry(db, { entry, orgId: org.id, spaceId });
+    const authorId = entry.author ? byEmail.get(entry.author) : null;
+    if (entry.author && !authorId) {
+      throw new SeedError(`manifest entry ${entry.path} names unknown author ${entry.author}`);
+    }
+    const outcome = await loadEntry(db, { entry, orgId: org.id, spaceId, authorId });
     counts[outcome] += 1;
     perSpace[entry.space] = (perSpace[entry.space] ?? 0) + 1;
   }

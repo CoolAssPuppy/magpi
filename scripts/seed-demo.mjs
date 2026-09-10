@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Creates the two demo people, puts them in one organization, and loads the sample corpus. */
+/** Creates the Supaphone demo people, puts them in one organization, and loads the sample corpus. */
 
 import { spawnSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
@@ -12,13 +12,27 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const API_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'http://127.0.0.1:55321';
 const SERVICE_KEY = process.env.SB_SERVICE_ROLE_KEY;
 
-/** Published in the README. Local demo only. */
-const PASSWORD = 'magpi-demo-password';
+/** Published in the README. Demo accounts only. */
+const PASSWORD = 'supabasedemo';
 
+/** The cast from supabase/corpus/COMPANY.md. Jane is first, so the org is hers. */
 const PEOPLE = [
-  { email: 'diane@alderwick.test', label: 'Diane', leadership: true },
-  { email: 'sofia@alderwick.test', label: 'Sofia', leadership: false },
+  {
+    email: 'jane@example.com',
+    label: 'Jane',
+    role: 'owner',
+    spaces: ['Marketing', 'Engineering', 'Finance'],
+  },
+  { email: 'sam@example.com', label: 'Sam', role: 'member', spaces: ['Engineering'] },
+  { email: 'ben@example.com', label: 'Ben', role: 'member', spaces: ['Marketing', 'Engineering'] },
+  { email: 'maya@example.com', label: 'Maya', role: 'member', spaces: ['Marketing'] },
+  { email: 'priya@example.com', label: 'Priya', role: 'member', spaces: ['Marketing'] },
+  { email: 'john@example.com', label: 'John', role: 'member', spaces: ['Engineering', 'Finance'] },
+  { email: 'dana@example.com', label: 'Dana', role: 'member', spaces: ['Finance'] },
 ];
+
+/** Every shared space besides the org space, which the signup trigger already made. */
+const TEAM_SPACES = ['Marketing', 'Engineering', 'Finance'];
 
 function db() {
   if (!SERVICE_KEY) {
@@ -81,39 +95,52 @@ async function joinOrganization(client, orgId, person) {
   await client
     .from('org_members')
     .upsert(
-      { org_id: orgId, user_id: person.id, role: 'member' },
+      { org_id: orgId, user_id: person.id, role: person.role },
       { onConflict: 'org_id,user_id' },
     );
 }
 
-async function ensureLeadership(client, orgId, people) {
+/** The org space is created by the trigger as Everyone. The corpus calls it Company. */
+async function renameOrgSpace(client, orgId) {
+  await client.from('spaces').update({ name: 'Company' }).eq('org_id', orgId).eq('kind', 'org');
+}
+
+/** One team space by name, created once and reused on a second run. */
+async function ensureTeamSpace(client, orgId, name) {
   const { data: existing } = await client
     .from('spaces')
     .select('id')
     .eq('org_id', orgId)
     .eq('kind', 'team')
-    .eq('name', 'Leadership')
+    .eq('name', name)
     .maybeSingle();
 
-  const spaceId =
-    existing?.id ??
-    (
+  if (existing) return existing.id;
+
+  const { data, error } = await client
+    .from('spaces')
+    .insert({ org_id: orgId, kind: 'team', name })
+    .select('id')
+    .single();
+
+  if (error) throw new Error(`could not create the ${name} space: ${error.message}`);
+  return data.id;
+}
+
+/** Membership is what decides who can read what. Nothing else in this product does. */
+async function ensureTeamSpaces(client, orgId, people) {
+  const byName = {};
+  for (const name of TEAM_SPACES) byName[name] = await ensureTeamSpace(client, orgId, name);
+
+  for (const person of people) {
+    for (const name of person.spaces) {
       await client
-        .from('spaces')
-        .insert({ org_id: orgId, kind: 'team', name: 'Leadership' })
-        .select('id')
-        .single()
-    ).data?.id;
-
-  if (!spaceId) throw new Error('could not create the Leadership space');
-
-  for (const person of people.filter((p) => p.leadership)) {
-    await client
-      .from('space_members')
-      .upsert({ space_id: spaceId, user_id: person.id }, { onConflict: 'space_id,user_id' });
+        .from('space_members')
+        .upsert({ space_id: byName[name], user_id: person.id }, { onConflict: 'space_id,user_id' });
+    }
   }
 
-  return spaceId;
+  return byName;
 }
 
 async function main() {
@@ -132,12 +159,14 @@ async function main() {
   if (!org) throw new Error('no organization exists, which means the signup trigger did not fire');
 
   for (const person of people) await joinOrganization(client, org.id, person);
-  await ensureLeadership(client, org.id, people);
+  await renameOrgSpace(client, org.id);
+  await ensureTeamSpaces(client, org.id, people);
 
   console.log(`org      ${org.slug}`);
   for (const person of people) {
-    const where = person.leadership ? 'Leadership and Everyone' : 'Everyone only';
-    console.log(`${person.label.padEnd(8)} ${person.email}  ${where}`);
+    console.log(
+      `${person.label.padEnd(6)} ${person.email.padEnd(20)} Company, ${person.spaces.join(', ')}`,
+    );
   }
   console.log(`password ${PASSWORD}\n`);
 

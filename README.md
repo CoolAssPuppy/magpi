@@ -32,6 +32,40 @@ Open http://127.0.0.1:3000, create an account, drop a file into Documents, and a
 
 The local stack binds to 55321 through 55329 rather than the usual 543xx, so a Supabase project you already have running does not collide with this one.
 
+## The demo company
+
+`supabase/corpus/` is a fictional company called Supaphone, which makes a
+four-panel folding phone. Seven people, four shared spaces and a set of private
+ones. `supabase/corpus/COMPANY.md` is the reference every document in it agrees
+with, and it names the four facts planted in the corpus on purpose.
+
+```bash
+node scripts/seed-demo.mjs        # the seven accounts, the spaces, then the corpus
+```
+
+| Person            | Email             | Sees                                     |
+| ----------------- | ----------------- | ---------------------------------------- |
+| Jane Okonkwo, CEO | jane@example.com  | Company, Marketing, Engineering, Finance |
+| Sam Lindqvist     | sam@example.com   | Company, Engineering                     |
+| Ben Achilov       | ben@example.com   | Company, Marketing, Engineering          |
+| Maya Restrepo     | maya@example.com  | Company, Marketing                       |
+| Priya Raghunathan | priya@example.com | Company, Marketing                       |
+| John Mbeki        | john@example.com  | Company, Engineering, Finance            |
+| Dana Provenzano   | dana@example.com  | Company, Finance                         |
+
+Every account uses the password `supabasedemo`.
+
+Jane is in every shared space, which is why she is the account the demo signs in
+as. She holds no special role: nothing in this product reads across a space
+boundary. Ask Jane what the Fold S1 costs to build and she answers with a
+citation. Ask Sam the same question and the answer is shorter, with no error and
+no dialog about it, because the number lives in Finance and he is not in it.
+
+Set `SB_DEMO_LOGIN=true` to put a "Log in as Jane" button under the sign-in
+form. It is off unless that variable is exactly `true`, and it is deliberately
+the only thing in the app painted a colour the product palette does not contain.
+Do not set it on a deployment holding anything real.
+
 ## The permission model
 
 Every document lives in exactly one **space**. There are three kinds.
