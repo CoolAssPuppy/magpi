@@ -11,6 +11,8 @@ const summary = (overrides: Partial<DocumentSummary> = {}): DocumentSummary => (
   spaceId: '33333333-3333-4333-8333-333333333333',
   spaceName: 'Engineering',
   origin: 'upload',
+  provider: null,
+  url: null,
   updatedAt: '2026-09-09T11:30:00.000Z',
   ingest: null,
   ...overrides,

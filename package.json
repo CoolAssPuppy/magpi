@@ -31,6 +31,7 @@
     "check:mobile-spec": "node scripts/mobile-spec-check.mjs",
     "check:workflows": "node scripts/workflow-contract-check.mjs",
     "sync:tokens": "node scripts/sync-tokens.mjs",
+    "sync:source-icons": "node scripts/sync-source-icons.mjs",
     "db:types": "node scripts/gen-types.mjs",
     "corpus:manifest": "node scripts/build-corpus-manifest.mjs",
     "check:corpus": "node scripts/check-corpus.mjs",
@@ -47,6 +48,7 @@
     "husky": "^9.1.7",
     "prettier": "^3.6.2",
     "prettier-plugin-tailwindcss": "^0.8.1",
+    "simple-icons": "^16.30.0",
     "vitest": "^5.0.0"
   }
 }

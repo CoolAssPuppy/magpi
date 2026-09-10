@@ -1,6 +1,8 @@
 import type { ActionState } from '@/lib/actions/state';
 import type { ConnectionSummary, ProviderListing } from '@/lib/connections/view-model';
 
+import { SourceMark } from '@/components/brand/source-mark';
+
 import { ConnectButton, type SpaceChoice } from './connect-button';
 import { ConnectionActions, type ConnectionAction } from './connection-actions';
 import { ScopeEditor, type ConnectionScope, type SaveScope } from './scope-editor';
@@ -72,7 +74,8 @@ export function ConnectionList({
         <section key={listing.slug} className="px-4 py-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <h2 className="font-heading text-sm font-medium text-foreground">
+              <h2 className="flex items-center gap-2 font-heading text-sm font-medium text-foreground">
+                <SourceMark source={listing.slug} className="size-5" />
                 {listing.displayName}
               </h2>
               <p className="mt-0.5 max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">

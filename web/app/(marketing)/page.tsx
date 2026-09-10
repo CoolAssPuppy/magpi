@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { ShellRow } from '@/components/app/shell-row';
+import { SourceMark } from '@/components/brand/source-mark';
 import { FoldedMagpie } from '@/components/brand/magpie-mark';
 import { Button } from '@/components/ui/button';
 
@@ -9,7 +10,13 @@ export const metadata = {
   description: 'Ask your team documents a question and get a cited answer.',
 };
 
-const SOURCES = ['Notion', 'Linear', 'Slack', 'Google Drive', 'Direct upload'] as const;
+const SOURCES = [
+  { slug: 'notion', label: 'Notion' },
+  { slug: 'linear', label: 'Linear' },
+  { slug: 'slack', label: 'Slack' },
+  { slug: 'google_drive', label: 'Google Drive' },
+  { slug: 'upload', label: 'Direct upload' },
+] as const;
 
 export default function LandingPage() {
   return (
@@ -44,10 +51,11 @@ export default function LandingPage() {
         <ul className="flex flex-wrap gap-2">
           {SOURCES.map((source) => (
             <li
-              key={source}
-              className="rounded-[var(--radius-panel)] border border-border px-3 py-1.5 text-sm text-muted-foreground"
+              key={source.slug}
+              className="flex items-center gap-2 rounded-[var(--radius-panel)] border border-border px-3 py-1.5 text-sm text-muted-foreground"
             >
-              {source}
+              <SourceMark source={source.slug} />
+              {source.label}
             </li>
           ))}
         </ul>

@@ -12,6 +12,10 @@ export type DocumentSummary = {
   readonly spaceId: string;
   readonly spaceName: string;
   readonly origin: DocumentOrigin;
+  /** The provider it came through, or null for an upload and a dream. */
+  readonly provider: string | null;
+  /** Where it lives in the source tool, which names that tool when no connection row does. */
+  readonly url: string | null;
   readonly updatedAt: string;
   readonly ingest: IngestSummary | null;
 };
@@ -66,7 +70,7 @@ export async function listDocuments(
   let query = supabase
     .from('documents')
     .select(
-      'id, title, space_id, origin, updated_at, spaces(name), ingest_jobs(status, stage, error)',
+      'id, title, space_id, origin, url, updated_at, spaces(name), connections(provider), ingest_jobs(status, stage, error)',
     )
     .order('updated_at', { ascending: false })
     // A document can carry several import attempts, and only the newest says where it stands.
@@ -85,6 +89,8 @@ export async function listDocuments(
     spaceId: row.space_id,
     spaceName: row.spaces?.name ?? 'Unknown space',
     origin: row.origin,
+    provider: row.connections?.provider ?? null,
+    url: row.url,
     updatedAt: row.updated_at,
     ingest: row.ingest_jobs[0]
       ? {
