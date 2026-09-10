@@ -8,7 +8,9 @@
   },
   "packageManager": "pnpm@11.1.0",
   "scripts": {
-    "dev": "doppler run -- pnpm --dir web dev",
+    "dev": "pnpm --dir web dev",
+    "dev:doppler": "doppler run -- pnpm --dir web dev",
+    "env:pull": "doppler secrets download --no-file --format env | grep -v '^DOPPLER_' > web/.env.local",
     "build": "pnpm --dir web build",
     "format": "prettier --write . && deno fmt --config supabase/functions/deno.json supabase/functions",
     "format:check": "prettier --check .",

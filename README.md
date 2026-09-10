@@ -19,9 +19,14 @@ git clone https://github.com/supabase-community/magpi
 cd magpi
 pnpm install
 supabase start
-cp .env.example .env.local   # fill in the keys supabase start printed
-pnpm --dir web dev
+cp .env.example web/.env.local   # fill in the keys supabase start printed
+pnpm dev
 ```
+
+`next dev` reads `web/.env.local`, so the file goes there rather than at the
+repo root. If you are on the team and the credentials are in Doppler, run
+`pnpm env:pull` to write that file from the `supabase-recall-demo` dev config,
+or skip the file and run `pnpm dev:doppler` to inject them at launch instead.
 
 Open http://127.0.0.1:3000, create an account, drop a file into Documents, and ask a question about it in Chat. That path takes about five minutes from a cold clone.
 
