@@ -101,9 +101,14 @@ is what set the $1,899 launch price. That number appears only in Finance
 documents. Jane and John can answer a question about margin. Sam gets a shorter
 answer with no error and no dialog about it.
 
-**4. A fact only Marketing holds.** The launch is 2026-11-04 under embargo, with
-two carriers signed. That date appears only in Marketing documents. John cannot
-see it.
+**4. A fact only Marketing holds.** The launch is 2026-11-04, embargo lifting at
+10:00, with two carriers signed. The exact date, the embargo hour, the retail
+dates and the commercial terms appear only in Marketing documents.
+
+What is not walled: that the phone ships in November, and that there are two
+carriers to certify with. Everyone at a company that size knows the month, and
+carrier certification is engineering's own work. Sam can find out that the
+Fold S1 ships in November and still not find out when.
 
 ## Where the documents come from
 
@@ -140,7 +145,8 @@ one that disagrees would be the inconsistency this file exists to prevent.
   gross margin. Panels are 41 percent of the bill of materials, Bellows 14
   percent. Polymer tooling $214k against $267k for glass.
 - **Marketing only.** Embargo lifts at 10:00 on 2026-11-04, retail 4 and 7
-  November, two carriers signed.
+  November, two carriers signed on commercial terms. Carriers are A and B in
+  Marketing, and Alder and Birch where a codename is needed.
 
 ## Rules for adding a document
 

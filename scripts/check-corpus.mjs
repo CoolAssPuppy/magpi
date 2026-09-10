@@ -32,7 +32,12 @@ const MEMBERS = {
 /** A fact that must not leave its space, or the two walls the demo rests on stop holding. */
 const WALLED = [
   { space: 'finance', pattern: /\$1,140|\$1,899/, what: 'the unit cost or launch price' },
-  { space: 'marketing', pattern: /2026-11-04|4 November 2026/, what: 'the launch date' },
+  {
+    space: 'marketing',
+    // The month is common knowledge. The date, the hour and the word embargo are not.
+    pattern: /2026-11-04|4 November 2026|embargo/i,
+    what: 'the launch date or the embargo',
+  },
 ];
 
 const FIRST_DAY = '2026-08-10';
@@ -60,8 +65,9 @@ function main() {
       const body = readFileSync(join(CORPUS, path), 'utf8');
       files += 1;
 
-      // An upload is a scan or an export, so it leads with letterhead rather than a heading.
-      const needsHeading = !name.startsWith('upload-');
+      // An upload is a scan or an export and a personal note is scratch, so neither leads with
+      // a heading. Everything that came out of a tool does.
+      const needsHeading = !name.startsWith('upload-') && !name.startsWith('personal-');
       if (needsHeading && !/^#\s+\S/m.test(body)) failures.push(`${path}: no title`);
       if (!needsHeading && body.trim().length === 0) failures.push(`${path}: empty`);
 

@@ -23,14 +23,22 @@ That is the whole finding and everything below is the evidence for it.
 
 ## Method
 
-Cycle bench 2, outer axis, H1 driven alone through 0 to 180 degrees. 40 cycles
-per minute. Chamber at 23 C and 45 percent relative humidity. Bend radius at
-the fold 3.2 mm, which is the industrial design number and is fixed.
+Two phases, and the counts below are combined across both. The move is in the
+rig log and it is the weakness of this data set, so I am putting it at the top
+rather than in a footnote.
 
-B5 and B9 carry 40,000 cycles each from cycle bench 1, where all three hinges
-were driven together at 12 cycles per minute before the units were moved to
-bench 2. Counts below are combined and the move is in the rig log. It is a
-weakness of this data set and I am flagging it rather than hiding it.
+Phase one, to about 72,000 cycles. Cycle bench 1, all three hinges driven
+together through the full fold, phone to tablet to desk and back, 12 cycles per
+minute, chamber at 23 C. All four units together.
+
+Phase two, from 72,000 to the end. Cycle bench 2, outer axis, H1 driven alone
+through 0 to 180 degrees, 40 cycles per minute, chamber at 23 C and 45 percent
+relative humidity. The units moved to bench 2 on 18 August, the morning after
+the chamber interlock halt, because the single axis bench gives three times the
+rate and H1 is the hinge under the material we were testing.
+
+Bend radius at the fold is 3.2 mm on both benches, which is the industrial
+design number and is fixed.
 
 Inspection every 20,000 cycles for the first part of the run, moving to every
 10,000 below 200,000 after B7 produced a finding at 150,000 that sat for a day
@@ -80,7 +88,10 @@ drift across the 200,000 cycle life.
 | B9 | 79.6 | 78.4 | 77.3 | 76.2 | 4.3 percent |
 
 Every unit is inside spec, including the one that fractured. Detent break-out
-force at D1 and D2 moved less than 4 percent on all four units. The mechanism
+force at D1 and D2 moved less than 4 percent on all four units. H2 on B6 drifts
+faster than the rest of the population and is tracked separately in HW-95. It
+is unrelated to this failure and I want that said plainly, because the two got
+discussed in the same meeting twice. The mechanism
 held. The failure is in the material laminated to it, which is the good news,
 because the mechanism is the part we cannot change in six weeks.
 

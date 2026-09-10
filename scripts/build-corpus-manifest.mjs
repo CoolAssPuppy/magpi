@@ -45,7 +45,10 @@ const URL_FOR = {
 
 /** A scan has no heading, so it gets called what the file is called, like it would be in Drive. */
 const fromSlug = (slug) => {
-  const words = slug.replace(/^[a-z]+-/, '').replace(/-/g, ' ').trim();
+  const words = slug
+    .replace(/^[a-z]+-/, '')
+    .replace(/-/g, ' ')
+    .trim();
   return words.charAt(0).toUpperCase() + words.slice(1);
 };
 
@@ -66,7 +69,6 @@ const updatedAtOf = (body, name) => {
 
 function main() {
   const entries = [];
-  let counter = 0;
 
   for (const space of SPACES) {
     const dir = join(CORPUS, space);
@@ -89,14 +91,15 @@ function main() {
 
       const body = readFileSync(join(CORPUS, path), 'utf8');
       const slug = name.replace(/\.md$/, '');
-      counter += 1;
 
       entries.push({
         path,
         title: titleOf(body, slug),
         space,
         source,
-        externalId: `${source}-${String(counter).padStart(4, '0')}`,
+        // Derived from the path, so adding a document does not renumber every other one and
+        // make the seeder insert the whole corpus again.
+        externalId: `${space}/${slug}`,
         url: URL_FOR[source](ORG, slug),
         updatedAt: updatedAtOf(body, name),
         // Null for a synced source, the same as the real ingest path leaves it.
