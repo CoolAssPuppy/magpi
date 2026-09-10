@@ -1,5 +1,4 @@
--- The one visibility predicate. Every content policy calls it, so there is a
--- single place where "what can this person see" is decided.
+-- The one visibility predicate. Every content policy calls it.
 create or replace function public.visible_space_ids()
 returns setof uuid
 language sql
@@ -10,11 +9,7 @@ as $$
   select space_id from public.space_members where user_id = (select auth.uid())
 $$;
 
--- Revoking from PUBLIC removes execute from every role not granted it
--- explicitly, service_role included, so each grant below is required and not
--- merely tidiness. `supabase db diff` emits grants and never revokes, so a
--- revoke that lives only in a migration is gone the next time this file is the
--- one that builds the shadow database. anon has no surface in this product.
+-- Revoking from PUBLIC drops execute for every role, service_role included, so each grant matters.
 revoke all on function public.visible_space_ids() from public, anon;
 grant execute on function public.visible_space_ids() to authenticated, service_role;
 
@@ -68,15 +63,7 @@ $$;
 revoke all on function public.is_space_member(uuid) from public, anon;
 grant execute on function public.is_space_member(uuid) to authenticated, service_role;
 
--- Hybrid retrieval: pgvector similarity plus Postgres full text search, merged
--- with reciprocal rank fusion.
---
--- security invoker, so RLS on chunks applies to whoever calls it. Web, mobile and
--- the MCP server all call this one function. A second search implementation
--- anywhere is a bug.
---
--- Pure vector search fails visibly on exact-match questions like "what is the SSO
--- ticket number". The lexical arm is what stops that happening on stage.
+-- Hybrid retrieval: pgvector and full text search merged with RRF. security invoker, so RLS holds.
 create or replace function public.search(
   query_embedding extensions.vector(1536),
   query_text text,
@@ -96,8 +83,7 @@ security invoker
 set search_path = public, extensions
 as $$
   with
-    -- Over-fetch each arm so fusion has something to rank. RRF only reorders
-    -- what it is given.
+    -- Over-fetch each arm, because RRF only reorders what it is given.
     candidate_depth as (select greatest(match_count * 4, 40) as n),
     semantic as (
       select
@@ -135,8 +121,7 @@ as $$
         coalesce(s.document_id, l.document_id) as document_id,
         coalesce(s.space_id, l.space_id) as space_id,
         coalesce(s.content, l.content) as content,
-        -- k = 60 is the constant from the original RRF paper. It damps the
-        -- contribution of low-ranked hits without tuning per corpus.
+        -- k = 60 is the constant from the original RRF paper, so no per-corpus tuning.
         (coalesce(1.0 / (60 + s.rank), 0) + coalesce(1.0 / (60 + l.rank), 0))::real as score
       from semantic s
       full outer join lexical l on l.id = s.id
@@ -147,19 +132,7 @@ as $$
   limit match_count;
 $$;
 
--- Without this, a filtered vector search returns nothing at all rather than
--- fewer rows. The HNSW scan takes its ef_search nearest neighbours and only then
--- does RLS discard them, so a caller whose own chunks all rank below a thousand
--- they cannot see gets an empty answer to a question their own document answers.
--- pgTAP measured it: 0 of 5 with the setting off, 5 of 5 with it on.
---
--- It goes on the function rather than the role or the database so it travels to
--- web, mobile and the MCP server together. relaxed_order because search()
--- re-ranks with reciprocal rank fusion afterwards, so scan order buys nothing.
---
--- The cast above the ALTER is required, not decorative. Until a vector operation
--- has run in the session, hnsw.iterative_scan is an unrecognised placeholder and
--- the ALTER is refused with "permission denied to set parameter".
+-- Iterative scan for search(). The vector cast below must run before the ALTER is accepted.
 do $$
 begin
   perform '[1]'::extensions.vector;
@@ -173,9 +146,7 @@ revoke all on function public.search(extensions.vector, text, uuid[], integer) f
 grant execute on function public.search(extensions.vector, text, uuid[], integer)
   to authenticated, service_role;
 
--- Atomically consumes a state row, returning it only if it exists and has not
--- expired. Delete-and-return in one statement so two concurrent callbacks with
--- the same state cannot both succeed.
+-- Deletes and returns an unexpired state row, so two callbacks with one state cannot both win.
 create or replace function public.consume_oauth_state(p_state text)
 returns table (user_id uuid, provider text, code_verifier text, space_id uuid, return_to text)
 language sql
@@ -202,9 +173,7 @@ $$;
 revoke all on function public.prune_oauth_states() from public, anon, authenticated;
 grant execute on function public.prune_oauth_states() to service_role;
 
--- Deliberately does not filter on user id. The caller compares and audits the
--- mismatch, which is the signal that someone was handed a link they did not
--- start. Filtering here would make an attack look like an expired ticket.
+-- Deliberately does not filter on user id, so the caller can compare and audit a mismatch.
 create or replace function public.consume_pending_connection(p_ticket_hash text)
 returns table (
   user_id uuid,
@@ -242,8 +211,7 @@ $$;
 revoke all on function public.prune_pending_connections() from public, anon, authenticated;
 grant execute on function public.prune_pending_connections() to service_role;
 
--- The insert-on-conflict-update is one atomic statement, so concurrent callers
--- cannot both observe count < limit and both proceed.
+-- One atomic upsert, so concurrent callers cannot both see count < limit and both proceed.
 create or replace function public.consume_rate_limit(
   p_bucket text,
   p_limit integer,
@@ -294,37 +262,14 @@ $$;
 revoke all on function public.prune_rate_limits() from public, anon, authenticated;
 grant execute on function public.prune_rate_limits() to service_role;
 
--- Claims queued ingest jobs atomically.
---
--- The worker used to select queued rows and then update them to running, which
--- is a read rather than a claim: two concurrent invocations select the same rows
--- and both process them. The document is embedded twice, the model bill is paid
--- twice, and the second writer collides on chunks (document_id, ordinal).
---
--- `for update skip locked` is what makes it a claim. Two callers running at the
--- same instant get disjoint sets, and neither waits on the other.
+-- Claims queued ingest jobs. `for update skip locked` gives concurrent callers disjoint sets.
 create or replace function public.claim_ingest_jobs(p_limit integer)
 returns setof public.ingest_jobs
 language sql
 security definer
 set search_path = ''
 as $$
-  -- Take back a claim whose worker never came back. A job left at 'running' is
-  -- invisible to both halves below, which filter on 'queued', so nothing else in
-  -- the system would ever touch it again and the page would show a spinner that
-  -- never resolves. claimed_at exists for this and nothing else.
-  --
-  -- Fifteen minutes is safe without waiting on the measured Edge Function
-  -- ceiling, because the job body times itself out at DEFAULT_BUDGET_MS, which
-  -- is 45 seconds. No legitimate ingest is still running at twenty times that.
-  --
-  -- The reclaim increments nothing. The attempt was counted when the job was
-  -- claimed, and counting it again would charge a crashed worker twice and
-  -- retire a healthy document after two real failures.
-  --
-  -- All three statements see the same snapshot, so a job reclaimed here becomes
-  -- claimable on the next invocation rather than this one. At a two-minute
-  -- worker interval that is not worth the complexity of avoiding.
+  -- Requeue a job whose worker never came back, using claimed_at, without counting an attempt.
   with reclaimed as (
     update public.ingest_jobs
     set status = 'queued'
@@ -332,11 +277,7 @@ as $$
       and claimed_at < now() - interval '15 minutes'
     returning id
   ),
-  -- Retire what the claim is about to skip. `attempts < 3` alone would leave a
-  -- poison job sitting at 'queued' forever, invisible to a page filtering on
-  -- failures, which is the spinner that never resolves the spec is explicit
-  -- about. A data-modifying CTE always runs to completion whether or not the
-  -- outer query reads it, and the two row sets are disjoint on `attempts`.
+  -- Fail what the claim is about to skip, so a poison job does not sit at 'queued' forever.
   retired as (
     update public.ingest_jobs
     set status = 'failed',
@@ -352,10 +293,7 @@ as $$
     select c.id
     from public.ingest_jobs c
     where c.status = 'queued'
-      -- Three, because an ingest failure is usually deterministic: an unreadable
-      -- file, a revoked token. Attempts two and three are cheap insurance
-      -- against a transient provider blip and a fourth pays OpenAI to fail the
-      -- same way again.
+      -- Three, because most ingest failures are deterministic and a fourth try pays to repeat one.
       and c.attempts < 3
     order by c.created_at
     limit greatest(p_limit, 0)
@@ -367,8 +305,7 @@ $$;
 revoke all on function public.claim_ingest_jobs(integer) from public, anon, authenticated;
 grant execute on function public.claim_ingest_jobs(integer) to service_role;
 
--- Plan limits live in the database, not the client. An ingest job that would
--- take an org past its plan is refused here.
+-- Plan limits live in the database. An ingest job past an org's plan is refused here.
 create or replace function public.plan_document_limit(p_plan public.org_plan)
 returns integer
 language sql
@@ -434,14 +371,7 @@ $$;
 revoke all on function public.check_ingest_allowed(uuid) from public, anon;
 grant execute on function public.check_ingest_allowed(uuid) to authenticated, service_role;
 
--- The same gate for questions. plan_monthly_query_limit was read by the usage
--- panel and enforced by nothing, so a free organization could ask 500,000
--- questions against a 500 limit and the only sign was a number on a screen an
--- admin might never open.
---
--- The window is the calendar month in UTC, which is what the usage panel already
--- sums over. Billing periods do not line up with calendar months, and when they
--- need to this reads the period off the subscription instead.
+-- The same gate for questions, counted over the calendar month in UTC.
 create or replace function public.check_query_allowed(p_org_id uuid)
 returns table (allowed boolean, reason text, used bigint, plan_limit integer)
 language plpgsql
@@ -479,17 +409,7 @@ $$;
 revoke all on function public.check_query_allowed(uuid) from public, anon;
 grant execute on function public.check_query_allowed(uuid) to authenticated, service_role;
 
--- What the admin dead-content panel reads. Both columns existed from the first
--- migration and nothing ever wrote either, so the panel reported every document
--- in the organization as never retrieved and the number was the document count.
---
--- Security definer because a reader holds no update grant on documents, and
--- scoped to their own visible spaces for the same reason the grant is absent:
--- otherwise any signed-in user could mark another organization's documents as
--- freshly read and hide them from that organization's own panel.
---
--- The count is bumped once per search that returned the document, not once per
--- chunk, so a document that matched five chunks counts as one retrieval.
+-- Marks documents retrieved for the admin dead-content panel, once per search, not per chunk.
 create or replace function public.record_retrieval(p_document_ids uuid[])
 returns void
 language sql
@@ -506,17 +426,7 @@ $$;
 revoke all on function public.record_retrieval(uuid[]) from public, anon;
 grant execute on function public.record_retrieval(uuid[]) to authenticated, service_role;
 
--- Addresses for the members of one organization.
---
--- org_members holds a user id and nothing else, addresses live in auth.users
--- where no policy exposes them, and GoTrue has no "give me these ids" call. The
--- admin page therefore made one auth.admin.getUserById request per member, and
--- the spec's organization holds four thousand people. Walking the GoTrue
--- directory in pages of a thousand is fewer requests and still a walk.
---
--- The is_org_admin test is inside the function rather than left to the caller,
--- because a security definer function reading auth.users with no check of its
--- own is a directory of every account in the project behind one rpc call.
+-- Addresses for one organization's members, gated on is_org_admin inside the function itself.
 create or replace function public.org_member_emails(p_org_id uuid)
 returns table (user_id uuid, email text)
 language sql
@@ -534,17 +444,7 @@ $$;
 revoke all on function public.org_member_emails(uuid) from public, anon;
 grant execute on function public.org_member_emails(uuid) to authenticated, service_role;
 
--- The three plan meters, summed in the database.
---
--- The admin page read these with PostgREST's `quantity.sum()`, three round
--- trips, and a deployment whose PostgREST has `db-aggregates-enabled = false`
--- answers "Use of aggregate functions is not allowed" to all three. That is not
--- a hypothetical: the Supabase CLI ships with them off, so the usage panel was
--- broken on every local run of this repo.
---
--- One statement, one trip, and a filtered aggregate per meter so the query
--- reads the table once. security invoker, so usage_events_select_admin decides
--- who sees it rather than this function.
+-- The three plan meters in one statement. security invoker, so usage_events_select_admin applies.
 create or replace function public.org_usage_totals(p_org_id uuid, p_month_start timestamptz)
 returns table (documents bigint, queries bigint, storage_bytes bigint)
 language sql
@@ -554,8 +454,7 @@ set search_path = ''
 as $$
   select
     coalesce(sum(quantity) filter (where kind = 'document_ingested'), 0)::bigint,
-    -- The only one with a window. A monthly limit read over all time is a
-    -- lifetime cap wearing the word monthly.
+    -- The only meter with a month window, because its limit is monthly.
     coalesce(sum(quantity) filter (where kind = 'query' and occurred_at >= p_month_start), 0)::bigint,
     coalesce(sum(quantity) filter (where kind = 'storage_bytes'), 0)::bigint
   from public.usage_events
@@ -565,8 +464,7 @@ $$;
 revoke all on function public.org_usage_totals(uuid, timestamptz) from public, anon;
 grant execute on function public.org_usage_totals(uuid, timestamptz) to authenticated, service_role;
 
--- Every new user gets an organization and a personal space. Doing it in a trigger
--- means there is no signed-in state where a user has nowhere to put a document.
+-- Every new user gets an organization and a personal space, so there is always somewhere to write.
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -605,9 +503,7 @@ begin
 end;
 $$;
 
--- A trigger function is invoked by the trigger and runs as the table owner, so
--- no role needs execute to make it fire and the default grant to PUBLIC only
--- lets a caller run it by hand.
+-- A trigger function runs as the table owner, so no role needs execute for the trigger to fire.
 revoke all on function public.handle_new_user() from public, anon, authenticated;
 
 create or replace trigger on_auth_user_created

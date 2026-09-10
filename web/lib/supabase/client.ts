@@ -3,10 +3,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import type { Database } from '@/lib/database.types';
 import { publicEnv } from '@/lib/env';
 
-/**
- * The Supabase Library `client` block, with the generated Database generic
- * added. Without it every query returns `any`, which the type rules forbid.
- */
+/** The browser Supabase client, typed with the generated Database generic. */
 export function createClient() {
   const env = publicEnv();
   return createBrowserClient<Database>(

@@ -1,8 +1,4 @@
-// Bytes to text, for everything the upload surface accepts.
-//
-// The output feeds the chunker, so the goal is prose a person would recognise,
-// not a faithful rendering. Structure that the chunker splits on (blank lines,
-// headings) is worth keeping; everything else is noise in an embedding.
+// Bytes to text for every accepted upload type. The output feeds the chunker.
 
 import { ApiError } from './errors.ts';
 import { extractPdfText } from './pdf.ts';
@@ -21,8 +17,7 @@ export interface Extracted {
 type Extractor = (bytes: Uint8Array) => Promise<string>;
 
 function decode(bytes: Uint8Array): string {
-  // Lossy rather than fatal: one bad byte in a large document should not lose
-  // the document.
+  // Lossy rather than fatal, so one bad byte does not lose the document.
   return new TextDecoder('utf-8', { fatal: false }).decode(bytes);
 }
 
@@ -74,12 +69,7 @@ function htmlToText(bytes: Uint8Array): Promise<string> {
   return Promise.resolve(lines.join('\n'));
 }
 
-/**
- * One `path: value` line per leaf.
- *
- * A pretty-printed object embeds mostly braces. Naming the path next to the
- * value is what makes a field searchable by the name a person would use.
- */
+/** One `path: value` line per leaf, so a field is searchable by its name. */
 function flattenJson(value: unknown, path: string, lines: string[]): void {
   if (value === null || value === undefined) return;
 
@@ -176,8 +166,7 @@ async function pdfToText(bytes: Uint8Array): Promise<string> {
   try {
     return await extractPdfText(bytes);
   } catch {
-    // The reader distinguishes malformed from empty; the caller only needs to
-    // know the document could not be read, and a stack trace helps nobody here.
+    // The caller only needs to know the document could not be read.
     throw unprocessable('a pdf');
   }
 }

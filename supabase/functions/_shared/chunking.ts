@@ -1,18 +1,9 @@
-// Turning a document into the units that get embedded.
-//
-// Pure: same text in, same chunks out, no clock, no network, no database. That
-// is what lets the ingest job be tested without a server, and what lets a
-// retrieval-quality question be settled by reading this file.
+// Turns a document into the units that get embedded. Pure: same text in, same chunks out.
 
 /** What the embedding model is asked for at a time. */
 export const DEFAULT_TARGET_TOKENS = 800;
 
-/**
- * How much of the previous chunk each one repeats.
- *
- * A sentence that answers a question sitting on a chunk boundary is retrievable
- * from neither side without this.
- */
+/** How much of the previous chunk each one repeats, so a boundary sentence stays retrievable. */
 export const DEFAULT_OVERLAP_TOKENS = 100;
 
 export interface Chunk {
@@ -26,15 +17,7 @@ export interface ChunkOptions {
   overlapTokens?: number;
 }
 
-/**
- * Four characters to a token, which is close enough for English prose and for
- * deciding where to cut.
- *
- * Not a real tokenizer: carrying one into the edge runtime costs a megabyte and
- * a cold start to make a boundary decision that is already approximate. The
- * exact count that matters is the one the model reports, and that is what gets
- * written to model_calls.
- */
+/** Estimates four characters to a token. The exact count comes from the model, in model_calls. */
 export function estimateTokens(text: string): number {
   return Math.max(1, Math.ceil(text.length / 4));
 }
@@ -76,12 +59,7 @@ function splitWords(sentence: string, targetTokens: number): string[] {
   return out;
 }
 
-/**
- * The smallest pieces that will be packed into chunks.
- *
- * A piece is at most one chunk's worth on its own, so packing never has to cut
- * one, and the boundary a reader sees is always the best one available.
- */
+/** The smallest pieces packed into chunks. Each is at most one chunk, so packing never cuts one. */
 function splitUnits(text: string, targetTokens: number): string[] {
   const units: string[] = [];
 
@@ -110,8 +88,7 @@ function tailWithin(units: string[], budget: number): string[] {
 
   for (let i = units.length - 1; i >= 0; i--) {
     const cost = estimateTokens(units[i]);
-    // The whole previous chunk repeated is not an overlap, it is a duplicate,
-    // and it is also how a too-large overlap turns packing into a loop.
+    // Stop short of repeating the whole previous chunk, which would make packing loop.
     if (tokens + cost > budget || tail.length >= units.length - 1) break;
     tail.unshift(units[i]);
     tokens += cost;
@@ -119,13 +96,7 @@ function tailWithin(units: string[], budget: number): string[] {
   return tail;
 }
 
-/**
- * Packs a document into overlapping chunks at paragraph, then sentence, then
- * word boundaries.
- *
- * Paragraphs are never merged across a blank line, so a chunk holds one idea
- * where the document offered one.
- */
+/** Packs a document into overlapping chunks at paragraph, then sentence, then word boundaries. */
 export function chunkText(text: string, options: ChunkOptions = {}): Chunk[] {
   const targetTokens = options.targetTokens ?? DEFAULT_TARGET_TOKENS;
   const overlapTokens = Math.min(options.overlapTokens ?? DEFAULT_OVERLAP_TOKENS, targetTokens - 1);

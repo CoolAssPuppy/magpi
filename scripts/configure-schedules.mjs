@@ -1,14 +1,5 @@
 #!/usr/bin/env node
-/**
- * Points the database's scheduled workers at this environment.
- *
- * `supabase/schemas/96_schedules.sql` holds the schedule and reads two Vault
- * secrets at fire time. A database with neither set ticks and does nothing, so
- * this is what turns the schedule on.
- *
- * Run it after `supabase start` for a local stack. For a hosted project, set
- * the same two secrets once in the SQL editor.
- */
+/** Sets the two Vault secrets the scheduled workers read at fire time. */
 
 import { execFileSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
@@ -19,15 +10,11 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DB_URL =
   process.env.SUPABASE_DB_URL ?? 'postgresql://postgres:postgres@127.0.0.1:55322/postgres';
 
-/**
- * The gateway as the database container sees it. 127.0.0.1 inside Postgres is
- * Postgres, so the local URL the web app uses is not the one pg_net can reach.
- */
+/** The gateway as the database container sees it, since 127.0.0.1 inside Postgres is Postgres. */
 const LOCAL_BASE = 'http://host.docker.internal:55321';
 
 function setSecret(name, value) {
-  // Deleted and recreated rather than updated: vault.create_secret refuses a
-  // duplicate name, and this script is meant to be safe to run twice.
+  // Delete then recreate, because vault.create_secret refuses a duplicate name.
   const sql = `
     delete from vault.secrets where name = ${literal(name)};
     select vault.create_secret(${literal(value)}, ${literal(name)});

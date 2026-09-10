@@ -31,10 +31,7 @@ export function describeKind(kind: SpaceKind): string {
   }
 }
 
-/**
- * Personal first, then the org space, then teams alphabetically. The order is
- * fixed so a space selector never reshuffles between two renders.
- */
+/** Personal first, then the org space, then teams alphabetically. */
 const KIND_ORDER: Record<SpaceKind, number> = { personal: 0, org: 1, team: 2 };
 
 export function sortSpaces<T extends { kind: SpaceKind; name: string }>(spaces: readonly T[]): T[] {

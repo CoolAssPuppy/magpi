@@ -30,11 +30,7 @@ export function serializeEmbedding(vector: Embedding): string {
   return `[${vector.join(',')}]`;
 }
 
-/**
- * The one retrieval path. It goes through the caller's client rather than the
- * service client, so the security-invoker `search` function sees the reader's
- * own row level security. A second implementation anywhere is a bug.
- */
+/** The one retrieval path. Uses the caller's client, so `search` runs under the reader's RLS. */
 export async function searchChunks(
   input: SearchInput,
   deps: SearchDeps,
@@ -66,17 +62,7 @@ export async function searchChunks(
   return chunks;
 }
 
-/**
- * Marks the documents this search returned as read.
- *
- * `documents.last_retrieved_at` and `retrieval_count` are what the admin
- * dead-content panel reads, and nothing wrote either, so the panel reported
- * every document in the organization as never retrieved.
- *
- * Distinct document ids, so a document that matched five chunks counts once. A
- * failure is logged and swallowed: the reader has their passages and losing a
- * count on an analytics panel is not worth failing their question over.
- */
+/** Marks the documents this search returned as read, once each. A failure is logged, not thrown. */
 async function recordRetrieval(
   supabase: SupabaseClient<Database>,
   chunks: readonly RetrievedChunk[],

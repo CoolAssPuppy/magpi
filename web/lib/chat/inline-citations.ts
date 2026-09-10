@@ -6,12 +6,7 @@ export type AnswerSegment =
 
 const MARKER = /\[(\d+)\]/g;
 
-/**
- * Splits an answer on its [n] markers. A marker with no citation behind it stays
- * as written: the reader lost access to that space, and the answer is still
- * true. This runs on a partial answer while it streams, so it never assumes the
- * text is complete.
- */
+/** Splits an answer on its [n] markers. Runs on partial text, and leaves unmatched markers. */
 export function splitAnswer(
   text: string,
   citations: readonly Citation[],

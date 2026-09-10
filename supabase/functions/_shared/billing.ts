@@ -1,6 +1,4 @@
-// Stripe webhooks: verifying that a request came from Stripe, and applying the
-// three events that move an organization between plans. No Deno.serve and no
-// global env reads, so every decision here is testable without a server.
+// Stripe webhook verification and the three events that move an organization between plans.
 
 import { z } from 'zod';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -55,11 +53,7 @@ async function hmacSha256Hex(secret: string, message: string): Promise<string> {
   return toHex(new Uint8Array(mac));
 }
 
-/**
- * Stripe's own scheme, implemented here rather than pulled from the SDK. A value
- * comes back instead of a throw: the caller decides that a refusal is a 400, and
- * nothing else about the request has been read yet.
- */
+/** Verifies Stripe's signature scheme. Returns a result rather than throwing. */
 export async function verifyStripeSignature(input: SignatureInput): Promise<SignatureResult> {
   if (input.header === null || input.header.trim().length === 0) {
     return { ok: false, reason: 'missing_signature_header' };
@@ -68,16 +62,14 @@ export async function verifyStripeSignature(input: SignatureInput): Promise<Sign
   const parsed = parseSignatureHeader(input.header);
   if (parsed === null) return { ok: false, reason: 'malformed_signature_header' };
 
-  // Without this a request captured off the wire stays valid forever, because
-  // its signature never stops being arithmetically correct.
+  // Reject an old timestamp, so a request captured off the wire does not stay valid forever.
   const tolerance = input.toleranceSeconds ?? TOLERANCE_SECONDS;
   if (Math.abs(input.now.getTime() / 1000 - parsed.timestamp) > tolerance) {
     return { ok: false, reason: 'timestamp_outside_tolerance' };
   }
 
   const expected = await hmacSha256Hex(input.secret, `${parsed.timestamp}.${input.payload}`);
-  // Every candidate is compared even once one has matched, so the count of
-  // comparisons does not report where in the list the match was.
+  // Every candidate is compared even after a match, so timing does not say which one matched.
   let matched = false;
   for (const candidate of parsed.signatures) {
     if (timingSafeEqual(candidate, expected)) matched = true;
@@ -85,23 +77,13 @@ export async function verifyStripeSignature(input: SignatureInput): Promise<Sign
   return matched ? { ok: true } : { ok: false, reason: 'no_matching_signature' };
 }
 
-// Stripe events carry dozens of fields these handlers never read, so unknown
-// keys are stripped rather than refused.
+// Unknown keys are stripped rather than refused.
 const envelopeSchema = z.object({
   id: z.string().min(1).max(255),
   type: z.string().min(1).max(255),
 });
 
-/**
- * A reference to another Stripe object, which arrives either as a bare id or as
- * the expanded object.
- *
- * Which one depends on how the endpoint was configured and on whether a human
- * replayed the event from the dashboard, neither of which we control. Requiring
- * the string turned a recoverable event into a permanent 400: Stripe retries a
- * 400 for a while, gives up, and the organization stays on the wrong plan with
- * nobody looking at the error.
- */
+/** A reference to another Stripe object, arriving as a bare id or as the expanded object. */
 const stripeRef = z.union([
   z.string().min(1),
   z.object({ id: z.string().min(1) }).transform((object) => object.id),
@@ -111,18 +93,14 @@ const checkoutCompletedSchema = z.object({
   type: z.literal('checkout.session.completed'),
   data: z.object({
     object: z.object({
-      // Permissive like the rest of this object. A field this handler can do
-      // without must not turn a real event into a permanent 400.
+      // Optional, so a field this handler can do without cannot cause a permanent 400.
       id: z.string().nullish(),
       customer: stripeRef,
       // Null on a session that bought something other than a subscription.
       subscription: stripeRef.nullish(),
-      // The checkout route sets the org id four ways. Reading one of them and
-      // rejecting the event when it is absent is how a session created by any
-      // other path, the dashboard included, becomes a permanent 400.
+      // Set by the checkout route. Sessions from other paths, the dashboard included, omit it.
       client_reference_id: z.string().nullish(),
-      // 'paid', 'unpaid' or 'no_payment_required'. Absent on older API versions,
-      // which is read as unpaid rather than waved through.
+      // 'paid', 'unpaid' or 'no_payment_required'. Absent on older API versions, read as unpaid.
       payment_status: z.string().nullish(),
       metadata: z.object({ org_id: z.string(), plan: z.string() }).partial().nullish(),
     }),
@@ -133,13 +111,11 @@ const subscriptionObjectSchema = z.object({
   id: z.string().min(1),
   status: z.string().min(1),
   customer: stripeRef,
-  // Set by the checkout route, so the plan travels with the subscription and
-  // there is no second price map to keep in step with Stripe.
+  // Set by the checkout route, so the plan travels with the subscription.
   metadata: z.object({ plan: z.string() }).partial().nullish(),
   items: z.object({
     data: z.array(z.object({
-      // Omitted on a metered item and on some licensed ones, where one is the
-      // only answer that means anything.
+      // Omitted on metered items and some licensed ones, where one is the only answer.
       quantity: z.number().int().min(1).nullish(),
       price: z.object({ id: z.string() }).nullish(),
     })).min(1),
@@ -171,21 +147,7 @@ const PAYING_STATUSES: readonly string[] = ['active', 'trialing', 'past_due'];
 
 type SubscriptionObject = z.infer<typeof subscriptionObjectSchema>;
 
-/**
- * Which plan a subscription buys.
- *
- * A paying status alone is not the answer. Any subscription on any price reaches
- * this webhook, including one created by hand in the dashboard and one on a
- * product we have not launched, and treating all of them as Team files paying
- * customers under a plan nobody sold them.
- *
- * Two things can confirm Team, in this order. The plan we intended, carried in
- * subscription metadata by the checkout route, which needs no price map here.
- * Then the price itself, which is what resolves a subscription created outside
- * that route. Anything else is a subscription to something we do not sell, and
- * the safe reading of that is free: a wrongly free organization complains, a
- * wrongly paid one does not.
- */
+/** Which plan a subscription buys: metadata first, then the price, otherwise free. */
 function planForSubscription(
   subscription: SubscriptionObject,
   teamPriceId: string | null,
@@ -199,8 +161,7 @@ function planForSubscription(
   const priceId = subscription.items.data[0].price?.id ?? null;
   if (teamPriceId !== null && priceId === teamPriceId) return 'team';
 
-  // Loud, because the alternative to noticing this is a customer paying for a
-  // plan they are not on.
+  // Audited, because the alternative is a customer paying for a plan they are not on.
   audit({
     action: 'billing.unrecognized_price',
     target: subscription.id,
@@ -254,8 +215,7 @@ async function claimEvent(
 
 async function releaseEvent(db: SupabaseClient, id: string): Promise<void> {
   const { error } = await db.from('stripe_events').delete().eq('id', id);
-  // Logged rather than thrown: the caller is already failing, and this line
-  // only says the retry will be turned away as a duplicate.
+  // Logged rather than thrown: the caller is already failing.
   if (error !== null) console.error('stripe event marker not released', id, error.message);
 }
 
@@ -292,26 +252,14 @@ type CheckoutSession = z.infer<typeof checkoutCompletedSchema>['data']['object']
 /** A session that has been paid for, or one Stripe took no payment for. */
 const SETTLED_PAYMENT_STATUSES = ['paid', 'no_payment_required'];
 
-/**
- * The plan a completed checkout puts the organization on, or nothing.
- *
- * This wrote `plan: 'team'` for every completed session, so a one-off product,
- * a session abandoned before payment, and a session created in the Stripe
- * dashboard for something else all upgraded the organization.
- *
- * The plan the checkout route wrote into metadata is the one field here that
- * says what was bought. A session carrying a subscription also produces
- * customer.subscription.updated, which resolves the plan from the price, so
- * saying nothing here leaves the better-informed event to answer.
- */
+/** The plan a completed checkout puts the organization on, or nothing. */
 function planForCheckout(session: CheckoutSession): { plan?: 'free' | 'team' } {
   const status = session.payment_status ?? 'unpaid';
   if (!SETTLED_PAYMENT_STATUSES.includes(status)) return {};
 
   if (session.metadata?.plan === 'team') return { plan: 'team' };
 
-  // Loud for the same reason the unrecognized price is: the alternative to
-  // noticing is a customer who paid and stayed on free.
+  // Audited, because the alternative is a customer who paid and stayed on free.
   audit({
     action: 'billing.checkout_plan_unrecognized',
     target: session.id ?? session.customer,
@@ -328,8 +276,7 @@ async function applyCheckout(
 ): Promise<StripeEventResult> {
   const orgId = session.client_reference_id ?? session.metadata?.org_id ?? null;
   if (orgId === null || !UUID_RE.test(orgId)) {
-    // Terminal rather than a 500: no retry will make an event that never named
-    // an organization name one.
+    // Terminal rather than a 500: no retry will make an event name an organization.
     audit({ action: 'billing.org_not_identified', target: session.customer, meta: {} });
     return {
       kind: 'ignored',
@@ -340,8 +287,7 @@ async function applyCheckout(
 
   const found = await updateOrganization(deps.db, orgId, {
     stripe_customer_id: session.customer,
-    // A session that bought no subscription leaves the column alone rather than
-    // clearing one an earlier event set.
+    // A session that bought no subscription leaves the column alone rather than clearing it.
     ...(session.subscription ? { stripe_subscription_id: session.subscription } : {}),
     ...planForCheckout(session),
   });
@@ -354,8 +300,7 @@ async function applySubscription(
   subscription: SubscriptionObject,
   deps: BillingDeps,
 ): Promise<StripeEventResult> {
-  // The subscription id is the precise handle; the customer id catches an org
-  // whose checkout event has not been applied yet.
+  // Subscription id is the precise handle; customer id catches an org checkout has not reached.
   const orgId = await findOrgId(deps.db, 'stripe_subscription_id', subscription.id) ??
     await findOrgId(deps.db, 'stripe_customer_id', subscription.customer);
   if (orgId === null) return orgNotFound(type, subscription.id);
@@ -386,15 +331,7 @@ function applyEvent(event: HandledEvent, deps: BillingDeps): Promise<StripeEvent
   }
 }
 
-/**
- * Records the event, then applies it.
- *
- * The record goes in first because Stripe redelivers an event until it gets a
- * 2xx, and a plan flip or a seat change applied twice is worse than one applied
- * late: a redelivery conflicts on the primary key and stops here. When the work
- * that follows fails the record is released, so the redelivery a 500 asks for is
- * not turned away as a duplicate.
- */
+/** Records the event, then applies it. The record is released when applying fails. */
 export async function handleStripeEvent(
   rawEvent: unknown,
   deps: BillingDeps,
@@ -406,7 +343,6 @@ export async function handleStripeEvent(
 
   const parsed = handledEventSchema.safeParse(rawEvent);
   if (!parsed.success) {
-    // A type nobody reads, or one whose payload is not the shape read here.
     // Both are terminal, so the record stays and Stripe stops redelivering.
     const known = HANDLED_TYPES.some((handled) => handled === envelope.type);
     const reason = known ? 'malformed_payload' : 'unhandled_type';

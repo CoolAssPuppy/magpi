@@ -43,17 +43,12 @@ vi.mock('@/lib/supabase/client', () => ({
   }),
 }));
 
-/**
- * What the hook returned on its last render. A hook has no DOM of its own and
- * its return value is the whole of what a caller sees, so the probe below hands
- * it out rather than asserting through some component that consumes it.
- */
+/** What the hook returned on its last render, which is the whole of what a caller sees. */
 let current: UseSupabaseUploadReturn;
 
 function Probe({ options }: { options: UseSupabaseUploadOptions }) {
   const upload = useSupabaseUpload(options);
-  // After the commit rather than during the render, so reading it never races
-  // a render React has not finished.
+  // After the commit rather than during the render, so reading it never races a render.
   useEffect(() => {
     current = upload;
   });
@@ -160,9 +155,7 @@ describe('choosing files to upload', () => {
     ]);
   });
 
-  // The marker says the set is too big, not that this file is wrong. Getting
-  // back under the limit has to clear it from files that were already there,
-  // otherwise a file stays unuploadable for a reason that no longer holds.
+  // The marker says the set is too big, so getting back under the limit clears it everywhere.
   it('clears the too-many marker once the set is back under the limit', async () => {
     render(<Probe options={getOptions()} />);
     await pick([getFile('one.md'), getFile('two.md'), getFile('three.md')]);
@@ -233,8 +226,7 @@ describe('uploading what was chosen', () => {
     expect(current.successes).toEqual([]);
   });
 
-  // Hitting upload again after a partial failure is a retry of what failed, not
-  // a second charge for what already landed.
+  // Hitting upload again after a partial failure retries what failed, not what already went.
   it('retries only the file that failed', async () => {
     storage.rejected = ['two.md'];
     render(<Probe options={getOptions()} />);
@@ -250,10 +242,7 @@ describe('uploading what was chosen', () => {
     expect(current.successes).toEqual(['one.md', 'two.md']);
   });
 
-  // A file that failed is in the error list and is also missing from the
-  // success list. Sending one request per list means two concurrent writes of
-  // the same object, and with upsert off the second one comes back as an error
-  // about a file that just uploaded fine.
+  // A failed file is in both lists, so one request per list would write the same object twice.
   it('sends one request per file when a retry covers both a failure and a file never tried', async () => {
     storage.rejected = ['one.md'];
     render(<Probe options={getOptions()} />);
@@ -272,8 +261,7 @@ describe('uploading what was chosen', () => {
     expect(current.successes.sort()).toEqual(['one.md', 'two.md']);
   });
 
-  // An upload error belongs to a file. With the list emptied there is nothing
-  // left for one to be about, so the red state has to go with the file.
+  // An upload error belongs to a file, so the red state goes when the file does.
   it('forgets an upload error once the file it was about is gone', async () => {
     storage.rejected = ['notes.md'];
     render(<Probe options={getOptions()} />);

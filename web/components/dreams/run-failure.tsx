@@ -1,18 +1,6 @@
 import type { DreamStatusView } from '@/lib/dreams/status';
 
-/**
- * Where a run that did not finish becomes legible to a person.
- *
- * The two kinds of timeout want different actions and so get different copy. A
- * stage prefix means the run detected the failure itself and measured it, which
- * for a timeout is a genuine budget overflow: retrying fails again at the same
- * size. No prefix means the platform stopped the run, from a deploy or a memory
- * kill or an incident, and retrying is exactly what fixes it.
- *
- * Telling the second reader their space is too large sends them deleting
- * documents that were never the problem, which is why the ceiling sentence is
- * held back for the case that measured one.
- */
+/** Copy for a run that did not finish. A measured timeout and a stopped run read differently. */
 export function RunFailure({
   status,
   inputDocumentCount,

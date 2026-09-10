@@ -17,21 +17,13 @@ create table public.ingest_jobs (
   updated_at timestamptz not null default now()
 );
 
--- A job cannot reach a terminal state with nothing to show the user. Without
--- this a failed import leaves the page no honest option but a spinner.
+-- A job cannot reach a terminal state with nothing to show the user.
 alter table public.ingest_jobs
   add constraint ingest_jobs_terminal_has_error
   check (status not in ('failed', 'timeout') or error is not null);
 
 create index ingest_jobs_claim_idx on public.ingest_jobs (status, created_at) where status = 'queued';
--- org_id carried through the space. Without it a row can name a space in one
--- organization and an org_id in another, and the meters believe the org_id.
---
--- It replaces the single-column reference rather than joining it. Two foreign
--- keys between the same pair of tables give PostgREST two relationships to
--- choose from and every embed fails as ambiguous, which is how the spaces page
--- found out. The composite is the stronger of the two: it says the space exists
--- and that it belongs to the org named on this row.
+-- org_id carried through the space. A second FK to spaces would make PostgREST embeds ambiguous.
 alter table public.ingest_jobs
   add constraint ingest_jobs_space_in_org
   foreign key (space_id, org_id) references public.spaces (id, org_id)

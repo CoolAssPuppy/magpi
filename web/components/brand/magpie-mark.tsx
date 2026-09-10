@@ -1,16 +1,4 @@
-/**
- * The Magpi mark and the hero bird, folded from the same sheet.
- *
- * Both are the same shapes at the same proportions as the magpi badge project,
- * so a person who has seen one recognises the other. Flat planes meeting at
- * hard creases, no gradients, and the sheen as a narrow band on the wingtip,
- * the tail tip and the beak.
- *
- * Every fill is a token from web/styles/tokens.css rather than a literal, so
- * the bird inverts with the theme: black paper on a pale ground in light, white
- * paper on near-black in dark, with the belly staying chalk in both because
- * that is what the real bird does.
- */
+/** The Magpi mark and the hero bird. Every fill is a token from web/styles/tokens.css. */
 
 /** The wordmark bird: three planes, one lit, one shadowed, one sheen. */
 export function MagpieMark({ size = 22 }: { size?: number }) {

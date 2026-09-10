@@ -3,11 +3,7 @@ import type { StatusTone } from '@/lib/ui/status-tone';
 
 export type ConnectionStatus = Enums<'connection_status'>;
 
-/**
- * What a person can do about the state the connection is in. A union rather than
- * a pair of booleans, so a status that offers nothing cannot accidentally render
- * two buttons.
- */
+/** What a person can do about the state the connection is in. At most one action. */
 export type ConnectionRecovery =
   | { readonly kind: 'none' }
   | { readonly kind: 'reconnect'; readonly label: string }

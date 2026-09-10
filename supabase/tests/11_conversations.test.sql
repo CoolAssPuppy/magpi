@@ -1,8 +1,4 @@
--- Conversations belong to a user and messages inherit through the conversation.
---
--- The file ends on the citation rule the spec names out loud: citations are
--- stored as chunk ids and resolved on read, so losing access to a space takes
--- the cited text out of an old answer while the answer itself stays.
+-- Conversations belong to a user. Messages inherit through them, and citations resolve on read.
 
 begin;
 
@@ -92,8 +88,7 @@ select is(
   3, 'and the message actually landed'
 );
 
--- The using clause passes because Alice owns the row. Only the with check stops
--- her handing the conversation, and its whole history, to someone else.
+-- The using clause passes since Alice owns the row; the with check blocks the reassignment.
 select throws_ok(
   $$ update public.conversations
      set user_id = 'b0000000-0000-4000-8000-000000000002'
@@ -130,8 +125,7 @@ select throws_ok(
   '42501', null, 'another user cannot open a conversation in someone else''s name'
 );
 
--- A delete the policy filters to nothing is reported as success, so the count
--- afterwards is the only thing that proves nothing was destroyed.
+-- A delete filtered to nothing reports success, so only the count afterwards proves anything.
 select lives_ok(
   $$ delete from public.conversations where id = '59000000-0000-4000-8000-00000000000a' $$,
   'a delete of a hidden conversation reports success'
@@ -146,9 +140,7 @@ select is(
 );
 
 -- Citations ------------------------------------------------------------------
---
--- Citations hold chunk ids, never chunk text. The read path joins them back
--- through RLS, which is what makes access removal retroactive.
+-- Chunk ids only. The read path joins them through RLS, so losing access is retroactive.
 
 set local role authenticated;
 set local request.jwt.claims to '{"sub":"a0000000-0000-4000-8000-000000000001","role":"authenticated"}';
@@ -186,8 +178,7 @@ select is(
   1, 'while the message itself is still readable by its author'
 );
 
--- The ids stay on the row. Nothing rewrites history; the resolution is what
--- changed, and it changed because the space membership did.
+-- The ids stay on the row. Only the resolution changed, along with the space membership.
 select is(
   (select jsonb_array_length(citations)::int from public.messages
    where id = '5a000000-0000-4000-8000-00000000001a'),

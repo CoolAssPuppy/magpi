@@ -11,8 +11,7 @@ const SETTINGS_PATH = '/settings';
 const displayNameSchema = z.object({ displayName: z.string().trim().min(1).max(80) });
 const spaceNameSchema = z.object({ name: z.string().trim().min(1).max(120) });
 
-// Parsing happens inside withSession in every action file, so a signed-out
-// caller is told to sign in whatever they sent.
+// Parsing happens inside withSession, so a signed-out caller is told to sign in.
 
 export async function updateDisplayName(
   _previous: ActionState,
@@ -51,10 +50,7 @@ export async function renamePersonalSpace(
   }, SETTINGS_PATH);
 }
 
-/**
- * Global scope, so every refresh token this account holds is revoked, not just
- * the one in this browser. That is the whole point of the button.
- */
+/** Signs out with global scope, revoking every refresh token this account holds. */
 export async function signOutEverywhere(
   _previous: ActionState,
   _formData: FormData,

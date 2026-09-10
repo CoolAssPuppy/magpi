@@ -1,8 +1,4 @@
--- A dream run is scoped to exactly one space. It reads only that space and
--- writes only into that space, and its output is an ordinary document under the
--- ordinary document policy. A synthesis job that read across spaces under the
--- service role and surfaced the result would be a permission bypass with a
--- friendly name, so the boundary is asserted on every table the job touches.
+-- A dream run is scoped to one space: it reads and writes only there, and the output is a document.
 
 begin;
 
@@ -19,8 +15,7 @@ values
   ('d0000000-0000-4000-8000-000000000004', 'dave@magpi.test',
    '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated');
 
--- Dave is Carol's colleague. Alice is a stranger. Neither belongs in the space
--- the dream runs in.
+-- Dave is Carol's colleague, Alice a stranger. Neither belongs to the dream's space.
 insert into public.org_members (org_id, user_id, role)
 select org_id, 'd0000000-0000-4000-8000-000000000004', 'member'
 from public.org_members where user_id = 'c0000000-0000-4000-8000-000000000003';
@@ -70,9 +65,7 @@ values ('56000000-0000-4000-8000-00000000000c', current_setting('recall.org_c'):
         '2026-01-05 03:00:00+00', '2026-01-05 03:04:00+00', 2,
         '51000000-0000-4000-8000-0000000000fc', '2026-01-05 03:00:00+00');
 
--- The digest points back at the run that wrote it. That back reference is what
--- makes a written row traceable to a space, and the structural check below
--- walks it.
+-- The digest points back at the run that wrote it; the structural check below walks that.
 update public.documents
 set dream_run_id = '56000000-0000-4000-8000-00000000000c'
 where id = '51000000-0000-4000-8000-0000000000fc';
@@ -94,10 +87,7 @@ values ('55000000-0000-4000-8000-00000000000c', '54000000-0000-4000-8000-0000000
         '51000000-0000-4000-8000-00000000000c', '52000000-0000-4000-8000-00000000000c',
         '50000000-0000-4000-8000-00000000000c');
 
--- Alice's own space, holding content the Leadership dream must never reach. The
--- two document ids are chosen to sort either side of the Leadership ones, so the
--- cross-space link can be built in both column positions without tripping the
--- document_a < document_b check.
+-- Alice's space. Its ids straddle the Leadership ones for the document_a < document_b check.
 insert into public.spaces (id, org_id, kind, name)
 values ('50000000-0000-4000-8000-00000000000a',
         (select org_id from public.org_members where user_id = 'a0000000-0000-4000-8000-000000000001'),
@@ -124,18 +114,13 @@ values ('52000000-0000-4000-8000-0000000000aa',
         '50000000-0000-4000-8000-00000000000a', '51000000-0000-4000-8000-0000000000aa',
         0, 'the staff engineer band tops out at 260');
 
--- The digest cites two chunks: one from its own space, one of Alice's. A dream
--- job has no business producing the second, but source_chunk_ids is a uuid[] and
--- an array column cannot carry a foreign key, so nothing declarative can refuse
--- it. What makes the column safe anyway is that the ids are resolved on read
--- through RLS, exactly as messages.citations is.
+-- The digest cites one chunk from its space and one of Alice's; RLS filters them on read.
 update public.documents
 set source_chunk_ids = array['52000000-0000-4000-8000-00000000000c',
                              '52000000-0000-4000-8000-0000000000aa']::uuid[]
 where id = '51000000-0000-4000-8000-0000000000fc';
 
--- An entity of Alice's, so the mention assertions have something in the wrong
--- space to reach for.
+-- An entity of Alice's, so the mention assertions have a wrong-space target to reach for.
 insert into public.entities (id, org_id, space_id, kind, name, canonical_name)
 values ('54000000-0000-4000-8000-0000000000aa',
         (select org_id from public.spaces where id = '50000000-0000-4000-8000-00000000000a'),
@@ -177,11 +162,7 @@ select is(
   1, 'and the digest the run wrote, which is a document like any other'
 );
 
--- The same rule the spec sets for message citations, on the other citation
--- column. The ids are stored; the text is resolved on read through RLS. That is
--- what makes an unenforceable array column safe, and it is the property that
--- breaks the day somebody adds a denormalised source_text column or resolves
--- citations through a security definer function.
+-- Ids stored, text resolved on read through RLS, the same rule as messages.citations.
 select is(
   (select array_length(source_chunk_ids, 1) from public.documents
    where id = '51000000-0000-4000-8000-0000000000fc'),
@@ -225,9 +206,7 @@ select is(
   0, 'no entity mentions'
 );
 
--- The dream is where a cross-space leak would actually happen: a digest is a
--- readable summary of everything the run saw, so it has to be governed exactly
--- like the sources it read.
+-- A digest summarises everything the run saw, so it is governed like the sources it read.
 select is(
   (select count(*)::int from public.documents
    where id = '51000000-0000-4000-8000-0000000000fc'),
@@ -245,17 +224,7 @@ select is(
 );
 
 -- Everything a run wrote sits in the run's own space ----------------------------
---
--- One query over every table a dream job writes, walking each row back to the
--- run that produced it and comparing the two space ids. It runs as postgres, so
--- no policy hides a violation from the check itself.
---
--- Be clear about what this proves on its own: the fixture is mine, so the empty
--- result below is only as good as the rows I wrote. The second assertion is the
--- one that gives it meaning, by planting a bad row and showing the query names
--- it. What will catch a real regression is the constraint the four assertions at
--- the end of this file are asking for; this pair is the detector that goes with
--- it, and it doubles as the audit query to run against real data.
+-- One query over every table a dream job writes, run as postgres so no policy hides a row.
 
 reset role;
 
@@ -297,18 +266,7 @@ select is_empty(
   'no row a dream run wrote carries a space_id other than its run''s'
 );
 
--- Plant one wrong row and prove the query names it, so the assertion above is
--- known to be looking rather than merely quiet.
---
--- The composite foreign keys refuse this row now, which is the whole point of
--- having them and also why it has to be planted with them dropped. They are not
--- deferrable, so there is no gentler way to reach the state the detector is for.
--- Dropping them here rather than planting the row in some branch the constraints
--- happen not to cover yet is deliberate: the next constraint that lands would
--- break that arrangement, and this one survives all of them.
---
--- Everything in this file rolls back, and they are restored on the next line so
--- the write-refusal assertions at the end still run against a constrained table.
+-- Plant a wrong row to prove the query above names it. The composite FKs are dropped and restored.
 alter table public.entity_mentions drop constraint entity_mentions_document_in_space;
 alter table public.entity_mentions drop constraint entity_mentions_chunk_in_space;
 
@@ -358,8 +316,7 @@ select is(
 set local role authenticated;
 set local request.jwt.claims to '{"sub":"c0000000-0000-4000-8000-000000000003","role":"authenticated"}';
 
--- The delete policy is narrowed to origin = 'dream' so that dismissing a digest
--- can never take a source with it.
+-- The delete policy is narrowed to origin = 'dream', so a source cannot go with a digest.
 select lives_ok(
   $$ delete from public.documents where id = '51000000-0000-4000-8000-00000000000c' $$,
   'a member can issue a delete against a source document without error'
@@ -403,8 +360,7 @@ select is(
   2, 'nor the chunks of those documents'
 );
 
--- output_document_id is on delete set null, so the run survives as a record of
--- what happened even after its output is dismissed.
+-- output_document_id is on delete set null, so the run survives its output.
 select is(
   (select output_document_id from public.dream_runs
    where id = '56000000-0000-4000-8000-00000000000c'),
@@ -413,23 +369,7 @@ select is(
 );
 
 -- The row a dream must not be able to write --------------------------------------
---
--- Everything above tests what a reader may see. These four test what the writer
--- may put there, and they run as service_role on purpose, because service_role
--- has BYPASSRLS: no policy in this schema is evaluated for the dream job at all.
--- The space boundary the spec calls the security model is, for the one process
--- that writes across it, currently enforced by nothing but the correctness of
--- the job body.
---
--- dream_links.rationale is the reason this matters rather than being tidiness. It
--- is model-written prose describing both documents, and it is readable by every
--- member of the space the link is filed in. A link filed in Leadership naming a
--- document in Alice's space hands Leadership a written summary of a document
--- they cannot open.
---
--- The fix is declarative and needs no trigger: a unique constraint on
--- documents (id, space_id) and chunks (id, space_id), then composite foreign
--- keys from each of these columns carrying space_id along with the id.
+-- Run as service_role, which has BYPASSRLS, so only the composite foreign keys refuse these.
 
 set local role service_role;
 
@@ -475,11 +415,7 @@ select throws_ok(
   'an entity mention cannot cite a chunk from outside the space it is filed in'
 );
 
--- This one is not only about dreaming. Every writer of chunks reaches it, the
--- ingest pipeline included, and it is the worst of the set: chunks carry the
--- text, RLS on chunks is what public.search filters, so a chunk filed in the
--- wrong space makes another space's document searchable and readable in full.
--- Nothing ties chunks.document_id to the document's space today.
+-- Every chunk writer reaches this, not just dreaming: RLS on chunks is what search filters.
 select throws_ok(
   $$ insert into public.chunks (org_id, space_id, document_id, ordinal, content)
      select org_id, '50000000-0000-4000-8000-00000000000c', id, 9,
@@ -489,10 +425,7 @@ select throws_ok(
   'a chunk cannot be filed in a space its own document does not live in'
 );
 
--- The three reference columns below leak nothing today, because RLS filters the
--- row on the other end of each one. They are asserted anyway: "the policy hides
--- it" is a second line of defence, and the day someone widens a policy in a
--- hurry is the day it stops being one.
+-- The three columns below are covered by RLS today; asserted anyway as a second line of defence.
 
 select throws_ok(
   $$ update public.documents
@@ -524,15 +457,7 @@ select throws_ok(
   'an entity mention cannot cite an entity from another space'
 );
 
--- There is no uncited synthesis. An empty array is a legitimate answer, meaning
--- the run found nothing worth writing about; a null is a digest whose citations
--- were never recorded, which is the same prose with no way to check it.
--- messages.citations already draws that line, as `jsonb not null default '[]'`
--- with a check that it is an array. This column wants the same:
---
---   alter table public.documents
---     alter column source_chunk_ids set default '{}',
---     alter column source_chunk_ids set not null;
+-- source_chunk_ids is not null: an empty array means nothing found, a null means nothing recorded.
 select throws_ok(
   $$ insert into public.documents (org_id, space_id, title, origin, source_chunk_ids)
      values (current_setting('recall.org_c')::uuid,

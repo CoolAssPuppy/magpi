@@ -1,16 +1,5 @@
 #!/usr/bin/env node
-/**
- * One command from an empty database to a demo you can ask questions of.
- *
- *   doppler run -- node scripts/seed-demo.mjs
- *
- * Creates the two demo people, puts them in one organization, and loads the
- * sample corpus. Idempotent: run it twice and the second run creates nothing.
- *
- * The two people exist because the demo that matters needs two of them. Diane
- * is in Leadership and Sofia is not, and they ask the same question. See
- * docs/corpus.md under "Demo questions and their correct answers".
- */
+/** Creates the two demo people, puts them in one organization, and loads the sample corpus. */
 
 import { spawnSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
@@ -23,7 +12,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const API_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'http://127.0.0.1:55321';
 const SERVICE_KEY = process.env.SB_SERVICE_ROLE_KEY;
 
-/** Published in the README. This is a local demo, not a deployment. */
+/** Published in the README. Local demo only. */
 const PASSWORD = 'magpi-demo-password';
 
 const PEOPLE = [
@@ -50,10 +39,7 @@ async function ensurePerson(client, person) {
 
   if (!error) return { ...person, id: data.user.id, created: true };
 
-  // Only "already registered" falls through to the lookup. Every other refusal
-  // is raised as itself: a bad service key and a rate limit used to arrive here
-  // too, walk the listing, find nothing, and report "could not create or find"
-  // with the real cause buried at the end of the sentence.
+  // Only "already registered" falls through to the lookup. Other errors are raised as themselves.
   if (!isAlreadyRegistered(error)) {
     throw new Error(`could not create ${person.email}: ${error.message}`);
   }
@@ -77,11 +63,7 @@ function isAlreadyRegistered(error) {
   );
 }
 
-/**
- * The admin API has no get-by-email, so the listing is the only route to an id.
- * It pages: reading only the first thousand meant a long-lived local database
- * reported the account missing rather than finding it.
- */
+/** The admin API has no get-by-email, so this pages through the listing to find the id. */
 async function findByEmail(client, email) {
   for (let page = 1; page <= 20; page += 1) {
     const { data, error } = await client.auth.admin.listUsers({ page, perPage: 1000 });
@@ -94,12 +76,7 @@ async function findByEmail(client, email) {
   return null;
 }
 
-/**
- * Everyone lands in the first person's organization. The signup trigger gives
- * each of them their own, and the second one's is left alone rather than
- * deleted: a personal space that belongs to nobody is a worse demo artefact
- * than an empty organization nobody opens.
- */
+/** Everyone joins the first person's organization. Their own auto-created ones are left alone. */
 async function joinOrganization(client, orgId, person) {
   await client
     .from('org_members')

@@ -1,6 +1,4 @@
-// Hashing and token minting. OAuth state values and claim tickets are 32
-// random bytes, base64url encoded, and only their sha256 hashes reach the
-// database, so a leaked row cannot be replayed as a credential.
+// Hashing and token minting. Only sha256 hashes of tokens reach the database.
 
 export function base64urlEncode(bytes: Uint8Array): string {
   let binary = '';
@@ -29,17 +27,11 @@ export async function sha256Base64Url(input: string): Promise<string> {
   return base64urlEncode(new Uint8Array(digest));
 }
 
-/**
- * Compares two strings without returning early on the first difference.
- *
- * Used for webhook signatures, where a caller who can measure the comparison
- * can otherwise recover a valid signature one byte at a time.
- */
+/** Compares two strings in constant time, for webhook signatures. */
 export function timingSafeEqual(left: string, right: string): boolean {
   const a = new TextEncoder().encode(left);
   const b = new TextEncoder().encode(right);
-  // Length is not secret, and comparing unequal lengths byte by byte would read
-  // past the end of the shorter one.
+  // Length is not secret, and unequal lengths would read past the shorter array.
   if (a.length !== b.length) return false;
   let difference = 0;
   for (let i = 0; i < a.length; i++) difference |= a[i] ^ b[i];

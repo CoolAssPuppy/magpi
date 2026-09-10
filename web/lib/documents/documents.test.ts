@@ -97,14 +97,7 @@ const documentRow = (overrides: Partial<DocumentJoinRow> = {}): DocumentJoinRow 
 
 type QueryCall = readonly [string, ...unknown[]];
 
-/**
- * A postgrest builder that records the chain. The filters are the whole point of
- * this function, so a double that answered rows without reporting what was asked
- * would let a query that reads every space pass.
- *
- * The cast is confined here, the one place a double stands in for a client whose
- * full surface it does not implement.
- */
+/** A postgrest builder double that records the filter chain. The cast stays here. */
 function documentsTable(result: {
   rows?: readonly DocumentJoinRow[] | null;
   error?: { message: string };

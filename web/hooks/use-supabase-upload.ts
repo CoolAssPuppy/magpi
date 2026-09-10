@@ -9,43 +9,19 @@ interface FileWithPreview extends File {
 }
 
 type UseSupabaseUploadOptions = {
-  /**
-   * Name of bucket to upload files to in your Supabase project
-   */
+  /** Name of the bucket to upload files to. */
   bucketName: string;
-  /**
-   * Folder to upload files to in the specified bucket within your Supabase project.
-   *
-   * Defaults to uploading files to the root of the bucket
-   *
-   * e.g If specified path is `test`, your file will be uploaded as `test/file_name`
-   */
+  /** Folder within the bucket. Defaults to the root. */
   path?: string;
-  /**
-   * Allowed MIME types for each file upload (e.g `image/png`, `text/html`, etc). Wildcards are also supported (e.g `image/*`).
-   *
-   * Defaults to allowing uploading of all MIME types.
-   */
+  /** Allowed MIME types, wildcards included. Defaults to all of them. */
   allowedMimeTypes?: string[];
-  /**
-   * Maximum upload size of each file allowed in bytes. (e.g 1000 bytes = 1 KB)
-   */
+  /** Maximum size of each file, in bytes. */
   maxFileSize?: number;
-  /**
-   * Maximum number of files allowed per upload.
-   */
+  /** Maximum number of files allowed per upload. */
   maxFiles?: number;
-  /**
-   * The number of seconds the asset is cached in the browser and in the Supabase CDN.
-   *
-   * This is set in the Cache-Control: max-age=<seconds> header. Defaults to 3600 seconds.
-   */
+  /** Seconds to cache the asset for, sent as Cache-Control max-age. Defaults to 3600. */
   cacheControl?: number;
-  /**
-   * When set to true, the file is overwritten if it exists.
-   *
-   * When set to false, an error is thrown if the object already exists. Defaults to `false`
-   */
+  /** Overwrite a file that already exists, rather than erroring. Defaults to false. */
   upsert?: boolean;
 };
 
@@ -69,9 +45,7 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [uploadErrors, setErrors] = useState<{ name: string; message: string }[]>([]);
 
-  // An upload error belongs to a file. With no files there is nothing for one to
-  // be about, so it is derived rather than cleared by an effect that set state
-  // synchronously on every change to the list.
+  // An upload error belongs to a file, so with no files there are no errors.
   const errors = files.length === 0 ? EMPTY_ERRORS : uploadErrors;
   const [successes, setSuccesses] = useState<string[]>([]);
 
@@ -87,8 +61,7 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
 
   const onDrop = useCallback(
     (acceptedFiles: File[], fileRejections: FileRejection[]) => {
-      // Object.assign rather than a cast. The dropzone hands back a plain File,
-      // and asserting it into FileWithPreview hides a shape that is not there yet.
+      // Object.assign rather than a cast, because the dropzone hands back a plain File.
       const decorate = (file: File, fileErrors: readonly FileError[]): FileWithPreview =>
         Object.assign(file, { preview: URL.createObjectURL(file), errors: fileErrors });
 
@@ -100,11 +73,7 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
 
       const newFiles = [...files, ...validFiles, ...invalidFiles];
 
-      // A file carries the too-many-files marker only while the set is actually
-      // over the limit, so dropping back under it clears the marker for every
-      // file. The Library block reconciled this in an effect that set state
-      // synchronously; it is derivable from the array being built, so it is
-      // computed here instead and the effect is gone.
+      // The too-many-files marker holds only while the set is over the limit.
       const withinLimit = newFiles.length <= maxFiles;
       setFiles(
         withinLimit
@@ -133,14 +102,9 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
   const onUpload = useCallback(async () => {
     setLoading(true);
 
-    // [Joshen] This is to support handling partial successes
-    // If any files didn't upload for any reason, hitting "Upload" again will only upload the files that had errors
+    // [Joshen] Hitting "Upload" again only re-uploads the files that had errors.
     const filesWithErrors = errors.map((x) => x.name);
-    // One pass rather than one filtered list per reason. A file that failed is
-    // in the error list and is also missing from the success list, so
-    // concatenating the two put it in twice: two concurrent writes of the same
-    // object, and with upsert off the second comes back as an error about a
-    // file that had just landed.
+    // One pass, so a file that is both failed and unsuccessful is not uploaded twice.
     const filesToUpload =
       filesWithErrors.length > 0
         ? files.filter(
@@ -167,7 +131,7 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
     );
 
     const responseErrors = responses.filter((x) => x.message !== undefined);
-    // if there were errors previously, this function tried to upload the files again so we should clear/overwrite the existing errors.
+    // Overwrites the previous errors, since this call tried those files again.
     setErrors(responseErrors);
 
     const responseSuccesses = responses.filter((x) => x.message === undefined);

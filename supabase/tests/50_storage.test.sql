@@ -1,10 +1,4 @@
--- Uploaded bytes are keyed ${space_id}/${document_id}/${filename}, so the first
--- path segment is the permission decision.
---
--- Storage answers a delete of a row RLS is hiding with success and an empty
--- result. A test that only checks the statement did not error would pass while
--- the caller had, in fact, deleted nothing and been told they deleted something.
--- Every delete here is followed by a count.
+-- Objects are keyed ${space_id}/${document_id}/${filename}. The first segment decides access.
 
 begin;
 
@@ -41,12 +35,7 @@ values
   ('50000000-0000-4000-8000-00000000000c', 'c0000000-0000-4000-8000-000000000003',
    '2026-01-02 00:00:00+00');
 
--- The bucket is declared in config.toml and created by the CLI, not by a
--- migration, so it is infrastructure this file would otherwise depend on
--- silently. When it is absent every object insert below fails the bucket foreign
--- key and the whole file aborts having run no assertions, which reads as a test
--- failure rather than a missing precondition. Creating it here costs nothing
--- when it already exists and makes the file self-sufficient.
+-- The bucket comes from config.toml, not a migration, so it is created here to stand alone.
 insert into storage.buckets (id, name, public)
 values ('documents', 'documents', false)
 on conflict (id) do nothing;
@@ -116,11 +105,7 @@ select is(
   1, 'and the object is there afterwards'
 );
 
--- The hidden delete ----------------------------------------------------------
---
--- storage.protect_delete refuses direct SQL deletes outright, which would mask
--- the RLS result behind an unrelated error. Lifting it for this statement leaves
--- the policy as the only thing deciding, which is what is under test.
+-- The hidden delete: protect_delete is lifted so the RLS policy is the only thing deciding.
 
 set local storage.allow_delete_query to 'true';
 

@@ -58,11 +58,7 @@ type SpacesResponse = {
   readonly error: { readonly message: string } | null;
 };
 
-/**
- * Stands in for the spaces table. The cast is confined here: a test double
- * cannot implement the whole postgrest surface, and the columns asked for are
- * what the assertions are about.
- */
+/** Stands in for the spaces table, recording the columns each call asks for. */
 function spacesTable(response: SpacesResponse): {
   supabase: SupabaseClient<Database>;
   asked: string[];

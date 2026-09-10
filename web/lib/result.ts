@@ -1,7 +1,4 @@
-/**
- * Errors are values at API boundaries and thrown inside. A server action returns
- * one of these; the code behind it throws.
- */
+/** Errors are values at API boundaries and thrown inside. A server action returns one of these. */
 export type Result<T, E = string> =
   { readonly ok: true; readonly data: T } | { readonly ok: false; readonly error: E };
 

@@ -1,5 +1,4 @@
-// The entities pass: read the day's chunks, extract who and what they are about,
-// and record where each mention came from.
+// The entities pass: extract people, projects, customers and decisions from the day's chunks.
 
 import { z } from 'zod';
 
@@ -43,13 +42,10 @@ export async function dreamEntities(pass: Pass): Promise<DreamOutcome> {
   enter(pass, 'extract');
   const drafts = readAnswer(entitiesSchema, answer, 'entities');
 
-  // A chunk id the model was not given is one it invented, and an invented id
-  // either fails the foreign key or names a row in somebody else's space.
+  // Only chunk ids that were in the input are kept, so invented ids never reach a write.
   const known = new Map(chunks.map((chunk) => [chunk.id, chunk.document_id]));
 
-  // Two statements for the whole answer, not two per entity: a hundred entities
-  // a round trip at a time is two hundred of them inside a budget of well under
-  // a minute, and both writes already take a batch.
+  // Two batched statements for the whole answer rather than two per entity.
   enter(pass, 'write');
   const entityIds = await db.upsertEntities(drafts.map((draft) => ({
     kind: draft.kind,

@@ -1,8 +1,4 @@
-// POST /ingest-enqueue. What the dropzone calls once the bytes are in Storage.
-//
-// Files a documents row and one ingest_jobs row. The worker does the reading;
-// this only decides that the caller may put something in that space and that the
-// organization is allowed another document.
+// POST /ingest-enqueue. Files a documents row and one ingest_jobs row after the upload.
 
 import { ApiError, jsonResponse } from '../_shared/errors.ts';
 import { serveFunction } from '../_shared/http.ts';

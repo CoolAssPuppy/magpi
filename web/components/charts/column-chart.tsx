@@ -17,10 +17,7 @@ function formatNumber(value: number): string {
   return value.toLocaleString('en-US');
 }
 
-/**
- * One series over time. A day with no traffic draws as a zero rather than
- * disappearing, so the shape of the week is honest.
- */
+/** One series over time. A day with no traffic draws as a zero rather than disappearing. */
 export function ColumnChart({
   title,
   description,

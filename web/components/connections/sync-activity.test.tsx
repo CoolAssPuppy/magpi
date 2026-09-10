@@ -28,8 +28,7 @@ const openChannel = (): FakeChannel => {
   return channel;
 };
 
-// One object for the life of the test file, because the real app router hands
-// back the same one on every render.
+// One object for the whole file, because the real app router returns the same one every render.
 const router = { refresh };
 
 vi.mock('next/navigation', () => ({ useRouter: () => router }));
@@ -109,9 +108,7 @@ describe('live import activity', () => {
     expect(removeChannel).toHaveBeenCalledWith(channels[0]);
   });
 
-  // The parent builds the list of spaces fresh on every render. Tearing the
-  // socket down and building a new one each time loses every event that lands
-  // in the gap, which is exactly the events this component exists to show.
+  // The parent rebuilds the spaces list every render, and resubscribing would drop events.
   it('holds one socket open when the same spaces arrive as a new list', () => {
     const view = render(<SyncActivity spaceIds={['space-1']} />);
 

@@ -16,8 +16,7 @@ export default async function SpacePage({ params }: { params: Promise<{ id: stri
     .eq('id', id)
     .maybeSingle();
 
-  // RLS already hid a space the caller is not in, so "not found" and "not
-  // allowed" are the same answer here, deliberately.
+  // RLS already hid a space the caller is not in, so this covers both cases.
   if (!space) notFound();
 
   const { data: members } = await supabase

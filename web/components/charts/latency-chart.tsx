@@ -24,11 +24,7 @@ function lastMeasured(values: readonly (number | null)[]): number {
   return -1;
 }
 
-/**
- * p95 is the series this panel is about, so it carries the accent and p50 stays
- * gray behind it. Both are milliseconds on one axis; a second measure would get
- * a second chart rather than a second scale.
- */
+/** p95 in the accent colour, p50 in gray. Both are milliseconds on one axis. */
 export function LatencyChart({
   title,
   description,

@@ -12,24 +12,7 @@ export interface CoreRequest {
   ip: string;
 }
 
-/**
- * Who a per-IP rate limit rule counts against.
- *
- * cf-connecting-ip first. The edge writes it over whatever the caller sent, so
- * it is both the real client address and one the caller cannot choose. This was
- * the last resort rather than the first, and since every request on the
- * deployed runtime carries x-forwarded-for, it was never read: the rightmost
- * forwarded entry is the platform's own proxy, the same value for every caller
- * in the world, so each per-IP rule was one global rule wearing a per-IP name.
- *
- * The forwarded header is the fallback, for a local `supabase functions serve`
- * where nothing sets cf-connecting-ip. Rightmost rather than leftmost there,
- * because the leftmost is whatever the caller typed.
- *
- * When neither header names anyone, every caller shares the `unknown` bucket.
- * That is a shared limit rather than no limit, which is the safe direction to
- * be wrong in.
- */
+/** Who a per-IP rate limit counts against: cf-connecting-ip, then the rightmost forwarded entry. */
 export function clientIp(headers: Headers): string {
   const resolved = headers.get('cf-connecting-ip')?.trim();
   if (resolved) return resolved;
@@ -75,9 +58,7 @@ export async function toCoreRequest(req: Request, functionName: string): Promise
   };
 }
 
-// An allowlist, not `*`: a wildcard alongside `authorization` in the allowed
-// headers removes origin as a defence layer. SB_WEB_ORIGINS is comma separated;
-// the localhost default drops once it is set.
+// An allowlist, not `*`. SB_WEB_ORIGINS is comma separated; the localhost default drops once set.
 function allowedOrigins(source: EnvSource): string[] {
   const configured = source.get('SB_WEB_ORIGINS');
   if (configured) {
@@ -93,8 +74,7 @@ const CORS_BASE: Record<string, string> = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Max-Age': '600',
-  // The permitted origin varies per request, so caches must not serve one
-  // origin's response to another.
+  // The permitted origin varies per request, so caches must not cross origins.
   Vary: 'Origin',
 };
 
@@ -106,8 +86,7 @@ export function corsHeadersFor(
   if (origin && allowedOrigins(source).includes(origin)) {
     return { ...CORS_BASE, 'Access-Control-Allow-Origin': origin };
   }
-  // No allow-origin for a disallowed origin. The request still executes; the
-  // browser refuses to reveal the response.
+  // No allow-origin for a disallowed origin. The request runs; the browser hides the response.
   return { ...CORS_BASE };
 }
 
@@ -124,10 +103,7 @@ export function withCors(res: Response, req: Request, source: EnvSource = denoEn
   return out;
 }
 
-/**
- * The shell every CORS-serving function shares: preflight, request parsing,
- * CORS headers, and mapping a thrown ApiError onto the error envelope.
- */
+/** The shell every CORS-serving function shares: preflight, parsing, CORS headers, errors. */
 export function serveFunction(
   functionName: string,
   handler: (core: CoreRequest) => Promise<Response>,

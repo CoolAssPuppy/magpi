@@ -36,10 +36,7 @@ function ConnectionRow({
   );
 }
 
-/**
- * Providers are rows in a table, so this is a list of rows and not a grid of
- * cards that differ only by name.
- */
+/** Providers as a list of rows, one section per provider. */
 export function ConnectionList({
   listings,
   onResync,

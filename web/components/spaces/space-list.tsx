@@ -2,10 +2,7 @@ import Link from 'next/link';
 
 import { describeKind, type Space } from '@/lib/spaces/spaces';
 
-/**
- * A list, not a card grid. Every space carries the same four facts, so a grid of
- * identical cards would add a border per row and no information.
- */
+/** A list of spaces, each with its kind, document count and member count. */
 export function SpaceList({ spaces }: { spaces: readonly Space[] }) {
   return (
     <ul className="divide-y divide-border rounded-[var(--radius-panel)] border border-border">

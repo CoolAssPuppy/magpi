@@ -1,15 +1,4 @@
-/**
- * Addresses for the members on one screen.
- *
- * org_members holds a user id and nothing else, and addresses live in auth.users
- * where no policy exposes them. The page used to call auth.admin.getUserById
- * once per member, and the spec's organization holds four thousand people.
- *
- * `org_member_emails` is one query. It is security definer, and it tests
- * is_org_admin itself rather than trusting this caller, because a function that
- * reads auth.users with no check of its own is a directory of every account in
- * the project behind one rpc call.
- */
+/** Addresses for the members on one screen, read in one call through org_member_emails. */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -18,10 +7,7 @@ import type { Database } from '@/lib/database.types';
 /** How many members one screen shows. */
 export const MEMBERS_PER_PAGE = 50;
 
-/**
- * A member whose account no longer carries an address reads as unknown rather
- * than as a missing row. The membership is the thing the page is listing.
- */
+/** Shown in place of an address for a member whose account no longer carries one. */
 export const UNKNOWN_ADDRESS = 'Unknown address';
 
 export async function resolveEmails(

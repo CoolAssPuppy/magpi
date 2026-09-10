@@ -1,8 +1,4 @@
-// Google Drive, read through the changes API.
-//
-// Drive is the odd one of the four. Its cursor is an opaque page token the API
-// itself hands back rather than a timestamp we compare, and the text of a file
-// is a second request whose shape depends on the file's mime type.
+// Google Drive, read through the changes API. Its cursor is an opaque page token Drive issues.
 
 import type {
   ChangePage,
@@ -26,20 +22,14 @@ import {
   selectedIds,
 } from './common.ts';
 
-// Matches the slug seeded into `providers`. The registry row is the authority
-// and sources_registry_test pins the two together.
+// Matches the slug seeded into `providers`, which sources_registry_test pins to this constant.
 const PROVIDER = 'google_drive';
 const DISPLAY_NAME = 'Google Drive';
 const API = 'https://www.googleapis.com/drive/v3';
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
 const PAGE_SIZE = 100;
 
-/**
- * One pass runs inside a single function invocation with a wall clock budget,
- * so a connection with a long backlog is walked a slice at a time. The bound
- * stops the walk, `hasMore` asks the caller to schedule another pass, and the
- * cursor handed back resumes exactly where this one stopped.
- */
+/** Pages per pass. Past this the walk stops, sets hasMore, and returns a cursor to resume from. */
 const MAX_PAGES = 10;
 
 const RECONNECT_MESSAGE = `${DISPLAY_NAME} refused this connection, reconnect it.`;
@@ -70,14 +60,7 @@ function getJson(creds: SourceCredentials, deps: SourceDeps, url: string): Promi
   });
 }
 
-/**
- * A text body, classified by the same rule requestJson uses on a JSON one.
- *
- * An export and an `alt=media` download answer with the file itself, so the
- * shared JSON path cannot read them. Only the status rule is repeated here, and
- * nothing the provider returned reaches the message: an error body can quote the
- * request back, and the request carries the token.
- */
+/** Reads a text body by requestJson's status rule. No provider text reaches the error message. */
 async function requestText(
   creds: SourceCredentials,
   deps: SourceDeps,
@@ -99,12 +82,7 @@ async function requestText(
   return await response.text();
 }
 
-/**
- * One change as a document reference, or null when this sync has no use for it.
- *
- * A change with no `file` body is one the connection can no longer read, which
- * reads the same as a deletion from here.
- */
+/** One change as a document ref, or null. A change with no `file` body counts as a deletion. */
 function changeToRef(
   change: unknown,
   keep: Set<string>,
@@ -131,13 +109,7 @@ function changeToRef(
   };
 }
 
-/**
- * A first pass reports no documents.
- *
- * Drive will only hand out changes made after a token it issued, so there is no
- * token that means "from the beginning". The first pass asks for today's token
- * and stores it, and the pass after that is the one that reports anything.
- */
+/** Stores today's page token and reports nothing. Drive has no token meaning "from the start". */
 async function startCursor(creds: SourceCredentials, deps: SourceDeps): Promise<ChangePage> {
   const payload = asRecord(await getJson(creds, deps, `${API}/changes/startPageToken`));
   return { documents: [], cursor: asString(payload.startPageToken) || null, hasMore: false };
@@ -183,9 +155,7 @@ function textUrl(externalId: string, mimeType: string): string {
   if (mimeType.startsWith('text/') || mimeType === 'application/json') {
     return `${API}/files/${id}?alt=media`;
   }
-  // Known gap: a PDF, an image or a binary office file needs the extraction that
-  // today only the upload path runs. Wiring Drive into it is follow-up work
-  // (prashant), so until then the sync says what happened instead of storing bytes.
+  // Known gap: PDFs, images and binary office files need the extraction only the upload path runs.
   throw new SourceError(PROVIDER, 'That file type is not indexed yet.');
 }
 

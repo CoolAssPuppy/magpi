@@ -28,10 +28,7 @@ export function initialChatState(
   return { turns, asking: false, title };
 }
 
-/**
- * The whole of the streaming screen's behavior, with no React in it. The
- * pending answer is the last turn, which is what every event acts on.
- */
+/** The streaming screen's behavior with no React in it. Every event acts on the last turn. */
 export function chatReducer(state: ChatState, action: ChatAction): ChatState {
   switch (action.type) {
     case 'ask':

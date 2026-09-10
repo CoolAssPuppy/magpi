@@ -2,14 +2,7 @@ import { z } from 'zod';
 
 import type { PlanId } from './plans';
 
-/**
- * Two POSTs, form encoded, against Stripe's REST API.
- *
- * There is no Stripe SDK in the web package on purpose. The only Stripe surface
- * it touches is these two calls, both stable and fully specified, and keeping
- * them as plain fetch is what lets them be tested against a stubbed fetch with
- * no account and no network. Webhooks are an Edge Function and are not here.
- */
+/** Two form encoded POSTs against Stripe's REST API. No SDK, so a stubbed fetch can test them. */
 const CHECKOUT_ENDPOINT = 'https://api.stripe.com/v1/checkout/sessions';
 const PORTAL_ENDPOINT = 'https://api.stripe.com/v1/billing_portal/sessions';
 
@@ -57,12 +50,7 @@ export type CheckoutRequest = {
   readonly cancelUrl: string;
 };
 
-/**
- * The organization id travels as client_reference_id and again in the metadata
- * of both the session and the subscription. The webhook reads it back from
- * whichever of those arrives, which is what keeps the handler from having to
- * guess who paid.
- */
+/** The org id travels as client_reference_id and in both metadata blocks, for the webhook. */
 export async function createCheckoutSession(
   request: CheckoutRequest,
   stripeFetch: StripeFetch = fetch,

@@ -10,12 +10,7 @@ const SIGNED_AT = 1757419200;
 const AT_SIGNING = new Date(SIGNED_AT * 1000);
 const ORG = '44444444-4444-4444-8444-444444444444';
 
-/**
- * The signing side, written out separately from the verifying side.
- *
- * A helper that called into billing.ts would prove only that the module agrees
- * with itself.
- */
+/** The signing side, written out here so the test does not call into billing.ts. */
 async function hmacHex(secret: string, message: string): Promise<string> {
   const key = await crypto.subtle.importKey(
     'raw',
@@ -141,8 +136,7 @@ Deno.test('a malformed signature header does not verify', async () => {
 });
 
 Deno.test('a timestamp outside the tolerance does not verify', async () => {
-  // A captured request replayed an hour later carries a signature that is still
-  // arithmetically correct, so the timestamp is the only thing refusing it.
+  // A replayed request still carries a correct signature, so only the timestamp refuses it.
   const payload = '{"id":"evt_1"}';
   const header = await signedHeader(payload);
   const late = new Date((SIGNED_AT + 3600) * 1000);
@@ -162,10 +156,7 @@ Deno.test('a header carrying several v1 values verifies when any one matches', a
   assertEquals(await verify(payload, header), { ok: true });
 });
 
-// applyCheckout wrote plan: 'team' unconditionally, so a session that bought a
-// one-off product, or one abandoned before payment, upgraded the organization
-// anyway. The plan the checkout route put in metadata is the one thing here that
-// says what was bought.
+// metadata.plan is the only thing in a checkout session that says what was bought.
 Deno.test('a checkout session that was never paid changes no plan', async () => {
   const stub = orgFound();
   try {
@@ -362,14 +353,10 @@ Deno.test('an event that is not shaped like a stripe event is a 400', async () =
   }
 });
 
-// The tests below run against recorded Stripe events rather than objects built
-// to the shape this module already expects. Every one of them failed before the
-// fix it names, and none of the inline-built tests above could have caught any
-// of them.
+// The tests below run against recorded Stripe events rather than objects built by hand.
 
 Deno.test('a paying subscription on a price we do not sell is not team', async () => {
-  // The revenue bug. Any active subscription on any price used to file as team,
-  // including one created by hand in the dashboard.
+  // Any active subscription on any price used to file as team.
   const stub = fixtureOrgFound();
   try {
     const result = await handleStripeEvent(
@@ -394,8 +381,7 @@ Deno.test('a paying subscription on the team price is team', async () => {
 });
 
 Deno.test('with no price configured, only the intended plan can confirm team', async () => {
-  // A deployment that has not wired billing up cannot confirm anything, so a
-  // subscription carrying no intent is free rather than assumed.
+  // With no price configured, a subscription carrying no intent is free.
   const stub = fixtureOrgFound();
   try {
     await handleStripeEvent(await fixture('subscription-updated'), deps(stub, null));
@@ -406,8 +392,7 @@ Deno.test('with no price configured, only the intended plan can confirm team', a
 });
 
 Deno.test('the plan intended at checkout travels with the subscription', async () => {
-  // metadata.plan is set by the checkout route, so an unknown price still
-  // resolves for a subscription we created ourselves.
+  // metadata.plan is set by the checkout route, so an unknown price still resolves.
   const stub = fixtureOrgFound();
   try {
     await handleStripeEvent(await fixture('subscription-updated-expanded'), deps(stub, null));
@@ -428,9 +413,7 @@ Deno.test('a subscription that stopped paying loses the plan whatever its price'
 });
 
 Deno.test('an expanded customer object is read, not rejected', async () => {
-  // Replaying an event from the dashboard, or configuring the endpoint with
-  // expansion, sends the object where the id normally is. Rejecting it made the
-  // event a permanent 400 and left the organization on the wrong plan.
+  // Replaying from the dashboard sends the whole customer object where the id normally is.
   const stub = fixtureOrgFound();
   try {
     const result = await handleStripeEvent(
@@ -470,10 +453,7 @@ Deno.test('a checkout session naming its organization only by reference records 
       type: 'checkout.session.completed',
       orgId: FIXTURE_ORG,
     });
-    // No plan. This session carries no metadata at all, so nothing in it says
-    // what was bought, and the customer.subscription.updated event it produces
-    // resolves that from the price. Guessing team here is what put an
-    // organization on the paid plan for buying anything.
+    // No plan: this session carries no metadata saying what was bought.
     assertEquals(requestsFor(stub, 'organizations')[0].body, {
       stripe_customer_id: 'cus_TestTeam01',
       stripe_subscription_id: 'sub_TestTeam01',

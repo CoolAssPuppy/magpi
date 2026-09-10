@@ -103,9 +103,7 @@ describe('createConversationAction', () => {
     expect(dbState.writes).toEqual([]);
   });
 
-  // The reader gets copy they can act on. `new row violates row-level security
-  // policy for table "conversations"` names a table, says nothing they can do,
-  // and describes the permission model to anyone probing it.
+  // The reader gets copy they can act on, not the RLS refusal, which names a table.
   it('answers with copy for the reader rather than the schema refusal', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     dbState.error = { message: 'new row violates row-level security' };
@@ -129,8 +127,7 @@ describe('createConversationAction', () => {
     expect(state.status).toBe('error');
   });
 
-  // Whether the caller is signed in is settled before their input is read, so
-  // a signed-out caller gets one answer whatever they sent.
+  // Sign-in is settled before the input is read, so a signed-out caller gets one answer.
   it('tells a signed-out caller to sign in even when the input is also wrong', async () => {
     dbState.signedIn = false;
 

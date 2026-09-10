@@ -1,8 +1,6 @@
 create type public.connection_status as enum ('active', 'syncing', 'error', 'revoked', 'expired');
 
--- Many connections per provider per space. No unique (user_id, provider): a team
--- member connects two Notion workspaces on day one, and retrofitting that later
--- is painful.
+-- Many connections per provider per space, so there is no unique (user_id, provider).
 create table public.connections (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references public.organizations (id) on delete cascade,
@@ -13,8 +11,7 @@ create table public.connections (
   access_token_enc bytea,
   refresh_token_enc bytea,
   scopes text[] not null default '{}',
-  -- Which channels, folders or workspaces this connection reads. Shape is the
-  -- driver's business; the column only guarantees it is an object.
+  -- Which channels, folders or workspaces this connection reads. Shape is the driver's.
   scope_selection jsonb not null default '{}',
   status public.connection_status not null default 'active',
   status_detail text,
@@ -25,28 +22,13 @@ create table public.connections (
   updated_at timestamptz not null default now()
 );
 
--- org_id carried through the space. Without it a row can name a space in one
--- organization and an org_id in another, and the meters believe the org_id.
---
--- It replaces the single-column reference rather than joining it. Two foreign
--- keys between the same pair of tables give PostgREST two relationships to
--- choose from and every embed fails as ambiguous, which is how the spaces page
--- found out. The composite is the stronger of the two: it says the space exists
--- and that it belongs to the org named on this row.
+-- org_id carried through the space. Composite, since two FKs make PostgREST embeds ambiguous.
 alter table public.connections
   add constraint connections_space_in_org
   foreign key (space_id, org_id) references public.spaces (id, org_id)
   on delete cascade;
 
--- Reconnecting the same account in the same space replaces its token rather
--- than filing a second connection, and connections-claim looks the existing one
--- up before it writes. That lookup used `.eq('external_account_id', null)`,
--- which never matches, so a provider that returns no account label filed a
--- fresh connection carrying a live token on every reconnect.
---
--- Two indexes, not one: a unique index treats every null as distinct, so a
--- single index over the nullable column would not constrain the case that
--- actually broke. The partial pair says the same rule for both halves.
+-- One connection per account per space. Two partial indexes, since unique treats nulls as distinct.
 create unique index connections_account_idx
   on public.connections (space_id, user_id, provider, external_account_id)
   where external_account_id is not null;

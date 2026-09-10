@@ -17,8 +17,7 @@ create table public.messages (
   conversation_id uuid not null references public.conversations (id) on delete cascade,
   role public.message_role not null,
   content text not null default '',
-  -- Chunk ids only. The text is resolved on read through RLS, so a reader who
-  -- lost access to a space sees the answer without the citation.
+  -- Chunk ids only. The text is resolved on read through RLS.
   citations jsonb not null default '[]',
   latency_ms integer,
   token_count integer,

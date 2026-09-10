@@ -1,11 +1,4 @@
-/**
- * The SQL behind each admin panel, one named function per panel.
- *
- * Two of them count in the database rather than in this process: documents(count)
- * on the ingest health join, and quantity.sum() on usage_events. Both need
- * PostgREST aggregate functions, which Supabase enables by default. A deployment
- * that turns them off breaks those two queries and nothing else.
- */
+/** The SQL behind each admin panel, one named function per panel. */
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { Database } from '@/lib/database.types';
@@ -16,10 +9,7 @@ export type AnalyticsClient = SupabaseClient<Database>;
 
 type Enums = Database['public']['Enums'];
 
-/**
- * How many recent failures one page load looks at. The panel names a reason and
- * a count, not an audit trail, and PostgREST caps a response at 1000 rows anyway.
- */
+/** How many recent failures one page load looks at. */
 const RECENT_FAILURE_SAMPLE = 200;
 
 /** Same cap, for the two message-derived panels. */
@@ -64,11 +54,7 @@ export type IngestHealthRow = {
   readonly latestFailure: IngestFailure | null;
 };
 
-/**
- * One row per connection: is it syncing, when did it last succeed, how much did
- * it pull, and what killed the last job. A timed-out Edge Function is only
- * actionable if the person who can fix it can see the stage it died in.
- */
+/** One row per connection: status, last success, document count and the last job's error. */
 export async function fetchIngestHealth(
   client: AnalyticsClient,
   orgId: string,
@@ -111,10 +97,7 @@ export async function fetchIngestHealth(
   });
 }
 
-/**
- * Queries per day with p50 and p95, from the assistant turns. The inner join on
- * conversations is what scopes it to an organization: messages carry no org_id.
- */
+/** Queries per day with p50 and p95. The inner join on conversations scopes it to the org. */
 export async function fetchAnswerLatency(
   client: AnalyticsClient,
   orgId: string,
@@ -173,10 +156,7 @@ export type DeadContent = {
   readonly samples: readonly DeadDocument[];
 };
 
-/**
- * Documents no answer has ever cited. Half a knowledge base is usually dead, and
- * the count is the point: the sample is only there to make it concrete.
- */
+/** Documents no answer has ever cited, as a total plus a small sample. */
 export async function fetchDeadContent(
   client: AnalyticsClient,
   orgId: string,
@@ -226,21 +206,13 @@ export type PlanUsage = {
   readonly documents: Meter;
   readonly queries: Meter;
   readonly seats: Meter;
-  /**
-   * No limit: no plan function meters bytes, so this is a running total rather
-   * than a gauge. The ingest worker writes the row when a document lands, which
-   * is why nothing here reads documents.size_bytes.
-   */
+  /** A running total with no limit, since no plan function meters bytes. */
   readonly storageBytes: Meter;
   readonly stripeCustomerId: string | null;
   readonly stripeSubscriptionId: string | null;
 };
 
-/**
- * Usage is read from usage_events and the limits from the plan functions, so a
- * page load never scans documents and the numbers on screen are the same ones
- * check_ingest_allowed enforces against.
- */
+/** Usage from usage_events, limits from the plan functions check_ingest_allowed uses. */
 export async function fetchPlanUsage(
   client: AnalyticsClient,
   orgId: string,
@@ -257,10 +229,7 @@ export async function fetchPlanUsage(
     .select('user_id', { count: 'exact', head: true })
     .eq('org_id', orgId);
 
-  // One call, not three. This read the three meters with PostgREST's
-  // `quantity.sum()`, and a PostgREST with aggregate functions off answers
-  // "Use of aggregate functions is not allowed" to every one of them, which is
-  // how the Supabase CLI ships.
+  // One rpc call, because PostgREST aggregate functions are off in the CLI's default config.
   const totalsQuery = client
     .rpc('org_usage_totals', { p_org_id: orgId, p_month_start: monthStartIso(now) })
     .single();

@@ -83,11 +83,7 @@ function excerpt(content: string): string {
   return stripped.length <= EXCERPT_LENGTH ? stripped : `${stripped.slice(0, EXCERPT_LENGTH)}...`;
 }
 
-/**
- * Citations are resolved on read, through the caller's own RLS. A reader who
- * lost access to a source space sees the digest with that reference dropped,
- * which is correct rather than a bug.
- */
+/** Citations are resolved on read, through the caller's own RLS. */
 async function loadOutput(
   context: SessionContext,
   outputDocumentId: string | null,
@@ -109,9 +105,7 @@ async function loadOutput(
 
   if (!document) return { kind: 'none' };
 
-  // The cited chunks are read separately and under the caller's own RLS, which
-  // is what makes a source the reader lost access to disappear from the list
-  // rather than being resolved at write time and cached forever.
+  // Read separately under the caller's RLS, so a source they cannot see drops off the list.
   const { data: cited } = await context.supabase
     .from('chunks')
     .select('id, content, document_id, documents(title)')
@@ -129,9 +123,7 @@ async function loadOutput(
 
   if (described.kind === 'none' || described.kind === 'uncited') return described;
 
-  // The digest still shows, the way an old conversation shows its answer with
-  // the citation dropped. Withholding it would read as the run having invented
-  // the text, when what actually happened is that its evidence was deleted.
+  // The digest still shows when its sources are gone, with the citations dropped.
   if (described.kind === 'sources-gone') {
     return {
       kind: 'sources-gone',

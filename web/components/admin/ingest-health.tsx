@@ -31,11 +31,7 @@ const STATUS_LABEL: Record<ConnectionStatus, string> = {
   expired: 'Expired',
 };
 
-/**
- * A job that ran out of wall clock records the stage it died in, which is the
- * difference between "Notion is broken" and "the embed step is too slow for this
- * document". Both belong on the row of the person who can act on it.
- */
+/** The reason column: what failed, the stage it failed in, and the error recorded. */
 function failureText(row: IngestHealthRow): string {
   if (!row.latestFailure) return row.statusDetail ?? 'No failures';
 

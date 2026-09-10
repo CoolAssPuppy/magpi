@@ -1,14 +1,4 @@
-// POST /connections-claim
-//
-// The second half of the OAuth flow, and the reason the first half writes no
-// connection. connections-callback parked an encrypted provider token under the
-// account that started the flow. This decides whether that account is the one
-// now asking, and it is the only place an exchange becomes a connection.
-//
-// The identity comes from a verified JWT, so the browser holding the session
-// answers rather than the state value that started the flow. That closes the gap
-// RFC 6749 10.12 describes: a link handed to someone else completes the exchange,
-// arrives here as the wrong user, and is discarded.
+// POST /connections-claim. Turns a pending OAuth exchange into a connection for the JWT user.
 
 import { ApiError, jsonResponse } from '../_shared/errors.ts';
 import { serveFunction } from '../_shared/http.ts';
@@ -41,9 +31,7 @@ serveFunction('connections-claim', async (core) => {
 
   const port: ClaimPort = {
     async consumePending(ticket) {
-      // Only the hash reaches the database, so a leaked row cannot be replayed
-      // as a ticket. Delete and return in one statement, so two racing claims
-      // cannot both win.
+      // Only the ticket hash reaches the database, and the rpc deletes and returns at once.
       const { data, error } = await db.rpc('consume_pending_connection', {
         p_ticket_hash: await sha256Hex(ticket),
       });
@@ -75,18 +63,7 @@ serveFunction('connections-claim', async (core) => {
   return jsonResponse(result);
 });
 
-/**
- * Fills in what the connect screen offers, immediately after the token lands.
- *
- * Best effort and never fatal: the connection is already stored and usable, and
- * connections-scopes refreshes this on demand anyway. Doing it here only saves
- * the user watching a spinner on the screen they are already looking at.
- *
- * The catch is narrow. A provider having a bad minute is what best effort is
- * for. A token that will not decrypt is a connection that can never sync, and
- * catching that alongside the rest returned a successful claim with an empty
- * picker and nothing anywhere saying why.
- */
+/** Fills the connect screen's scope picker once the token lands. Best effort, never fatal. */
 async function populatePicker(
   db: ReturnType<typeof serviceClient>,
   connectionId: string,
@@ -126,9 +103,7 @@ async function populatePicker(
       return;
     }
 
-    // Anything else is the connection itself being unusable, most often a token
-    // that will not decrypt. The row says so rather than the screen showing an
-    // empty picker the user is expected to interpret.
+    // Anything else means the connection cannot be read back, usually an undecryptable token.
     console.error('connection unusable after claim', provider, err);
     await db
       .from('connections')

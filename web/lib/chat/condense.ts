@@ -6,10 +6,7 @@ export type ConversationTurn = {
   readonly content: string;
 };
 
-/**
- * "What about last quarter?" is meaningless as an embedding. Retrieval runs on
- * the rewrite; the answer still reads the question as it was asked.
- */
+/** A question rewritten to stand alone. Retrieval uses this, the answer uses the original. */
 export type CondensedQuery =
   | { readonly kind: 'original'; readonly text: string }
   | { readonly kind: 'rewritten'; readonly text: string };

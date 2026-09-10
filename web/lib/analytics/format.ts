@@ -1,8 +1,4 @@
-/**
- * All dates render in UTC. The analytics window is bucketed by UTC day, so
- * showing a label in the reader's local zone would put a bar under the wrong
- * date for half the world.
- */
+/** All dates render in UTC, because the analytics window is bucketed by UTC day. */
 const DAY_LABEL = new Intl.DateTimeFormat('en-US', {
   month: 'short',
   day: 'numeric',

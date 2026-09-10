@@ -13,13 +13,7 @@ import {
   type SpaceRecord,
 } from './view-model';
 
-/**
- * Named columns, never a star. `authenticated` holds column-level select on
- * connections rather than a table-level grant, so that access_token_enc and
- * refresh_token_enc are unreadable through connections_select_visible. A star
- * here is a 403 from PostgREST, not a token leak, but naming the columns is the
- * point either way.
- */
+/** Named columns, never a star: `authenticated` holds column-level select, not a table grant. */
 const CONNECTION_COLUMNS =
   'id, provider, space_id, user_id, external_account_id, status, status_detail, last_synced_at, scope_selection';
 
@@ -28,10 +22,7 @@ const PROVIDER_COLUMNS =
 
 type OwnedConnectionRecord = ConnectionRecord & { readonly user_id: string };
 
-// The same three columns listSpaceOptions already reads, so this calls it
-// rather than keeping a second query of the spaces table. It also picks up that
-// function's ordering, personal first and then alphabetical within a kind,
-// which is what every other space list in the app shows.
+// Calls listSpaceOptions so the columns and the ordering match every other space list.
 const fetchSpaces = (context: SessionContext): Promise<readonly SpaceRecord[]> =>
   listSpaceOptions(context.supabase);
 

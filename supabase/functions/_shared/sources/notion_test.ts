@@ -140,8 +140,7 @@ Deno.test('a workspace larger than one pass resumes into the backlog', async () 
   const secondPass = await notionDriver.listChanges(CREDS, second, { cursor: firstPass.cursor });
 
   assertEquals(startCursorOf(second.calls[0]), 'cursor_backlog_6');
-  // Search sorts descending, so a pass that resumed at the newest page would
-  // read the same five pages again and never reach these two.
+  // Search sorts descending, so resuming at the newest page would repeat the first five.
   assertEquals(secondPass.documents.map((doc) => doc.title), [
     'Archived: 2024 offsite',
     'Archived: brand guidelines',

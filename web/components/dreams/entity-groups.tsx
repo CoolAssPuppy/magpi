@@ -2,11 +2,7 @@ import Link from 'next/link';
 
 import type { EntityGroup } from '@/lib/dreams/entities';
 
-/**
- * The people, projects, customers and decisions the entity dream extracted, each
- * with the documents it was mentioned in. This is what lets a question about a
- * project pull the Linear issue, the Notion doc and the Slack thread together.
- */
+/** What the entity dream extracted, each with the documents it was mentioned in. */
 export function EntityGroups({ groups }: { groups: readonly EntityGroup[] }) {
   return (
     <div className="flex flex-col gap-8">

@@ -5,9 +5,7 @@ import { writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Resolved from the repo root like every other script here. It was a relative
-// path, so running this from anywhere but the root wrote the file to the wrong
-// place or threw, and `supabase` was invoked with the wrong cwd.
+// Paths resolve from the repo root so this runs correctly from any cwd.
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = resolve(ROOT, 'web/lib/database.types.ts');
 

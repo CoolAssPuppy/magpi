@@ -132,8 +132,7 @@ describe('POST /api/chat', () => {
     expect(await response.json()).toMatchObject({ code: 'invalid_request' });
   });
 
-  // The monthly limit plan_monthly_query_limit describes, which the usage panel
-  // displayed and nothing enforced.
+  // The monthly limit plan_monthly_query_limit describes.
   it('refuses a caller whose organization has used its questions for the month', async () => {
     sessionState.context = signedIn({
       allowance: {
@@ -155,8 +154,7 @@ describe('POST /api/chat', () => {
     });
   });
 
-  // A limit that cannot be read has not been passed. Refusing here would take
-  // chat down for everyone whenever the function is unreachable.
+  // A limit that cannot be read has not been passed, so chat stays up.
   it('answers anyway when the allowance itself cannot be read', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     sessionState.context = signedIn({ allowance: { error: { message: 'connection reset' } } });

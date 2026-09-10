@@ -1,15 +1,6 @@
--- Function execute privileges and column privileges, hand-written.
---
--- `supabase db diff` emits grants and never revokes, and it does not track
--- column privileges at all. The `revoke` lines in supabase/schemas/80_functions.sql
--- therefore ran in the shadow database and vanished, leaving every one of these
--- functions executable by PUBLIC, which includes anon.
---
--- pgTAP caught this. See supabase/tests/60_functions.test.sql.
+-- Function execute and column privileges, hand-written: `supabase db diff` never emits revokes.
 
--- Revoking from PUBLIC removes execute from every role not granted it
--- explicitly, service_role included, so each grant below is required and not
--- merely tidiness.
+-- Revoking from PUBLIC also removes execute from service_role, so each grant below is required.
 revoke all on function public.consume_oauth_state(text) from public, anon, authenticated;
 grant execute on function public.consume_oauth_state(text) to service_role;
 
@@ -60,13 +51,7 @@ revoke all on function public.search(extensions.vector, text, uuid[], integer) f
 grant execute on function public.search(extensions.vector, text, uuid[], integer)
   to authenticated, service_role;
 
--- Column privileges. A connection row is readable by the space it belongs to,
--- but the encrypted provider token on it is not.
---
--- A column-level revoke cannot subtract from a table-level grant, so the table
--- grant goes and an explicit column list replaces it. That makes `select *` fail
--- for a client, which is correct: a client naming its columns cannot ask for a
--- token by accident.
+-- Column privileges: a connection row is readable, the encrypted token column on it is not.
 revoke select on public.connections from authenticated;
 grant select (
   id, org_id, space_id, user_id, provider, external_account_id, scopes,

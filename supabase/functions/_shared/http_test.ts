@@ -3,10 +3,7 @@ import { assertEquals } from '@std/assert';
 import { clientIp, corsHeadersFor, handleOptions, toCoreRequest } from './http.ts';
 import { envSource } from './testing/assertions.ts';
 
-// Every request on the deployed runtime carries x-forwarded-for, and its
-// rightmost entry is the platform's own proxy, so reading it first gave every
-// caller in the world the same value and turned each per-ip rate limit rule
-// into one global one.
+// The rightmost forwarded entry is the platform's own proxy, the same value for every caller.
 Deno.test('the client ip is the one the edge resolved, not a forwarded entry', () => {
   const headers = new Headers({
     'x-forwarded-for': '1.1.1.1, 2.2.2.2, 3.3.3.3',
@@ -15,9 +12,7 @@ Deno.test('the client ip is the one the edge resolved, not a forwarded entry', (
   assertEquals(clientIp(headers), '4.4.4.4');
 });
 
-// A caller can send whatever they like in x-forwarded-for. cf-connecting-ip is
-// written by the edge over anything the caller sent, so a header they control
-// must not be able to displace it.
+// cf-connecting-ip is written by the edge, so a caller-controlled header must not displace it.
 Deno.test('a spoofed cf-connecting-ip cannot be beaten by a forwarded entry', () => {
   const headers = new Headers({
     'cf-connecting-ip': '4.4.4.4',
@@ -27,8 +22,7 @@ Deno.test('a spoofed cf-connecting-ip cannot be beaten by a forwarded entry', ()
 });
 
 Deno.test('the rightmost forwarded entry is the fallback, never the leftmost', () => {
-  // The leftmost is client-supplied, so reading it lets a caller present a
-  // fresh ip per request and never reach a limit.
+  // The leftmost is client-supplied, so reading it lets a caller present a fresh ip per request.
   const headers = new Headers({ 'x-forwarded-for': '1.1.1.1, 2.2.2.2, 3.3.3.3' });
   assertEquals(clientIp(headers), '3.3.3.3');
 });

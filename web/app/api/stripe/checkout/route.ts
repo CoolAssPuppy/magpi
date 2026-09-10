@@ -5,13 +5,7 @@ import { BILLING_PATH, billingRedirect, resolveBillingCaller } from '../session'
 
 export const runtime = 'nodejs';
 
-/**
- * Starts Stripe Checkout and hands the browser to Stripe.
- *
- * A route handler rather than a server action because the destination is another
- * site, and the plan is not written here: the webhook writes it when Stripe
- * confirms the money.
- */
+/** Starts Stripe Checkout and redirects the browser to it. The webhook writes the plan. */
 export async function POST(request: Request): Promise<Response> {
   const caller = await resolveBillingCaller(request);
   if (caller.kind === 'refused') return caller.response;

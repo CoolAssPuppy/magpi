@@ -35,10 +35,7 @@ export type ConversationStore = {
 
 type Client = SupabaseClient<Database>;
 
-/**
- * Every write goes through the reader's own client. A conversation that is not
- * theirs is not writable, and row level security is the thing that says so.
- */
+/** Every write goes through the reader's own client, so RLS decides what is writable. */
 export function createConversationStore(supabase: Client): ConversationStore {
   return {
     addUserMessage: async ({ conversationId, content }) => {
@@ -106,11 +103,7 @@ export async function loadConversation(
   return { id: data.id, spaceFilter: data.space_filter, title: data.title };
 }
 
-/**
- * How many messages one read takes when the caller names no number of its own.
- * A conversation has no upper bound and nothing reads all of it: a screen shows
- * the end of it, and the answer path uses the last PROMPT_HISTORY_TURNS.
- */
+/** How many messages one read takes when the caller names no number of its own. */
 export const CONVERSATION_WINDOW = 200;
 
 export async function loadMessages(
@@ -118,9 +111,7 @@ export async function loadMessages(
   conversationId: string,
   options: { limit?: number } = {},
 ): Promise<readonly StoredMessage[]> {
-  // Newest first is what puts the window on the end of the conversation, which
-  // is the end everything here cares about. The reverse hands it back in
-  // reading order, which is the order a prompt and a screen both want.
+  // Newest first puts the window on the end of the conversation; the reverse restores order.
   const { data, error } = await supabase
     .from('messages')
     .select('id, role, content, citations, created_at')

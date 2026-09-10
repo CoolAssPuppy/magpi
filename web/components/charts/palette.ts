@@ -1,17 +1,4 @@
-/**
- * The one chart palette. Every mark in the app reads a value from here, so the
- * charts are a single visual system and a color can never arrive from outside
- * the Supabase token set.
- *
- * The form these charts use is emphasis, not categorical: one accent series
- * carries the story and its companion recedes to a gray. That is deliberate.
- * A validated categorical palette needs hues the Supabase token set does not
- * expose, and a chart of two series where one is the point does not need one.
- *
- * The resolved values, the dataviz validator run against them, and the reasoning
- * behind the three results that are marked and accepted, are in docs/design.md
- * under "Chart palette validation".
- */
+/** The one chart palette, built for emphasis rather than category. See docs/design.md. */
 export const CHART_COLORS = {
   /** The series the panel is about. */
   accent: 'var(--color-brand-600)',

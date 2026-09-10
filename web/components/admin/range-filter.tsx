@@ -12,11 +12,7 @@ export function parseRange(value: string | undefined): RangeDays {
   return RANGE_OPTIONS.find((option) => option === parsed) ?? DEFAULT_RANGE;
 }
 
-/**
- * One filter row above everything it scopes, and it is a set of links rather
- * than a control with state, so it renders on the server and survives every
- * loading, empty and error state below it.
- */
+/** A server-rendered filter row of links, with no client state. */
 export function RangeFilter({ basePath, active }: { basePath: string; active: RangeDays }) {
   return (
     <nav aria-label="Time range" className="flex items-center gap-1">

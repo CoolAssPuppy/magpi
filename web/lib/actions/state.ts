@@ -1,9 +1,6 @@
 export const NOT_SIGNED_IN = 'You need to sign in to do that.';
 
-/**
- * What every server action returns. A discriminated union rather than a nullable
- * error string, so a component switching on `status` is exhaustive.
- */
+/** What every server action returns. Switching on `status` is exhaustive. */
 export type ActionState<T = undefined> =
   | { readonly status: 'idle' }
   | { readonly status: 'success'; readonly data: T }

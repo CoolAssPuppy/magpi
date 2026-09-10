@@ -32,10 +32,7 @@ export function SignInForm({ next }: { next: string }) {
       return;
     }
 
-    // A full navigation rather than router.push. The session cookie was written
-    // by the client during sign-in, and only a fresh document request is
-    // guaranteed to carry it to the proxy on the very next hop. A soft push
-    // followed by refresh races the two and lands back on this page.
+    // A full navigation, so the new session cookie is carried on the very next request.
     window.location.assign(safeNextPath(next, '/chat'));
   }
 

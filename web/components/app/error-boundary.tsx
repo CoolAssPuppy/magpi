@@ -6,15 +6,7 @@ import type { ErrorBoundaryProps } from '@/components/app/error-boundary-props';
 import { ErrorState } from '@/components/app/error-state';
 import { Button } from '@/components/ui/button';
 
-/**
- * What every `error.tsx` renders. The copy is fixed and written for the screen
- * it belongs to, because in production Next replaces `error.message` with
- * generic digest text and any sentence built around it reads as nonsense.
- * The digest goes to the logs, which is the only place it is worth anything.
- *
- * `detail` is optional. The button below already says "Try again", so a screen
- * with no second action to offer says nothing rather than filling the space.
- */
+/** What every `error.tsx` renders. The copy is fixed; the digest goes to the logs. */
 export function BoundaryError({
   title,
   detail,

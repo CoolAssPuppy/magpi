@@ -1,7 +1,4 @@
 // Notion, read through search for what changed and block children for the text.
-//
-// A Notion integration token is scoped to one workspace and does not expire,
-// which is why this driver offers a single scope option and no refresh.
 
 import type {
   ChangePage,
@@ -23,15 +20,10 @@ const API = 'https://api.notion.com/v1';
 const MIME = 'text/markdown';
 const PAGE_SIZE = 100;
 
-// Notion serves a different response shape per version and picks the
-// integration's default when the header is absent, so an unpinned driver can
-// break on a day nobody deployed anything.
+// Pinned, because Notion serves a different response shape per version.
 const NOTION_VERSION = '2022-06-28';
 
-// A pass reads at most this many requests of PAGE_SIZE. A first pass over a
-// large workspace would otherwise run until the function is killed, and an
-// incremental pass that finds no page older than its cursor would walk the
-// whole history to prove it.
+// A pass reads at most this many requests of PAGE_SIZE.
 const MAX_REQUESTS = 5;
 
 const RECONNECT_MESSAGE = `${DISPLAY_NAME} refused this connection, reconnect it.`;
@@ -48,16 +40,12 @@ function headers(creds: SourceCredentials, extra: Record<string, string> = {}) {
   };
 }
 
-/**
- * Notion answers some refusals with HTTP 200 and an error object, so a status
- * check alone reads a refused token as an empty workspace.
- */
+/** Notion answers some refusals with HTTP 200 and an error object. */
 function readBody(payload: unknown): Record<string, unknown> {
   const record = asRecord(payload);
   if (asString(record.object) !== 'error') return record;
 
-  // The provider's own wording never reaches the message: an error body can
-  // quote the request, and the request carries the token.
+  // The provider's wording never reaches the message, since an error body can quote the token.
   const needsReconnect = RECONNECT_CODES.test(asString(record.code));
   throw new SourceError(
     PROVIDER,
@@ -103,8 +91,7 @@ function searchBody(startCursor: string | null): Record<string, unknown> {
     filter: { value: 'page', property: 'object' },
     sort: { timestamp: 'last_edited_time', direction: 'descending' },
   };
-  // Notion validates start_cursor when it is present, so a first pass omits it
-  // rather than sending null.
+  // Notion validates start_cursor when present, so a first pass omits it.
   if (startCursor !== null) body.start_cursor = startCursor;
   return body;
 }
@@ -148,8 +135,7 @@ function takeNewerThan(results: unknown[], since: number | null): Walked {
   for (const raw of results) {
     const page = asRecord(raw);
     const edited = parseInstant(page.last_edited_time);
-    // Results arrive newest first, so the first page at or below the cursor ends
-    // the pass: everything behind it was ingested by an earlier one.
+    // Results arrive newest first, so the first page at or below the cursor ends the pass.
     if (since !== null && edited !== null && edited <= since) {
       return { pages, reachedCursor: true };
     }
@@ -186,10 +172,7 @@ async function listChanges(
     position.kind === 'backlog' ? position.watermark : position.since,
   );
 
-  // A pass that ran out of requests hands the page token to the next one.
-  // Answering with the newest stamp instead would strand everything behind it,
-  // because search sorts descending and the next pass would start over at the
-  // top and stop on the first page it had already read.
+  // A pass that ran out of requests hands the page token to the next one, not the stamp.
   if (nextPage !== null) {
     return {
       documents,
@@ -217,9 +200,7 @@ const BLOCK_PREFIXES = new Map<string, string>([
 function blockLine(block: Record<string, unknown>): string | null {
   const type = asString(block.type);
   const prefix = BLOCK_PREFIXES.get(type);
-  // Notion adds block types faster than a driver learns them, and an embed or an
-  // image has no text to chunk, so an unrecognised type is skipped rather than
-  // treated as a fault.
+  // An unrecognised block type is skipped rather than treated as a fault.
   if (prefix === undefined) return null;
 
   const text = plainText(asRecord(block[type]).rich_text);
@@ -279,9 +260,7 @@ async function listScopeOptions(
   const me = await getJson(creds, deps, `${API}/users/me`);
   const bot = asRecord(me.bot);
 
-  // A token reaches exactly one workspace, so the picker offers that one or
-  // nothing. Older responses omit workspace_id, and the bot id names the same
-  // connection.
+  // A token reaches one workspace, and older responses name it by bot id instead.
   const botId = asString(me.id);
   const id = asString(bot.workspace_id) || botId;
   const name = asString(bot.workspace_name) || botId;
@@ -298,8 +277,7 @@ export const notionDriver: SourceDriver = {
   fetchDocument,
   listScopeOptions,
   refresh(): Promise<RefreshOutcome> {
-    // Notion issues non-expiring access tokens, so there is no grant to make and
-    // a request here could only fail.
+    // Notion access tokens do not expire, so there is no grant to make.
     return Promise.resolve({ kind: 'not_supported' });
   },
 };

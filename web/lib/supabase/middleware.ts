@@ -33,8 +33,7 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  // Nothing may run between createServerClient and getClaims(). Code in that gap
-  // is how users end up randomly signed out, and it is very hard to debug.
+  // Nothing may run between createServerClient and getClaims(), or users are signed out.
   const { data } = await supabase.auth.getClaims();
 
   const { pathname } = request.nextUrl;
@@ -48,7 +47,6 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // The response object is returned as it is. Building a fresh one loses the
-  // cookies set above and terminates the session early.
+  // Return this response object as it is. A fresh one loses the cookies set above.
   return supabaseResponse;
 }

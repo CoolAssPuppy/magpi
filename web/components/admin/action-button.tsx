@@ -7,10 +7,7 @@ import { idleState, type ActionState } from '@/lib/actions/state';
 
 export type FormAction = (previous: ActionState, formData: FormData) => Promise<ActionState>;
 
-/**
- * One server action as its own form, so a row that fails reports its own error
- * next to itself instead of at the top of a page nobody is looking at.
- */
+/** One server action as its own form, so a row that fails shows the error beside itself. */
 export function ActionButton({
   action,
   fieldName,

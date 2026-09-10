@@ -7,14 +7,7 @@ import type { ActionState } from '@/lib/actions/state';
 
 import { StatusPill } from '@/components/app/status-pill';
 
-/**
- * The last step of the OAuth flow: the ticket the callback parked is committed
- * under this browser's own session, and then removed from the address bar so a
- * refresh or a shared link cannot replay it.
- *
- * The ref guard is the point of the effect. A ticket is single use, so a second
- * call in the same mount would report a spent ticket as a failure.
- */
+/** The last step of the OAuth flow: commits the parked ticket, then clears it from the URL. */
 export function ConnectionClaim({
   provider,
   ticket,

@@ -1,15 +1,4 @@
-// Every read and every write a dream run makes, scoped to one space.
-//
-// A dream run reads only its own space and writes only into its own space. That
-// is the security model, not a simplification: a synthesis job reading across
-// spaces under the service role and surfacing the result is a permission bypass
-// wearing a friendly name, and nobody would notice until it mattered.
-//
-// The scope is not a parameter the caller passes per query, because a caller can
-// forget one. It is fixed when the writer is built: every read carries the space
-// filter, and every write has its org_id and space_id overwritten from the scope
-// after the caller's fields are spread, so a row naming another space cannot be
-// written even deliberately.
+// Every read and every write a dream run makes, fixed to one space when the writer is built.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -142,8 +131,7 @@ export function spaceScoped(db: SupabaseClient, scope: SpaceScope): SpaceScopedD
         .select('id, title, origin, connection_id, url, updated_at')
         .eq('space_id', scope.spaceId)
         .gte('updated_at', sinceIso)
-        // A dream output is not an input to the next dream, or the space fills
-        // with syntheses of syntheses.
+        // A dream output is not an input to the next dream.
         .neq('origin', 'dream')
         .order('updated_at', { ascending: false })
         .limit(limit)
@@ -159,10 +147,7 @@ export function spaceScoped(db: SupabaseClient, scope: SpaceScope): SpaceScopedD
         .select('id, document_id, content')
         .eq('space_id', scope.spaceId)
         .in('document_id', documentIds)
-        // A document's chunks are written in one statement starting at zero and
-        // replaced the same way, so the opening chunk is the row at ordinal
-        // zero. Reading it by ordinal is what makes this one round trip for a
-        // whole pass rather than one per document.
+        // A document's chunks start at ordinal zero, so one round trip reads every opener.
         .eq('ordinal', 0)
         .returns<{ id: string; document_id: string; content: string }[]>();
       if (error) throw failed('reading chunks', error.message);
@@ -210,10 +195,7 @@ export function spaceScoped(db: SupabaseClient, scope: SpaceScope): SpaceScopedD
     async upsertEntities(drafts) {
       if (drafts.length === 0) return [];
 
-      // Deduplicated on the conflict key, because a statement may not write the
-      // same row twice, and a model asked for a hundred entities will name one
-      // of them twice. The last draft wins, which is what a run of single
-      // upserts left behind anyway.
+      // Deduplicated on the conflict key, since one statement may not write the same row twice.
       const byKey = new Map(
         drafts.map((draft) => [entityKey(draft.kind, draft.canonicalName), draft]),
       );
@@ -235,9 +217,7 @@ export function spaceScoped(db: SupabaseClient, scope: SpaceScope): SpaceScopedD
         .returns<{ id: string; kind: string; canonical_name: string }[]>();
       if (error || !data) throw failed('writing entities', error?.message ?? 'no rows');
 
-      // Matched on the conflict key rather than on position: the order rows come
-      // back in is the database's business, and a mention filed against the
-      // wrong id is a claim about the wrong person.
+      // Matched on the conflict key rather than on position; row order is the database's business.
       const ids = new Map(data.map((row) => [entityKey(row.kind, row.canonical_name), row.id]));
       return drafts.map((draft) => {
         const id = ids.get(entityKey(draft.kind, draft.canonicalName));
@@ -248,8 +228,7 @@ export function spaceScoped(db: SupabaseClient, scope: SpaceScope): SpaceScopedD
 
     async insertMentions(drafts) {
       if (drafts.length === 0) return;
-      // entity_mentions carries space_id but no org_id, so the shared stamp
-      // would add a column the table does not have.
+      // entity_mentions carries space_id but no org_id, so the shared stamp does not fit.
       const { error } = await db.from('entity_mentions').upsert(
         drafts.map((draft) => ({
           entity_id: draft.entityId,
@@ -268,8 +247,7 @@ export function spaceScoped(db: SupabaseClient, scope: SpaceScope): SpaceScopedD
         drafts.map((draft) => ({
           dream_run_id: draft.dreamRunId,
           space_id: scope.spaceId,
-          // The table checks document_a < document_b so a pair is stored once
-          // whichever order it was found in.
+          // The table checks document_a < document_b, so a pair is stored once.
           document_a: draft.documentA < draft.documentB ? draft.documentA : draft.documentB,
           document_b: draft.documentA < draft.documentB ? draft.documentB : draft.documentA,
           similarity: draft.similarity,

@@ -1,6 +1,4 @@
--- Plan limits live in the database, not in the client. A limit enforced only in
--- the upload page is a limit that an edge function, the MCP server, or a retry
--- loop walks straight past.
+-- Plan limits live in the database, so every caller hits them and not just the upload page.
 
 begin;
 
@@ -100,8 +98,7 @@ select is(
   'organization not found', 'an unknown org is refused rather than waved through'
 );
 
--- The question limit, which was read by the usage panel and enforced by nothing
--- until check_query_allowed existed. Back on the free plan for these.
+-- The question limit, on the free plan for the rest of the file.
 update public.organizations set plan = 'free'
 where id = current_setting('recall.org_a')::uuid;
 
@@ -110,8 +107,7 @@ select ok(
   'an organization that has asked nothing can ask'
 );
 
--- One short of the free limit of 500, and quantity is summed rather than
--- counted, so a single row of 499 has to read the same as 499 rows of one.
+-- One short of the free limit of 500. Quantity is summed, not counted.
 insert into public.usage_events (org_id, kind, quantity, occurred_at)
 values (current_setting('recall.org_a')::uuid, 'query', 499, now());
 
@@ -133,8 +129,7 @@ select ok(
   'the 501st is refused'
 );
 
--- Last month's questions are somebody else's problem. Without this the limit is
--- a lifetime cap wearing the word monthly.
+-- Last month's questions do not count, or the limit is a lifetime cap.
 insert into public.usage_events (org_id, kind, quantity, occurred_at)
 values (current_setting('recall.org_a')::uuid, 'query', 5000,
         date_trunc('month', now() at time zone 'utc') - interval '1 day');

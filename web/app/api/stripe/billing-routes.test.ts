@@ -67,11 +67,7 @@ function team(overrides: Partial<Team> = {}): Team {
   };
 }
 
-/**
- * The two tables these routes read, as row level security leaves them for one
- * admin. The cast is confined to this factory, which stands in for a client
- * whose full surface it does not implement.
- */
+/** A client double answering the two tables these routes read. The cast stays in this factory. */
 function callerFor(state: Team): SessionContext {
   const supabase = {
     rpc: async () => ({ data: state.isAdmin, error: state.adminCheckError }),
@@ -184,8 +180,7 @@ describe('who is allowed to start a paid flow', () => {
     expect(stripe.portals).toEqual([]);
   });
 
-  // The check failing is not the same as the check saying no, and telling an
-  // admin they are not an admin sends them looking for the wrong person.
+  // A check that failed is reported differently from a check that said no.
   it('says the check did not run when the database refuses the question', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     sessionState.context = callerFor(

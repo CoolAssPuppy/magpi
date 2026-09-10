@@ -12,9 +12,7 @@ const OPTIONS = [
 ] as const;
 
 export function ThemeToggle() {
-  // next-themes reports an undefined theme until it has read storage, on the
-  // server and on the first client render alike, so the two agree and no mounted
-  // flag is needed to avoid a hydration mismatch.
+  // next-themes reports an undefined theme until it has read storage, on server and first render.
   const { theme, setTheme } = useTheme();
 
   return (

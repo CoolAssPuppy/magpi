@@ -4,13 +4,7 @@ import { cookies } from 'next/headers';
 import type { Database } from '@/lib/database.types';
 import { publicEnv } from '@/lib/env';
 
-/**
- * The Supabase Library `client` block, with the generated Database generic
- * added. Without it every query returns `any`, which the type rules forbid.
- *
- * On Fluid compute this must never be hoisted into a module-scope variable.
- * Always construct one per request.
- */
+/** A Supabase client typed with the generated Database generic. Construct one per request. */
 export async function createClient() {
   const cookieStore = await cookies();
   const env = publicEnv();
@@ -29,8 +23,7 @@ export async function createClient() {
               cookieStore.set(name, value, options);
             }
           } catch {
-            // Called from a server component, where cookies are read-only. The
-            // proxy refreshes the session, so nothing is lost.
+            // Called from a server component, where cookies are read-only.
           }
         },
       },

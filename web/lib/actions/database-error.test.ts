@@ -39,8 +39,7 @@ describe('reporting a database refusal', () => {
     });
   });
 
-  // A unique violation is the one refusal a reader can act on, so the caller
-  // that knows which constraint it is says what to do about it.
+  // A unique violation is the one refusal a reader can act on.
   it('uses the copy a caller wrote for a code it recognises', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
 

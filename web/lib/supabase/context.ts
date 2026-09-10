@@ -14,16 +14,7 @@ export type SessionContext = {
   readonly supabase: SupabaseClient<Database>;
 };
 
-/**
- * Resolves the caller and the organization they are acting in.
- *
- * Returns null rather than throwing, because "not signed in" is an ordinary
- * outcome at this boundary and every caller has to answer it anyway.
- *
- * Cached for the length of one request: a layout, a page and an action can each
- * ask, and an admin page render asked three times, which was three round trips
- * to the auth server and three reads of org_members for one answer.
- */
+/** Resolves the caller and their organization once per request, or null when not signed in. */
 export const getSessionContext = cache(async (): Promise<SessionContext | null> => {
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();

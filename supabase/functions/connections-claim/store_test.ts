@@ -24,13 +24,7 @@ function pending(overrides: Partial<PendingConnection> = {}): PendingConnection 
   };
 }
 
-/**
- * A database holding one connection, answered the way PostgREST answers.
- *
- * `matches` is the filter the stored row would actually be found by, so a read
- * asking for anything else comes back empty, which is what a live database does
- * with a filter that cannot match.
- */
+/** A database holding one connection, answering only reads whose filter is `matches`. */
 function withConnection(matches: string): StubDb {
   return stubDb((request: StubRequest) => {
     if (request.table === 'spaces') return { body: { id: SPACE, org_id: ORG } };

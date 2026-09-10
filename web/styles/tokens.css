@@ -1,8 +1,4 @@
-/*
- * Magpi's own tokens. Loads last, so it wins over the vendored Supabase layers.
- * Every token here is justified in docs/design.md. Nothing goes in this file
- * that the upstream system already answers.
- */
+/* Magpi's own tokens. Loads last, so it wins over the vendored Supabase layers. */
 
 @theme {
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
@@ -26,36 +22,13 @@
   /* Prose measure. Section 4 caps body copy at 65-75ch. */
   --measure-prose: 68ch;
 
-  /*
-   * The one value the vendored compat layer computes rather than aliases, and
-   * the muted series in the chart palette. It is copied here, unchanged,
-   * because compat.css says of itself that it goes away once its aliases have
-   * moved, and the dataviz validation recorded in docs/design.md was run
-   * against this exact color.
-   */
+  /* Copied unchanged from the compat layer, which computes this value rather than aliasing it. */
   --border-stronger: oklch(
     from var(--foreground) l calc(c * 0.5) h / calc(5% + 45% * var(--contrast-border))
   );
 }
 
-/*
- * The folded magpie.
- *
- * The mark is the same bird as the magpi badge project, at the same
- * proportions, so the two agree wherever they appear together. Each plane is
- * flat and meets the next at a hard crease, which is why these are separate
- * tokens rather than a gradient: paper does not blend.
- *
- * Defined here rather than taken from the Supabase scales because the bird is
- * an identity mark and its values are fixed. Everything else on the page still
- * comes from the vendored tokens. These are the only literals in the repo
- * outside the primitive scales, which is why this file is the one place
- * scripts/check-raw-color.mjs exempts.
- *
- * Light theme first, then the dark override. In light the paper is black on a
- * pale ground; in dark it is white paper on near-black. The belly stays chalk
- * in both, because that is what the real bird does.
- */
+/* The folded magpie. Fixed identity colors, light theme first and then the dark override. */
 :root {
   --paper-body: #0f1114;
   --paper-body-shade: #33383f;

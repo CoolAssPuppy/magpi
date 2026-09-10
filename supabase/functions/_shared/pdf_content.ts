@@ -1,21 +1,9 @@
-// Reading the text out of one already-decoded PDF content stream.
-//
-// pdf.ts finds the streams in the file and inflates them. What arrives here is
-// a token stream of operands and operators, and the only ones that matter are
-// the operators that show text and the ones that move to a new line.
+// Reads the text out of one already-decoded PDF content stream.
 
-/**
- * PDF text is almost always WinAnsiEncoding, which is what 'latin1' names in
- * the encoding standard, so byte 0x92 comes back as a right quote instead of a
- * control character.
- */
+/** PDF text is almost always WinAnsiEncoding, which 'latin1' names in the encoding standard. */
 const winAnsi = new TextDecoder('latin1');
 
-/**
- * A TJ adjustment is in thousandths of a text space unit, subtracted from the
- * position. Below this the gap is a word break; above it the writer is
- * tightening letters and no space was intended.
- */
+/** A TJ adjustment below this, in thousandths of a text space unit, is a word break. */
 const WORD_GAP_THRESHOLD = -100;
 
 type Operand = { kind: 'text'; value: string } | { kind: 'number'; value: number };
@@ -46,8 +34,7 @@ export function readShownText(content: string): string {
     } else if (char === '/') {
       i = skipRegularRun(content, i + 1);
     } else if (char === '%') {
-      // A comment can hold an unbalanced '(' that would otherwise open a string
-      // and swallow the rest of the stream.
+      // A comment can hold an unbalanced '(' that would otherwise open a string.
       i = skipComment(content, i);
     } else if (isRegular(char)) {
       const end = skipRegularRun(content, i);
@@ -222,11 +209,7 @@ function skipDictionary(content: string, at: number): number {
   return i;
 }
 
-/**
- * Inline image data is raw bytes in the middle of the content stream and would
- * otherwise be parsed as operators. Delimited EI is a heuristic, but a wrong
- * guess costs one image's worth of noise, not a hang.
- */
+/** Skips inline image bytes, which would otherwise be parsed as operators. */
 function skipInlineImage(content: string, at: number): number {
   const finder = /\sEI(?=[\s\]/<(]|$)/g;
   finder.lastIndex = at;

@@ -1,11 +1,5 @@
 #!/usr/bin/env node
-/**
- * Keeps the hosted gate small.
- *
- * Inspects runner types, commands and triggers rather than job names. Job names
- * alone are not enough, and counting YAML job ids misses matrix expansion, which
- * is exactly how a five-minute workflow becomes a forty-minute one.
- */
+/** Fails when an automatic workflow runs heavy commands, native runners or a matrix. */
 
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -14,15 +8,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const WORKFLOWS = resolve(ROOT, '.github/workflows');
 
-/**
- * Commands that need a database, a browser or a native toolchain.
- *
- * Both the pnpm script name and the path it runs. The list held only the script
- * names, and this repo invokes every one of them by path: light-gate.yml runs
- * `node scripts/gate.mjs --light`, so a workflow changed to `node
- * scripts/gate.mjs` would have started the database, installed browsers and
- * passed this check.
- */
+/** Commands needing a database, browser or native toolchain, listed by script name and by path. */
 const HEAVY_COMMANDS = [
   'supabase start',
   'supabase db',
@@ -52,14 +38,7 @@ function readWorkflows() {
     .map((f) => ({ file: f, text: readFileSync(join(WORKFLOWS, f), 'utf8') }));
 }
 
-/**
- * Triggers that fire without a person asking for it.
- *
- * The indent is not assumed. Requiring exactly two spaces meant `on: [push,
- * pull_request]`, `on: push`, and any file indented four spaces all reported no
- * automatic triggers, and the caller skipped the whole file. A check that reads
- * a workflow it does not understand as safe is worse than no check.
- */
+/** Triggers that fire without a person asking, matched at any indent and in flow form. */
 function automaticTriggers(text) {
   const onBlock = text.split(/^jobs:/m)[0];
   return ['push', 'pull_request', 'schedule'].filter(
@@ -86,8 +65,7 @@ function main() {
     const automatic = automaticTriggers(text);
     if (automatic.length === 0) continue;
 
-    // The light gate names the same script as the full one, so its own
-    // invocation is removed before the list is applied.
+    // Strip the light gate's own invocation before matching heavy commands.
     const withoutLightGate = text.split(LIGHT_GATE).join('');
 
     for (const command of HEAVY_COMMANDS) {

@@ -1,6 +1,4 @@
-// The provider registry, read from the `providers` table rather than declared
-// here. Adding a provider is a migration plus a page builder, so disabling one
-// or changing its scopes takes effect without a deploy.
+// The provider registry, read from the `providers` table rather than declared here.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -48,10 +46,7 @@ export async function loadProvider(
   return data;
 }
 
-/**
- * A missing provider and a disabled one are one answer, so the registry cannot
- * be walked for slugs that exist but are switched off.
- */
+/** A missing provider and a disabled one give the same answer. */
 export function requireEnabledProvider(record: ProviderRecord | null): ProviderRecord {
   if (!record || !record.enabled) {
     throw new ApiError(404, 'unknown_provider', 'that provider is not available');
@@ -59,13 +54,7 @@ export function requireEnabledProvider(record: ProviderRecord | null): ProviderR
   return record;
 }
 
-/**
- * Narrows a record to the oauth kind, refusing an api_key provider by name.
- *
- * An api_key provider has no authorize page to send anyone to. Without this the
- * flow would build a URL out of two nulls and the user would land on "undefined"
- * with no idea why.
- */
+/** Narrows a record to the oauth kind, refusing an api_key provider by name. */
 export function requireOAuthProvider(record: ProviderRecord): OAuthProviderRecord {
   if (record.kind !== 'oauth') {
     throw new ApiError(
@@ -75,8 +64,7 @@ export function requireOAuthProvider(record: ProviderRecord): OAuthProviderRecor
     );
   }
   if (!record.auth_url || !record.token_url) {
-    // providers_oauth_urls_present should make this unreachable; a row that got
-    // here anyway is a server fault, not the caller's.
+    // providers_oauth_urls_present makes this unreachable, so a row here is a server fault.
     throw new ApiError(500, 'misconfigured', `${record.slug} is missing its oauth endpoints`);
   }
   return { ...record, kind: 'oauth', auth_url: record.auth_url, token_url: record.token_url };

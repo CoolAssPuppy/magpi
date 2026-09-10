@@ -7,10 +7,7 @@ import { cn } from '@/lib/utils';
 
 export type NavItem = { readonly href: string; readonly label: string };
 
-/**
- * The persistent tab strip. It lives outside every asynchronous content state,
- * so a loading, empty or error state below can never move or remove it.
- */
+/** The persistent tab strip, rendered outside every loading, empty and error state below it. */
 export function Nav({ items }: { items: readonly NavItem[] }) {
   const pathname = usePathname();
 

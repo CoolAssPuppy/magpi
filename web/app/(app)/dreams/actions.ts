@@ -12,14 +12,7 @@ const DREAMS_PATH = '/dreams';
 const idSchema = z.uuid();
 const kindSchema = z.enum(['entities', 'digest', 'connections']);
 
-/**
- * The manual trigger. A scheduled run and this one do the same work, which is
- * also how the product is shown without waiting for a cron.
- *
- * dream-run works inline, so by the time this returns the run has finished one
- * way or another. The outcome comes back rather than a bare success: a run that
- * timed out is not a button press that worked.
- */
+/** The manual trigger. dream-run works inline, so the finished outcome comes back with it. */
 export async function startDreamRun(
   spaceId: string,
   kind: 'entities' | 'digest' | 'connections',
@@ -100,11 +93,7 @@ export async function dismissDreamLink(linkId: string): Promise<ActionState<unde
   );
 }
 
-/**
- * Deletes a dream output and nothing else. The documents_delete_dream policy
- * narrows this to origin = 'dream', so a request naming a source document is
- * refused by the database rather than by this function.
- */
+/** Deletes a dream output; documents_delete_dream narrows this to origin = 'dream'. */
 export async function deleteDreamOutput(documentId: string): Promise<ActionState<undefined>> {
   const input = idSchema.safeParse(documentId);
   if (!input.success) return errorState('That is not a document.');

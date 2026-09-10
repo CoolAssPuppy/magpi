@@ -94,10 +94,7 @@ export default async function AdminOverviewPage({
   const now = new Date();
   const orgId = access.context.orgId;
 
-  // Org-wide panels read through the elevated client: connections, documents and
-  // messages are governed by per-space and per-user policies, so an admin has no
-  // policy that would let them see the whole organization. Plan usage stays on
-  // the caller's own client, where usage_events already has an admin policy.
+  // Org-wide panels read through the elevated client; plan usage stays on the caller's own.
   const wide = { client: access.elevated, orgId, now };
   const own = { client: access.context.supabase, orgId, now };
 

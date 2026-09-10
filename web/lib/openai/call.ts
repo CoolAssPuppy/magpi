@@ -29,21 +29,13 @@ export type ModelCallInput<T> = {
   readonly run: (model: string) => Promise<ModelCallOutcome<T>>;
 };
 
-/**
- * Imported at call time rather than at the top of the file. The recorder reaches
- * the service client, which is `server-only`, and this module is the one every
- * caller of a model goes through, including the ones under test.
- */
+/** Imported at call time, because the recorder reaches the `server-only` service client. */
 const recordThroughServiceClient: UsageRecorder = async (record) => {
   const { recordModelCall } = await import('./usage-recorder');
   await recordModelCall(record);
 };
 
-/**
- * The one wrapper every model call goes through. It resolves the pinned id for
- * the purpose, times the call, and writes what it cost into model_calls and
- * usage_events. A call that throws is still recorded, with succeeded false.
- */
+/** The one wrapper every model call goes through. A call that throws is recorded too. */
 export async function callModel<T>(
   input: ModelCallInput<T>,
   record: UsageRecorder = recordThroughServiceClient,
@@ -87,11 +79,7 @@ export type StreamedModelCallInput<T> = {
   readonly run: (model: string) => AsyncIterable<StreamedChunk<T>>;
 };
 
-/**
- * The streaming half of the same wrapper. It shares the timing and the usage
- * write with callModel, so a streamed answer is metered exactly like a
- * buffered one. Returns the totals the provider reported.
- */
+/** The streaming half of the same wrapper. Returns the totals the provider reported. */
 export async function* callModelStreaming<T>(
   input: StreamedModelCallInput<T>,
   record: UsageRecorder = recordThroughServiceClient,
@@ -109,10 +97,7 @@ export async function* callModelStreaming<T>(
     succeeded = true;
     return usage;
   } finally {
-    // A reader who closes the tab unwinds this generator at a yield, which
-    // reaches neither a catch nor a statement after the loop. OpenAI has
-    // already billed for everything streamed by then, so the write happens
-    // here, on the one path every ending goes through.
+    // In `finally`, because an abandoned stream unwinds at a yield and reaches no other path.
     await report(record, {
       orgId: input.orgId,
       purpose: input.purpose,

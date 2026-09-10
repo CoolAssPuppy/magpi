@@ -58,8 +58,7 @@ Deno.test('a paragraph over the target is split on sentence boundaries', () => {
 });
 
 Deno.test('a single sentence longer than the target is still split', () => {
-  // No boundary to prefer, so the only correct answer is a hard split rather
-  // than one chunk the embedding model will refuse.
+  // No boundary to prefer, so the split has to be a hard one.
   const chunks = chunkText(words(2000), { targetTokens: 100, overlapTokens: 0 });
   assert(chunks.length > 5);
   for (const chunk of chunks) assert(chunk.content.length > 0);

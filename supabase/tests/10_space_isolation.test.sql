@@ -1,9 +1,4 @@
--- The core security file. A member of one space must not read another space's
--- rows, and the boundary has to hold between organizations and inside a single
--- organization, because "same company" is the case a team space exists to deny.
---
--- Every content table here is service-role-write-only by design, so each one
--- also gets a proof that a client role cannot write it.
+-- Space isolation across organizations and between team spaces inside one organization.
 
 begin;
 
@@ -11,9 +6,7 @@ create extension if not exists pgtap with schema extensions;
 
 select plan(51);
 
--- Four users. Alice and Bob are in separate organizations. Carol and Dave are in
--- the same organization, and only Carol is in the team space, so Dave is the
--- test that org membership alone grants nothing.
+-- Four users: Alice and Bob in separate orgs, Carol and Dave in one, only Carol in the team.
 insert into auth.users (id, email, instance_id, aud, role)
 values
   ('a0000000-0000-4000-8000-000000000001', 'alice@magpi.test',
@@ -30,8 +23,7 @@ insert into public.org_members (org_id, user_id, role)
 select org_id, 'd0000000-0000-4000-8000-000000000004', 'member'
 from public.org_members where user_id = 'c0000000-0000-4000-8000-000000000003';
 
--- One team space per owner, with fixed ids so every assertion below names a
--- constant rather than whatever the signup trigger generated.
+-- One team space per owner, with fixed ids the assertions below name.
 insert into public.spaces (id, org_id, kind, name)
 values
   ('50000000-0000-4000-8000-00000000000a',
@@ -50,8 +42,7 @@ values
   ('50000000-0000-4000-8000-00000000000b', 'b0000000-0000-4000-8000-000000000002', '2026-01-02 00:00:00+00'),
   ('50000000-0000-4000-8000-00000000000c', 'c0000000-0000-4000-8000-000000000003', '2026-01-02 00:00:00+00');
 
--- The registry is seeded by a migration in production. Connections carry a
--- foreign key to it, so the fixture needs a row of its own.
+-- Connections carry a foreign key to the provider registry, so the fixture seeds a row.
 insert into public.providers (slug, display_name, kind, enabled)
 values ('notion', 'Notion', 'api_key', true)
 on conflict (slug) do nothing;
@@ -144,9 +135,7 @@ values
    '50000000-0000-4000-8000-00000000000c', '51000000-0000-4000-8000-00000000000c',
    '2026-01-05 00:00:00+00', '2026-01-05 00:00:00+00');
 
--- Carol's org id, stashed while the reader can still see it. Later assertions
--- run as Dave, who cannot read Carol's team space, so a subquery through that
--- space would return null and quietly turn a real check into a vacuous one.
+-- Carol's org id, stashed now because the later assertions run as Dave, who cannot read it.
 select set_config(
   'recall.org_c',
   (select org_id::text from public.spaces where id = '50000000-0000-4000-8000-00000000000c'),
@@ -286,10 +275,7 @@ select is(
   0, 'space_members: another org does not see these rosters'
 );
 
--- Writes. These tables are written by the service role inside edge functions, so
--- every one of them has a select policy and nothing else. An update that the
--- policy hides reports success with zero rows changed, which is why the
--- dream_links case counts rows rather than trusting the statement.
+-- Writes. These tables carry a select policy only, and a hidden update reports success.
 
 select throws_ok(
   $$ insert into public.documents (org_id, space_id, title, origin)
@@ -347,8 +333,7 @@ select throws_ok(
   '42501', null, 'ingest_jobs: a client role cannot insert'
 );
 
--- A user may create a team space. An org space would put every colleague in it,
--- so only the service role gets to make one.
+-- A user may create a team space; only the service role may create an org space.
 select throws_ok(
   $$ insert into public.spaces (org_id, kind, name)
      select org_id, 'org', 'forged' from public.org_members
@@ -362,8 +347,7 @@ select throws_ok(
   '42501', null, 'space_members: a user cannot add themselves to someone else''s space'
 );
 
--- dream_links carries an update policy, so the statement succeeds and the RLS
--- filter is the only thing standing between Bob and Carol's row.
+-- dream_links carries an update policy, so the RLS filter is the only thing stopping Bob.
 select lives_ok(
   $$ update public.dream_links set dismissed_at = '2026-01-06 00:00:00+00'
      where id = '57000000-0000-4000-8000-00000000000c' $$,
@@ -383,8 +367,7 @@ select is(
 set local role authenticated;
 set local request.jwt.claims to '{"sub":"d0000000-0000-4000-8000-000000000004","role":"authenticated"}';
 
--- Proving Dave really is in the org first, so the zeroes below are the team
--- boundary rather than a missing org membership.
+-- Dave is in the org first, so the zeroes below are the team boundary, not a missing row.
 select is(
   (select count(*)::int from public.spaces
    where kind = 'org' and org_id = current_setting('recall.org_c')::uuid),
@@ -423,13 +406,7 @@ select is(
   2, 'and the owner of the team space does see them, so the fixture is real'
 );
 
--- Anon ----------------------------------------------------------------------
---
--- Every content policy names `to authenticated`, so a signed-out caller is
--- refused at the table privilege before RLS is consulted at all. These assert
--- the refusal rather than an empty result: granting anon a broad select would
--- still return no rows today, and would silently become an exposure the moment
--- someone adds a policy that forgets the role list.
+-- Anon: every policy names `to authenticated`, so a signed-out caller is refused outright. --
 
 set local request.jwt.claims to '{"role":"anon"}';
 set local role anon;
@@ -444,12 +421,7 @@ select throws_ok(
   'a signed-out caller is refused chunks outright'
 );
 
--- Realtime ------------------------------------------------------------------
---
--- Realtime resolves RLS against the old row on update and delete. Without a full
--- replica identity the old row is only its primary key, space_id is absent, and
--- the policy that filters on it cannot be evaluated, so a broadcast escapes the
--- space it belongs to.
+-- Realtime resolves RLS against the old row, which needs replica identity full. ------------
 
 reset role;
 
@@ -469,10 +441,7 @@ select ok(
   'every published table carries a full replica identity so its policy can run on the old row'
 );
 
--- record_retrieval is security definer, so it writes documents that its caller
--- holds no update grant on. That makes the space check inside it the only thing
--- standing between a signed-in stranger and another organization's dead-content
--- panel, which is exactly the shape of the bugs this file exists to catch.
+-- record_retrieval is security definer, so its own space check is the only barrier.
 set local role authenticated;
 set local request.jwt.claims to '{"sub":"a0000000-0000-4000-8000-000000000001","role":"authenticated"}';
 
@@ -501,10 +470,7 @@ select isnt(
   null, 'and the panel now has a date to read'
 );
 
--- One connection per account per provider per space, including the account that
--- has no label. connections-claim matched an existing one with
--- `external_account_id = null`, which never matches, so every reconnect of a
--- provider that names no account filed another row holding a live token.
+-- One connection per account per provider per space, including the account with no label.
 select throws_ok(
   $$ insert into public.connections (org_id, space_id, user_id, provider, external_account_id)
      values (
@@ -522,9 +488,7 @@ values (
   '50000000-0000-4000-8000-00000000000a', 'a0000000-0000-4000-8000-000000000001',
   'notion', null);
 
--- A unique index counts every null as distinct, so this is the half a single
--- index over the nullable column would have let through, and it is the half
--- that actually broke.
+-- A unique index counts every null as distinct, so the no-label case needs its own index.
 select throws_ok(
   $$ insert into public.connections (org_id, space_id, user_id, provider, external_account_id)
      values (
@@ -536,16 +500,7 @@ select throws_ok(
   'nor can a provider that names no account at all'
 );
 
--- The three columns that decide which organization owns a space, what kind it
--- is, and whose personal space it is. Nothing in the product updates any of
--- them after the row is created: the only two writes are the name and the
--- dreaming toggle.
---
--- The column grant already keeps `authenticated` out. This is the same rule for
--- every role, service_role included, and service_role is the key every Edge
--- Function holds. Promoting a team space to `kind = 'org'` is the escalation
--- that matters: `sync_org_space_membership` then enrols every future member of
--- the organization into it.
+-- org_id, kind and owner_user_id are immutable for every role, service_role included.
 select throws_ok(
   $$ update public.spaces set kind = 'org'
      where id = '50000000-0000-4000-8000-00000000000a' $$,
@@ -563,8 +518,7 @@ select throws_ok(
   'nor move it into another organization'
 );
 
--- The two writes the product actually makes still work, which is what stops
--- this being a trigger that breaks the settings page.
+-- The two writes the product makes, the name and the dreaming toggle, still work.
 select lives_ok(
   $$ update public.spaces set name = 'Renamed by the owner', dreaming_enabled = false
      where id = '50000000-0000-4000-8000-00000000000a' $$,

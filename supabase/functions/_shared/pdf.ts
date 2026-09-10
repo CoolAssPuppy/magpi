@@ -1,34 +1,14 @@
-// Pulling the text out of a PDF without a PDF library.
-//
-// pdfjs is roughly a megabyte of JavaScript and a cold start we pay on every
-// ingest request. What we actually need is narrower than what pdfjs does: find
-// the content streams, inflate them, and read the text-showing operators, which
-// needs nothing but the web platform Deno already gives us.
-//
-// The tradeoff is that a PDF built to defeat this (custom encodings, glyph
-// subsets with no readable byte values) extracts as empty or as noise. Empty is
-// the honest answer for those and the caller decides what to do about it.
-//
-// This file walks the raw bytes of the file. Reading the tokens inside a
-// decoded content stream is pdf_content.ts.
+// Extracts PDF text without a PDF library by walking raw bytes; pdf_content.ts reads streams.
 
 import { readShownText } from './pdf_content.ts';
 
-/**
- * PDF text is almost always WinAnsiEncoding, which is what 'latin1' names in
- * the encoding standard, so byte 0x92 comes back as a right quote instead of a
- * control character.
- */
+/** PDF text is almost always WinAnsiEncoding, which the encoding standard names 'latin1'. */
 const winAnsi = new TextDecoder('latin1');
 
 const STREAM = asciiBytes('stream');
 const ENDSTREAM = asciiBytes('endstream');
 
-/**
- * A malformed or hostile file must terminate and must not exhaust the worker's
- * memory. A real document is a few hundred streams and a few megabytes of
- * decoded content, so these caps only bite on input we would refuse anyway.
- */
+/** Caps that stop a malformed or hostile file from exhausting the worker. */
 const MAX_STREAMS = 512;
 const MAX_DECODED_BYTES = 16 * 1024 * 1024;
 
@@ -37,13 +17,7 @@ const DICT_WINDOW_BYTES = 2048;
 
 const IMAGE_FILTERS = ['/DCTDecode', '/JPXDecode', '/CCITTFaxDecode', '/JBIG2Decode'];
 
-/**
- * Extracted text, one line per text-positioning break.
- *
- * Returns an empty string for a scanned or encrypted document rather than
- * throwing, because "no text here" is a result the caller has to handle either
- * way. Throws only when the bytes are not a PDF.
- */
+/** Extracted text, one line per positioning break. Empty for a scanned or encrypted file. */
 export async function extractPdfText(bytes: Uint8Array): Promise<string> {
   assertPdfHeader(bytes);
 
@@ -72,8 +46,7 @@ export async function extractPdfText(bytes: Uint8Array): Promise<string> {
     if (decoded === null || decoded.length > remainingBytes) continue;
     remainingBytes -= decoded.length;
 
-    // Trimmed per stream: a page split across two content streams should read
-    // as consecutive lines, not as two blocks with a gap between them.
+    // Trimmed per stream so a page split across two streams reads as consecutive lines.
     const text = readShownText(winAnsi.decode(decoded)).trim();
     if (text.length > 0) extracted.push(text);
   }
@@ -82,8 +55,7 @@ export async function extractPdfText(bytes: Uint8Array): Promise<string> {
 }
 
 function assertPdfHeader(bytes: Uint8Array): void {
-  // Writers prepend junk often enough that byte zero is too strict, but the
-  // header is required to be near the front.
+  // Writers prepend junk, so the header is required near the front rather than at byte zero.
   const head = winAnsi.decode(bytes.subarray(0, 1024));
   if (!head.includes('%PDF-')) {
     throw new Error('input is not a PDF: no %PDF header in the first 1024 bytes');
@@ -129,11 +101,7 @@ function trimTrailingEol(bytes: Uint8Array, start: number, close: number): numbe
   return end;
 }
 
-/**
- * The dictionary describing a stream is the one that closes immediately before
- * the keyword, so match backwards from that close rather than guessing at the
- * nearest '<<' in the window.
- */
+/** A stream's dictionary is the one closing immediately before the keyword. */
 function precedingDictionary(bytes: Uint8Array, streamAt: number): string {
   const from = Math.max(0, streamAt - DICT_WINDOW_BYTES);
   const window = winAnsi.decode(bytes.subarray(from, streamAt));
@@ -163,13 +131,7 @@ function isFlate(dictionary: string): boolean {
   return /\/Filter\s*(\[\s*)?\/FlateDecode/.test(dictionary);
 }
 
-/**
- * Null rather than a throw: one stream we cannot read should cost us that
- * stream, not the rest of the document.
- *
- * PDF writers emit zlib-wrapped deflate, but enough of them omit the two-byte
- * header that the raw fallback is worth the second attempt.
- */
+/** Tries zlib deflate then raw deflate, returning null for a stream it cannot read. */
 async function inflate(payload: Uint8Array): Promise<Uint8Array | null> {
   for (const format of ['deflate', 'deflate-raw'] as const) {
     try {
@@ -183,8 +145,7 @@ async function inflate(payload: Uint8Array): Promise<Uint8Array | null> {
 }
 
 function singleChunkStream(bytes: Uint8Array): ReadableStream<BufferSource> {
-  // A view onto a shared buffer is not a BufferSource, and a caller is free to
-  // hand us one, so the chunk goes into a buffer we own.
+  // A view onto a shared buffer is not a BufferSource, so copy into a buffer we own.
   const chunk = new Uint8Array(bytes.length);
   chunk.set(bytes);
   return new ReadableStream<BufferSource>({

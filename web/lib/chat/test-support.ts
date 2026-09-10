@@ -19,10 +19,7 @@ export function chunkRow(overrides: Partial<ChunkRow> = {}): ChunkRow {
   };
 }
 
-/**
- * Stands in for the chunks table as row level security leaves it for one
- * reader: rows outside their spaces are absent rather than an error.
- */
+/** Stands in for the chunks table under RLS: rows outside a reader's spaces are absent. */
 export function readerSeeing(rows: readonly ChunkRow[]): {
   supabase: SupabaseClient<Database>;
   asked: string[][];
@@ -72,10 +69,7 @@ export type RecordingResults = {
 
 export type RecordedRpc = { name: string; args: unknown };
 
-/**
- * A postgrest builder that records what was asked of it. Enough of the chain to
- * pin the shape of a query, and nothing beyond what this app calls.
- */
+/** A postgrest builder that records what was asked of it, covering only what this app calls. */
 export function recordingClient(results: RecordingResults): {
   supabase: SupabaseClient<Database>;
   writes: RecordedWrite[];

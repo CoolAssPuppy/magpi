@@ -26,8 +26,7 @@ create table public.entity_mentions (
   unique (entity_id, chunk_id)
 );
 
--- space_id is denormalized here, so without these it can name a chunk from
--- anywhere. Same reason as dream_links.
+-- space_id is denormalized here, so without these a row can name a chunk from anywhere.
 alter table public.entity_mentions
   add constraint entity_mentions_entity_in_space
     foreign key (entity_id, space_id) references public.entities (id, space_id)
@@ -39,9 +38,7 @@ alter table public.entity_mentions
     foreign key (chunk_id, space_id) references public.chunks (id, space_id)
     on delete cascade;
 
--- Re-ingesting a document deletes its chunks, and every chunk delete cascades
--- through entity_mentions_chunk_in_space. Without this it is a sequential scan
--- of entity_mentions per chunk, on the most frequent write in the product.
+-- Every chunk delete cascades through entity_mentions_chunk_in_space, which needs this index.
 create index entity_mentions_chunk_idx on public.entity_mentions (chunk_id);
 create index entity_mentions_document_idx on public.entity_mentions (document_id);
 create index entity_mentions_space_id_idx on public.entity_mentions (space_id);

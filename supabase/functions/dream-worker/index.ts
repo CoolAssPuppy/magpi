@@ -1,7 +1,4 @@
-// POST /dream-worker. Runs the queued dream runs.
-//
-// A run is created elsewhere, by the schedule or by a user pressing the button
-// on a space page. This only picks up what is queued and calls the job body.
+// POST /dream-worker. Picks up queued dream runs, created elsewhere, and calls the job body.
 
 import { jsonResponse } from '../_shared/errors.ts';
 import { serveFunction } from '../_shared/http.ts';
@@ -10,9 +7,7 @@ import { type DreamResult, type DreamRunRecord, runDreamJob } from '../_shared/j
 import { claimQueuedRow, retireAbandoned } from '../_shared/jobs/claim.ts';
 import { jobDepsFromEnv, requireWorkerCaller } from '../_shared/jobs/runtime.ts';
 
-// Dreaming is the heaviest thing this project does: many sequential model calls
-// over a whole space. One run per invocation keeps a single space's failure from
-// taking the others with it, and makes the ceiling legible when it is hit.
+// One run per invocation, so one space's failure does not take the others with it.
 const DEFAULT_BATCH = 1;
 
 serveFunction('dream-worker', async (core) => {
@@ -20,9 +15,7 @@ serveFunction('dream-worker', async (core) => {
   const input = parseBody(workerBatchSchema, core.body ?? {});
   const deps = jobDepsFromEnv();
 
-  // A dream run holds many sequential model calls, so it is the likeliest thing
-  // here to be killed part way through. Nothing else would ever move it off
-  // running, and the space page would show it working for good.
+  // Nothing else moves an interrupted run off `running`, so the space page would show it forever.
   const retired = await retireAbandoned(deps.db, {
     table: 'dream_runs',
     startedColumn: 'started_at',
@@ -42,9 +35,7 @@ serveFunction('dream-worker', async (core) => {
   const results: (DreamResult & { run_id: string })[] = [];
   let contended = 0;
   for (const run of data ?? []) {
-    // A select says a run was queued a moment ago, not that this caller owns it.
-    // A dream run is many sequential model calls, so two workers taking the same
-    // one is the most expensive duplicate this system can produce.
+    // A select says the run was queued a moment ago, not that this caller owns it.
     const claimed = await claimQueuedRow(deps.db, 'dream_runs', run.id, {
       status: 'running',
       started_at: deps.http.now().toISOString(),

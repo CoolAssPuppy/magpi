@@ -42,10 +42,7 @@ export default async function MembersPage({
       .from('org_members')
       .select('user_id, role, created_at', { count: 'exact' })
       .eq('org_id', context.orgId)
-      // Owners first, then admins. Within a rank, whoever joined first. The
-      // ranking is org_role's own declaration order, which is how a Postgres
-      // enum sorts, and it has to happen here rather than in this process: a
-      // page of members sorted after the fact is a page of arbitrary members.
+      // Owners first, then admins, then by join date, sorted in Postgres so the page is stable.
       .order('role', { ascending: true })
       .order('created_at', { ascending: true })
       .range(from, to),
@@ -67,9 +64,7 @@ export default async function MembersPage({
     );
   }
 
-  // Addresses live in auth.users, which no policy exposes. org_member_emails
-  // reads them in one query and repeats the admin test itself rather than
-  // trusting this page to have done it.
+  // Addresses live in auth.users, which no policy exposes. org_member_emails redoes the admin test.
   const emails = await resolveEmails(context.supabase, context.orgId);
 
   const members: readonly MemberRow[] = memberships.data.map((membership) => ({

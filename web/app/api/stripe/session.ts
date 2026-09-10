@@ -7,13 +7,7 @@ import { getSessionContext, type SessionContext } from '@/lib/supabase/context';
 
 export const BILLING_PATH = '/admin/billing';
 
-/**
- * Same-origin check for a route handler that starts a paid flow.
- *
- * Server actions get this for free. A route handler does not, and without it any
- * page on the internet could post a form at this endpoint using the reader's
- * cookies.
- */
+/** Same-origin check for a route handler, which does not get one the way a server action does. */
 function isSameOrigin(request: Request): boolean {
   const origin = request.headers.get('origin');
   if (!origin) return false;

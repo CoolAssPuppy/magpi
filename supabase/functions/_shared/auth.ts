@@ -1,8 +1,4 @@
-// Caller identity for the authenticated functions.
-//
-// The user id comes from a verified token, never from the request body. getUser
-// validates against the auth server rather than decoding locally, so a revoked
-// or rotated-key token is rejected; decoding the claims here would accept both.
+// Caller identity for the authenticated functions, from a token the auth server verifies.
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
@@ -31,13 +27,7 @@ export async function requireUser(
   return { id: data.user.id, email: data.user.email ?? null };
 }
 
-/**
- * The membership check every space-scoped write makes before it writes.
- *
- * Under the service role RLS is not enforcing anything, so this is the boundary.
- * It reads space_members directly rather than calling visible_space_ids(), which
- * resolves auth.uid() and would be nobody under this key.
- */
+/** Membership check for space-scoped writes. Reads space_members directly, as RLS is off here. */
 export async function requireSpaceMembership(
   db: SupabaseClient,
   userId: string,
@@ -51,8 +41,7 @@ export async function requireSpaceMembership(
     .maybeSingle<{ id: string; org_id: string }>();
 
   if (error) throw new ApiError(500, 'internal', 'space lookup failed');
-  // A space the caller cannot see and a space that does not exist are one
-  // answer, so the id space cannot be walked for spaces that exist.
+  // Invisible and nonexistent spaces return the same answer, so ids cannot be probed.
   if (!data) throw new ApiError(404, 'unknown_space', 'no such space');
   return { orgId: data.org_id };
 }

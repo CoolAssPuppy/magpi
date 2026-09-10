@@ -1,24 +1,9 @@
-/**
- * A dream output is a claim the product makes without being asked, so every one
- * of them cites the chunks it came from. The worker records those ids in
- * documents.source_chunk_ids, and they are resolved through RLS when the run is
- * read rather than when it is written, the same rule as chat citations.
- */
+/** A dream output and its citations, resolved through RLS at read time, as chat citations are. */
 export type DreamOutput =
   | { readonly kind: 'none' }
-  /**
-   * The run cited nothing. A fact about the run, and it should be unreachable:
-   * a digest that read zero chunks writes no document at all.
-   */
+  /** The run cited nothing. Unreachable: a run that read zero chunks writes no document. */
   | { readonly kind: 'uncited'; readonly documentId: string; readonly title: string }
-  /**
-   * The run cited sources that no longer resolve. Not a permission problem: a
-   * digest and its chunks are always in the same space, and both policies key on
-   * that same space_id, so a reader who can open the digest can open its
-   * sources. What empties the list is the evidence going away, by a source
-   * document being deleted or re-imported. The digest was honestly cited when it
-   * was written, and it has to read that way rather than as invention.
-   */
+  /** The cited sources no longer resolve, because the source documents went away. */
   | {
       readonly kind: 'sources-gone';
       readonly documentId: string;
@@ -51,8 +36,7 @@ export function describeDreamOutput({
   }
 
   const visible = new Set(visibleChunkIds);
-  // Ordered by what the run recorded, not by what the read returned, so the
-  // numbering is stable between two readers who can see different amounts.
+  // Ordered by what the run recorded, so numbering is stable across readers.
   const chunkIds = sourceChunkIds.filter((id) => visible.has(id));
 
   if (chunkIds.length === 0) {

@@ -21,8 +21,7 @@ const conversationSchema = z.object({ conversationId: z.uuid() });
 
 const INVALID = 'That conversation could not be changed.';
 
-// Parsing happens inside withSession in every action file, so a signed-out
-// caller is told to sign in whatever they sent.
+// Parsing happens inside withSession, so a signed-out caller is told to sign in whatever they sent.
 
 export async function createConversationAction(
   input: z.input<typeof createSchema>,

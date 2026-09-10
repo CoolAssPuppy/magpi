@@ -1,12 +1,4 @@
-// Secrets, parsed at the boundary with zod and trusted afterwards.
-//
-// The prefix is SB_. Supabase reserves SUPABASE_ for the variables it injects
-// itself and refuses to store a secret under that prefix, so a secrets manager
-// syncing into a project cannot write one. The two SUPABASE_ names read here
-// are platform-injected, never ours.
-//
-// Every accessor takes its source, so a test names the values it needs instead
-// of mutating the process environment and racing every other test in the file.
+// Secrets, parsed with zod. Ours use the SB_ prefix; the SUPABASE_ names are platform-injected.
 
 import { z } from 'zod';
 import { ApiError, misconfigured } from './errors.ts';
@@ -17,8 +9,7 @@ export interface EnvSource {
 
 export const denoEnv: EnvSource = { get: (name: string) => Deno.env.get(name) || undefined };
 
-// z.url() alone would accept "kong:8000": the URL constructor reads that as a
-// URL with a "kong" scheme. The scheme is the thing being checked here.
+// Checks the scheme, because z.url() alone accepts "kong:8000" as a URL with a "kong" scheme.
 const httpUrl = z
   .string()
   .refine((value) => /^https?:\/\//.test(value) && URL.canParse(value), 'must be an http(s) url');
@@ -50,14 +41,7 @@ export function coreEnv(source: EnvSource = denoEnv): CoreEnv {
   );
 }
 
-/**
- * The client-safe key, used only where a caller's own JWT is being verified.
- *
- * Separate from coreEnv because the service client has no use for it, and a
- * function that only signs a redirect should not fail for want of a key it
- * never touches. The platform injects the anon key under its own name; ours
- * wins when set.
- */
+/** The client-safe key, used only where a caller's own JWT is verified. SB_ name wins when set. */
 export function publishableKey(source: EnvSource = denoEnv): string {
   const key = source.get('SB_PUBLISHABLE_KEY') ?? source.get('SUPABASE_ANON_KEY');
   if (!key) throw misconfigured('neither SB_PUBLISHABLE_KEY nor SUPABASE_ANON_KEY is set');
@@ -69,12 +53,7 @@ export interface OAuthCredentials {
   clientSecret: string;
 }
 
-/**
- * One naming rule for every provider: SB_<SLUG>_CLIENT_ID and _CLIENT_SECRET.
- *
- * 503 rather than 500, because a provider nobody has registered an app for yet
- * is a deployment state and the connections page can say so.
- */
+/** Reads SB_<SLUG>_CLIENT_ID and _CLIENT_SECRET. An unregistered provider is a 503, not a 500. */
 export function oauthCredentials(slug: string, source: EnvSource = denoEnv): OAuthCredentials {
   const prefix = `SB_${slug.toUpperCase().replaceAll('-', '_')}`;
   const clientId = source.get(`${prefix}_CLIENT_ID`);
@@ -102,11 +81,7 @@ function parseKeyId(raw: string | undefined): number {
   return id;
 }
 
-/**
- * A malformed retired-key entry is fatal rather than skipped. Ignoring one
- * would turn a typo during rotation into rows that silently stop decrypting,
- * which is the exact failure the key id exists to prevent.
- */
+/** Parses retired keys. A malformed entry throws rather than being skipped. */
 function parsePreviousKeys(raw: string | undefined): Map<number, string> {
   const entries = new Map<number, string>();
   if (!raw?.trim()) return entries;
@@ -137,14 +112,7 @@ export function tokenEncryptionEnv(source: EnvSource = denoEnv): TokenEncryption
 const stripeSchema = z.object({
   secretKey: z.string().min(1),
   webhookSecret: z.string().min(1),
-  /**
-   * The price a Team subscription is sold at.
-   *
-   * Optional, because a deployment that has not wired billing up yet still
-   * serves every other function. Absent means the webhook cannot confirm a
-   * subscription is the thing we sell, and an unconfirmed subscription is not
-   * Team. See planForSubscription in billing.ts.
-   */
+  /** The price a Team subscription is sold at. Absent means no subscription counts as Team. */
   teamPriceId: z.string().min(1).nullable(),
 });
 
@@ -168,14 +136,7 @@ export function openAiKey(source: EnvSource = denoEnv): string {
   return key;
 }
 
-/**
- * Where a provider sends the browser back.
- *
- * SUPABASE_URL is not that address. Inside the edge runtime it is the internal
- * gateway, http://kong:8000, and a redirect_uri naming a container hostname is
- * one no provider can send a browser to. Deployed the two are the same host;
- * locally they are not.
- */
+/** Where a provider sends the browser back. Locally SUPABASE_URL is the internal gateway. */
 export function functionsBaseUrl(source: EnvSource = denoEnv): string {
   const explicit = source.get('SB_FUNCTIONS_BASE_URL');
   if (explicit) return explicit.replace(/\/+$/, '');

@@ -48,9 +48,7 @@ vi.mock('@/app/(app)/documents/actions', () => ({
   },
 }));
 
-// The real react-dropzone state, so the panel renders its actual drop area and
-// the limits it sets are readable on screen. Only what an upload produces is
-// controlled here.
+// The real react-dropzone state, so the panel renders its actual drop area and limits.
 vi.mock('@/hooks/use-supabase-upload', async () => {
   const { useDropzone } = await import('react-dropzone');
 
@@ -123,11 +121,7 @@ function renderPanel(spaces: readonly SpaceOption[] = SPACES) {
       show();
       await user.click(screen.getByRole('button', { name: 'Upload files' }));
     },
-    /**
-     * What storage reports back once the objects are written. The real hook
-     * only ever adds to this list, so a second upload of a name already in it
-     * hands back the same names in a new array.
-     */
+    /** What storage reports back once the objects are written; the hook only ever adds to it. */
     finish(names: string[]) {
       hookState.successes = names;
       show();
@@ -156,8 +150,7 @@ describe('choosing where an upload lands', () => {
     render(<UploadPanel spaces={SPACES} />);
 
     expect(screen.getByText('Upload 10 files')).toBeInTheDocument();
-    // The panel caps a file at 50 MiB and the drop area counts in MB, so the
-    // number a person reads is 52.43.
+    // The panel caps a file at 50 MiB and the drop area counts in MB, so a person reads 52.43.
     expect(screen.getByText('Maximum file size: 52.43 MB')).toBeInTheDocument();
   });
 
@@ -186,13 +179,11 @@ describe('what happens when a file finishes uploading', () => {
       title: 'notes.md',
       mimeType: 'text/markdown',
     });
-    // The storage policy reads that first segment back, so the object and the
-    // record have to name the same space.
+    // The storage policy reads that first segment back, so both have to name the same space.
     expect(hookState.options?.path).toBe(ENGINEERING_ID);
   });
 
-  // Browsers report an empty type for .md on several platforms, so trusting
-  // file.type alone would refuse the format the product is mostly used for.
+  // Browsers report an empty type for .md, so file.type alone would refuse the main format.
   it('works out the type from the name when the browser does not report one', async () => {
     const panel = renderPanel();
 
@@ -228,9 +219,7 @@ describe('what happens when a file finishes uploading', () => {
     await waitFor(() => expect(actionState.calls).toHaveLength(1));
   });
 
-  // The object was written under the space that was selected when the upload
-  // started, and the storage policy reads that first path segment back. A
-  // record naming any other space describes an object that is not there.
+  // The storage policy reads the first path segment back, so any other space names no object.
   it('records the upload against the space it started in, not one picked mid-flight', async () => {
     const panel = renderPanel();
 
@@ -242,9 +231,7 @@ describe('what happens when a file finishes uploading', () => {
     expect(actionState.calls[0].spaceId).toBe(PERSONAL_ID);
   });
 
-  // The upload hook only ever adds to its list of successes, so a second upload
-  // of a name already in it looks identical from the outside. Two different
-  // spaces are two different objects and two different documents.
+  // The upload hook only ever adds to its successes, so a repeated name looks identical.
   it('files the same file name again when it is put into a second space', async () => {
     const panel = renderPanel();
 
@@ -285,8 +272,7 @@ describe('what happens when a file finishes uploading', () => {
     expect(actionState.calls).toEqual([]);
   });
 
-  // The name survives in `successes` after the file itself has left the list,
-  // so the extension is the only thing left to go on and it is enough.
+  // The name survives in `successes` after the file has left, so the extension is all there is.
   it('still works out the type for an object the file list no longer holds', async () => {
     const panel = renderPanel();
 

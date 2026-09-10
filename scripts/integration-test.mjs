@@ -1,13 +1,5 @@
 #!/usr/bin/env node
-/**
- * Integration tests: real local Supabase, real HTTP, no browser.
- *
- * Run separately from the browser suites. Concurrent fixtures against one
- * persistent local database produce false cleanup failures, so this runner
- * refuses to start if a browser run is already holding the stack. The lock is
- * in tests/stack-lock.mjs; this comment used to describe a check that did not
- * exist.
- */
+/** Integration tests on local Supabase. Will not start while a browser suite holds the lock. */
 
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
@@ -56,8 +48,7 @@ async function main() {
     process.exit(1);
   }
 
-  // Released whatever the outcome, including a failing run. A lock left behind
-  // by a red suite would block the next green one.
+  // Release the lock on every outcome so a failing run does not block the next.
   let child;
   try {
     child = spawnSync(

@@ -1,19 +1,8 @@
--- Table privileges, declared rather than inherited.
---
--- A stock Supabase project's default privileges for new tables in `public` give
--- anon, authenticated and service_role only TRUNCATE, REFERENCES, TRIGGER and
--- MAINTAIN. RLS decides which rows a caller sees, but a role still needs the
--- table privilege to ask the question at all, and without these grants every
--- policy in 90_policies.sql is unreachable.
---
--- Declaring them here means `supabase db diff` captures them. The spec warns
--- that grants duplicated from default privileges are among the things the diff
--- gets wrong, and this file is what makes the answer explicit instead.
+-- Table privileges, declared here because the stock default privileges grant none of them.
 
 -- anon gets nothing. There is no unauthenticated surface in this product.
 
--- authenticated reads what its policies allow, and writes only where a policy
--- names it. The privilege is the outer gate; the policy is the real one.
+-- authenticated reads what its policies allow. The privilege is the outer gate.
 grant select on public.organizations to authenticated;
 grant update on public.organizations to authenticated;
 
@@ -22,22 +11,14 @@ grant delete on public.org_members to authenticated;
 
 grant select, insert, delete on public.org_invites to authenticated;
 
--- update is a column list, not the table. A table-wide update grant let a space
--- member run `update spaces set org_id = <another org>` and flip a team space to
--- kind 'org'. The policy tested membership and nothing else, so both were
--- allowed. A column-level revoke cannot subtract from a table grant, so the
--- table privilege has to be absent for the column list to mean anything.
+-- update is a column list: a table grant would let a member move a space to another org.
 grant select, insert, delete on public.spaces to authenticated;
 grant update (name, dreaming_enabled) on public.spaces to authenticated;
 grant select, insert, delete on public.space_members to authenticated;
 
 grant select on public.providers to authenticated;
 
--- connections gets a column list rather than a table grant. A column-level
--- revoke cannot subtract from a table-level grant, so the only way to keep
--- access_token_enc and refresh_token_enc unreadable is for the table privilege
--- never to exist. `select *` therefore fails for a client, which is the point:
--- naming your columns means you cannot ask for a token by accident.
+-- A column list, not a table grant, so the encrypted token columns stay unreadable.
 grant delete on public.connections to authenticated;
 grant select (
   id, org_id, space_id, user_id, provider, external_account_id, scopes,
@@ -49,11 +30,7 @@ grant select on public.chunks to authenticated;
 grant select on public.entities to authenticated;
 grant select on public.entity_mentions to authenticated;
 grant select on public.dream_runs to authenticated;
--- update is a column list for the same reason spaces is. The policy tests the
--- space and nothing else, so a table-wide grant let a member rewrite
--- similarity, rationale, dream_run_id and both document ids: a link between two
--- documents they can see, repointed at a document they cannot, carrying prose
--- they wrote. Confirming and dismissing is the whole feature.
+-- update is a column list so a member can confirm or dismiss a link, not repoint it.
 grant select on public.dream_links to authenticated;
 grant update (confirmed_at, dismissed_at) on public.dream_links to authenticated;
 grant select on public.ingest_jobs to authenticated;
@@ -64,9 +41,7 @@ grant select, insert on public.messages to authenticated;
 grant select on public.usage_events to authenticated;
 grant select on public.model_calls to authenticated;
 
--- service_role writes everything, inside an edge function, after the caller and
--- what they may touch are already established. BYPASSRLS skips the policies; it
--- does not supply the table privilege.
+-- service_role writes everything. BYPASSRLS skips policies, it does not supply the privilege.
 grant select, insert, update, delete on public.organizations to service_role;
 grant select, insert, update, delete on public.org_members to service_role;
 grant select, insert, update, delete on public.org_invites to service_role;

@@ -18,10 +18,7 @@ type ChunkRow = {
   readonly documents: { readonly title: string } | null;
 };
 
-/**
- * messages.citations holds chunk ids and nothing else. A shape this refuses is
- * our own writer's bug, and it should be loud rather than silently uncited.
- */
+/** messages.citations holds chunk ids and nothing else, so any other shape throws. */
 export function parseCitationIds(value: Json): readonly string[] {
   return citationIdsSchema.parse(value);
 }
@@ -35,14 +32,7 @@ export function excerptOf(content: string): string {
   return `${lastSpace > 0 ? cut.slice(0, lastSpace) : cut}...`;
 }
 
-/**
- * Citations resolve on read, through the reader's own client. A conversation
- * whose author later lost access to a space keeps its answer text and quietly
- * loses the citation, which is the correct outcome and not an error.
- *
- * The label is the position the chunk held when the answer was written, so a
- * dropped source leaves a gap rather than renumbering the ones that remain.
- */
+/** Citations resolve on read through the reader's client. Labels keep their original position. */
 export async function resolveCitations(
   supabase: Client,
   citations: Json,

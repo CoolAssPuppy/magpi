@@ -21,13 +21,7 @@ export type QuestionCount = {
   readonly lastAskedAt: string;
 };
 
-/**
- * Nearest-rank percentile over an already sorted list.
- *
- * Null rather than zero for an empty list: "no answers yet" and "answered
- * instantly" are different claims and the chart has to be able to tell them
- * apart.
- */
+/** Nearest-rank percentile over a sorted list. An empty list gives null, never zero. */
 export function percentile(sorted: readonly number[], fraction: number): number | null {
   if (sorted.length === 0) return null;
   const rank = Math.ceil(fraction * sorted.length);
@@ -43,11 +37,7 @@ function shiftUtcDays(from: Date, days: number): string {
   return shifted.toISOString().slice(0, 10);
 }
 
-/**
- * A dense series, one entry per day, oldest first. A day with no traffic has to
- * appear as a zero: a chart that silently drops empty days reads as a busier
- * product than it is.
- */
+/** A dense series, one entry per day, oldest first. A day with no traffic is a zero. */
 export function bucketByDay(
   samples: readonly LatencySample[],
   { days, now }: { days: number; now: Date },
@@ -92,11 +82,7 @@ export function normalizeQuestion(text: string): string {
     .replace(/[?.!]+$/, '');
 }
 
-/**
- * Groups questions by their normalized form so "Where is the runbook?" and
- * "where is the runbook" are one row, and shows the most recent wording, which
- * is the one the asker will recognize.
- */
+/** Groups questions by normalized form into one row each, labelled with the latest wording. */
 export function groupQuestions(
   rows: readonly QuestionRow[],
   limit: number,

@@ -1,9 +1,4 @@
-// Where a claimed exchange becomes a row in connections.
-//
-// Separate from the entry point because this is the half with a rule in it: one
-// connection per provider account per space. Reconnecting replaces the token on
-// the connection that is already there, and only a genuinely different account
-// files a second one.
+// Where a claimed exchange becomes a row in connections: one per provider account per space.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -11,14 +6,7 @@ import { ApiError } from '../_shared/errors.ts';
 import { requireSpaceMembership } from '../_shared/auth.ts';
 import type { PendingConnection } from '../_shared/claim.ts';
 
-/**
- * The connection this account already has in this space, or null.
- *
- * A provider that names no account stores null, and null is not a value any
- * equality test matches, in PostgREST or in Postgres. Asking with `eq` finds
- * nothing, and finding nothing files a second connection carrying a live token
- * on every reconnect.
- */
+/** The connection this account already has here. A null external id needs `is`, not `eq`. */
 function findExisting(db: SupabaseClient, pending: PendingConnection) {
   const scoped = db
     .from('connections')
@@ -32,14 +20,12 @@ function findExisting(db: SupabaseClient, pending: PendingConnection) {
     : scoped.eq('external_account_id', pending.externalAccountId).maybeSingle<{ id: string }>();
 }
 
-// userId is unchanged by a successful claim, so the AAD the callback encrypted
-// under still holds and the ciphertext moves without decryption.
+// userId is unchanged by a claim, so the callback's AAD holds and the ciphertext moves as-is.
 export async function storeConnection(
   db: SupabaseClient,
   pending: PendingConnection,
 ): Promise<{ connectionId: string }> {
-  // The space was chosen before the redirect, but a membership can be revoked
-  // while a flow is in the air.
+  // A membership can be revoked while a flow is in the air.
   const { orgId } = await requireSpaceMembership(db, pending.userId, pending.spaceId);
 
   const { data: existing } = await findExisting(db, pending);
@@ -55,8 +41,7 @@ export async function storeConnection(
     scopes: pending.scopes,
     token_expires_at: pending.tokenExpiresAt,
     status: 'active' as const,
-    // Cleared on a successful reconnect, so a stale failure does not sit on a
-    // working connection.
+    // Cleared on a successful reconnect.
     status_detail: null,
   };
 

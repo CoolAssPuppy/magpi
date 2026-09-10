@@ -16,10 +16,7 @@ vi.mock('@/hooks/use-current-user-image', () => ({
 
 const { CurrentUserAvatar } = await import('./current-user-avatar');
 
-/**
- * jsdom fetches nothing, so an avatar would sit in its loading state forever and
- * the picture would never reach the page. This is the browser having finished.
- */
+/** jsdom fetches nothing, so this stands in for the browser having finished loading. */
 class LoadedImage {
   complete = true;
   naturalWidth = 1;

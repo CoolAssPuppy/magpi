@@ -1,9 +1,4 @@
-// The dream job body: one synthesis pass over one space.
-//
-// A plain async function taking injected clients, so a test runs it with no
-// server. Everything it reads and writes about the space goes through the space
-// writer. The dream_runs row is the exception, and the only one: it is the job's
-// own bookkeeping rather than space content, and it is filtered by run id.
+// The dream job body: one synthesis pass over one space, through the space writer.
 
 import { ApiError } from '../errors.ts';
 import { DEFAULT_BUDGET_MS, StageTimeout, startBudget } from './budget.ts';
@@ -48,8 +43,7 @@ async function updateRun(
   fields: Record<string, unknown>,
 ): Promise<void> {
   const { error } = await deps.db.from('dream_runs').update(fields).eq('id', run.id);
-  // The work either happened or it did not. Losing the bookkeeping write is
-  // worth a log rather than an exception that buries what actually went wrong.
+  // A lost bookkeeping write is worth a log rather than an exception.
   if (error) console.error('the dream run row could not be updated', run.id, error.message);
 }
 
@@ -74,14 +68,7 @@ function readableDetail(err: unknown): string {
   return 'the dream run stopped on an unexpected error';
 }
 
-/**
- * Every terminal error names its stage first.
- *
- * dream_runs has no stage column, so this string is the only place the web
- * client can learn where a run died, and it reads everything before the first
- * colon as the stage. A row without the prefix leaves it saying the stage was
- * not recorded.
- */
+/** Prefixes the stage onto a terminal error; the client reads up to the first colon. */
 function withStage(stage: DreamStage, message: string): string {
   return `${stage}: ${message}`;
 }

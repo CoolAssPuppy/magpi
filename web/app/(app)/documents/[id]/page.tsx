@@ -14,8 +14,7 @@ export default async function DocumentPage({ params }: { params: Promise<{ id: s
     .eq('id', id)
     .maybeSingle();
 
-  // RLS already hid a document in a space the caller is not in, so "not found"
-  // and "not allowed" are deliberately the same answer.
+  // RLS already hid the document, so "not found" and "not allowed" are the same answer.
   if (!document) notFound();
 
   const [{ data: chunks }, { data: job }] = await Promise.all([

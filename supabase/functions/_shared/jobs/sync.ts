@@ -1,10 +1,4 @@
-// One incremental pass over one connection.
-//
-// Sync does not read document text. It asks the driver what changed, files a
-// documents row per change, and queues an ingest job for each. Keeping the two
-// apart is what stops one enormous document from taking the whole pass down with
-// it: the sync succeeds, and the document that could not be read is one failed
-// ingest job the admin page can name.
+// One incremental pass over one connection: file changed documents, queue an ingest job for each.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -29,15 +23,7 @@ export type SyncResult =
   | { kind: 'timeout'; stage: string }
   | { kind: 'failed'; detail: string };
 
-/**
- * How many times one run will ask a driver for another page of changes.
- *
- * The wall-clock budget is the real limit and this is the guard behind it: a
- * driver that answers `hasMore` forever would otherwise spend the whole budget
- * on one connection, and in a test with a fixed clock it would never stop at
- * all. Twenty passes over four drivers that each cap their own requests is far
- * more than any budget affords.
- */
+/** How many pages of changes one run will ask a driver for. Guard behind the time budget. */
 const MAX_PASSES = 20;
 
 interface ExistingDocument {
@@ -69,24 +55,14 @@ async function existingDocuments(
   return new Map((data ?? []).map((row) => [row.external_id, row]));
 }
 
-/**
- * Writes back the documents the provider relabelled, and nothing else.
- *
- * Every pass sees the documents the last pass filed, so writing each of them
- * back costs a round trip per document to store the values already on the row.
- * The ones that really moved go in a single upsert, because PostgREST has no way
- * to give a different value per row in one patch. A document the provider
- * renamed keeps its row and its chunks; only the label moves. Re-reading its
- * text is the ingest job's business.
- */
+/** Writes back only the documents whose title or url the provider changed, in one upsert. */
 async function relabelDocuments(
   deps: JobDeps,
   connection: ConnectionRow,
   refs: SourceDocumentRef[],
   known: Map<string, ExistingDocument>,
 ): Promise<void> {
-  // Keyed by id: a page naming the same document twice would otherwise ask one
-  // statement to write the same row twice, which Postgres refuses outright.
+  // Keyed by id so a page naming a document twice does not write the same row twice.
   const moved = new Map<string, Record<string, unknown>>();
   for (const ref of refs) {
     const row = known.get(ref.externalId);
@@ -99,8 +75,7 @@ async function relabelDocuments(
       external_id: ref.externalId,
       title: ref.title,
       url: ref.url,
-      // Not null, so the upsert has to name it. A row matched by connection and
-      // external id was filed by a sync pass and by nothing else.
+      // Not null, so the upsert has to name it. Sync is the only writer of these rows.
       origin: 'sync',
     });
   }
@@ -112,14 +87,7 @@ async function relabelDocuments(
   if (error) throw new ApiError(500, 'internal', 'the renamed documents could not be filed');
 }
 
-/**
- * Files each changed document, returning the row ids in the same order.
- *
- * The unique index on (connection_id, external_id) is partial, so it cannot be
- * named in an on-conflict clause. Reading first and then inserting only what is
- * missing does the same job in two round trips for a whole page rather than one
- * per document.
- */
+/** Files changed documents, returning row ids in order. A partial unique index rules out upsert. */
 async function fileDocuments(
   deps: JobDeps,
   connection: ConnectionRow,
@@ -153,8 +121,7 @@ async function fileDocuments(
     for (const row of data ?? []) known.set(row.external_id, row);
   }
 
-  // The rows just inserted carry what the provider said, so they never look
-  // renamed and this walks only the ones the last pass filed.
+  // Only rows a previous pass filed can look renamed, so this walks those.
   await relabelDocuments(deps, connection, refs, known);
 
   return refs
@@ -199,12 +166,10 @@ export async function runSyncJob(connection: ConnectionRow, deps: JobDeps): Prom
       http: deps.http,
       env: deps.env,
     });
-    // resolveCredentials has already written the reason onto the row, so the
-    // connections page can say what to do about it.
+    // resolveCredentials has already written the reason onto the row.
     if (outcome.kind === 'expired') return { kind: 'expired', detail: outcome.detail };
 
-    // The row is already syncing with its old reason cleared: both callers claim
-    // it in one statement before this body runs.
+    // Both callers already claimed the row as syncing before this body runs.
     const driver = driverFor(connection.provider);
 
     for (let pass = 0; pass < MAX_PASSES; pass++) {
@@ -220,8 +185,7 @@ export async function runSyncJob(connection: ConnectionRow, deps: JobDeps): Prom
       enqueued += await enqueueIngest(deps, connection, documentIds);
       documentCount += page.documents.length;
 
-      // The cursor advances only after the jobs exist. Advancing first and then
-      // failing to queue would skip those documents for good.
+      // Advance the cursor only after the ingest jobs exist, or documents get skipped.
       await advanceCursor(deps.db, connection.id, page.cursor, deps.http.now());
 
       cursor = page.cursor;
@@ -229,10 +193,7 @@ export async function runSyncJob(connection: ConnectionRow, deps: JobDeps): Prom
       walked += 1;
 
       if (!hasMore) break;
-      // A driver can report more without having moved: Slack reads a fixed
-      // number of channels per pass and leaves the cursor alone when they were
-      // all quiet. Asking again would read the same channels until the budget
-      // went, so the rest of that backlog is the next run's.
+      // A driver can report more without moving the cursor; leave the rest to the next run.
       if (page.cursor === from) break;
       if (budget.isSpent()) break;
     }
@@ -240,10 +201,7 @@ export async function runSyncJob(connection: ConnectionRow, deps: JobDeps): Prom
     return { kind: 'synced', documentCount, enqueued, cursor, hasMore };
   } catch (err) {
     if (err instanceof StageTimeout) {
-      // A run that filed pages before the clock ran out is behind, not broken.
-      // The cursor it wrote is durable and the next run resumes from it, so
-      // marking the connection with an error would put a fault on a row that
-      // did exactly what it could.
+      // A run that filed pages before the timeout reports progress rather than an error.
       if (walked > 0) {
         return { kind: 'synced', documentCount, enqueued, cursor, hasMore: true };
       }
@@ -252,8 +210,7 @@ export async function runSyncJob(connection: ConnectionRow, deps: JobDeps): Prom
     }
 
     if (err instanceof SourceError) {
-      // A refused credential is a different state from a provider having a bad
-      // minute: one needs the user, the other needs the next pass.
+      // A refused credential marks the connection expired; any other error marks it error.
       await markConnectionStatus(
         deps.db,
         connection.id,

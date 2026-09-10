@@ -181,8 +181,7 @@ Deno.test('a short embedding batch is refused rather than silently misaligned', 
       createModelRunner(h.deps).embed({ orgId: ORG, texts: ['one', 'two'] })
     );
     assertEquals(err.code, 'model_error');
-    // Nothing was stored, so the second chunk cannot end up under the first
-    // chunk's vector.
+    // Nothing was stored, so no chunk ends up under another chunk's vector.
     assertEquals(modelCallRows(h.stub)[0].succeeded, false);
   } finally {
     await h.stub.close();

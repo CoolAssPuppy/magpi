@@ -1,22 +1,5 @@
 #!/usr/bin/env node
-/**
- * Runs the pgTAP suite in supabase/tests against the local database.
- *
- * `supabase test db` exits 0 on a suite that failed to load, so the output is
- * inspected rather than trusted to the exit code.
- *
- * It looks for the success line rather than a list of failure lines. The list
- * was the bug: it matched `not ok`, `# Looks like you failed` and `FAILED`, and
- * pg_prove says `Result: FAIL`, `Dubious, test returned N` and `Parse errors:`,
- * none of which are in it. A file that aborted before its first assertion
- * therefore passed, which is the same shape as the three failures in
- * docs/lessons.md: an assertion that cannot run and one that cannot fail look
- * identical from the outside.
- *
- * The file count is checked too. A suite that silently stops loading one of its
- * files reports a green run over fewer assertions, and nothing else would say
- * so.
- */
+/** Runs the pgTAP suite in supabase/tests, checking the output rather than the exit code. */
 
 import { spawnSync } from 'node:child_process';
 import { readdirSync } from 'node:fs';

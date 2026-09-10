@@ -3,10 +3,7 @@ import Link from 'next/link';
 import { StatusPill } from '@/components/app/status-pill';
 import type { DreamRunSummary } from '@/lib/dreams/view-model';
 
-/**
- * A dream run is visible or it is not honest. Every row says what ran, over how
- * many documents, how it ended, and what came out.
- */
+/** One row per run: what ran, over how many documents, how it ended, and what came out. */
 export function DreamRunList({ runs }: { runs: readonly DreamRunSummary[] }) {
   return (
     <ul className="divide-y divide-border rounded-[var(--radius-panel)] border border-border">

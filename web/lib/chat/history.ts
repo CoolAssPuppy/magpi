@@ -6,10 +6,7 @@ import { resolveCitationSets } from './citations';
 import type { StoredMessage } from './store';
 import type { ChatTurn } from './turns';
 
-/**
- * Turns a stored conversation into what the screen renders. Citations resolve
- * here, on read, in a single query for the whole conversation.
- */
+/** Turns a stored conversation into what the screen renders, resolving citations in one query. */
 export async function toChatTurns(
   supabase: SupabaseClient<Database>,
   messages: readonly StoredMessage[],

@@ -13,10 +13,7 @@ export type InviteAction = (
   formData: FormData,
 ) => Promise<ActionState<InvitedMember>>;
 
-/**
- * The invitation link appears once, right after it is created. Only its hash is
- * stored, so there is no second chance to read it and the copy has to say so.
- */
+/** The invitation link appears once, right after it is created. Only its hash is stored. */
 export function InviteForm({ action, baseUrl }: { action: InviteAction; baseUrl: string }) {
   const [state, submit, pending] = useActionState<ActionState<InvitedMember>, FormData>(
     action,

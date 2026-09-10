@@ -17,11 +17,7 @@ const service = {
   refusals: {} as Record<string, { message: string } | undefined>,
 };
 
-/**
- * Stands in for the service client. The cast is confined here: this is the one
- * place a test double has to answer for a client whose full surface it does not
- * implement.
- */
+/** Stands in for the service client. The cast is confined here. */
 function serviceClient(): SupabaseClient<Database> {
   return {
     from: (table: string) => ({

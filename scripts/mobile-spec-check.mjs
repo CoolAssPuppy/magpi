@@ -1,18 +1,5 @@
 #!/usr/bin/env node
-/**
- * Keeps docs/mobile-spec.md honest about three things it can be wrong about
- * mechanically.
- *
- * 1. A route under web/app/(app)/ with no entry in the spec.
- * 2. An entry missing one of the fourteen fields, or naming a route that no
- *    longer exists.
- * 3. A repository path cited anywhere in the file that is not on disk.
- *
- * The third one is the reason this script grew. The spec named web/lib/strings/
- * as the string catalog for months, every entry cited keys from it, and the
- * module was never written. A route check cannot see that. Everything else in an
- * entry, the copy and the state design, is checked by a person reading it.
- */
+/** Checks docs/mobile-spec.md for unlisted routes, bad entry fields, and cited paths not there. */
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -86,11 +73,7 @@ function collectEntries(spec) {
     }));
 }
 
-/**
- * Trims a citation down to the path it names: a `:12` or `:12-23` line
- * reference, a trailing slash, and a `/*` glob all mean the same file or
- * directory.
- */
+/** Trims a citation to the path it names, dropping a line reference, trailing slash, or glob. */
 function toPath(citation) {
   return citation
     .replace(/:\d+(-\d+)?$/, '')
@@ -114,9 +97,7 @@ function pathExists(path) {
 }
 
 function main() {
-  // Deliberately not wrapped. Renaming web/app/(app) used to turn this step
-  // into a pass printing "no (app) routes yet", so the one check that keeps the
-  // mobile spec honest went quiet at the exact moment the routes moved.
+  // Left unguarded so a missing web/app/(app) throws instead of passing as zero routes.
   const routes = [...new Set(collectRoutes(APP_DIR))].sort();
 
   if (routes.length === 0) {

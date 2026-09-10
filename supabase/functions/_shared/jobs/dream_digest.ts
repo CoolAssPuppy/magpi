@@ -1,5 +1,4 @@
-// The digest pass: summarise the day's chunks into one cited document, then
-// chunk and embed it so the digest is searchable like any other document.
+// The digest pass: summarise the day's chunks into one cited document, then chunk and embed it.
 
 import { chunkText } from '../chunking.ts';
 import { ApiError } from '../errors.ts';
@@ -23,28 +22,12 @@ const DIGEST_SYSTEM =
 
 const MARKER = /\[\[chunk:[^\]]*\]\]/g;
 
-/**
- * What a digest read, for documents.source_chunk_ids.
- *
- * From what this pass put in the prompt, never from the answer, so a digest
- * cannot cite a chunk that was never read. The client resolves these through RLS
- * on read, the same rule chat citations follow, so a reader who lost access to a
- * space sees the digest without the citation.
- *
- * Read order, not sorted: the client numbers these, and the order chunks were
- * read in is the order they were written in, so source 1 is the oldest thing the
- * digest drew on. Sorting by id would number them at random. A Set keeps first
- * insertion, which is what makes the list stable for every reader even when RLS
- * hides different parts of it from each.
- */
+/** What a digest read, for documents.source_chunk_ids, in read order rather than sorted. */
 function citedChunkIds(chunks: SpaceChunkRow[]): string[] {
   return [...new Set(chunks.map((chunk) => chunk.id))];
 }
 
-/**
- * A marker in the answer is one the model invented, and citations live in a
- * column now, so nothing shaped like one belongs in the prose.
- */
+/** Strips anything shaped like a chunk marker, since citations live in a column. */
 function prose(summary: string): string {
   return summary.replace(MARKER, '').trim();
 }
@@ -53,8 +36,7 @@ export async function dreamDigest(pass: Pass): Promise<DreamOutcome> {
   const { run, deps, db } = pass;
   enter(pass, 'collect');
   const chunks = counted(pass, await db.recentChunks(sinceIso(deps), MAX_INPUT_CHUNKS));
-  // A digest of nothing would be a document with no citations, which the client
-  // reads as a run that produced nothing. Better to produce nothing.
+  // A digest of nothing would be a document with no citations, so produce nothing.
   if (chunks.length === 0) return NOTHING;
 
   enter(pass, 'synthesize');

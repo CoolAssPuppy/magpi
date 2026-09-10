@@ -89,14 +89,7 @@ function inFilter(query: string, column: string): Set<string> | null {
   return new Set(list.split(',').map((value) => value.replace(/"/g, '')));
 }
 
-/**
- * Answers a read the way PostgREST would: with the rows its filters match.
- *
- * A stub that answers every read with every row cannot tell a query that scoped
- * itself to one space from one that forgot to, so the leak test it backs passes
- * whatever the code does. A read that names no space here sees every space,
- * which is what the leak looks like from the database's side.
- */
+/** Answers a read the way PostgREST would, with the rows its filters match. */
 function matching(
   rows: Record<string, unknown>[],
   request: StubRequest,
@@ -211,8 +204,7 @@ function replies(
   return (request) => {
     if (request.table === 'chunks' && request.method === 'GET') {
       const rows = matching(overrides.chunks ?? chunkRows(foreign), request);
-      // The opening chunk of one document is read as a single row rather than a
-      // list, so the reply has to be shaped the way that read expects.
+      // A single-document read expects one row back, not a list.
       if (request.query.includes('document_id=eq.')) return { body: rows[0] ?? null };
       return { body: rows };
     }
@@ -221,8 +213,7 @@ function replies(
         documentRows({ connectionB: overrides.connectionB, foreign }),
         request,
       );
-      // The connections pass compares what it reads here against what it finds
-      // by searching, so one document is enough unless a test asks for more.
+      // One document unless a test asks for more.
       return {
         body: request.query.includes('origin=neq.dream')
           ? rows.slice(0, overrides.compared ?? 1)
@@ -233,8 +224,7 @@ function replies(
       return { body: { id: DREAM_DOC } };
     }
     if (request.table === 'entities') {
-      // The upsert answers with the rows it wrote, which is how the caller
-      // learns the id to file each mention against.
+      // The upsert answers with the rows it wrote, so the caller learns each id.
       const rows = Array.isArray(request.body) ? request.body : [request.body];
       return {
         body: rows.flatMap((row, index) =>
@@ -249,8 +239,7 @@ function replies(
       };
     }
     if (request.table === 'rpc/search') {
-      // The rpc takes its scope in the body, so that is where a search that left
-      // its space open shows up.
+      // The rpc takes its scope in the body.
       const asked = isRecord(request.body) && Array.isArray(request.body.space_filter)
         ? request.body.space_filter.map(String)
         : null;
@@ -347,8 +336,7 @@ Deno.test('a dream run reads nothing outside its own space', async () => {
       );
     }
 
-    // The search runs as the service role, where the function's own policies
-    // constrain nothing, so this argument is the whole of its scope.
+    // The search runs as the service role, so this argument is the whole of its scope.
     const searches = requestsFor(stub, 'rpc/search');
     assert(searches.length > 0, 'nothing searched, so the scope was never tested');
     for (const search of searches) {
@@ -381,9 +369,7 @@ Deno.test('a dream run writes nothing carrying another space', async () => {
       for (const spaceId of spaceIdsIn(request.body)) {
         assertEquals(spaceId, SPACE, `${request.table} named a space this run does not own`);
       }
-      // The space id is not the only way a foreign row reaches a write: a
-      // mention or a link carries the chunk and document ids it came from, and
-      // those are stamped with this run's space on the way out.
+      // A mention or link can also carry a foreign chunk or document id.
       const written = JSON.stringify(request.body ?? null);
       for (const id of FOREIGN_IDS) {
         assert(!written.includes(id), `${request.table} carried ${id}, a row from another space`);
@@ -449,8 +435,7 @@ Deno.test('entities upserts what the model found and mentions the chunks it came
 });
 
 Deno.test('a hundred entities cost two statements, not two hundred', async () => {
-  // A round trip per entity spends a forty-five second budget on network waits,
-  // and both writes already take an array.
+  // A round trip per entity would spend the whole budget on network waits.
   const many = JSON.stringify(
     Array.from({ length: 100 }, (_, index) => ({
       kind: 'person',
@@ -474,8 +459,7 @@ Deno.test('a hundred entities cost two statements, not two hundred', async () =>
 });
 
 Deno.test('an entity the model named twice is one row, mentioned from both', async () => {
-  // One statement may not write the same row twice, and a model asked for a
-  // hundred entities will name one of them twice.
+  // One statement may not write the same row twice.
   const twice = JSON.stringify([
     { kind: 'person', name: 'Ada', canonicalName: 'ada', summary: null, chunkIds: [CHUNK_A] },
     { kind: 'person', name: 'Ada L', canonicalName: 'ada', summary: null, chunkIds: [CHUNK_B] },
@@ -501,8 +485,7 @@ Deno.test('an entity the model named twice is one row, mentioned from both', asy
 });
 
 Deno.test('the connections pass reads and embeds a page at a time, not a document', async () => {
-  // Three round trips per document is sixty for a full pass, inside a budget of
-  // well under a minute. Only the searches have to be asked one at a time.
+  // Only the searches are asked one at a time; the reads and embeds are batched.
   const stub = stubDb(replies({ compared: 2 }));
   const models = fakeModels(answerFor);
   try {
@@ -592,8 +575,7 @@ Deno.test('a digest cites every chunk it read, in documents.source_chunk_ids', a
     assertEquals(documents[0].dream_run_id, RUN);
     assertEquals(documents[0].space_id, SPACE);
 
-    // The column, not a marker in the prose: the client resolves these through
-    // RLS on read, so a reader who lost the space sees the digest without them.
+    // Citations live in the column, which the client resolves through RLS on read.
     assertEquals(documents[0].source_chunk_ids, [CHUNK_A, CHUNK_B]);
 
     const chunks = writtenBodies(stub, 'chunks');
@@ -609,8 +591,7 @@ Deno.test('a digest cites every chunk it read, in documents.source_chunk_ids', a
 });
 
 Deno.test('a chunk the model invented is never cited', async () => {
-  // The citation list is built from what went into the prompt, so an id the
-  // model produced cannot reach the column or the stored prose.
+  // The citation list is built from what went into the prompt, not from the answer.
   const stub = stubDb(replies());
   const invented = `What changed: the billing page shipped. [[chunk:${FOREIGN_CHUNK}]]`;
   try {
@@ -635,8 +616,7 @@ Deno.test('a chunk the model invented is never cited', async () => {
 });
 
 Deno.test('a run that read nothing writes no document rather than an uncited one', async () => {
-  // An empty source_chunk_ids would be a claim with no source, which the spec
-  // forbids outright. Producing nothing is the honest answer.
+  // An empty source_chunk_ids would be a claim with no source.
   const stub = stubDb(replies({ chunks: [] }));
   try {
     const result = await runDreamJob(dreamRun('digest'), jobDeps(stub, fakeModels(answerFor)));
@@ -711,9 +691,7 @@ Deno.test('a spent budget reports the stage it died in', async () => {
 
 Deno.test('every stage a run can stop in is one of the four the client knows', async () => {
   const seen = new Set<string>();
-  // Walking the clock forward one reading at a time stops each kind at each of
-  // its checkpoints in turn, so this reads the names off real error rows rather
-  // than off the source.
+  // Walking the clock forward stops each kind at each checkpoint in turn.
   for (const kind of ['entities', 'digest', 'connections'] as const) {
     for (let ticks = 1; ticks <= 30; ticks += 1) {
       const stub = stubDb(replies());
@@ -743,8 +721,7 @@ Deno.test('an empty space succeeds with nothing produced', async () => {
     assertEquals(result.inputDocumentCount, 0);
     assertEquals(result.produced, 0);
     assertEquals(result.outputDocumentId, null);
-    // A document with no markers reads as a run that produced nothing, so an
-    // uncited digest must not be written at all.
+    // An uncited digest is not written at all.
     assertEquals(writtenBodies(stub, 'documents').length, 0);
     assertEquals(writtenBodies(stub, 'chunks').length, 0);
     assertEquals(runUpdates(stub)[1].status, 'succeeded');
@@ -754,8 +731,7 @@ Deno.test('an empty space succeeds with nothing produced', async () => {
 });
 
 Deno.test('citations are listed in the order the digest read them', async () => {
-  // The client numbers these, so id order would number the sources at random.
-  // Read order is write order, which makes source 1 the oldest thing it drew on.
+  // The client numbers these, so read order has to be write order.
   const reversed = [
     {
       id: CHUNK_B,
@@ -788,9 +764,7 @@ Deno.test('citations are listed in the order the digest read them', async () => 
 });
 
 Deno.test('a run that stopped early records the documents it had reached', async () => {
-  // The size is the whole reason a run times out, so recording zero would erase
-  // the evidence on exactly the run where it matters. The client renders this
-  // number in the sentence explaining why the run did not finish.
+  // A timed out run records how many documents it reached, and the client shows it.
   const stopped: number[] = [];
 
   for (const kind of ['entities', 'digest', 'connections'] as const) {
@@ -815,8 +789,7 @@ Deno.test('a run that stopped early records the documents it had reached', async
   }
 
   assert(stopped.length > 0, 'no kind timed out, so nothing was measured');
-  // A run stopped before its first read honestly reached nothing; one stopped
-  // after has to say what it got through.
+  // A run stopped after its first read has to say what it got through.
   assert(
     stopped.some((count) => count > 0),
     'every timed out run claimed to have read zero documents',
@@ -826,8 +799,7 @@ Deno.test('a run that stopped early records the documents it had reached', async
 Deno.test('a failure records what it had reached too, not a zero', async () => {
   const stub = stubDb(replies());
   try {
-    // The model answers something that will not parse, which fails the entities
-    // pass after the chunks have already been read.
+    // An unparseable answer fails the entities pass after the chunks were read.
     const result = await runDreamJob(
       dreamRun('entities'),
       jobDeps(stub, fakeModels(() => 'not json at all')),

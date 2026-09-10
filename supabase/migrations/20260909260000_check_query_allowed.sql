@@ -1,16 +1,6 @@
 -- Enforce the monthly question limit that plan_monthly_query_limit describes.
---
--- The limit was read by the usage panel and enforced by nothing, and the meter
--- it counts against was written by nothing either, so `usage_events` held no
--- row with kind 'query' anywhere in the product. The panel reported zero
--- questions for every organization and the free plan's 500 was decoration.
---
--- The chat route calls this before it loads a conversation, and writes the
--- meter row once an answer is stored.
 
--- The window is the calendar month in UTC, which is what the usage panel already
--- sums over. Billing periods do not line up with calendar months, and when they
--- need to this reads the period off the subscription instead.
+-- The window is the calendar month in UTC, which is what the usage panel sums over.
 create or replace function public.check_query_allowed(p_org_id uuid)
 returns table (allowed boolean, reason text, used bigint, plan_limit integer)
 language plpgsql

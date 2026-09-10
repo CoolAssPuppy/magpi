@@ -1,11 +1,4 @@
-// Where a pass resumes, spelled so the two kinds cannot be mistaken for each
-// other.
-//
-// A cursor is either a watermark, the newest change a finished walk saw, or a
-// position part-way through a provider's own pagination. Both live in one text
-// column, and writing a pagination token where a watermark is expected is how a
-// backlog gets skipped: the next pass reads the newest page again and never
-// reaches what is behind it.
+// Where a pass resumes: a watermark, or a position part-way through provider pagination.
 
 import type { SourceDocumentRef } from './contract.ts';
 import { asRecord, asString, parseInstant } from './common.ts';
@@ -39,8 +32,7 @@ export function parseCursor(value: string | null): SyncCursor {
   try {
     decoded = JSON.parse(raw);
   } catch {
-    // A cursor nothing can read costs one full pass to rebuild. Throwing here
-    // would cost the connection instead, and the column is not worth that.
+    // An unreadable cursor rebuilds over one full pass rather than failing the connection.
     return { kind: 'watermark', since: null };
   }
 
@@ -62,12 +54,7 @@ export function encodeBacklog(cursor: Omit<BacklogCursor, 'kind'>): string {
   return JSON.stringify({ kind: BACKLOG_KIND, ...cursor });
 }
 
-/**
- * The newest stamp among the documents, or `carried` when none of them beats it.
- *
- * Carrying the old watermark is what keeps a quiet connection, or one part-way
- * through a backlog, from rewinding to the beginning of time.
- */
+/** The newest stamp among the documents, or `carried` when none of them beats it. */
 export function newestStamp(
   documents: SourceDocumentRef[],
   carried: string | null,

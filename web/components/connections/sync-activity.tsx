@@ -14,21 +14,12 @@ import { createClient } from '@/lib/supabase/client';
 
 import { StatusPill } from '@/components/app/status-pill';
 
-/**
- * Live import progress and live failures, straight off the replication stream.
- * Everything it decides lives in lib/connections/activity; this is the socket.
- *
- * A connection changing status refreshes the server-rendered list rather than
- * being mirrored into client state, so there is one source of truth for it.
- */
+/** The Realtime socket for import progress. The decisions live in lib/connections/activity. */
 export function SyncActivity({ spaceIds }: { spaceIds: readonly string[] }) {
   const [jobs, setJobs] = useState<JobsById>(() => new Map());
   const router = useRouter();
 
-  // The parent builds this list fresh on every render, so depending on the
-  // array itself resubscribes constantly and loses every event that lands while
-  // the socket is being rebuilt. The handler reads the current list from here
-  // instead, and the effect below turns over only when the spaces really change.
+  // The parent rebuilds this array each render, so the effect keys off the joined string.
   const watched = useRef(spaceIds);
   const watchedKey = spaceIds.join(',');
 
@@ -44,13 +35,7 @@ export function SyncActivity({ spaceIds }: { spaceIds: readonly string[] }) {
         const job = parseIngestJobEvent(payload.new);
         if (job) setJobs((current) => applyJobEvent(current, job, watched.current));
       })
-      // The payload is ignored on purpose and this handler takes no argument so
-      // that it cannot be read. connections is `replica identity full`, so the
-      // WAL row carries every column including access_token_enc, and Realtime
-      // authorizes against RLS rather than the column grant that keeps that
-      // column out of a REST response. Refetching through the server is the only
-      // path that respects the grant. Do not destructure the row to save a
-      // round trip.
+      // Ignore the payload: replica identity full puts access_token_enc in the WAL row.
       .on('postgres_changes', { event: '*', schema: 'public', table: 'connections' }, () => {
         router.refresh();
       })

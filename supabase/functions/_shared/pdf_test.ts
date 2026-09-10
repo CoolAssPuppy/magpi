@@ -18,8 +18,7 @@ function textStream(content: string, entries?: string): PdfStream {
 }
 
 function singleChunkStream(bytes: Uint8Array): ReadableStream<BufferSource> {
-  // A view onto a shared buffer is not a BufferSource, and a caller is free to
-  // hand us one, so the chunk goes into a buffer we own.
+  // A view onto a shared buffer is not a BufferSource, so the chunk goes into a buffer we own.
   const chunk = new Uint8Array(bytes.length);
   chunk.set(bytes);
   return new ReadableStream<BufferSource>({
@@ -42,11 +41,7 @@ async function flateStream(content: string): Promise<PdfStream> {
   };
 }
 
-/**
- * A one-page document whose /Contents lists every given stream, with a real
- * cross-reference table so the fixtures are files a reader would accept rather
- * than just the byte patterns the extractor happens to look for.
- */
+/** A one-page document whose /Contents lists every given stream, with a real xref table. */
 function buildPdf(streams: readonly PdfStream[]): Uint8Array {
   const parts: Uint8Array[] = [];
   const offsets: number[] = [];

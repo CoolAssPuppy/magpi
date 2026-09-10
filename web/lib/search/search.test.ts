@@ -60,9 +60,7 @@ describe('searchChunks', () => {
     });
   });
 
-  // documents.last_retrieved_at and retrieval_count are what the admin
-  // dead-content panel reads, and nothing wrote either, so the panel reported
-  // every document in the organization as never retrieved.
+  // documents.last_retrieved_at and retrieval_count are what the admin dead-content panel reads.
   it('marks the documents it returned as read, once each', async () => {
     const { client, calls } = fakeRpcClient([
       row({ chunk_id: 'c1', document_id: 'd1' }),

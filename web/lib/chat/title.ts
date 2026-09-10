@@ -31,11 +31,7 @@ export type TitleDeps = {
   readonly complete?: (messages: readonly ChatMessage[], orgId: string) => Promise<string>;
 };
 
-/**
- * Runs after the answer is closed, so naming a conversation never delays one.
- * A conversation the model could not name is titled from the question instead
- * of being left blank.
- */
+/** Runs after the answer closes. Falls back to the question when the model names nothing. */
 export async function generateTitle(input: TitleInput, deps: TitleDeps = {}): Promise<string> {
   const complete = deps.complete ?? defaultComplete;
   const messages: readonly ChatMessage[] = [

@@ -2,11 +2,7 @@ import * as React from 'react';
 
 import { cn } from '@/lib/utils';
 
-/**
- * shadcn's Input on the Supabase tokens. The focus border steps up to
- * --border-control-hover, which is the stroke upstream reserves for control
- * chrome, so a focused field reads as focused without a second ring color.
- */
+/** shadcn's Input on the Supabase tokens, with the focus border on --border-control-hover. */
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<'input'>>(
   ({ className, type, ...props }, ref) => (
     <input

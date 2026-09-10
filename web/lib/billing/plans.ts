@@ -3,12 +3,7 @@ import type { Database } from '@/lib/database.types';
 export type PlanId = Database['public']['Enums']['org_plan'];
 export type SpaceKind = Database['public']['Enums']['space_kind'];
 
-/**
- * How a visitor starts on this plan. `current` is where every account already
- * is, `checkout` is a Stripe Checkout session, `contact` has no self-serve path
- * and never will: an Enterprise price is negotiated, so a button that pretends
- * otherwise is a lie.
- */
+/** How a visitor starts on this plan: already on it, Stripe Checkout, or a sales contact. */
 export type PlanSignup = 'current' | 'checkout' | 'contact';
 
 export type Plan = {
@@ -23,11 +18,7 @@ export type Plan = {
   readonly signup: PlanSignup;
 };
 
-/**
- * The catalogue is copy and shape only. Every number a limit check reads comes
- * from plan_document_limit and plan_monthly_query_limit in the database, so this
- * file can never disagree with what is enforced.
- */
+/** Copy and shape only. Enforced limits come from the plan_*_limit functions in the database. */
 export const PLANS: readonly Plan[] = [
   {
     id: 'free',

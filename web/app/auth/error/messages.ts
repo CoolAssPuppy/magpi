@@ -1,11 +1,4 @@
-/**
- * Sign in failures arrive as a query parameter on a link anyone can compose and
- * send, so the page renders copy this file owns and treats the parameter as a
- * lookup key. A value that misses every key gets the generic sentence.
- *
- * The keys are the codes GoTrue puts on a failed redirect. `error_code` is the
- * narrower of the two and wins when both are present.
- */
+/** Sign in failure copy, keyed by GoTrue's error_code then error. Unknown keys get the generic. */
 const FAILURES: Record<string, string> = {
   access_denied:
     'The sign in was refused before a session was created. Start again from the sign in page.',

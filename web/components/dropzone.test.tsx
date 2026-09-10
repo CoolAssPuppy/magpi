@@ -56,12 +56,7 @@ const dragState = (overrides: Partial<DragState> = {}): DragState => ({
   ...overrides,
 });
 
-/**
- * The real react-dropzone state, so the root and input props under test are the
- * ones the app ships. Only what the upload hook owns is controlled here, and the
- * file list is held as state so removing a file is observable on screen rather
- * than only as a call.
- */
+/** The real react-dropzone state, with only what the upload hook owns controlled here. */
 function UploadArea({ state, drag }: { state: UploadState; drag: DragState }) {
   const [files, setFiles] = useState<UploadFile[]>([...state.files]);
   const dropzone = useDropzone({ noClick: true, multiple: true });

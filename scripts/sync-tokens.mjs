@@ -1,13 +1,5 @@
 #!/usr/bin/env node
-/**
- * Vendors the Supabase design tokens out of a local checkout of supabase/supabase.
- *
- * The upstream shared packages are private and versioned `workspace:*`, so they cannot be
- * imported from outside that workspace. Copying is the only route, and copying deliberately
- * with the SHA written down is how upstream changes get reviewed instead of absorbed.
- *
- * Usage: node scripts/sync-tokens.mjs /path/to/supabase/supabase
- */
+/** Vendors Supabase design tokens: node scripts/sync-tokens.mjs /path/to/supabase/supabase. */
 
 import { execFileSync } from 'node:child_process';
 import { copyFileSync, mkdirSync, existsSync, writeFileSync } from 'node:fs';
@@ -17,10 +9,7 @@ import { fileURLToPath } from 'node:url';
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DEST_ROOT = join(REPO_ROOT, 'web/styles/supabase');
 
-/**
- * Order matters and is not alphabetical. `unset-tw-colors.css` must land before `colors.css`
- * or Tailwind's default palette shadows the Radix one.
- */
+/** Order matters: `unset-tw-colors.css` must land before `colors.css`. */
 const FILES = [
   'packages/config/tailwind.config.css',
   'packages/ui/build/css/source/global.css',

@@ -4,10 +4,7 @@ import type { ReactNode } from 'react';
 import { HistorySidebar } from '@/components/chat/history-sidebar';
 import { Button } from '@/components/ui/button';
 
-/**
- * The history rail is persistent navigation, so it lives outside the content
- * area. A loading, empty or error state below never moves or removes it.
- */
+/** The history rail is persistent navigation, so it sits outside the content area. */
 export default function ChatLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-0 flex-1 gap-8">

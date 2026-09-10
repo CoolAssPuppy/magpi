@@ -2,13 +2,7 @@ import { z } from 'zod';
 
 import { err, ok, type Result } from '@/lib/result';
 
-/**
- * Which channels, folders or workspaces a connection reads.
- *
- * The list comes from the provider, so it can only be filled in by a request
- * carrying the token. connections-scopes writes it and is the only thing that
- * writes it; this module reads it.
- */
+/** Which channels, folders or workspaces a connection reads. Only connections-scopes writes it. */
 const scopeItemSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -66,15 +60,7 @@ export function describeScopeSelection(selection: ScopeSelection): string {
   return `${selection.selected.length} of ${selection.available.length} ${noun}`;
 }
 
-/**
- * An empty selection means opposite things depending on the source, and the
- * difference is a support ticket if the picker stays quiet about it. A channel
- * source reads nothing until channels are picked; a folder source reads
- * everything until folders narrow it.
- *
- * Keyed on the kind rather than the provider slug, so adding a provider stays a
- * migration and a driver rather than a change here.
- */
+/** What an empty selection means for this kind of source, keyed on the kind, not the provider. */
 export function describeEmptySelection(kind: ScopeSelectionKind): string | null {
   switch (kind) {
     case 'channel':

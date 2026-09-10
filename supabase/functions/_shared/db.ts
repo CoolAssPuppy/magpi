@@ -1,9 +1,4 @@
-// Database access for Edge Functions.
-//
-// Everything here runs with the service role, which bypasses RLS: these
-// functions are the privileged path and enforce their own authorization. Never
-// pass a caller-supplied id into a query without first deriving it from a
-// verified token or from a row this function already owns.
+// Database access for Edge Functions. Runs as service role, bypasses RLS, authorizes itself.
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
@@ -24,14 +19,7 @@ export interface AuditEntry {
   meta?: Record<string, unknown>;
 }
 
-/**
- * Records a security-relevant event as one structured line in the function log.
- *
- * A log line rather than a table because the events worth keeping (a claim
- * credited to the wrong account, a token refused) are read after the fact by a
- * human rather than queried by the app. Never throws: an audit failure must not
- * fail the request it describes.
- */
+/** Writes a security-relevant event as one structured line in the function log. Never throws. */
 export function audit(entry: AuditEntry): void {
   try {
     console.log(
@@ -52,16 +40,7 @@ export function audit(entry: AuditEntry): void {
 
 const PRUNE_SAMPLE_RATE = 200;
 
-/**
- * Reclaims expired rate-limit windows, abandoned OAuth states, and tokens parked
- * by a connection nobody came back to claim.
- *
- * Sampled rather than run every call: at 1 in 200 a busy deployment prunes every
- * few seconds and a quiet one still prunes, without adding three deletes to the
- * hot path. pending_connections matters most, because an abandoned flow leaves
- * live provider-token ciphertext and expiry makes a row unusable without making
- * it go away.
- */
+/** Prunes expired rate-limit windows, OAuth states, and pending connections on 1 call in 200. */
 export function maybePrune(db: SupabaseClient): void {
   if (Math.floor(Math.random() * PRUNE_SAMPLE_RATE) !== 0) return;
   void Promise.allSettled([

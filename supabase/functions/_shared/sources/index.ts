@@ -1,5 +1,4 @@
-// The driver registry. Everything that reads a source names a provider and gets
-// a driver, so adding a fifth is one file plus a row in `providers`.
+// The driver registry. Everything that reads a source names a provider and gets a driver.
 
 import { ApiError } from '../errors.ts';
 import type { SourceDriver } from './contract.ts';
@@ -14,11 +13,7 @@ const BY_SLUG = new Map(DRIVERS.map((driver) => [driver.provider, driver]));
 
 export const SOURCE_PROVIDERS: readonly string[] = DRIVERS.map((driver) => driver.provider);
 
-/**
- * A provider row can exist without a driver behind it: the registry is a
- * migration and the driver is a deploy, and the two land in that order. Saying
- * so plainly beats a sync that fails on an undefined method call.
- */
+/** A provider row can exist before its driver is deployed, so an unknown slug is a plain 400. */
 export function driverFor(provider: string): SourceDriver {
   const driver = BY_SLUG.get(provider);
   if (!driver) {

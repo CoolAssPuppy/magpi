@@ -2,16 +2,7 @@ import { assert, assertEquals } from '@std/assert';
 
 import { SOURCE_PROVIDERS } from './index.ts';
 
-/**
- * The `providers` table is the authority on what a provider is called, and the
- * drivers are keyed by the same slug. Nothing at runtime notices when the two
- * disagree: `driverFor` throws unknown_provider, the sync worker skips the
- * connection as having no driver, and the source silently never syncs.
- *
- * This reads the seed as text for the same reason models_test reads the web
- * app's model file: two artifacts in different languages have to agree, and the
- * only thing that can enforce it is a test that reads one and compares.
- */
+/** Nothing at runtime notices when a seeded provider slug has no driver, so this compares them. */
 const SEED = new URL('../../../seed.sql', import.meta.url);
 
 /** The slug of every provider row the seed inserts as enabled. */
@@ -37,8 +28,7 @@ Deno.test('every seeded provider has a driver under the same slug', async () => 
 });
 
 Deno.test('every driver has a provider row to be reached through', () => {
-  // A driver nobody can connect to is dead code, and the connections page
-  // renders from the table.
+  // A driver nobody can connect to is dead code.
   assertEquals(SOURCE_PROVIDERS.length > 0, true);
 });
 

@@ -7,12 +7,7 @@ import { cn } from '@/lib/utils';
 
 const ENTITIES_PATH = '/dreams/entities';
 
-/**
- * The subtab strip for the dreams route. It lives in the layout, so a loading,
- * empty or error state below can replace the content without moving it.
- *
- * Runs is the parent, so it stays selected on a single run's page.
- */
+/** The subtab strip for the dreams route. Runs stays selected on a single run's page. */
 export function DreamTabs() {
   const pathname = usePathname();
   const isEntities = pathname.startsWith(ENTITIES_PATH);

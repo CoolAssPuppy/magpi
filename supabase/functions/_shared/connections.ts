@@ -1,8 +1,4 @@
-// Reading and updating connections under the service role.
-//
-// Nothing here decrypts a token. A caller wanting a usable credential goes
-// through resolveCredentials in token_refresh.ts, which is the one path that
-// renews a spent one, so no read path can quietly skip the renewal.
+// Reads and updates connections under the service role. Decryption lives in token_refresh.ts.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -44,13 +40,7 @@ export async function loadConnection(
   return data;
 }
 
-/**
- * Connections due for an incremental pass, oldest first.
- *
- * Ordered by last_synced_at with nulls first, so a connection that has never
- * synced is picked up before one that ran an hour ago and no connection can be
- * starved by a busier neighbour.
- */
+/** Connections due for an incremental pass, never-synced first, then oldest first. */
 export async function claimableConnections(
   db: SupabaseClient,
   limit: number,
@@ -66,10 +56,7 @@ export async function claimableConnections(
   return data ?? [];
 }
 
-/**
- * Records what a provider said, so the connections page can say "reconnect"
- * instead of a sync silently stalling forever.
- */
+/** Records what a provider said, so the connections page can tell the user to reconnect. */
 export async function markConnectionStatus(
   db: SupabaseClient,
   connectionId: string,

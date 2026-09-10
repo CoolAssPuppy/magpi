@@ -406,8 +406,7 @@ CREATE FUNCTION public.search (
   SET search_path TO 'public', 'extensions'
   AS $function$
   with
-    -- Over-fetch each arm so fusion has something to rank. RRF only reorders
-    -- what it is given.
+    -- Over-fetch each arm so fusion has something to rank. RRF only reorders what it is given.
     candidate_depth as (select greatest(match_count * 4, 40) as n),
     semantic as (
       select
@@ -445,8 +444,7 @@ CREATE FUNCTION public.search (
         coalesce(s.document_id, l.document_id) as document_id,
         coalesce(s.space_id, l.space_id) as space_id,
         coalesce(s.content, l.content) as content,
-        -- k = 60 is the constant from the original RRF paper. It damps the
-        -- contribution of low-ranked hits without tuning per corpus.
+        -- k = 60 is the constant from the original RRF paper. It damps low-ranked hits.
         (coalesce(1.0 / (60 + s.rank), 0) + coalesce(1.0 / (60 + l.rank), 0))::real as score
       from semantic s
       full outer join lexical l on l.id = s.id

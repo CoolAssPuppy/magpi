@@ -163,8 +163,7 @@ describe('creating a team space', () => {
     consoleError.mockRestore();
   });
 
-  // The space exists at this point and its author cannot see it, so the copy has
-  // to say that rather than report a failure to create anything.
+  // The space exists but its author cannot see it, so the copy says that.
   it('reports a space whose author could not be joined to it, rather than claiming success', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     dbState.failures['space_members:insert'] = 'duplicate key value';
@@ -229,8 +228,7 @@ describe('adding someone to a space', () => {
     consoleError.mockRestore();
   });
 
-  // A unique violation is the one refusal here the reader can do something
-  // about, and what they should do is nothing.
+  // A unique violation is the one refusal here the reader can act on.
   it('says they are already in the space rather than that adding them failed', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     dbState.failures['space_members:insert'] = 'duplicate key value violates unique constraint';
@@ -320,9 +318,7 @@ describe('dreaming over a space', () => {
 
     const state = await setDreaming(form({ spaceId: SPACE_ID, enabled: 'true' }));
 
-    // The raw message names a table and a privilege, which is a database
-    // internal and not something a reader can act on. Both surfaces that switch
-    // dreaming now answer with the same sentence.
+    // The raw message names a table and a privilege, so both surfaces answer the same way.
     expect(state).toEqual({
       status: 'error',
       message: 'Dreaming could not be changed for that space.',

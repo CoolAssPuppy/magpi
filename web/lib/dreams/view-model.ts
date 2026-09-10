@@ -125,11 +125,7 @@ export function buildLinkCandidates({
   return links.flatMap((link) => {
     const a = byId.get(link.document_a);
     const b = byId.get(link.document_b);
-    // Composite foreign keys pin both documents to the link's own space, and
-    // RLS makes them visible together, so this is not the isolation check. It
-    // handles a torn read: the links and the documents are two queries, and a
-    // source document can be deleted between them. A pair missing a side cannot
-    // be judged, so it waits for the next read.
+    // Handles a torn read: links and documents are two queries, so a side can go missing.
     if (!a || !b) return [];
 
     return [

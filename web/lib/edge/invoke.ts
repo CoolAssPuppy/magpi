@@ -2,11 +2,7 @@ import type { z } from 'zod';
 
 import { err, ok, type Result } from '@/lib/result';
 
-/**
- * The one call the web app makes into an Edge Function, with the response
- * parsed here and nowhere else. Only the `functions` surface is needed, so this
- * stays a pure function of its client and is testable without a server.
- */
+/** The only Edge Function surface the web app needs, narrowed so callers are testable. */
 export type FunctionsClient = {
   readonly functions: {
     invoke: (

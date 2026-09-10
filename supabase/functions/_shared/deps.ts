@@ -1,6 +1,4 @@
-// The injected clients a unit of work is handed, so nothing reaches for a
-// global. A job body takes these and can therefore be tested without a server,
-// which is what makes moving off Edge Functions a wrapper change.
+// The injected clients a unit of work is handed, so nothing reaches for a global.
 
 export interface HttpDeps {
   fetch: typeof fetch;

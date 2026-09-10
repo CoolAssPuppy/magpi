@@ -19,18 +19,12 @@ const STATUS: Record<ChatErrorCode, number> = {
   invalid_request: 400,
   not_found: 404,
   rate_limited: 429,
-  // Payment Required. The plan is the thing in the way, and no amount of
-  // waiting clears it.
+  // Payment Required. The plan is the thing in the way, and waiting does not clear it.
   plan_limited: 402,
   server_error: 500,
 };
 
-/**
- * Streaming needs a route handler rather than a server action. Every failure
- * before the first token is a typed JSON body; every failure after it is an
- * error event inside the stream, so a reader never gets a truncated answer with
- * no explanation.
- */
+/** Streaming chat. Failures before the first token are JSON; after it, an event in the stream. */
 export async function POST(request: Request): Promise<Response> {
   const context = await getSessionContext();
   if (!context) return failure('unauthorized', 'You need to sign in to ask a question.');
@@ -42,9 +36,7 @@ export async function POST(request: Request): Promise<Response> {
   try {
     limit = await consumeRateLimit(context.userId);
   } catch (error) {
-    // consume_rate_limit fails closed inside the database, so an error here is
-    // the limiter being unreachable rather than a verdict. Answering anyway
-    // would make the limit optional whenever Postgres hiccups.
+    // consume_rate_limit fails closed in the database, so an error here means it was unreachable.
     console.error('rate limit check failed', { userId: context.userId, error });
     return failure('server_error', 'Something went wrong. Ask again.');
   }
@@ -117,19 +109,14 @@ async function readJson(request: Request): Promise<unknown> {
 
 const PLAN_LIMIT_REACHED = 'This organization has used its questions for the month.';
 
-/**
- * The monthly question limit, which the usage panel displayed and nothing
- * enforced. Read through the caller's own client, the same way the upload page
- * reads `check_ingest_allowed`.
- */
+/** The monthly question limit, read through the caller's own client. */
 async function checkQueryAllowance(
   supabase: SessionContext['supabase'],
   orgId: string,
 ): Promise<{ allowed: boolean; reason: string }> {
   const { data, error } = await supabase.rpc('check_query_allowed', { p_org_id: orgId }).single();
 
-  // A limit that cannot be read is not a limit that has been passed. Refusing
-  // here would take chat down whenever the function is unreachable.
+  // A limit that cannot be read is not a limit that has been passed.
   if (error) {
     console.error('query allowance check failed', { orgId, error });
     return { allowed: true, reason: '' };

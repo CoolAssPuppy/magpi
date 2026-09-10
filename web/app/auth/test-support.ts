@@ -7,10 +7,7 @@ export type AuthServerCall = {
   args: readonly unknown[];
 };
 
-/**
- * Stands in for GoTrue as the server client exposes it. Both auth routes trade
- * one credential for a session and read only the error off the answer.
- */
+/** Stands in for GoTrue. Both auth routes read only the error off the answer. */
 export function authServer(error: { message: string } | null = null): {
   supabase: SupabaseClient<Database>;
   calls: AuthServerCall[];

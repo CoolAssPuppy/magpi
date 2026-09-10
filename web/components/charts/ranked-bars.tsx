@@ -7,11 +7,7 @@ export type RankedItem = {
   readonly caption?: string;
 };
 
-/**
- * Horizontal bars for nominal categories, so long labels stay readable. Every
- * bar is one color: the categories have no order, and shading them by size would
- * spend the only free channel restating the length.
- */
+/** Horizontal bars for nominal categories, so long labels stay readable. Every bar is one color. */
 export function RankedBars({
   items,
   valueLabel,

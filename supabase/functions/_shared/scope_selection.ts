@@ -1,13 +1,4 @@
-// What a connection reads, and what it could read.
-//
-// connections.scope_selection is jsonb defaulting to {}, and the connect screen
-// needs both halves: the list of channels or folders to offer, and the ones the
-// user picked. The column holds both, because the alternative is a provider
-// round trip on every render of a page that is mostly not being changed.
-//
-// The web app cannot write this column. connections has a select policy and a
-// delete policy and nothing else, so every change comes through
-// connections-scopes under the service role.
+// connections.scope_selection holds both the options offered and the ones picked.
 
 import { z } from 'zod';
 
@@ -27,15 +18,7 @@ export const storedScopeSelectionSchema = z.object({
 
 export type StoredScopeSelection = z.infer<typeof storedScopeSelectionSchema>;
 
-/**
- * The ids a driver should read, out of whatever is in the column.
- *
- * Tolerant on purpose: the column defaults to {} and stays that way until the
- * picker has been opened once, and a connection in that state still syncs. What
- * an empty selection means is the driver's business, and the four disagree:
- * Slack reads nothing without channels, Drive reads everything without a folder
- * filter.
- */
+/** The ids a driver should read. Returns none when the column has not been populated. */
 export function selectedIdsOf(raw: unknown): ScopeSelection {
   const parsed = storedScopeSelectionSchema.safeParse(raw);
   return { ids: parsed.success ? parsed.data.selected : [] };
@@ -47,13 +30,7 @@ export function storedSelectionOf(raw: unknown): StoredScopeSelection | null {
   return parsed.success ? parsed.data : null;
 }
 
-/**
- * Merges a fresh listing with what the user had already chosen.
- *
- * A selected id that has disappeared from the provider is dropped rather than
- * kept: a channel that was archived is not something the connection can read,
- * and leaving it would make the picker show a choice that does nothing.
- */
+/** Merges a fresh listing with the existing choices, dropping ids the provider no longer offers. */
 export function buildScopeSelection(
   kind: ScopeSelectionKind,
   available: ScopeOption[],

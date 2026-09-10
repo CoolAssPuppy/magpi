@@ -1,6 +1,4 @@
-// Fixed windows in Postgres, not in function memory. Edge Functions are
-// serverless: a module-scope counter is per instance and resets on every cold
-// start, so N concurrent instances multiply the effective limit by N.
+// Fixed windows in Postgres, not function memory, which is per instance and resets on cold start.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -19,12 +17,7 @@ interface ConsumeResult {
   retry_after_s: number;
 }
 
-/**
- * Consumes one unit from each rule and throws a 429 if any is exhausted.
- *
- * Every rule is consumed even when an earlier one already failed, so a caller
- * cannot avoid their per-user budget by tripping the per-IP one first.
- */
+/** Consumes one unit from every rule, even after one fails, and throws a 429 if any is spent. */
 export async function enforceRateLimits(
   db: SupabaseClient,
   rules: RateLimitRule[],
@@ -40,8 +33,7 @@ export async function enforceRateLimits(
       })
       .single<ConsumeResult>();
 
-    // Must not fail open: a database blip, or a result that is not the shape
-    // the function promises, would otherwise lift every limit at once.
+    // Must not fail open: a database blip would otherwise lift every limit at once.
     if (error || typeof data?.allowed !== 'boolean') {
       throw new ApiError(503, 'unavailable', 'rate limiter unavailable');
     }

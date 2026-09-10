@@ -6,11 +6,7 @@ import {
   type ScopeSelection,
 } from '@/lib/connections/scope-selection';
 
-/**
- * Which channels or folders a connection reads. The list comes from the source
- * itself, so before the token exchange there is nothing true to show and the
- * picker says so instead of rendering an empty list.
- */
+/** Which channels or folders a connection reads. Says so when the source has not listed any. */
 export function ScopePicker({
   selection,
   selected,

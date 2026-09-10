@@ -8,11 +8,7 @@ export type IngestJobRecord = Pick<
   'id' | 'space_id' | 'document_id' | 'stage' | 'status' | 'error'
 >;
 
-/**
- * A replication payload is a boundary like any other, so it is parsed rather
- * than asserted. A row shape this app does not recognise is dropped instead of
- * being counted as an import.
- */
+/** Parses a replication payload, dropping any row shape this app does not recognise. */
 const ingestJobEventSchema = z.object({
   id: z.string(),
   space_id: z.string(),

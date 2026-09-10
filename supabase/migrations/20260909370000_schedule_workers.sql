@@ -1,13 +1,4 @@
--- Move the worker schedule off Vercel and into the database.
---
--- Three Vercel crons called three Next.js routes that held the service role key
--- and forwarded it to an Edge Function. That made the schedule a property of one
--- hosting provider: a deployment anywhere else, or a clone with no Vercel
--- account, had ingest, sync and dreaming never run and nothing saying so.
---
--- pg_cron holds the schedule, pg_net makes the call, and Vault holds the two
--- values a tick needs. The schedule is identical in every environment; local,
--- preview and production differ by two rows.
+-- The worker schedule: pg_cron holds it, pg_net makes the call, Vault holds the two tick values.
 
 create or replace function public.invoke_worker(p_worker text, p_batch integer)
 returns void
@@ -25,21 +16,12 @@ begin
   select decrypted_secret into v_key
   from vault.decrypted_secrets where name = 'worker_service_key';
 
-  -- A database nobody has configured ticks and does nothing. That is the state
-  -- every fresh `supabase db reset` is in, and firing at a URL that is not
-  -- there would fill net._http_response with failures that mean nothing.
+  -- An unconfigured database, such as a fresh `supabase db reset`, ticks and does nothing.
   if v_base is null or v_key is null then
     return;
   end if;
 
-  -- Two minutes, against a pg_net default of five seconds. A batch of 25 takes
-  -- longer than five seconds whenever there is anything to do, so the default
-  -- wrote a timeout row for every tick that did work.
-  --
-  -- The request timing out does not stop the work: the function keeps running
-  -- after pg_net hangs up, measured here at 51 of 70 seeded jobs finishing
-  -- across three timed-out ticks. The response row is diagnostics, and this is
-  -- what makes it worth reading.
+  -- Two minutes, against a pg_net default of five seconds that timed out on every working tick.
   perform net.http_post(
     url := rtrim(v_base, '/') || '/functions/v1/' || p_worker,
     headers := jsonb_build_object(
@@ -52,23 +34,11 @@ begin
 end;
 $$;
 
--- Nobody but the scheduler. The function reads a service role key out of Vault
--- and calls anything named `p_worker`, so a client that could execute it could
--- make the platform work for free.
+-- Scheduler only. The function reads a service role key from Vault and calls any named worker.
 revoke all on function public.invoke_worker(text, integer)
   from public, anon, authenticated, service_role;
 
--- The schedule itself.
---
--- One function rather than three loose `cron.schedule` calls, so the whole
--- schedule reads in one place and a migration re-applies it by calling this
--- again. `cron.schedule` upserts on the job name, so running it twice is not
--- two jobs.
---
--- token-refresh is deliberately absent. The sync path renews a token on its way
--- past, which covers every connection the hourly tick touches, and the case
--- left open is a connection nobody syncs until the refresh token itself lapses.
--- That shows up as a failed sync with a message naming the provider.
+-- The whole schedule in one function. `cron.schedule` upserts on job name, so re-running is safe.
 create or replace function public.schedule_workers()
 returns void
 language plpgsql
@@ -76,8 +46,7 @@ security definer
 set search_path = ''
 as $$
 begin
-  -- Every two minutes, because claim_ingest_jobs reasons its fifteen-minute
-  -- reclaim window from this interval.
+  -- Every two minutes. claim_ingest_jobs derives its fifteen-minute reclaim window from this.
   perform cron.schedule(
     'ingest-worker', '*/2 * * * *',
     $job$select public.invoke_worker('ingest-worker', 25)$job$
@@ -88,8 +57,7 @@ begin
     $job$select public.invoke_worker('sync-worker', 10)$job$
   );
 
-  -- 02:00 UTC. The dream job staggers by organization id itself, so tenants do
-  -- not all wake on the same minute.
+  -- 02:00 UTC. The dream job staggers by organization id, so tenants wake on different minutes.
   perform cron.schedule(
     'dream-worker', '0 2 * * *',
     $job$select public.invoke_worker('dream-worker', 5)$job$
@@ -100,7 +68,5 @@ $$;
 revoke all on function public.schedule_workers()
   from public, anon, authenticated, service_role;
 
--- Apply it. cron.schedule upserts on the job name, so this is safe to run again
--- and a later change to the schedule is a new migration calling the same
--- function.
+-- Apply it. A later change to the schedule is a new migration calling the same function.
 select public.schedule_workers();

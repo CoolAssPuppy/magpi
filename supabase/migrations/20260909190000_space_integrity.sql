@@ -1,12 +1,4 @@
--- Finish carrying space_id through every reference, and fix a regression the
--- previous migration introduced.
---
--- pgTAP caught both. The regression is the more embarrassing one: a bare
--- `on delete set null` on a composite foreign key nulls every referencing
--- column, so deleting a dream output tried to null dream_runs.space_id, which is
--- not null, and the delete failed outright. A user must be able to delete a
--- dream output. Postgres 15 added the column list that says which column to
--- null, and this database is on 17.
+-- Carry space_id through the rest. A composite `on delete set null` needs a column list.
 
 alter table public.dream_runs drop constraint dream_runs_output_in_space;
 
@@ -16,11 +8,7 @@ alter table public.dream_runs
   references public.documents (id, space_id)
   on delete set null (output_document_id);
 
--- Chunks were the worst remaining gap. They carry the text, and RLS on chunks is
--- what public.search filters, so a chunk filed against a document in another
--- space makes that document searchable and readable in full. This is not only a
--- dreaming problem: every writer of chunks reaches it, and a batch loop reusing
--- one space_id across documents produces it directly.
+-- RLS on chunks is what public.search filters, so a cross-space chunk exposes its document.
 alter table public.chunks drop constraint chunks_document_id_fkey;
 
 alter table public.chunks
@@ -29,8 +17,6 @@ alter table public.chunks
   on delete cascade;
 
 -- The three remaining plain foreign keys that permitted a cross-space reference.
--- RLS blocks the read in all three today, so these are consistency rather than
--- exposure, and consistency is what stops the next policy change becoming one.
 alter table public.dream_runs add constraint dream_runs_id_space_key unique (id, space_id);
 alter table public.entities add constraint entities_id_space_key unique (id, space_id);
 

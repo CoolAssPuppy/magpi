@@ -7,22 +7,12 @@ import type { Database } from '@/lib/database.types';
 import { getSessionContext, type SessionContext } from '@/lib/supabase/context';
 import { createServiceClient } from '@/lib/supabase/service';
 
-/**
- * The result of asking the database whether this person may see the admin
- * surface. Three outcomes, because a signed-out visitor and a member who is not
- * an admin need different answers and neither should see an empty table.
- */
+/** Whether this person may see the admin pages: granted, signed out, or forbidden. */
 export type AdminAccess =
   | {
       readonly kind: 'granted';
       readonly context: SessionContext;
-      /**
-       * Service role, constructed only after is_org_admin returned true as the
-       * caller. It exists because the org-wide analytics panels read tables whose
-       * policies are per space or per user: an admin has no policy that lets them
-       * read another member's messages, or a space they are not in. Every query
-       * made with it is filtered to context.orgId.
-       */
+      /** Service role, built only after is_org_admin. Every query with it filters on context.orgId. */
       readonly elevated: SupabaseClient<Database>;
     }
   | { readonly kind: 'signed-out' }

@@ -1,18 +1,4 @@
-// POST /dream-run. A person triggering a dream from the space page.
-//
-// Separate from dream-worker, which is the scheduled drainer and answers only to
-// something holding the service role key. A browser cannot hold that key, so the
-// two cannot be one function: the difference is not the work, it is who is
-// allowed to ask for it.
-//
-// The run happens inline rather than being queued, because this is also how the
-// feature is demonstrated without waiting for a cron, and because the answer a
-// user wants is what the run produced. A space large enough to exceed the budget
-// comes back as a timeout naming its stage, which is the honest result and the
-// one the spec asks to be visible.
-//
-// Running inline is why the row is created the way start.ts creates it: a run
-// nobody else may pick up.
+// POST /dream-run. A user triggering a dream from the space page, run inline rather than queued.
 
 import { ApiError, jsonResponse } from '../_shared/errors.ts';
 import { serveFunction } from '../_shared/http.ts';
@@ -29,8 +15,7 @@ serveFunction('dream-run', async (core) => {
   const user = await requireUser(core.headers);
   const db = serviceClient();
 
-  // Dreaming is the most expensive thing this product does, so the per-space
-  // budget is tighter than the per-user one.
+  // Dreaming is expensive, so the per-space budget is tighter than the per-user one.
   await enforceRateLimits(db, [
     { bucket: `dream-run:user:${user.id}`, limit: 20, windowSeconds: 3600 },
     { bucket: `dream-run:space:${input.space_id}`, limit: 10, windowSeconds: 3600 },
@@ -44,8 +29,7 @@ serveFunction('dream-run', async (core) => {
     .eq('id', input.space_id)
     .maybeSingle<{ dreaming_enabled: boolean }>();
   if (spaceError) throw new ApiError(500, 'internal', 'the space could not be read');
-  // Turning dreaming off has to stop a manual run too, or the switch means
-  // nothing to the person who used it.
+  // Turning dreaming off stops a manual run too.
   if (!space?.dreaming_enabled) {
     throw new ApiError(409, 'dreaming_disabled', 'dreaming is switched off for this space');
   }
@@ -67,9 +51,7 @@ serveFunction('dream-run', async (core) => {
 
   const result = await runDreamJob(run, deps);
 
-  // 200 whatever the outcome. A run that timed out did what it could and the row
-  // says so; a non-2xx would tell the page the request failed, which is a
-  // different and less useful thing.
+  // 200 whatever the outcome, since the run's status is the answer, not the request's.
   return jsonResponse({
     dream_run_id: run.id,
     status: result.kind === 'succeeded' ? 'succeeded' : result.kind,

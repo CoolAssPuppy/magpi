@@ -3,11 +3,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { PLANS, type Plan } from '@/lib/billing/plans';
 
-/**
- * One bordered panel divided into columns rather than three separate cards.
- * Three identical boxes side by side is the shape every generated pricing page
- * has, and it makes the plans look interchangeable when they are not.
- */
+/** One bordered panel divided into plan columns, rather than three separate cards. */
 export function PricingTable() {
   return (
     <div className="grid overflow-hidden rounded-[var(--radius-panel)] border border-border md:grid-cols-3 md:divide-x md:divide-border">

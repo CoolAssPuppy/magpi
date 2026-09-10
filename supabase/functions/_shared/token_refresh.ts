@@ -1,18 +1,4 @@
-// Keeping a connection's access token alive.
-//
-// This is the thing the magpi badge project does not have: `refresh()` is
-// defined on the driver
-// interface there and never called, so `refresh_token_enc` is stored and unused
-// and a long-lived sync stops working an hour after it was set up, silently.
-//
-// Every read path goes through resolveCredentials, so refresh() is called by
-// construction rather than by remembering to. A refusal is a status change the
-// user can see on the connections page, never a stalled sync with no reason.
-//
-// Two ways in, one body. resolveCredentials is for a caller about to read from
-// the provider and needs the token; refreshIfSpent is for the scheduled pass,
-// which only reports on connections and would otherwise pay a decrypt per row
-// for a token it discards.
+// Keeps access tokens alive. resolveCredentials returns a token, refreshIfSpent only a status.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -24,28 +10,14 @@ import { selectedIdsOf } from './scope_selection.ts';
 import type { SourceCredentials, SourceDeps } from './sources/contract.ts';
 import { driverFor } from './sources/index.ts';
 
-/**
- * How long before expiry a token counts as spent.
- *
- * A job that starts with fifty seconds left finishes with a token the provider
- * has already retired, so the renewal happens before the work rather than in the
- * middle of it.
- */
+/** How long before expiry a token counts as spent, so renewal happens before the work starts. */
 export const REFRESH_SKEW_SECONDS = 120;
 
 export type CredentialsOutcome =
   | { kind: 'ready'; credentials: SourceCredentials; refreshed: boolean }
   | { kind: 'expired'; detail: string };
 
-/**
- * What a renewal pass produced, with no readable token in it.
- *
- * The scheduled pass renews connections nobody is about to use, so a decrypted
- * access token would be twenty AES-GCM operations per tick spent answering a
- * question `isSpent` already answered off the row. `unspent` therefore hands
- * back the ciphertext it did not open, and only `refreshed` carries a plaintext
- * token, because the provider just gave us one.
- */
+/** What a renewal pass produced. Only `refreshed` holds a plaintext token, `unspent` ciphertext. */
 export type RefreshSummary =
   | { kind: 'unspent'; accessTokenEnc: string }
   | { kind: 'refreshed'; accessToken: string }
@@ -58,8 +30,7 @@ export interface RefreshDeps {
 }
 
 function isSpent(connection: ConnectionRow, now: Date): boolean {
-  // A provider that never told us when the token dies is one we cannot renew on
-  // a schedule; it gets renewed when it starts failing instead.
+  // No stored expiry means no scheduled renewal, so the token is renewed once it starts failing.
   if (!connection.token_expires_at) return false;
   const expiresAt = Date.parse(connection.token_expires_at);
   if (Number.isNaN(expiresAt)) return false;
@@ -76,17 +47,7 @@ async function expire(
   return { kind: 'expired', detail };
 }
 
-/**
- * Renews one connection's token when it is spent, and says what happened.
- *
- * Nothing here reads the stored access token: a caller that only needs to know
- * the connection is healthy gets that answer without a decrypt, and a caller
- * that needs the token decrypts the ciphertext handed back.
- *
- * The outcome is a value rather than an exception because both answers are
- * ordinary: a sync worker walking twenty connections skips the expired one and
- * carries on with the rest.
- */
+/** Renews a connection's token when it is spent. Never decrypts the stored access token. */
 export async function refreshIfSpent(
   connection: ConnectionRow,
   deps: RefreshDeps,
@@ -133,9 +94,7 @@ export async function refreshIfSpent(
       return await expire(deps, connection, outcome.detail);
 
     case 'not_supported': {
-      // The provider issues tokens that do not expire, so an expiry on the row
-      // is stale bookkeeping rather than a dead token. Clearing it stops every
-      // later pass from trying to renew something that cannot be renewed.
+      // The provider's tokens do not expire, so clear the stale expiry and stop retrying renewal.
       await deps.db
         .from('connections')
         .update({ token_expires_at: null })
@@ -157,8 +116,7 @@ export async function refreshIfSpent(
         })
         .eq('id', connection.id);
 
-      // A renewed token that was not stored works for this pass and is lost for
-      // the next one, and the provider may have already retired the old one.
+      // A renewed token that was not stored is lost, and the old one may already be retired.
       if (error) {
         return await expire(deps, connection, 'The renewed token could not be stored.');
       }
@@ -168,12 +126,7 @@ export async function refreshIfSpent(
   }
 }
 
-/**
- * A usable access token for one connection, renewing it first when it is spent.
- *
- * Every read path goes through here, which is what makes the renewal happen by
- * construction rather than by remembering to.
- */
+/** A usable access token for one connection, renewed first when spent. Every read path uses it. */
 export async function resolveCredentials(
   connection: ConnectionRow,
   deps: RefreshDeps,

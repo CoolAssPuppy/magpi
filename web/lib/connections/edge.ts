@@ -43,14 +43,7 @@ export async function claimConnection(
   return result.ok ? ok({ connectionId: result.data.connection_id }) : result;
 }
 
-/**
- * A full re-sync re-reads a source from the beginning, which is why it is only
- * ever reached from a button a person pressed.
- *
- * connections-sync runs the pass inline and answers 200 whatever the outcome,
- * because the run happened either way. An outcome other than `synced` is still a
- * failure to the person who pressed the button, so it comes back as one.
- */
+/** Re-reads a source from the beginning. An outcome other than `synced` comes back as an error. */
 export async function requestFullSync(
   client: FunctionsClient,
   input: { connectionId: string },
@@ -70,15 +63,7 @@ export async function requestFullSync(
   return ok({ jobCount: result.data.job_count });
 }
 
-/**
- * Reads what a connection may read, and saves a choice in the same call. Omit
- * `selected` to refresh the available list without changing the choice.
- *
- * connections is select and delete only for `authenticated`, so this function is
- * the one path that writes scope_selection. It also drops a selected id the
- * provider no longer offers, which is why the answer is what gets rendered
- * rather than what was sent.
- */
+/** Reads and saves what a connection may read. Omit `selected` to refresh the list only. */
 export async function requestScopes(
   client: FunctionsClient,
   input: { connectionId: string; selected?: readonly string[] },

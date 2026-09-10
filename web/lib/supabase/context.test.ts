@@ -5,12 +5,7 @@ import type { Database } from '@/lib/database.types';
 
 vi.mock('server-only', () => ({}));
 
-/**
- * React's cache() only memoizes inside a server request, and the react build
- * vitest loads is the client one, where it is a pass-through. This stands in for
- * the request scope a page render provides, and the scope id is what makes one
- * test's request end before the next one begins.
- */
+/** Stands in for React cache()'s request scope, which is a pass-through in this build. */
 const cacheScope = vi.hoisted(() => ({ id: 0 }));
 
 vi.mock('react', () => ({
@@ -64,11 +59,7 @@ function account(overrides: Partial<Account> = {}): Account {
   };
 }
 
-/**
- * A postgrest builder that records the chain instead of talking to a database.
- * The cast is confined to this factory: it is the one place a test double has to
- * stand in for a client whose full surface it does not implement.
- */
+/** A postgrest builder that records the chain instead of talking to a database. */
 function signedInAs(reader: Account): SupabaseClient<Database> {
   const chain: RecordedCall[] = [];
   clientState.chain = chain;

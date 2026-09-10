@@ -30,8 +30,7 @@ function Candidate({
   onDismiss: LinkDecision;
 }) {
   const [failure, setFailure] = useState<string | null>(null);
-  // The decision is held here as well as written, so the row reflects it without
-  // waiting for the page to be read again.
+  // The decision is held here as well as written, so the row updates without a re-read.
   const [decided, setDecided] = useState<LinkState | null>(null);
   const [isPending, startTransition] = useTransition();
   const state = decided ?? candidate.state;
@@ -93,10 +92,7 @@ function Candidate({
   );
 }
 
-/**
- * A pair the run thinks is about the same thing, waiting on a person. Nothing
- * here is applied until someone confirms it.
- */
+/** Pairs the run thinks are about the same thing. Nothing is applied until someone confirms. */
 export function LinkCandidates({
   candidates,
   onConfirm,

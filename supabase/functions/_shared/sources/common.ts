@@ -1,9 +1,4 @@
-// Plumbing every driver shares: one request path, one set of defensive readers,
-// one refresh.
-//
-// Upstream JSON is untrusted. Reading a field off it directly is how a driver
-// turns a provider's bad day into a 500, so every read here answers with a
-// default instead of throwing.
+// Plumbing every driver shares: one request path, defensive readers that default rather than throw.
 
 import { basicAuthHeader, tokenGrantQuirksFor } from '../oauth.ts';
 import { type RefreshInput, type RefreshOutcome, SourceDeps, SourceError } from './contract.ts';
@@ -53,12 +48,7 @@ export interface RequestOptions {
   failureMessage: string;
 }
 
-/**
- * One request, one parsed body, and no upstream text in any error.
- *
- * A provider's own error body can quote back the request, and the request
- * carries the token. Nothing from the response reaches the thrown message.
- */
+/** One request, one parsed body, and no upstream text in any error. */
 export async function requestJson(
   provider: string,
   deps: SourceDeps,
@@ -87,26 +77,12 @@ export async function requestJson(
   try {
     return await response.json();
   } catch {
-    // A body that is not JSON reads as an empty answer, which every caller
-    // already has a default for.
+    // A body that is not JSON reads as an empty answer, which every caller has a default for.
     return null;
   }
 }
 
-/**
- * The standard refresh_token grant, which is what three of the four providers
- * speak. A driver whose tokens never expire answers `not_supported` instead of
- * calling this.
- *
- * Failure is a value: the caller writes it onto the connection as a status the
- * user can read, and a thrown error here would become a stalled sync with no
- * explanation. That is the whole reason the grant lives here rather than on the
- * OAuth broker, whose failures are exceptions on their way to an HTTP response.
- *
- * `provider` is the slug and reaches the log; `displayName` is what a person
- * calls the source and reaches connections.status_detail. Both, because one
- * string cannot be a database key and a product name at the same time.
- */
+/** The standard refresh_token grant. Failure is a value the caller writes onto the connection. */
 export async function refreshWithTokenEndpoint(
   provider: string,
   displayName: string,
@@ -149,8 +125,7 @@ export async function refreshWithTokenEndpoint(
   const record = quirks.normalizePayload(asRecord(payload));
   const accessToken = asString(record.access_token);
   if (!response.ok || typeof record.error === 'string' || accessToken.length === 0) {
-    // The provider's own wording is not forwarded: it can quote the request,
-    // and status_detail is shown to the user.
+    // The provider's own wording is not forwarded: status_detail is shown to the user.
     console.error('token refresh refused', { provider, status: response.status });
     return {
       kind: 'failed',
@@ -163,8 +138,7 @@ export async function refreshWithTokenEndpoint(
   return {
     kind: 'refreshed',
     accessToken,
-    // Keeping the old token when a response omits it survives a provider that
-    // rotates on some calls and not others. Linear rotates; most do not.
+    // Keeping the old token when a response omits it survives a provider that rotates sometimes.
     refreshToken: asString(record.refresh_token) || input.refreshToken,
     expiresAt: expiresIn > 0
       ? new Date(deps.now().getTime() + expiresIn * 1000).toISOString()

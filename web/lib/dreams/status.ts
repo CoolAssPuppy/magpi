@@ -5,18 +5,11 @@ import type { StatusTone } from '@/lib/ui/status-tone';
 export type DreamStatus = Enums<'dream_status'>;
 export type DreamKind = Enums<'dream_kind'>;
 
-/**
- * The one sentence that defines the word, used the first time it appears on any
- * screen. Everywhere after that, the word is used without apology.
- */
+/** The one sentence that defines the word, shown the first time it appears on any screen. */
 export const DREAM_DEFINITION =
   'Dreaming is overnight processing: once a night, per space, Magpi re-reads what came in that day, extracts entities, links documents about the same thing, and writes a digest back into the space.';
 
-/**
- * The stages a dream job moves through. dream_runs has no stage column, so the
- * worker records it as a prefix on `error`. Anything outside this set is left
- * whole rather than guessed at.
- */
+/** The stages a dream job moves through, which the worker records as a prefix on `error`. */
 export const DREAM_STAGES = ['collect', 'extract', 'embed', 'synthesize', 'write'] as const;
 
 export type DreamStage = (typeof DREAM_STAGES)[number];

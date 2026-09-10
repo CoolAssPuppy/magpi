@@ -9,10 +9,7 @@ import { idleState, type ActionState } from '@/lib/actions/state';
 
 type SettingsAction = (previous: ActionState, formData: FormData) => Promise<ActionState>;
 
-/**
- * One labelled text field and a save button. Three settings rows share it rather
- * than each growing their own copy of the same form.
- */
+/** One labelled text field and a save button, shared by three settings rows. */
 export function NameForm({
   action,
   fieldName,

@@ -1,16 +1,5 @@
 #!/usr/bin/env node
-/**
- * Fails when a scheduled worker names a function that does not exist.
- *
- * The schedule lives in `supabase/schemas/96_schedules.sql` as three
- * `cron.schedule` calls naming an Edge Function each. Renaming or deleting a
- * function directory leaves the schedule pointing at nothing, and the tick then
- * fails inside pg_net where nobody is reading.
- *
- * This replaced a check that read `vercel.json`, from when the schedule was
- * three Vercel crons. That file has no crons now, so the old check passed
- * whatever anyone did to the workers.
- */
+/** Fails when a scheduled worker names an Edge Function that does not exist. */
 
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -45,7 +34,7 @@ function main() {
     process.exit(1);
   }
 
-  // The schedule moved into the database. A cron here would be a second one.
+  // A cron here would run the workers a second time alongside the database schedule.
   const vercel = JSON.parse(readFileSync(resolve(ROOT, VERCEL), 'utf8'));
   if ((vercel.crons ?? []).length > 0) {
     console.error(`scheduled workers FAILED: ${VERCEL} declares crons as well`);

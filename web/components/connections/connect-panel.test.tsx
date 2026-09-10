@@ -85,8 +85,7 @@ describe('the connect screen', () => {
     expect(screen.getByRole('checkbox', { name: 'general' })).toBeInTheDocument();
   });
 
-  // One control for one decision. A raw select next to the shadcn Select on
-  // the same screen reads as two different kinds of thing.
+  // One control for one decision, so the space picker is the shadcn Select.
   it('starts the connection in the space a person picked', async () => {
     const props = getProps();
     render(<ConnectPanel {...props} />);

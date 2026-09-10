@@ -1,12 +1,6 @@
 import { z } from 'zod';
 
-/**
- * Parsed once at the boundary. Everything inside the app trusts the type and
- * does no defensive checking.
- *
- * SB_ prefix on our own secrets: Supabase reserves SUPABASE_, and a secrets
- * manager syncing into a project cannot write one.
- */
+/** Environment parsed once at the boundary. Our secrets take SB_, since SUPABASE_ is reserved. */
 const publicSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.url(),
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(1),

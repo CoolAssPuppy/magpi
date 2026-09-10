@@ -1,7 +1,4 @@
-/**
- * The one error presentation for auth forms. A full border and a background
- * tint, never a thick left stripe.
- */
+/** The one error presentation for auth forms: a full border and a background tint. */
 export function FormError({ message }: { message: string | null }) {
   if (!message) return null;
   return (

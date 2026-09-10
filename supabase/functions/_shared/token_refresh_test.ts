@@ -276,14 +276,7 @@ Deno.test('a scope selection the picker has never populated reads as no selectio
   }
 });
 
-/**
- * The scheduled pass renews connections nobody is about to use, so it asks for
- * no token and must be handed none.
- *
- * Every test below hands the row a ciphertext sealed for a different user. The
- * AAD will not match, so anything that reads it throws rather than answering,
- * which is what turns "does not decrypt" into something a test can hold.
- */
+/** A ciphertext sealed for another user, so anything that decrypts it throws. */
 async function sealedForSomeoneElse(provider = 'google_drive'): Promise<string> {
   return await encryptProviderToken(
     'at_stored',

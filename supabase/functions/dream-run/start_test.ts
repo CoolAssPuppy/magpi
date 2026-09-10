@@ -13,11 +13,7 @@ const RUN = '66666666-6666-4666-8666-666666666666';
 
 const INPUT = { orgId: ORG, spaceId: SPACE, kind: 'digest', triggeredBy: USER } as const;
 
-/**
- * A database holding the one run this test creates, answered the way PostgREST
- * answers a conditional update: a filter the stored row does not match finds
- * nothing, which is how a claim reports that somebody else got there first.
- */
+/** A stub holding one dream_runs row, answering conditional updates the way PostgREST does. */
 function withRuns(): StubDb {
   const rows = new Map<string, Record<string, unknown>>();
 
@@ -56,9 +52,7 @@ Deno.test('a manual run is created in a state the scheduled drainer cannot claim
   try {
     const run = await startManualRun(stub.db, INPUT, NOW);
 
-    // dream-worker claims what is queued. A row this function is about to run
-    // inline must never be claimable, or a cron tick landing in that window
-    // pays for the same synthesis twice.
+    // dream-worker claims queued rows, so a run about to go inline must not be queued.
     const stolen = await claimQueuedRow(stub.db, 'dream_runs', run.id, {
       status: 'running',
       started_at: NOW.toISOString(),
@@ -78,8 +72,7 @@ Deno.test('a manual run records when it started, so an interrupted one is retire
   try {
     await startManualRun(stub.db, INPUT, NOW);
 
-    // The abandoned sweep reads started_at. A row without one sits running for
-    // good and shows the space page a spinner that never resolves.
+    // The abandoned sweep reads started_at, so a row without one stays running for good.
     const row = inserted(stub);
     assertEquals(row.started_at, NOW.toISOString());
     assertEquals(row.org_id, ORG);

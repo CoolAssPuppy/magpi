@@ -1,6 +1,4 @@
--- Metering and model telemetry are admin-only. The point of these assertions is
--- that the role check runs in the policy: the same query, by the same person, in
--- the same session, changes its answer the moment their org role changes.
+-- Metering and model telemetry are admin-only, with the role check running in the policy.
 
 begin;
 
@@ -17,8 +15,7 @@ values
   ('c0000000-0000-4000-8000-000000000003', 'carol@magpi.test',
    '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated');
 
--- Alice owns her org. Bob is an admin in it and an owner of his own. Carol is a
--- plain member.
+-- Alice owns her org. Bob is an admin in it and an owner of his own. Carol is a plain member.
 insert into public.org_members (org_id, user_id, role)
 select org_id, 'b0000000-0000-4000-8000-000000000002', 'admin'
 from public.org_members
@@ -110,8 +107,7 @@ select is(
   0, 'a plain member of the same org reads no model calls'
 );
 
--- Metering decides what an org is billed, so a client that could write it could
--- write itself a smaller invoice.
+-- Metering decides what an org is billed, so no client may write it.
 select throws_ok(
   $$ insert into public.usage_events (org_id, kind, quantity)
      values (current_setting('recall.org_a')::uuid, 'query', -1000) $$,
@@ -141,9 +137,6 @@ select is(
 );
 
 -- The role change is the only thing that moves ------------------------------
---
--- No sign-out, no new session, no page reload. If analytics were gated in the
--- UI these three assertions would all read the same.
 
 reset role;
 
@@ -182,11 +175,6 @@ select is(
 );
 
 -- Invites --------------------------------------------------------------------
---
--- The same admin gate on a table that holds a credential. An invite carries the
--- hash of the token that lets a stranger into the organization, and the role
--- they arrive with, so who may read one and who may issue one are both part of
--- the permission model rather than page furniture.
 
 reset role;
 
@@ -228,8 +216,7 @@ select is(
 
 set local request.jwt.claims to '{"sub":"c0000000-0000-4000-8000-000000000003","role":"authenticated"}';
 
--- A member who could read this row would hold the hash of a token that admits a
--- stranger, and could see who is about to arrive as an admin.
+-- Reading this row means holding the hash of a token that admits a stranger.
 select is(
   (select count(*)::int from public.org_invites
    where org_id = current_setting('recall.org_a')::uuid),
@@ -244,8 +231,7 @@ select throws_ok(
   '42501', null, 'and cannot invite anyone, least of all as an owner'
 );
 
--- The audit trail is only worth having if it cannot be written to say somebody
--- else did it.
+-- The audit trail is only worth having if it cannot be written to name somebody else.
 set local request.jwt.claims to '{"sub":"b0000000-0000-4000-8000-000000000002","role":"authenticated"}';
 
 select throws_ok(
@@ -270,9 +256,7 @@ select is(
   3, 'and it is there afterwards'
 );
 
--- No update policy and no update grant, so a pending invite is immutable to
--- every client. An invite that could be edited after it was issued is an invite
--- whose role could be raised to owner between sending and accepting.
+-- No update policy and no update grant, so a pending invite is immutable to every client.
 select throws_ok(
   $$ update public.org_invites set role = 'owner'
      where id = '5e000000-0000-4000-8000-00000000000a' $$,
@@ -295,9 +279,7 @@ select is(
   1, 'and cancels nothing, which is what that success meant'
 );
 
--- org_member_emails is security definer and reads auth.users, so the is_org_admin
--- test inside it is the only thing between a plain member and a list of every
--- address in the organization. A member of a different org gets nothing at all.
+-- org_member_emails is security definer, so its is_org_admin test is the only gate on addresses.
 set local role authenticated;
 set local request.jwt.claims to '{"sub":"a0000000-0000-4000-8000-000000000001","role":"authenticated"}';
 

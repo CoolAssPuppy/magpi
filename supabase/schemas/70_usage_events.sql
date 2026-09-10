@@ -13,18 +13,14 @@ create table public.usage_events (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references public.organizations (id) on delete cascade,
   kind public.usage_kind not null,
-  -- Non-negative. Every meter in the product sums this column, so a negative
-  -- row is a smaller invoice and a plan limit that never arrives. No client can
-  -- write here, but service_role can, and 12_admin.test.sql uses -1000 as its
-  -- own illustration of why that matters.
+  -- Non-negative. Every meter sums this column, so a negative row undercounts usage.
   quantity bigint not null default 1 check (quantity >= 0),
   occurred_at timestamptz not null default now()
 );
 
 create index usage_events_org_occurred_idx on public.usage_events (org_id, occurred_at);
 
--- Every model call goes through one wrapper that writes here. This is where
--- analytics gets its numbers and how a latency regression becomes visible.
+-- Every model call goes through one wrapper that writes here. Analytics reads it.
 create table public.model_calls (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references public.organizations (id) on delete cascade,
@@ -39,8 +35,7 @@ create table public.model_calls (
 
 create index model_calls_org_occurred_idx on public.model_calls (org_id, occurred_at);
 
--- One row per processed Stripe event. Stripe retries, so the webhook handler is
--- idempotent on the event id and this table is how.
+-- One row per processed Stripe event, which makes the webhook handler idempotent on retries.
 create table public.stripe_events (
   id text primary key,
   type text not null,

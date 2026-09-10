@@ -1,12 +1,4 @@
-// POST /connections-sync. A person pressing sync on the connections page.
-//
-// The scheduled path is sync-worker, which walks whatever is due. This is the
-// same job body for one named connection, run now, under the caller's own
-// identity rather than the scheduler's.
-//
-// `full` clears the cursor first, which is the deliberate re-read the spec asks
-// for: an incremental pass will not notice a document the provider changed
-// without changing its timestamp, and that is the only way to pick one up.
+// POST /connections-sync. Runs the sync job for one connection now; `full` clears the cursor.
 
 import { ApiError, jsonResponse } from '../_shared/errors.ts';
 import { serveFunction } from '../_shared/http.ts';
@@ -25,8 +17,7 @@ serveFunction('connections-sync', async (core) => {
   const user = await requireUser(core.headers);
   const db = serviceClient();
 
-  // A full re-sync re-reads a whole account, so it is rationed harder than the
-  // rest of the surface.
+  // A full re-sync re-reads a whole account, so it is rationed harder than the rest.
   await enforceRateLimits(db, [
     { bucket: `connections-sync:user:${user.id}`, limit: 20, windowSeconds: 600 },
     { bucket: `connections-sync:connection:${input.connection_id}`, limit: 6, windowSeconds: 600 },
@@ -42,8 +33,7 @@ serveFunction('connections-sync', async (core) => {
 
   const deps = jobDepsFromEnv();
 
-  // A double-click, or a press while the scheduled pass is already running, must
-  // not become two passes filing the same documents.
+  // Stops a double-click, or a press during the scheduled pass, becoming two passes.
   if (!(await claimConnectionForSync(db, connection.id, new Date()))) {
     throw new ApiError(409, 'sync_in_progress', 'this connection is already syncing');
   }
@@ -61,8 +51,7 @@ serveFunction('connections-sync', async (core) => {
     meta: { provider: connection.provider, outcome: result.kind },
   });
 
-  // The document count is what the page shows. A pass that found nothing is a
-  // success with zero, not a failure.
+  // A pass that found nothing returns a job count of zero.
   return jsonResponse({
     connection_id: connection.id,
     outcome: result.kind,

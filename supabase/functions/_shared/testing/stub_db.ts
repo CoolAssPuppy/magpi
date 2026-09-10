@@ -1,12 +1,4 @@
-// A real Supabase client pointed at a stub PostgREST, for tests.
-//
-// Test-only. Nothing under a function entry point imports it, so it is never
-// bundled into a deployment.
-//
-// A hand-written fake client cannot be built without asserting an object into a
-// type it does not have. This is better anyway: the query actually goes over the
-// wire, so a test can assert the filters that scope a read to one space. A fake
-// would happily accept a query that forgot space_id and pass.
+// A real Supabase client pointed at a stub PostgREST, so tests can assert the query filters sent.
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
@@ -34,12 +26,7 @@ export interface StubDb {
   close(): Promise<void>;
 }
 
-/**
- * Starts a stub PostgREST on a free port and returns a client bound to it.
- *
- * `reply` is asked for a response per request. Returning nothing answers with an
- * empty array, which is what an unmatched select should look like.
- */
+/** Starts a stub PostgREST on a free port. A `reply` returning nothing answers with `[]`. */
 export function stubDb(reply: (request: StubRequest) => StubReply | undefined): StubDb {
   const requests: StubRequest[] = [];
 

@@ -1,15 +1,5 @@
 #!/usr/bin/env node
-/**
- * Fails on a color that did not come from the Supabase token system.
- *
- * Two things are rejected. A raw hex or rgb() literal in our own source, and a
- * Tailwind default palette class such as `bg-slate-800`, which resolves to a
- * value the Supabase themes never see and so breaks in one theme or the other.
- *
- * The vendored token files under web/styles/supabase are exempt. They are
- * upstream's, they are where the literals are supposed to live, and they are
- * never hand-edited.
- */
+/** Fails on raw hex/rgb literals and Tailwind palette classes outside the vendored token files. */
 
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
@@ -23,8 +13,7 @@ const SCAN_EXTENSIONS = ['.ts', '.tsx', '.css'];
 const EXEMPT_PATHS = [
   'web/styles/supabase/',
   'web/lib/database.types.ts',
-  // The token file is where our own overrides are declared, and docs/design.md
-  // records a justification for each one.
+  // Our own token overrides are declared here and listed in docs/design.md.
   'web/styles/tokens.css',
 ];
 
@@ -114,9 +103,7 @@ function main() {
   for (const scanRoot of SCAN_ROOTS) {
     const dir = resolve(ROOT, scanRoot);
 
-    // Deliberately not wrapped. A scan root that has been renamed used to make
-    // this step skip that whole tree and report success, so the check would
-    // have gone quiet exactly when the code moved out from under it.
+    // Unwrapped so a renamed scan root throws instead of silently skipping the tree.
     const files = [...walk(dir)];
 
     for (const file of files) {
@@ -127,9 +114,7 @@ function main() {
       lines.forEach((line, index) => {
         for (const rule of RULES) {
           rule.pattern.lastIndex = 0;
-          // Every match on the line, not the first. `exec` returned one, so a
-          // class list carrying two raw colors was reported once and the
-          // printed count was short by the difference.
+          // matchAll reports every color on the line, not just the first.
           for (const match of line.matchAll(rule.pattern)) {
             findings.push({
               file: relativePath,

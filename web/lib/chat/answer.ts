@@ -39,12 +39,7 @@ export type AnswerDeps = {
 
 const MATCH_COUNT = 12;
 
-/**
- * One turn of the conversation, as a sequence of events the route frames onto
- * the wire. The question is persisted before any model is called and the answer
- * after it completes, so a dropped connection leaves a conversation that can be
- * asked again rather than half an answer.
- */
+/** One turn of the conversation, as the events the route frames onto the wire. */
 export async function* runAnswerTurn(
   input: AnswerTurnInput,
   deps: AnswerDeps,
@@ -108,16 +103,7 @@ export async function* runAnswerTurn(
     return;
   }
 
-  // All three of these follow the closed answer, because none is worth a
-  // millisecond of the reader's time waiting for a token. They have their own
-  // try for the same reason: the answer is on screen and stored by the time
-  // any of them runs, so a failed rewrite, a rate-limited title or an
-  // unreachable meter has nothing left to tell the reader. Inside the block
-  // above, a failed title write yielded an error event and took the delivered
-  // answer off the screen.
-  //
-  // A meter that fails costs the organization one question. Failing the answer
-  // to protect the meter is the wrong way round.
+  // All three follow the closed answer, so a failure here cannot take it off the screen.
   try {
     await deps.recordQuery(input.orgId);
 

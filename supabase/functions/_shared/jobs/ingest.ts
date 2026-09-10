@@ -1,13 +1,4 @@
-// One document, end to end: fetch, extract, chunk, embed, store.
-//
-// A plain async function taking a job record and a set of injected clients. No
-// Deno.serve, no global fetch, no env read at call time, so a test runs it
-// directly and moving off Edge Functions is a wrapper change.
-//
-// Deliberately not batched into artificially small units to dodge the platform
-// ceiling. A single document import is one job. When the document is large
-// enough the budget runs out, and the job says which stage it died in rather
-// than leaving a spinner that never resolves.
+// One document, end to end: fetch, extract, chunk, embed, store. One import is one job.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -22,14 +13,7 @@ import { resolveCredentials } from '../token_refresh.ts';
 import { type Budget, DEFAULT_BUDGET_MS, StageTimeout, startBudget } from './budget.ts';
 import { type IngestStage, type JobDeps, recordUsage } from './types.ts';
 
-/**
- * How many chunks are embedded per call.
- *
- * One request per chunk spends the whole budget on round trips; one request for
- * a whole book is refused by the model. Sixty-four is where a normal document
- * takes one call and a large one takes a handful, each cheap enough to check the
- * budget between.
- */
+/** How many chunks are embedded per call. */
 const EMBED_BATCH = 64;
 
 export interface IngestJobRecord {
@@ -70,10 +54,7 @@ interface SourceText {
   mimeType: string;
   title: string;
   url: string | null;
-  /**
-   * What the document weighs: the uploaded file for an upload, the fetched text
-   * for a synced document, which occupies no bucket at all.
-   */
+  /** The uploaded file's bytes, or the fetched text for a synced document. */
   sizeBytes: number;
   /** Only an upload consumes Storage, and only Storage is worth metering. */
   occupiesStorage: boolean;
@@ -90,19 +71,7 @@ async function loadDocument(db: SupabaseClient, documentId: string): Promise<Doc
   return data;
 }
 
-/**
- * Moves the job on to its next stage, and returns the stage it is now in.
- *
- * The budget is checked against the stage that just ran rather than the one
- * about to start. The fetch is the stage most likely to run long and the only
- * one with no checkpoint inside it, so checking against `next` reports a job
- * killed mid-download as having died extracting, which is the one stage it never
- * reached.
- *
- * The write itself is progress the browser watches through Realtime, so a
- * stalled stage is visible. Losing it costs a spinner that sits on the previous
- * stage, which is not worth failing an import over.
- */
+/** Moves the job to its next stage, charging the budget to the stage that just ran. */
 async function enterStage(
   deps: JobDeps,
   job: IngestJobRecord,
@@ -119,12 +88,7 @@ async function enterStage(
   return next;
 }
 
-/**
- * An uploaded file's bytes, or a source document's text.
- *
- * The two paths converge here because everything after extraction is identical,
- * which is the only reason four providers and a dropzone can share one job body.
- */
+/** An uploaded file's bytes, or a source document's text. */
 async function readSource(document: DocumentRow, deps: JobDeps): Promise<SourceText> {
   if (document.storage_path) {
     const bytes = await deps.uploads.read(document.storage_path);
@@ -186,8 +150,7 @@ async function storeChunks(
   chunks: { ordinal: number; content: string; tokenCount: number }[],
   embeddings: number[][],
 ): Promise<void> {
-  // A re-ingest replaces the document's chunks rather than adding to them, or a
-  // second pass doubles every answer the document can give.
+  // A re-ingest replaces the document's chunks rather than adding to them.
   const { error: clearError } = await deps.db
     .from('chunks')
     .delete()
@@ -210,13 +173,7 @@ async function storeChunks(
   }
 }
 
-/**
- * Writes the status the job ended in.
- *
- * A refused write here leaves the row `running`, which claim_ingest_jobs takes
- * back once the claim goes stale, so the document is imported again rather than
- * lost. That retry is the only trace of the failure unless this says so.
- */
+/** Writes the status the job ended in. A refused write leaves the row for claim_ingest_jobs. */
 async function finish(
   deps: JobDeps,
   job: IngestJobRecord,
@@ -229,9 +186,7 @@ async function finish(
 }
 
 function detailOf(err: unknown): string {
-  // A SourceError message is written for a person to read and carries nothing
-  // the provider sent. An ApiError message is ours. Anything else is a bug, and
-  // its text belongs in the log rather than on a user's screen.
+  // SourceError and ApiError messages are ours to show. Anything else is logged, not shown.
   if (err instanceof SourceError) return err.message;
   if (err instanceof ApiError) return err.message;
   console.error('ingest job failed unexpectedly', err);
@@ -240,10 +195,7 @@ function detailOf(err: unknown): string {
 
 export async function runIngestJob(job: IngestJobRecord, deps: JobDeps): Promise<IngestResult> {
   const budget = startBudget(deps.http, deps.budgetMs ?? DEFAULT_BUDGET_MS);
-  // The caller claimed this row and set status, claimed_at and attempts in the
-  // same statement it selected it. Writing them again here would overwrite the
-  // claim time with a later one, which is the number that says how long a job
-  // has been held.
+  // The caller already set status, claimed_at and attempts when it claimed this row.
   let stage: IngestStage = 'fetch';
 
   try {
@@ -253,8 +205,7 @@ export async function runIngestJob(job: IngestJobRecord, deps: JobDeps): Promise
     stage = await enterStage(deps, job, budget, stage, 'extract');
     const contentHash = await sha256Hex(source.text);
 
-    // Re-embedding text that has not changed spends the budget and the model
-    // bill to arrive at the same vectors. Sync calls this on every pass.
+    // Text that has not changed is not embedded again.
     if (document.content_hash === contentHash) {
       await finish(deps, job, { status: 'succeeded', stage: 'store', error: null });
       return { kind: 'unchanged' };
@@ -295,9 +246,7 @@ export async function runIngestJob(job: IngestJobRecord, deps: JobDeps): Promise
     await recordUsage(deps.db, [
       { orgId: document.org_id, kind: 'document_ingested', quantity: 1 },
       { orgId: document.org_id, kind: 'chunk_embedded', quantity: chunks.length },
-      // The delta, not the size. The admin page sums these events and never
-      // scans documents, so a re-import that grew a file by a kilobyte has to
-      // add a kilobyte rather than the whole file a second time.
+      // The delta, not the size, because the admin page sums these events.
       ...(source.occupiesStorage
         ? [{
           orgId: document.org_id,
@@ -311,22 +260,14 @@ export async function runIngestJob(job: IngestJobRecord, deps: JobDeps): Promise
     return { kind: 'succeeded', chunkCount: chunks.length };
   } catch (err) {
     if (err instanceof StageTimeout) {
-      // The stage is the point. A user who imported a four hundred page pdf can
-      // see it died embedding rather than that something went wrong.
+      // The stage says where the import ran out of budget.
       await finish(deps, job, { status: 'timeout', stage, error: err.message });
       return { kind: 'timeout', stage };
     }
 
     const detail = detailOf(err);
 
-    // A provider that failed for the moment is not a document that cannot be
-    // imported, and the driver's message says as much to the user. Writing a
-    // terminal status here makes that message false and leaves the three
-    // attempts claim_ingest_jobs budgets for with no path that reaches them.
-    // Back on the queue, where the attempt cap retires it if the moment lasts.
-    //
-    // A refused credential is the other half: retrying it spends three more
-    // round trips to be refused three more times, and reconnecting is the fix.
+    // A momentary provider failure goes back on the queue; a refused credential is terminal.
     if (err instanceof SourceError && !err.needsReconnect) {
       await finish(deps, job, { status: 'queued', stage, error: detail });
       return { kind: 'retrying', stage, detail };

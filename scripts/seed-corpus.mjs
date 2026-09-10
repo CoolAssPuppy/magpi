@@ -1,24 +1,5 @@
 #!/usr/bin/env node
-/**
- * Loads the sample corpus in supabase/corpus into a seeded organization.
- *
- * The script writes documents, storage objects and ingest jobs, and nothing
- * else. Chunking and embedding belong to the ingest worker, so this script
- * enqueues work rather than doing it, and a corpus loaded here goes through the
- * same pipeline a real Notion page does.
- *
- * Every simulated source is markdown on disk. The bytes go into the `documents`
- * storage bucket so the worker has something to fetch without a live provider
- * connection, and `documents.origin` still records where the document would
- * have come from.
- *
- * Usage:
- *   doppler run -- node scripts/seed-corpus.mjs [--org-slug alderwick]
- *
- * Idempotent. A document that already exists in the target space is left alone,
- * which also keeps its fixed `updated_at` fixed: the touch trigger on
- * `documents` rewrites that column on every update.
- */
+/** Loads supabase/corpus into a seeded org: node scripts/seed-corpus.mjs [--org-slug x]. */
 
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -69,11 +50,7 @@ function unwrap(result, what) {
   return result.data;
 }
 
-/**
- * Resolves the organization to load into: the one named by `--org-slug`, or the
- * only one that exists. Two organizations and no flag is an error, because
- * guessing here means seeding the wrong tenant.
- */
+/** Resolves the target org from `--org-slug`, or the only one that exists. */
 async function resolveOrg(db, slug) {
   if (slug) {
     const rows = unwrap(
@@ -139,16 +116,7 @@ async function addSpaceMembers(db, spaceId, userIds) {
   }
 }
 
-/**
- * Builds the map from a manifest `space` value to a real space id, creating the
- * team and personal spaces the corpus expects.
- *
- * The org space and its membership already exist: `handle_new_user` makes the
- * org space and `sync_org_space_membership` keeps it populated. The team spaces
- * are ours, and so are the personal spaces of any member who joined the org
- * after it was created, because that member's own personal space lives in their
- * own org.
- */
+/** Maps manifest `space` values to space ids, creating the team and personal spaces. */
 async function resolveSpaces(db, orgId, members) {
   const spaces = {};
 
@@ -163,9 +131,7 @@ async function resolveSpaces(db, orgId, members) {
     spaces[team.key] = await findOrCreateSpace(db, { orgId, kind: 'team', name: team.name });
   }
 
-  // Everyone in engineering, the first member alone in leadership. That
-  // asymmetry is the permission demo, so it is set up here rather than left to
-  // whoever runs the script.
+  // Both members in engineering, the first member alone in leadership.
   await addSpaceMembers(
     db,
     spaces.engineering,
@@ -188,18 +154,7 @@ async function resolveSpaces(db, orgId, members) {
   return spaces;
 }
 
-/**
- * Reads the bucket definition out of `supabase/config.toml`.
- *
- * The alternative is a second copy of the limit and the mime list in this file,
- * and a second copy is how they drift. This one already had: config.toml said
- * 50MiB, this script said 50MB, and only one of those two spellings is a format
- * the storage API accepts.
- *
- * A deliberately small parser rather than a TOML dependency. It reads one known
- * table out of one file we own, and a wrong answer fails loudly on the next
- * line rather than corrupting anything.
- */
+/** Reads the documents bucket definition out of `supabase/config.toml`. */
 function bucketConfig() {
   const toml = readFileSync(resolve(ROOT, 'supabase/config.toml'), 'utf8');
   const table = toml.split(`[storage.buckets.${BUCKET}]`)[1];
@@ -212,19 +167,13 @@ function bucketConfig() {
   if (!limit) throw new SeedError('the documents bucket has no file_size_limit');
 
   return {
-    // config.toml takes MiB and the storage API refuses it: "Invalid file size
-    // format, hint: use 20GB / 20MB / 30KB / 3B". Same limit, two spellings,
-    // one of which fails.
+    // The storage API accepts MB, GB and KB, and rejects the MiB spelling config.toml uses.
     fileSizeLimit: limit.replace(/MiB$/, 'MB').replace(/GiB$/, 'GB').replace(/KiB$/, 'KB'),
     allowedMimeTypes: [...mimeBlock.matchAll(/"([^"]+)"/g)].map((match) => match[1]),
   };
 }
 
-/**
- * `supabase/config.toml` declares the bucket, and a stack started before that
- * line was written does not have it. Creating it here costs one call and keeps
- * a running local stack out of a restart, which would take the database with it.
- */
+/** Creates the bucket when the running stack predates its config.toml entry. */
 async function ensureBucket(db) {
   const { data } = await db.storage.getBucket(BUCKET);
   if (data) return false;
@@ -250,10 +199,7 @@ async function uploadBody(db, storagePath, body) {
   }
 }
 
-/**
- * Writes one manifest entry. Returns 'created' or 'skipped', so the caller can
- * report what a second run actually did.
- */
+/** Writes one manifest entry. Returns 'created' or 'skipped'. */
 async function loadEntry(db, { entry, orgId, spaceId }) {
   const existing = unwrap(
     await db

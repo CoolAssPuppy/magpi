@@ -54,8 +54,7 @@ describe('the name of the signed-in person', () => {
     await waitFor(() => expect(value()).toBe('Ada Lovelace'));
   });
 
-  // Email and password signup carries no full name, and an email address is a
-  // better answer than a blank space where a person's name goes.
+  // Email and password signup carries no full name, so the email address stands in.
   it('falls back to the email address when no name was given', async () => {
     auth.session = getSession({});
     render(<NameProbe />);
@@ -76,8 +75,7 @@ describe('the name of the signed-in person', () => {
     await waitFor(() => expect(value()).toBe('nothing'));
   });
 
-  // Setting state on a screen that has gone away is a React warning and a leak,
-  // and signing out while this is in flight is the ordinary way to get there.
+  // Setting state after unmount is a React warning and a leak; signing out mid-answer causes it.
   it('says nothing once the screen it was for has gone', async () => {
     let release = () => {};
     auth.gate = new Promise<void>((resolve) => {

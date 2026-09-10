@@ -1,5 +1,4 @@
-// The connections pass: find pairs of recent documents that look like they are
-// about the same thing, and write the ones the model can explain.
+// Connections pass: pairs recent documents about the same thing and writes the explained ones.
 
 import { z } from 'zod';
 
@@ -16,13 +15,10 @@ import {
 } from './dream_pass.ts';
 import type { LinkDraft, SpaceDocumentRow } from './space_writer.ts';
 
-// The connections pass costs one embedding and one search per document, so the
-// document count is the wall-clock cost. Twenty keeps the pass inside the budget
-// on a busy space, and tomorrow night reaches the rest.
+// One embedding and one search per document, so twenty keeps a pass inside its time budget.
 const MAX_COMPARED_DOCUMENTS = 20;
 
-// A page of candidate links a person will actually read. Ranking past this is
-// work nobody looks at.
+// A page of candidate links a person will actually read.
 const MAX_LINKS = 20;
 
 const SEARCH_MATCH_COUNT = 10;
@@ -46,8 +42,7 @@ function sourceOf(document: SpaceDocumentRow): string {
 async function searchNeighbours(pass: Pass, embedding: number[], text: string): Promise<
   { document_id: string; score: number }[]
 > {
-  // Under the service role the function's RLS constrains nothing, so this array
-  // is the only thing keeping the pass inside its own space.
+  // The service role bypasses RLS, so this filter is what keeps the pass inside its own space.
   const { data, error } = await pass.deps.db.rpc('search', {
     query_embedding: embedding,
     query_text: text,
@@ -68,9 +63,7 @@ async function candidatePairs(pass: Pass, documents: SpaceDocumentRow[]): Promis
   const { run, deps, db } = pass;
   const found = new Map<string, { sourceId: string; otherId: string; similarity: number }>();
 
-  // The opening chunks in one read and their vectors in one model call. A
-  // document at a time is three round trips each, sixty for a full pass, and the
-  // searches below are the only part of that which cannot be asked for at once.
+  // Opening chunks in one read and their vectors in one model call.
   enter(pass, 'extract');
   const openings = await db.firstChunksOf(documents.map((document) => document.id));
   const readable = documents.flatMap((document) => {
@@ -85,9 +78,7 @@ async function candidatePairs(pass: Pass, documents: SpaceDocumentRow[]): Promis
     texts: readable.map(({ chunk }) => chunk.content),
   });
 
-  // Asking the space what one document looks like is how this pass pulls
-  // structure out of what it read, so the whole scan is one stage however many
-  // round trips it takes.
+  // The whole scan is one stage, however many searches it takes.
   for (const [index, { document, chunk }] of readable.entries()) {
     if (found.size >= MAX_LINKS) break;
     const embedding = embeddings[index];
@@ -98,8 +89,7 @@ async function candidatePairs(pass: Pass, documents: SpaceDocumentRow[]): Promis
       if (hit.document_id === document.id) continue;
       const key = [document.id, hit.document_id].sort().join(':');
       if (found.has(key)) continue;
-      // The fused search score, which ranks this pair against the others in this
-      // pass and means nothing outside it.
+      // The fused search score, which ranks pairs within this pass only.
       found.set(key, { sourceId: document.id, otherId: hit.document_id, similarity: hit.score });
     }
   }
@@ -119,8 +109,7 @@ export async function dreamConnections(pass: Pass): Promise<DreamOutcome> {
   const known = new Map([...documents, ...others].map((doc) => [doc.id, doc]));
   const outcome = { ...NOTHING, inputDocumentCount: documents.length };
 
-  // A document this read could not return is one the space cannot see, and a
-  // pair whose halves came from the same connection is not news.
+  // Drop pairs the read could not return and pairs whose halves share a connection.
   const pairs = candidates.flatMap((candidate) => {
     const source = known.get(candidate.sourceId);
     const other = known.get(candidate.otherId);
@@ -136,8 +125,7 @@ export async function dreamConnections(pass: Pass): Promise<DreamOutcome> {
     readAnswer(rationalesSchema, answer, 'link rationales').map((row) => [row.pair, row.rationale]),
   );
 
-  // A link nobody can explain is a row a person has to guess at, so only the
-  // explained ones are written.
+  // Only links the model explained are written.
   const drafts: LinkDraft[] = pairs.flatMap(({ candidate }, index) => {
     const rationale = rationales.get(index);
     if (!rationale) return [];

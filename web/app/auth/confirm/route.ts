@@ -4,11 +4,7 @@ import { z } from 'zod';
 import { safeNextPath } from '@/lib/safe-next-path';
 import { createClient } from '@/lib/supabase/server';
 
-/**
- * The six kinds of email link Supabase sends. @supabase/supabase-js widens
- * EmailOtpType to accept any string, so parsing here is what keeps a query
- * parameter a reader controls from reaching the auth server unchecked.
- */
+/** The six kinds of email link Supabase sends. EmailOtpType is any string, so parse it here. */
 const otpTypeSchema = z.enum([
   'signup',
   'invite',

@@ -51,8 +51,7 @@ export async function defaultChatStream(): Promise<ChatStreamPort> {
       messages: [...request.messages],
       max_completion_tokens: request.maxOutputTokens,
       stream: true,
-      // The totals arrive on a final chunk that carries no delta. Without this
-      // a streamed answer would be metered at zero tokens.
+      // The totals arrive on a final chunk with no delta, so without this a stream meters zero.
       stream_options: { include_usage: true },
     });
 

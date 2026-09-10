@@ -105,8 +105,7 @@ function harness(options: {
   const stub = stubDb((request) => {
     const custom = options.reply?.(request);
     if (custom) return custom;
-    // A fresh insert answers with the rows it created, which is how the caller
-    // learns their ids.
+    // A fresh insert answers with the rows it created, so the caller learns their ids.
     if (request.table === 'documents' && request.method === 'POST') {
       const body = Array.isArray(request.body) ? request.body : [request.body];
       return {
@@ -254,9 +253,7 @@ Deno.test('a document already filed is relabelled rather than duplicated', async
 });
 
 Deno.test('a document the provider did not rename is not written at all', async () => {
-  // Every pass sees the documents the last pass filed. Writing each of them back
-  // with the values already on the row is a round trip per document, on every
-  // pass, to change nothing.
+  // Writing an unchanged row back costs a round trip per document on every pass.
   const h = harness({
     page: issuesPage([issue(1)]),
     reply: (request) =>
@@ -354,9 +351,7 @@ Deno.test('a pass with nothing new still advances last_synced_at', async () => {
 });
 
 Deno.test('a pass settles the connection back to active without rewriting its claim', async () => {
-  // claimConnectionForSync moved the row to syncing in the statement that took
-  // it, and cleared the old reason with it. Writing syncing again here is a
-  // round trip and a realtime broadcast that tell a watching page nothing.
+  // claimConnectionForSync already set syncing and cleared the old reason when it took the row.
   const h = harness({ page: issuesPage([]) });
   try {
     await runSyncJob(await connection(), h.deps);
@@ -433,10 +428,7 @@ Deno.test('a connection whose token cannot be renewed is skipped, not retried', 
 });
 
 Deno.test('a pass that runs out of time names the stage and leaves the cursor where it was', async () => {
-  // A clock that jumps on its second reading stops every run at the first
-  // checkpoint, before the driver is ever asked, so it cannot tell a cursor left
-  // alone from a cursor never reached. Walking the jump forward one reading at a
-  // time stops the pass at each checkpoint in turn.
+  // Walking the clock jump forward one reading at a time stops the pass at each checkpoint.
   const stages = new Set<string>();
 
   for (let ticks = 1; ticks <= 20; ticks += 1) {
@@ -466,8 +458,7 @@ Deno.test('a pass that runs out of time names the stage and leaves the cursor wh
   for (const stage of stages) {
     assert(SYNC_STAGES.includes(stage), `a pass named a stage nothing else knows: ${stage}`);
   }
-  // Not vacuous: the run that matters is the one that read a page of changes and
-  // then ran out, because that is the run with a cursor it could have written.
+  // The run that matters read a page of changes and then ran out, so it had a cursor to write.
   assert(
     stages.has('file') || stages.has('enqueue'),
     `no run reached the driver, so nothing was proved: ${[...stages].join(', ')}`,
@@ -475,8 +466,7 @@ Deno.test('a pass that runs out of time names the stage and leaves the cursor wh
 });
 
 Deno.test('a backlog the driver could not finish in one call is walked in the same run', async () => {
-  // Five requests is the Linear driver's own ceiling for one listChanges, so the
-  // sixth page is reached only if the job asks it for another pass.
+  // Five requests is the Linear driver's ceiling per listChanges, so page six needs a second pass.
   const pages: unknown[] = [1, 2, 3, 4, 5].map((n) => issuesPage([issue(n)], `page-${n + 1}`));
   pages.push(issuesPage([issue(6)]));
 
@@ -512,8 +502,7 @@ Deno.test('a walk that runs out of time keeps what it filed and says there is mo
   try {
     const result = await runSyncJob(await connection(), h.deps);
 
-    // A connection with a backlog is behind, not broken. Reporting a timeout
-    // would put an error on a row that made real progress.
+    // A run that made real progress reports synced with a backlog, so the row keeps no error.
     assertEquals(result.kind, 'synced');
     if (result.kind !== 'synced') return;
     assert(result.hasMore, 'a run that stopped early said there was nothing left');
@@ -531,9 +520,7 @@ Deno.test('a walk that runs out of time keeps what it filed and says there is mo
 });
 
 Deno.test('a driver that reports more without moving its cursor is asked once more', async () => {
-  // Slack reads a fixed number of channels per pass and reports the rest as
-  // more. Channels with nothing in them leave the cursor exactly as it was, so
-  // asking again in this run would read the same channels until the budget went.
+  // Slack reads a fixed number of channels per pass, and empty ones leave the cursor unmoved.
   const channels = Array.from({ length: 21 }, (_, index) => `C${index}`);
   const h = harness({ page: { ok: true, messages: [] } });
   try {

@@ -2,12 +2,7 @@ import { assert, assertEquals } from '@std/assert';
 
 import { EMBEDDING_DIMENSIONS, MODELS } from './models.ts';
 
-/**
- * The web app and the edge functions run on different runtimes and cannot share
- * a module, so the pinned ids are written in two files. This reads the web one
- * as text and fails when the two drift, which is the only thing standing between
- * a chat model changing in one place and a silent behavior change in the other.
- */
+/** The web app and the edge functions pin model ids separately; this reads the web file as text. */
 const WEB_MODELS = new URL('../../../web/lib/models.ts', import.meta.url);
 
 async function webSource(): Promise<string> {

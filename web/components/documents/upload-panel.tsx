@@ -17,29 +17,18 @@ import { useSupabaseUpload } from '@/hooks/use-supabase-upload';
 import { ACCEPTED_MIME_TYPES, acceptedTypeFor, MAX_UPLOAD_BYTES } from '@/lib/documents/uploads';
 import type { SpaceOption } from '@/lib/spaces/spaces';
 
-/**
- * The space selector and the dropzone are on one screen because choosing the
- * space is the permission decision. Splitting them into two steps is how a
- * document ends up in the wrong place.
- */
+/** The space selector and the dropzone on one screen, since the space is the permission. */
 export function UploadPanel({ spaces }: { spaces: readonly SpaceOption[] }) {
   const [spaceId, setSpaceId] = useState(spaces[0]?.id ?? '');
   const [error, setError] = useState<string | null>(null);
-  // A ref rather than state: nothing renders from it, and recording an object
-  // is how the effect avoids enqueuing the same upload twice, not something the
-  // screen reacts to. Keyed by the full object path, because the upload hook
-  // only ever adds to its list of successes: the same name uploaded into a
-  // second space is a second object and has to be filed as one.
+  // Objects already enqueued, keyed by full path so the same name in two spaces counts twice.
   const recorded = useRef(new Set<string>());
-  // The space the objects now going up were written under. The storage policy
-  // reads that first path segment back, so a record naming any other space
-  // describes an object that is not there.
+  // The space the objects now going up were written under.
   const uploadedInto = useRef(spaceId);
 
   const upload = useSupabaseUpload({
     bucketName: 'documents',
-    // The first path segment is the permission decision. The storage policy
-    // reads it back and checks it against the caller's visible spaces.
+    // The storage policy reads this first path segment back against the caller's spaces.
     path: spaceId,
     allowedMimeTypes: [...ACCEPTED_MIME_TYPES],
     maxFileSize: MAX_UPLOAD_BYTES,

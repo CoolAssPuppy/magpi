@@ -1,8 +1,4 @@
-// Building the injected clients a job body takes, once, from the environment.
-//
-// This is the only place the workers read the environment. The job bodies never
-// do, which is what lets a test run one directly and what makes moving off Edge
-// Functions a change here rather than in three job bodies.
+// Builds the injected clients a job body takes. The only place the workers read the environment.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -47,13 +43,7 @@ export function jobDepsFromEnv(source: EnvSource = denoEnv): JobDeps {
   };
 }
 
-/**
- * A worker is machinery, not a user surface.
- *
- * Only something already holding the service role key may start one, which is
- * the scheduler and nothing else. Compared in constant time because the header
- * is attacker-supplied and a byte-at-a-time comparison leaks the key.
- */
+/** Only a caller holding the service role key may start a worker. Compared in constant time. */
 export function requireWorkerCaller(headers: Headers, source: EnvSource = denoEnv): void {
   const token = bearerToken(headers.get('authorization'), 'missing worker credential');
   if (!timingSafeEqual(token, coreEnv(source).serviceRoleKey)) {

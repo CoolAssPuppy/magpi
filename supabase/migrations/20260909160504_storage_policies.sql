@@ -1,9 +1,4 @@
--- Storage policies. `supabase db diff` does not track the storage schema, so
--- these are hand-written and stay hand-written.
---
--- Objects are keyed `${space_id}/${document_id}/${filename}`, so the first path
--- segment is the permission decision, checked against the same visibility set as
--- every other table.
+-- Storage policies, hand-written because `supabase db diff` does not track the storage schema.
 
 create policy documents_bucket_select on storage.objects
   for select to authenticated

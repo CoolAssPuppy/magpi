@@ -1,29 +1,11 @@
-// The wall-clock budget every job body runs under.
-//
-// Background processing runs on Edge Functions, which have a CPU and wall-clock
-// ceiling. That ceiling is not worked around here: a job that runs past it stops
-// and says which stage it was in, so a stalled import shows a real error rather
-// than a spinner that never resolves. The number itself is measured and written
-// into docs/limits.md.
+// The wall-clock budget every job body runs under. A job past it stops and names its stage.
 
 import type { ClockDeps } from '../deps.ts';
 
-/**
- * Comfortably inside the platform ceiling, so the job reports its own timeout
- * rather than being killed mid-write and leaving a job row marked running
- * forever.
- */
+/** Sits inside the Edge Function ceiling so the job reports its own timeout before it is killed. */
 export const DEFAULT_BUDGET_MS = 45_000;
 
-/**
- * The message is a clause, lowercase and unpunctuated, because it is written
- * into an error column and joined into a sentence by whoever renders it.
- *
- * It does not name the stage. Every caller already has the stage separately, in
- * ingest_jobs.stage or in the prefix the dream job writes, and repeating it here
- * produced "timed out during synthesize, ran out of time during synthesize".
- * Seconds rather than milliseconds, because a person reads this column.
- */
+/** Budget-exceeded error. Message is a lowercase clause for an error column, without the stage. */
 export class StageTimeout extends Error {
   readonly stage: string;
   readonly elapsedMs: number;

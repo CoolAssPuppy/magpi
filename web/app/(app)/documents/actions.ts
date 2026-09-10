@@ -10,12 +10,7 @@ import { createServiceClient } from '@/lib/supabase/service';
 
 const enqueueSchema = z.object({
   spaceId: z.uuid(),
-  // The name of the object inside the space's own folder, not a path. The
-  // caller used to send the whole path, which the service client wrote and the
-  // ingest worker read back with no space check of its own, so naming another
-  // space's object had that object indexed and quoted into a space the caller
-  // could see. A slash is refused rather than stripped: a name containing one
-  // did not come from the dropzone.
+  // A name inside the space's own folder, not a path. A slash is refused, not stripped.
   objectName: z
     .string()
     .trim()
@@ -26,12 +21,7 @@ const enqueueSchema = z.object({
   mimeType: z.enum(ACCEPTED_MIME_TYPES),
 });
 
-/**
- * Records an uploaded object as a document and queues it for reading.
- *
- * The plan check runs in the database, not here. A client that skipped this
- * action entirely still cannot get past `check_ingest_allowed`.
- */
+/** Records an uploaded object as a document and queues it. The plan check runs in the database. */
 export async function enqueueUploadedDocument(
   input: z.input<typeof enqueueSchema>,
 ): Promise<ActionState<{ documentId: string }>> {
@@ -41,8 +31,7 @@ export async function enqueueUploadedDocument(
 
     const { spaceId, objectName, title, mimeType } = parsed.data;
 
-    // The caller's own client, so RLS proves they are in this space before the
-    // service role touches anything.
+    // The caller's own client, so RLS proves they are in this space first.
     const { data: space } = await supabase
       .from('spaces')
       .select('id')
@@ -90,15 +79,13 @@ export async function enqueueUploadedDocument(
     });
 
     if (jobError) {
-      // The document row is already in. Saying so is the difference between a
-      // file that looks queued and a file the reader knows to upload again.
+      // The document row is already in, so the message tells the reader to upload again.
       return databaseErrorState('queuing an uploaded document', jobError, {
         fallback: 'That file was saved but nothing was queued to read it. Upload it again.',
       });
     }
 
-    // The row the plan meter is computed from. Discarding this error let an
-    // organization pass its document limit with nothing recording that it had.
+    // The row the plan meter is computed from, so a failure here is not discarded.
     const { error: usageError } = await service
       .from('usage_events')
       .insert({ org_id: orgId, kind: 'document_ingested', quantity: 1 });

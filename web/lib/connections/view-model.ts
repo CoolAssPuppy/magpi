@@ -69,11 +69,7 @@ function toSummary(connection: ConnectionRecord, spaceName: string, now: Date): 
   };
 }
 
-/**
- * Providers are rows, so this is the whole connections page: every enabled
- * provider, plus any provider the caller already has a connection to even after
- * it was turned off, so that connection is never stranded off the page.
- */
+/** Every enabled provider, plus any disabled one the caller still has a connection to. */
 export function buildProviderListings({
   providers,
   connections,
@@ -100,11 +96,7 @@ export function buildProviderListings({
       scopeSelectionKind: provider.scope_selection_kind,
       connections: connections
         .filter((connection) => connection.provider === provider.slug)
-        // RLS already guarantees a visible connection has a visible space, so
-        // this is not the permission check. It handles a torn read: connections
-        // and spaces are two queries, and a space can leave the caller's set
-        // between them. Rendering a row with no space name is worse than
-        // dropping it until the next read.
+        // Not a permission check. It drops a row from a torn read where the space name is missing.
         .flatMap((connection) => {
           const spaceName = spaceNames.get(connection.space_id);
           return spaceName ? [toSummary(connection, spaceName, now)] : [];

@@ -1,16 +1,5 @@
 #!/usr/bin/env node
-/**
- * Fails when the upload surface accepts a type the extractor cannot read.
- *
- * The two lists are in different runtimes, TypeScript for the browser and Deno
- * for the worker, so nothing imports across them and nothing type-checks the
- * pair. They were already out of step: the dropzone offered .docx and
- * extract.ts answers 415 for it, so a Word document uploaded, reported success,
- * and failed three jobs later with a message about a mime type.
- *
- * Only one direction is an error. The extractor knowing a type the upload
- * surface does not offer is how a sync driver's content gets read.
- */
+/** Fails when the upload surface accepts a mime type the extractor cannot read. */
 
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';

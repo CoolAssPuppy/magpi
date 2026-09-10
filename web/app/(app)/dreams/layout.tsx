@@ -4,10 +4,7 @@ import { PageHeader } from '@/components/app/page-header';
 import { DreamTabs } from '@/components/dreams/dream-tabs';
 import { DREAM_DEFINITION } from '@/lib/dreams/status';
 
-/**
- * The word is defined here, once, on the first screen it appears on. Everything
- * below uses it without apology.
- */
+/** Defines the word "dream" once, in the header above every dreams screen. */
 export default function DreamsLayout({ children }: { children: ReactNode }) {
   return (
     <>

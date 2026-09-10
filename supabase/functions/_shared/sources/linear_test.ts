@@ -101,8 +101,7 @@ Deno.test('a workspace larger than one pass resumes into the backlog', async () 
   const secondPass = await linearDriver.listChanges(creds(), second, { cursor: firstPass.cursor });
 
   assertEquals(variablesOf(second.calls[0]).after, 'eyJvZmZzZXQiOjV9');
-  // Nothing here says which direction updatedAt runs in, which is the point:
-  // the walk covers the page whichever way the provider ordered it.
+  // The walk covers the page whichever direction the provider ordered updatedAt in.
   assertEquals(secondPass.documents.map((document) => document.externalId), [
     '0a5e94c2-6d81-43f7-b39e-84c107f2a6bd',
     '6d2b81f4-0c53-49ae-97b2-5f8e30d1c47a',

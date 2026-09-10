@@ -21,12 +21,10 @@ serveFunction('sync-worker', async (core) => {
   const results: (SyncResult & { connection_id: string })[] = [];
   let contended = 0;
   for (const connection of connections) {
-    // A registry row can exist before its driver is deployed. Skipping is right;
-    // failing the batch on it is not.
+    // A registry row can exist before its driver is deployed, so skip rather than fail the batch.
     if (!hasDriver(connection.provider)) continue;
 
-    // Two passes over one connection file the same documents twice and race on
-    // the unique index that is supposed to stop exactly that.
+    // Two passes over one connection file the same documents twice and race on the unique index.
     if (!(await claimConnectionForSync(deps.db, connection.id, deps.http.now()))) {
       contended += 1;
       continue;

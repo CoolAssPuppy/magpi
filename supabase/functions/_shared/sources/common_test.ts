@@ -117,12 +117,7 @@ Deno.test('an unparseable timestamp falls back to the injected clock', () => {
   assertEquals(isoStamp('2026-01-02T03:04:05Z', d), '2026-01-02T03:04:05.000Z');
 });
 
-/**
- * The refresh grant and the code exchange are the same request to the same
- * endpoint, so a provider that disagrees about one disagrees about both. These
- * pin the two quirks that matter to a renewal, which the grant used to know
- * nothing about while the broker's own copy knew half of them.
- */
+/** The refresh grant and the code exchange are one request, so both quirks are pinned here. */
 
 function capturing(payload: unknown, status = 200): SourceDeps & { calls: RequestInit[] } {
   const calls: RequestInit[] = [];
@@ -163,8 +158,6 @@ Deno.test('a provider that sends credentials in the form gets no header', async 
 
 Deno.test('a renewed token nested in an envelope is lifted out, not read past', async () => {
   // Slack puts a bot token at the top level and the person's token underneath.
-  // Storing the top one renews the connection with a credential that cannot
-  // read what the connection was set up to read.
   const outcome = await refreshWithTokenEndpoint(
     'slack',
     'Slack',
@@ -182,8 +175,7 @@ Deno.test('a renewed token nested in an envelope is lifted out, not read past', 
 });
 
 Deno.test('the log names a provider by its slug and the user by its display name', async () => {
-  // status_detail is read by a person and the log line is read by whoever is
-  // grepping for a slug. One string cannot be both.
+  // status_detail is read by a person; the log line is grepped by slug.
   const logged: unknown[][] = [];
   const original = console.error;
   console.error = (...args: unknown[]) => {

@@ -13,15 +13,12 @@ function headers(authorization?: string): Headers {
 }
 
 Deno.test('the scheduler holding the service role key may start a worker', () => {
-  // Explicitly that it returned, not merely that the line ran. If this check
-  // ever answered with a boolean instead of throwing, a bare call would pass
-  // here forever while refusing every real caller.
+  // Checks that it returned, so a check answering with a boolean would fail here.
   assertEquals(requireWorkerCaller(headers('Bearer service-role-key'), ENV), undefined);
 });
 
 Deno.test('a signed-in user cannot start a worker', () => {
-  // A worker is machinery. Anyone reaching it directly is either confused or
-  // trying to make the platform do unpaid work.
+  // A worker is machinery, so a signed-in user reaching it directly is refused.
   const err = apiErrorFrom(() => requireWorkerCaller(headers('Bearer a.user.jwt'), ENV));
   assertEquals(err.status, 403);
   assertEquals(err.code, 'forbidden');

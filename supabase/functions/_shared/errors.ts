@@ -1,8 +1,4 @@
-// The error envelope every function answers with:
-//   { "error": "code_string", "message": "human readable", "detail": {} }
-//
-// Errors are values at the HTTP boundary and thrown inside. A handler throws an
-// ApiError; the shell that wraps it turns that into this envelope once.
+// The error envelope every function answers with: { error, message, detail }.
 
 export type ErrorDetail = Record<string, unknown>;
 
@@ -41,12 +37,7 @@ export class ApiError extends Error {
   }
 }
 
-/**
- * The one shape a caller may not learn anything from.
- *
- * Every misconfiguration answers with this: the log line carries which secret
- * is missing, the response says nothing an attacker can enumerate.
- */
+/** The 500 every misconfiguration answers with; which secret is missing goes to the log only. */
 export function misconfigured(logDetail: string): ApiError {
   console.error('misconfigured:', logDetail);
   return new ApiError(500, 'misconfigured', 'server is not configured');
@@ -87,8 +78,7 @@ export function toErrorResponse(err: unknown): Response {
   return jsonResponse(errorEnvelope('internal', 'internal server error'), { status: 500 });
 }
 
-// retry_after sits at the top level of the envelope as well as in the header,
-// because a fetch wrapper reading the body should not have to reach for headers.
+// retry_after sits in the envelope body as well as in the Retry-After header.
 export function rateLimited(retryAfterSeconds: number, message = 'rate limit exceeded'): ApiError {
   const retry = Math.max(1, Math.ceil(retryAfterSeconds));
   return new ApiError(429, 'rate_limited', message, {
@@ -97,12 +87,7 @@ export function rateLimited(retryAfterSeconds: number, message = 'rate limit exc
   });
 }
 
-/**
- * Pulls the token out of an `Authorization: Bearer <token>` header.
- *
- * The message stays a parameter: a worker invocation and a signed-in user are
- * told different things about what is missing.
- */
+/** Pulls the token out of an `Authorization: Bearer <token>` header. */
 export function bearerToken(authorization: string | null, missing: string): string {
   const match = /^Bearer\s+(.+)$/i.exec((authorization ?? '').trim());
   if (!match?.[1]) throw new ApiError(401, 'unauthorized', missing);

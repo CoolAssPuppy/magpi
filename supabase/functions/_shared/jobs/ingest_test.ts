@@ -99,12 +99,7 @@ function harness(options: {
   };
 }
 
-/**
- * A live Notion connection, as loadConnection reads it.
- *
- * The token is really encrypted because the job body really decrypts it, so a
- * placeholder string fails before the driver is ever called.
- */
+/** A live Notion connection. The token is really encrypted because the job body decrypts it. */
 async function notionConnection(): Promise<Record<string, unknown>> {
   const provider = 'notion';
   return {
@@ -174,8 +169,7 @@ Deno.test('the job walks every stage so progress is visible while it runs', asyn
   const h = harness({});
   try {
     await runIngestJob(JOB, h.deps);
-    // No 'fetch' write: claim_ingest_jobs set the row running before the body
-    // was handed the record, and the column already defaults to fetch.
+    // No 'fetch' write: claim_ingest_jobs set the row running and the column defaults to fetch.
     const stages = writes(h.stub, 'ingest_jobs').map((row) => row.stage);
     assertEquals(stages, ['extract', 'chunk', 'embed', 'store', 'store']);
     assertEquals(writes(h.stub, 'ingest_jobs').at(-1)?.status, 'succeeded');
@@ -185,8 +179,7 @@ Deno.test('the job walks every stage so progress is visible while it runs', asyn
 });
 
 Deno.test('the job body does not rewrite the claim it was handed', async () => {
-  // claimed_at is how long a job has been held. Rewriting it here would reset
-  // that clock to the moment the body started.
+  // claimed_at is how long a job has been held, so the body must not rewrite it.
   const h = harness({});
   try {
     await runIngestJob(JOB, h.deps);
@@ -299,9 +292,7 @@ Deno.test('a file type that cannot be read fails at extract, not at store', asyn
 });
 
 Deno.test('a job killed while it was downloading says fetch, not extract', async () => {
-  // The fetch is the stage most likely to run long, and it is the one stage
-  // with no checkpoint of its own after it. Reporting the next stage tells a
-  // user their file failed being read when it never finished arriving.
+  // Fetch is the stage most likely to run long and has no checkpoint of its own after it.
   const h = harness({ clock: steppingClock(NOW, 60_000), budgetMs: 1000 });
   try {
     const result = await runIngestJob(JOB, h.deps);
@@ -316,9 +307,7 @@ Deno.test('a job killed while it was downloading says fetch, not extract', async
 });
 
 Deno.test('a job that runs out of time says which stage it died in', async () => {
-  // Walking the jump forward one reading at a time stops the job at each
-  // checkpoint in turn, so this reads the stages off real rows rather than off
-  // the one checkpoint a clock that jumps immediately can reach.
+  // Walking the jump forward one reading at a time stops the job at each checkpoint in turn.
   const stages = new Set<string>();
 
   for (let ticks = 1; ticks <= 20; ticks += 1) {
@@ -330,11 +319,9 @@ Deno.test('a job that runs out of time says which stage it died in', async () =>
 
       const final = writes(h.stub, 'ingest_jobs').at(-1);
       assertEquals(final?.status, 'timeout');
-      // The column and the result have to agree, or the page and the caller
-      // name different stages for the same job.
+      // The column and the result have to name the same stage.
       assertEquals(final?.stage, result.stage);
-      // The stage lives in its own column, so the message says what the column
-      // cannot: how long it ran and what the budget was.
+      // The message says what the stage column cannot: how long it ran and the budget.
       assert(
         !String(final?.error).includes(result.stage),
         'the message repeats the stage column',
@@ -348,8 +335,7 @@ Deno.test('a job that runs out of time says which stage it died in', async () =>
   for (const stage of stages) {
     assert(INGEST_STAGES.includes(stage), `a job named a stage nothing else knows: ${stage}`);
   }
-  // Not vacuous: a job that only ever died at its first checkpoint would prove
-  // nothing about the stages after it.
+  // Not vacuous: dying only at the first checkpoint proves nothing about later stages.
   assert(stages.size > 1, `only one stage was ever reached: ${[...stages].join(', ')}`);
 });
 
@@ -459,8 +445,7 @@ Deno.test('an uploaded document records what it weighs and meters the storage', 
 });
 
 Deno.test('a re-import meters only what the file grew by', async () => {
-  // The admin page sums these events, so charging the whole file twice would
-  // report storage nobody is using.
+  // The admin page sums these events, so charging the whole file twice overreports storage.
   const h = harness({
     document: uploadDocument({ size_bytes: 10 }),
     files: { 'uploads/runbook.md': '# Runbook\n\nRestart it, twice.' },
@@ -475,8 +460,7 @@ Deno.test('a re-import meters only what the file grew by', async () => {
 });
 
 Deno.test('a synced document weighs its text and meters no storage', async () => {
-  // Nothing from a source occupies a bucket, so metering it would report storage
-  // the organization is not using.
+  // Nothing from a source occupies a bucket, so there is no storage to meter.
   const connectionRow = await notionConnection();
 
   const h = harness({
@@ -527,9 +511,7 @@ Deno.test('a synced document weighs its text and meters no storage', async () =>
 });
 
 Deno.test('a source that failed for the moment goes back on the queue', async () => {
-  // The driver's own message promises the next pass will try again. A terminal
-  // row makes that false, and leaves the three attempts claim_ingest_jobs
-  // budgets for with no path that can reach them.
+  // The driver promises another pass, and claim_ingest_jobs budgets three attempts for it.
   const h = await sourceHarness(() => Promise.resolve(new Response('{}', { status: 500 })));
   try {
     const result = await runIngestJob({ ...JOB, connection_id: 'connection-1' }, h.deps);
@@ -537,8 +519,7 @@ Deno.test('a source that failed for the moment goes back on the queue', async ()
 
     const final = writes(h.stub, 'ingest_jobs').at(-1);
     assertEquals(final?.status, 'queued');
-    // The reason stays on the row, so a job the cap gives up on has something
-    // written before the cap overwrites it.
+    // The reason stays on the row, so a job the cap retires has something written.
     assert(String(final?.error).includes('try again'), String(final?.error));
   } finally {
     await h.stub.close();
@@ -546,8 +527,7 @@ Deno.test('a source that failed for the moment goes back on the queue', async ()
 });
 
 Deno.test('a source that refused the credential is terminal rather than retried', async () => {
-  // Three more attempts against a revoked token cost three more round trips and
-  // end the same way. Reconnecting is the only fix, and the message says so.
+  // Reconnecting is the only fix for a revoked token, and the message says so.
   const h = await sourceHarness(() => Promise.resolve(new Response('{}', { status: 401 })));
   try {
     const result = await runIngestJob({ ...JOB, connection_id: 'connection-1' }, h.deps);
@@ -562,8 +542,7 @@ Deno.test('a source that refused the credential is terminal rather than retried'
 });
 
 Deno.test('a requeued job does not touch the claim columns', async () => {
-  // attempts is what retires the job in the end. Rewriting it from the body
-  // would either reset the budget or spend it twice for one failure.
+  // attempts retires the job, so rewriting it here would reset or double spend the budget.
   const h = await sourceHarness(() => Promise.resolve(new Response('{}', { status: 500 })));
   try {
     await runIngestJob({ ...JOB, connection_id: 'connection-1' }, h.deps);
@@ -576,9 +555,7 @@ Deno.test('a requeued job does not touch the claim columns', async () => {
 });
 
 Deno.test('a terminal write the database refused is not swallowed', async () => {
-  // The row stays running and claim_ingest_jobs takes it back after the stale
-  // window, so the import is not lost. What is lost, if this write is ignored,
-  // is any record of why a finished job was run a second time.
+  // The job is reclaimed after the stale window, but nothing records why it ran twice.
   const h = harness({
     reply: (request) =>
       request.table === 'ingest_jobs' && request.method === 'PATCH'

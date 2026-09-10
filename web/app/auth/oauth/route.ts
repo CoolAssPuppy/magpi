@@ -18,9 +18,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/auth/error?error=${encodeURIComponent(error.message)}`);
   }
 
-  // Behind a load balancer the origin is the balancer's, not the user's, so the
-  // forwarded host is the one to redirect to. Locally there is nothing in
-  // between and the header is absent.
+  // Behind a load balancer the origin is the balancer's, so redirect to the forwarded host.
   const forwardedHost = request.headers.get('x-forwarded-host');
   if (process.env.NODE_ENV !== 'development' && forwardedHost) {
     return NextResponse.redirect(`https://${forwardedHost}${next}`);

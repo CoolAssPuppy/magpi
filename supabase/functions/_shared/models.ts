@@ -1,11 +1,4 @@
-// Every model id the edge functions use.
-//
-// This file MUST stay in step with web/lib/models.ts. Two runtimes cannot share
-// a module, so the ids are written twice and models_test.ts reads the web file
-// and fails when the two disagree. Change one, change the other, in one commit.
-//
-// Pinned to exact ids, never a floating alias, so a provider changing what
-// "latest" means cannot change our behavior between two deploys.
+// Every model id the edge functions use. Must match web/lib/models.ts; models_test.ts checks it.
 
 export const MODELS = {
   /** Pinned 2026-09-09. 1536 dimensions, which is why chunks.embedding is vector(1536). */
@@ -20,10 +13,7 @@ export const MODELS = {
   dream: 'gpt-4.1-2025-04-14',
 } as const;
 
-/**
- * Changing this changes chunks.embedding, which is a migration and a full
- * re-embed. Decided once.
- */
+/** Changing this means a migration on chunks.embedding and a full re-embed. */
 export const EMBEDDING_DIMENSIONS = 1536;
 
 export type ModelPurpose = keyof typeof MODELS;

@@ -32,8 +32,7 @@ describe('what a screen shows when it fails', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Nothing was deleted.');
   });
 
-  // In production Next replaces the message with generic digest text, so a
-  // sentence built around it reads as nonsense on the screen that matters.
+  // In production Next replaces the message with generic digest text.
   it('keeps the thrown message off the screen', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     render(
@@ -65,9 +64,7 @@ describe('what a screen shows when it fails', () => {
     expect(reset).toHaveBeenCalledTimes(1);
   });
 
-  // The digest is the only handle on which failure this was once the message
-  // has been replaced, so it has to reach the logs even though it is useless
-  // on screen.
+  // The digest is the only handle on which failure this was once the message has been replaced.
   it('logs the digest, which is the only way back to the real failure', () => {
     const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
     render(

@@ -1,9 +1,6 @@
 import type { ReactNode } from 'react';
 
-/**
- * A knowledge base is empty on day one for every single user, so this is a
- * primary screen and not a fallback. It always names the next action.
- */
+/** The day-one screen for an empty knowledge base. It always names the next action. */
 export function EmptyState({
   title,
   description,

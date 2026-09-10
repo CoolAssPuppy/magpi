@@ -1,24 +1,13 @@
 import { errorState, type ActionState } from './state';
 
-/**
- * The three fields of a PostgrestError this reads. Narrow rather than the class
- * itself, so a caller's test can hand it a refusal without constructing one.
- */
+/** The three fields of a PostgrestError this reads, narrowed so a test can hand it a refusal. */
 export type DatabaseError = {
   readonly code: string;
   readonly message: string;
   readonly details: string;
 };
 
-/**
- * Product copy for a database refusal, with the raw error kept server-side.
- *
- * A PostgrestError message is written for whoever wrote the schema. Eleven
- * action paths returned it straight to the screen, so a policy denial rendered
- * as `new row violates row-level security policy for table "conversations"`.
- * That names a table, tells the reader nothing they can do about it, and
- * describes the permission model to anyone probing it.
- */
+/** Product copy for a database refusal, with the raw error logged server-side only. */
 export function databaseErrorState(
   context: string,
   error: DatabaseError,

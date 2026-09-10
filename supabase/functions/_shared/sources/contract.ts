@@ -1,8 +1,4 @@
-// What a source driver promises, and nothing more.
-//
-// Four providers answer four different APIs. The contract is what ingest,
-// sync and the scope picker are written against, so adding a fifth provider is
-// one file plus a registry row, and none of the callers change.
+// What a source driver promises: the interface ingest, sync and the picker are written against.
 
 import type { ClockDeps, HttpDeps } from '../deps.ts';
 import type { ScopeSelectionKind } from '../providers.ts';
@@ -31,22 +27,9 @@ export interface SourceDocumentRef {
 
 export interface ChangePage {
   documents: SourceDocumentRef[];
-  /**
-   * Where the next incremental pass resumes. Each provider spells this
-   * differently: Notion a last_edited_time, Linear an updatedAt, Slack a channel
-   * timestamp, Drive an opaque page token. The column stores whatever the driver
-   * hands back and nothing else reads it.
-   */
+  /** Where the next incremental pass resumes. Each provider spells this differently. */
   cursor: string | null;
-  /**
-   * True when the driver stopped on its own request cap rather than on the end
-   * of the changes.
-   *
-   * `runSyncJob` walks again from the cursor above until this is false or the
-   * run's budget is gone, so a driver that sets it must also hand back a cursor
-   * that resumes where it stopped. Setting it without moving the cursor says
-   * the rest belongs to the next run.
-   */
+  /** True when the driver stopped on its own request cap rather than at the end of the changes. */
   hasMore: boolean;
 }
 
@@ -55,11 +38,7 @@ export interface FetchedDocument extends SourceDocumentRef {
   text: string;
 }
 
-/**
- * One thing the picker can offer. The kind of thing they all are is a property
- * of the driver, named once on `scopeSelectionKind`, rather than repeated on
- * every option in a listing that cannot mix two.
- */
+/** One thing the picker can offer. What kind of thing is named on `scopeSelectionKind`. */
 export interface ScopeOption {
   id: string;
   name: string;
@@ -72,14 +51,7 @@ export interface RefreshInput {
   tokenUrl: string;
 }
 
-/**
- * What a refresh attempt produced.
- *
- * A value rather than a thrown error, because the caller has to write the
- * outcome onto the connection either way: `failed` becomes status 'expired'
- * with a detail the user can read, and `not_supported` is a provider whose
- * tokens simply do not expire, which is not a problem to report.
- */
+/** What a refresh attempt produced, as a value the caller writes onto the connection. */
 export type RefreshOutcome =
   | {
     kind: 'refreshed';
@@ -92,23 +64,11 @@ export type RefreshOutcome =
 
 export interface SourceDriver {
   readonly provider: string;
-  /**
-   * What a person calls this source.
-   *
-   * Separate from the slug because the slug is a database key and reaches a URL,
-   * and every message a driver writes ends up in connections.status_detail,
-   * which a user reads. "google_drive refused to renew this connection" is what
-   * happens without this.
-   */
+  /** What a person calls this source, as opposed to the slug. Reaches status_detail. */
   readonly displayName: string;
   readonly scopeSelectionKind: ScopeSelectionKind | null;
 
-  /**
-   * Documents changed since `cursor`, newest state first, plus where to resume.
-   *
-   * A null cursor means a first pass. A driver decides how far back that reaches;
-   * none of them walk the whole history in one call.
-   */
+  /** Documents changed since `cursor`, newest state first, plus where to resume. */
   listChanges(
     creds: SourceCredentials,
     deps: SourceDeps,
@@ -129,14 +89,7 @@ export interface SourceDriver {
   refresh(deps: SourceDeps, input: RefreshInput): Promise<RefreshOutcome>;
 }
 
-/**
- * Raised by a driver when the provider refused it.
- *
- * The message reaches connections.status_detail, which a user reads, so it says
- * what they can do about it rather than what the HTTP status was. It never
- * carries anything the provider sent back, because a provider's error body can
- * quote the request, and the request carries the token.
- */
+/** Raised by a driver when the provider refused it. The message reaches status_detail. */
 export class SourceError extends Error {
   readonly provider: string;
   /** True when reconnecting is the fix, which the connections page shows. */

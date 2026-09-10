@@ -1,6 +1,4 @@
--- Signup builds the permission model. Every later isolation test assumes the
--- shape this trigger produces, so if the shape is wrong those tests pass while
--- guarding nothing.
+-- Signup builds the permission model that every later isolation test assumes.
 
 begin;
 
@@ -25,8 +23,7 @@ select is(
   1, 'signing up creates exactly one organization for the new user'
 );
 
--- The first member of an org has to be able to invite and to change the plan.
--- Anything below owner leaves a brand new org with nobody who can administer it.
+-- The first member must be owner, or a new org has nobody who can administer it.
 select is(
   (select role::text from public.org_members
    where user_id = 'a0000000-0000-4000-8000-000000000001'),

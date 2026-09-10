@@ -37,19 +37,7 @@ const READER: Omit<SessionContext, 'supabase'> = {
   role: 'member',
 };
 
-/**
- * A postgrest and edge function client that records what was asked of it instead
- * of talking to a database. Recording is the point: these modules are the SQL
- * behind a screen, and a test that never looks at the filters cannot tell a
- * query scoped to one space from one that reads the whole table.
- *
- * Rows outside the caller's spaces are absent rather than an error, which is how
- * row level security leaves a table for one reader, so a test spells out what a
- * reader can see by queueing only those rows.
- *
- * The cast is confined to this factory. It is the one place a test double has to
- * stand in for a client whose full surface it does not implement.
- */
+/** A postgrest and edge function client that records calls and replays queued responses. */
 export function recordingContext({
   responses,
   session,
@@ -62,9 +50,7 @@ export function recordingContext({
     Object.entries(responses).map(([source, list]) => [source, [...list]]),
   );
 
-  // Claimed when the query is created rather than when it is awaited, so a
-  // reader that issues its queries concurrently still reads them back in the
-  // order the source file writes them.
+  // Claimed when the query is created, not when it is awaited, so concurrent queries stay in order.
   function claim(
     source: string,
     call: RecordedCall,

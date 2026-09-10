@@ -22,10 +22,7 @@ create unique index spaces_org_kind_idx
 
 create index spaces_org_id_idx on public.spaces (org_id);
 
--- The target for carrying org_id through every content table, the same way
--- documents (id, space_id) carries space_id. Without it a space could be moved
--- between organizations and its content would follow, to be metered, billed and
--- plan-counted against an org it does not belong to.
+-- The target for the composite foreign keys that carry org_id through every content table.
 alter table public.spaces add constraint spaces_id_org_key unique (id, org_id);
 
 alter table public.spaces
@@ -41,20 +38,7 @@ create table public.space_members (
 
 create index space_members_user_id_idx on public.space_members (user_id);
 
--- What a space is, and whose, is decided once.
---
--- The grant in 95_grants.sql narrows `authenticated` to name and
--- dreaming_enabled, which is what stopped a member moving a space between
--- organizations. A grant cannot restrain service_role, and every Edge Function
--- holds that key, so the rule lives here where it applies to every role.
---
--- kind is the one with teeth: promote a team space to 'org' and
--- sync_org_space_membership enrols every future member of the organization into
--- it, so a private team space becomes company-wide without a single membership
--- row being written by hand.
---
--- Nothing in the product updates any of these three. The only writes to this
--- table are the name, from the settings page, and the dreaming toggle.
+-- kind, org_id and owner are fixed at creation, for every role including service_role.
 create or replace function public.spaces_identity_is_immutable()
 returns trigger
 language plpgsql

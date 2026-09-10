@@ -1,9 +1,4 @@
-// The one HTTP stub every driver test uses, so four drivers do not grow four
-// copies of the same fake.
-//
-// Every response comes from a recorded fixture on disk. No test in this suite
-// reaches a real API: a driver test must pass with no credentials and no
-// network.
+// The one HTTP stub every driver test uses. Every response comes from a recorded fixture on disk.
 
 import { fixedClock } from '../../deps.ts';
 import type { SourceDeps } from '../contract.ts';
@@ -32,24 +27,13 @@ export interface SourceStub extends SourceDeps {
 /** The instant every driver fixture was recorded against. */
 export const FIXTURE_NOW = new Date('2026-09-09T12:00:00.000Z');
 
-/**
- * Reads one recorded response.
- *
- * Fixtures live beside the drivers so a reader can see exactly what the driver
- * was written against, and so re-recording one is a reviewable diff.
- */
+/** Reads one recorded response from the fixtures beside the drivers. */
 export async function loadFixture(provider: string, name: string): Promise<unknown> {
   const path = new URL(`../fixtures/${provider}/${name}.json`, import.meta.url);
   return JSON.parse(await Deno.readTextFile(path));
 }
 
-/**
- * A fetch that answers from the first matching route.
- *
- * An unmatched request is a 599 with an empty body rather than a thrown error,
- * so a driver that calls an endpoint the test did not expect fails on its own
- * error handling instead of on the stub's.
- */
+/** A fetch that answers from the first matching route. An unmatched request is an empty 599. */
 export function stubSource(routes: StubRoute[], now: Date = FIXTURE_NOW): SourceStub {
   const calls: StubCall[] = [];
 

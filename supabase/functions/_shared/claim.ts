@@ -1,17 +1,6 @@
 import { ApiError } from './errors.ts';
 
-/**
- * Committing a parked OAuth token to the account that actually earned it.
- *
- * connections-callback runs on an origin with no session cookie, so it can name
- * the account that started a flow but cannot show that the browser finishing it
- * is that account. It parks the token instead. This is where the two are
- * compared, on a request carrying a verified JWT.
- *
- * The comparison is the whole security property. A link handed to someone else
- * completes the provider exchange perfectly well and arrives here as the wrong
- * user, which is the case that must not store anything.
- */
+/** A parked OAuth token, stored only when the caller's JWT matches the account that started it. */
 export interface PendingConnection {
   userId: string;
   provider: string;
@@ -27,13 +16,7 @@ export interface PendingConnection {
 }
 
 export interface ClaimPort {
-  /**
-   * Consumes the ticket and returns what it was holding, or null if it is
-   * unknown, expired, or already used.
-   *
-   * Single use regardless of who asked. A mismatched claim must not leave a
-   * ticket behind for a second attempt.
-   */
+  /** Consumes the ticket once, whoever asks, and returns what it held or null. */
   consumePending(ticket: string): Promise<PendingConnection | null>;
   storeConnection(pending: PendingConnection): Promise<{ connectionId: string }>;
   /** Synchronous: a log line, and never a reason to fail the claim. */
@@ -60,17 +43,13 @@ export async function claimConnection(
 ): Promise<ClaimResult> {
   const pending = await port.consumePending(ticket);
 
-  // Unknown, expired, and already claimed are one answer on purpose: telling
-  // them apart tells a caller whether a ticket they guessed ever existed.
+  // Unknown, expired, and already claimed share one answer, so a guessed ticket learns nothing.
   if (!pending) {
     throw new ApiError(410, 'claim_expired', 'that connection attempt has expired');
   }
 
   if (pending.userId !== userId) {
-    // Recorded against the account that would have received the token, since
-    // that is the account under attack. The ticket is already consumed and the
-    // ciphertext is bound by AAD to pending.userId, so it is unusable here even
-    // before it is dropped.
+    // Recorded against the account that would have received the token.
     port.audit({
       action: 'conn.claim_rejected',
       actor: `user:${userId}`,

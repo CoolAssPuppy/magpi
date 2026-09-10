@@ -1,18 +1,4 @@
-// Creating the run a person asked for, in the state that says it is already
-// taken.
-//
-// dream-worker drains this table by claiming rows that are `queued`, because a
-// select is not a claim and two workers overlapping is the normal case rather
-// than the rare one. A row inserted here as `queued` and then run inline is
-// visible to that drain for as long as the insert takes to answer, and a cron
-// tick landing in that window runs the same synthesis a second time: many
-// sequential model calls, two sets of outputs, one row recording one of them.
-//
-// The insert is the claim. Writing `running` in the statement that creates the
-// row leaves no window to lose, which is better than claiming afterwards and
-// then having to tell the user their run was taken by something they cannot
-// see. started_at is written here rather than left to the job body because the
-// abandoned sweep in claim.ts reads it, and a row without one is never retired.
+// The insert is the claim: the row is created `running` with started_at, so no drain can take it.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 

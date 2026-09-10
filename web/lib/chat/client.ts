@@ -9,11 +9,7 @@ export type AskDeps = {
   readonly signal?: AbortSignal;
 };
 
-/**
- * Reads the newline delimited answer stream. A refusal before the stream opens
- * arrives as JSON and is handed on as an error event, so a caller has one shape
- * to handle either way.
- */
+/** Reads the newline delimited answer stream, handing a JSON refusal on as an error event. */
 export async function askChat(
   request: ChatRequest,
   onEvent: (event: ChatEvent) => void,

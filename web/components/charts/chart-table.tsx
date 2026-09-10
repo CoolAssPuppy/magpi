@@ -13,11 +13,7 @@ type ChartTableProps = {
   readonly rows: readonly (readonly string[])[];
 };
 
-/**
- * The table twin every chart carries. A tooltip enhances a chart; it never gates
- * a value, and a reader who cannot separate two marks by color reads the numbers
- * here instead.
- */
+/** The table twin every chart carries, so no value is reachable only through color. */
 export function ChartTable({ caption, columns, rows }: ChartTableProps) {
   return (
     <details className="group mt-4">

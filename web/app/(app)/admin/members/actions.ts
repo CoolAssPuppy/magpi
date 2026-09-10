@@ -21,10 +21,7 @@ const idSchema = z.object({ id: z.uuid() });
 
 export type InvitedMember = { readonly email: string; readonly token: string };
 
-/**
- * The token is shown to the admin once and only its hash is stored, so a
- * database read cannot be turned into an accepted invitation.
- */
+/** The token is shown once and only its hash is stored, so a database read cannot redeem it. */
 export async function inviteMember(
   _previous: ActionState<InvitedMember>,
   formData: FormData,

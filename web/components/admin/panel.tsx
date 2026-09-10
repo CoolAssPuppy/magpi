@@ -1,9 +1,6 @@
 import type { ReactNode } from 'react';
 
-/**
- * One analytics panel. A hairline rule separates peers rather than a card, so
- * five panels on a page read as one page and not as five identical boxes.
- */
+/** One analytics panel, separated from its peers by a hairline rule rather than a card. */
 export function Panel({
   title,
   description,

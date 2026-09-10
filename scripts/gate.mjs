@@ -1,15 +1,5 @@
 #!/usr/bin/env node
-/**
- * The gate. Two of them, deliberately separate.
- *
- *   node scripts/gate.mjs --light   format, lint, typecheck, unit tests, build
- *   node scripts/gate.mjs           the light gate plus the database, integration
- *                                   and browser suites, coverage, and the
- *                                   mobile-spec contract
- *
- * A gate that quietly ran nothing reads exactly like a gate that passed, so every
- * step that could not run is reported by name. `--strict` refuses to skip one.
- */
+/** Runs the light gate with --light, otherwise the full gate. --strict fails on a skipped step. */
 
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';

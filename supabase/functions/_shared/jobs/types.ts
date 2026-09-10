@@ -1,10 +1,4 @@
-// What a job body is handed.
-//
-// A job body is a plain async function taking a record and this set of injected
-// clients. No Deno.serve, no global fetch, no env read at call time. The runtime
-// entry point is a thin wrapper that builds these from the environment once, so
-// moving off Edge Functions is a wrapper change rather than a rewrite, and a
-// test runs the body directly with no server.
+// What a job body is handed: a record plus injected clients, so a test can run it with no server.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -31,12 +25,7 @@ export interface JobDeps {
 
 export type IngestStage = 'fetch' | 'extract' | 'chunk' | 'embed' | 'store';
 
-/**
- * A row in usage_events, written when a job does the thing a plan meters.
- *
- * Usage is recorded as it happens rather than computed by scanning documents on
- * a page load, which is what keeps the admin page cheap at four thousand seats.
- */
+/** A row in usage_events, written as it happens when a job does the thing a plan meters. */
 export interface UsageEvent {
   orgId: string;
   kind:
@@ -55,7 +44,6 @@ export async function recordUsage(db: SupabaseClient, events: UsageEvent[]): Pro
   const { error } = await db.from('usage_events').insert(
     events.map((event) => ({ org_id: event.orgId, kind: event.kind, quantity: event.quantity })),
   );
-  // Metering is not worth failing finished work over; the log is where a gap in
-  // the numbers gets noticed.
+  // Metering failures are logged rather than thrown, so finished work still counts.
   if (error) console.error('usage events could not be written', error.message);
 }

@@ -209,10 +209,7 @@ describe('runAnswerTurn', () => {
     consoleError.mockRestore();
   });
 
-  // usage_events with kind 'query' was read by the usage panel and by
-  // check_query_allowed and written by nothing, so the meter read zero for every
-  // organization and the monthly limit was enforced against a number that never
-  // moved.
+  // usage_events kind 'query' is read by the usage panel and check_query_allowed, so it is written.
   it('meters the question once the answer is stored', async () => {
     const { deps, calls } = fakeDeps();
 
@@ -235,9 +232,7 @@ describe('runAnswerTurn', () => {
     consoleError.mockRestore();
   });
 
-  // The answer is delivered and stored by the time the meter is written, so a
-  // failed meter write costs the organization one question and costs the reader
-  // nothing. The other way round is the wrong trade.
+  // A failed meter write costs the organization one question and costs the reader nothing.
   it('keeps a delivered answer when the meter cannot be written', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     const { deps } = fakeDeps({
@@ -253,10 +248,7 @@ describe('runAnswerTurn', () => {
     consoleError.mockRestore();
   });
 
-  // The answer is already on the reader's screen and already stored by the
-  // time either of these runs. Turning a failed housekeeping write into an
-  // error event takes the delivered answer off the screen and replaces it with
-  // "ask again", which asks the reader to pay for it twice.
+  // A failed housekeeping write must not take a delivered answer off the reader's screen.
   it('keeps a delivered answer when naming the conversation fails', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     const { deps } = fakeDeps({

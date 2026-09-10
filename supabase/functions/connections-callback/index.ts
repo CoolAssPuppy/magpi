@@ -1,18 +1,4 @@
-// GET /connections-callback. Public, because the provider redirects the user's
-// browser here with no Authorization header.
-//
-// The state value says which account started the flow. It does not show that the
-// browser arriving here belongs to that account, and it cannot: the state travels
-// in a URL, so anyone holding the URL could otherwise decide whose account a
-// token lands on. RFC 6749 10.12 wants the callback bound to the user agent's
-// authenticated state, and the only thing carrying that is the web app's session
-// cookie, on the web app's origin rather than this one.
-//
-// So this function exchanges the code and parks the result in
-// pending_connections. connections-claim runs with a verified JWT and commits
-// only when the session matches. Nothing here writes to `connections`.
-//
-// Always ends in a redirect, never a JSON error page.
+// GET /connections-callback. Public. Exchanges the code into pending_connections, then redirects.
 
 import { toErrorResponse } from '../_shared/errors.ts';
 import { toCoreRequest } from '../_shared/http.ts';
@@ -27,8 +13,7 @@ import { callbackUrl, oauthDriverFor, PENDING_TTL_SECONDS } from '../_shared/oau
 
 const CONNECTIONS = '/connections';
 
-// Where the browser goes to prove who it is. The web app holds the session
-// cookie this origin cannot read, so the identity check happens there.
+// Where the browser goes to prove who it is; only the web app origin holds the session cookie.
 const COMPLETE = '/connections/complete';
 
 function back(path: string, params: Record<string, string>): Response {
@@ -61,8 +46,7 @@ Deno.serve(async (req: Request) => {
     const code = core.query.get('code');
     if (!state || !code) return back(CONNECTIONS, { connection: 'error', code: 'missing_state' });
 
-    // One statement, so two callbacks carrying the same state cannot both
-    // exchange a code.
+    // One statement, so two callbacks with the same state cannot both exchange a code.
     const { data: rows, error: stateError } = await db.rpc('consume_oauth_state', {
       p_state: state,
     });
@@ -74,8 +58,7 @@ Deno.serve(async (req: Request) => {
       return back(CONNECTIONS, { connection: 'expired', code: 'state_expired' });
     }
 
-    // The slug came from the state row, so it was validated on the way in.
-    // Re-checked because it reaches a redirect query below.
+    // Re-checked because the slug reaches a redirect query below.
     if (!isValidSlug(pending.provider)) {
       return back(CONNECTIONS, { connection: 'error', code: 'unknown_provider' });
     }
@@ -100,7 +83,6 @@ Deno.serve(async (req: Request) => {
       : null;
 
     // Only the hash is stored, so a leaked row cannot be replayed as a ticket.
-    // The ticket itself exists only in the redirect below.
     const ticket = randomToken();
     const { error: parkError } = await db.from('pending_connections').insert({
       ticket_hash: await sha256Hex(ticket),
@@ -124,8 +106,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // conn.exchange, not conn.link: a token exists, but no account has been
-    // credited yet. connections-claim writes conn.link once one is.
+    // conn.exchange means a token exists; connections-claim writes conn.link once credited.
     audit({
       actor: `user:${pending.user_id}`,
       action: 'conn.exchange',

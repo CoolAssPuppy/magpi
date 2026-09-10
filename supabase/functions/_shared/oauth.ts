@@ -1,14 +1,4 @@
-// The OAuth broker. Provider tokens are obtained over the back channel,
-// encrypted, and stored. They never reach the browser; a job decrypts one for a
-// single outbound call at a time.
-//
-// Endpoints and scopes come from the `providers` row, not from this file. What
-// lives here is the handful of things providers genuinely disagree about, one
-// small entry per slug, so a fix to token-exchange error handling is made once.
-//
-// The broker authorizes and exchanges. Renewing a token afterwards belongs to
-// the source driver, which reads the same quirks through tokenGrantQuirksFor
-// rather than keeping a second copy of them.
+// The OAuth broker: authorize and exchange. Endpoints and scopes come from the `providers` row.
 
 import { ApiError } from './errors.ts';
 import { randomToken, sha256Base64Url } from './crypto.ts';
@@ -22,9 +12,7 @@ import {
 
 export const STATE_TTL_SECONDS = 600;
 
-// How long a token may sit in pending_connections waiting to be claimed. The
-// claim is one redirect away, so this covers a slow page load rather than a
-// user's attention span. Short on purpose: the ticket sits in a URL.
+// How long a token may wait in pending_connections to be claimed. Short, since it sits in a URL.
 export const PENDING_TTL_SECONDS = 300;
 
 export interface TokenSet {
@@ -79,12 +67,7 @@ function readString(source: unknown, key: string): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
-/**
- * Providers signal failure with a 200 and an `error` field as often as with a
- * non-2xx status, so both count. Nothing from the response body is forwarded:
- * a provider's error text can quote the request back, and the request carries
- * the code and the client secret.
- */
+/** Treats a 200 with an `error` field as failure. No part of the response body reaches callers. */
 async function postForToken(
   deps: HttpDeps,
   url: string,
@@ -124,11 +107,7 @@ async function postForToken(
   return record;
 }
 
-/**
- * Never throws: naming the account is a nicety, and a connection that works
- * should not fail because the label lookup did. It does say so in the log,
- * because a silent null is how every Google connection once ended up nameless.
- */
+/** Fetches JSON for an account label. Never throws; logs and returns null instead. */
 async function fetchJson(
   deps: HttpDeps,
   url: string,
@@ -153,16 +132,9 @@ interface DriverQuirks {
   /** Linear wants commas. Everyone else wants a space. */
   scopeSeparator?: string;
   extraAuthParams?: Record<string, string>;
-  /**
-   * Credentials in an Authorization header rather than the body. Notion answers
-   * 401 to a request that puts them in the form.
-   */
+  /** Credentials in an Authorization header rather than the body. Notion answers 401 otherwise. */
   basicAuthForToken?: boolean;
-  /**
-   * Which query parameter carries the scopes. Slack v2 splits them: `scope`
-   * buys a bot token, `user_scope` buys one that acts as the person, and
-   * everything Magpi reads is the person's.
-   */
+  /** Which query parameter carries the scopes. Slack v2 wants user_scope for a person's token. */
   scopeParam?: string;
   /** Lifts the token out of a non-standard envelope before the shared path. */
   normalizePayload?(payload: Record<string, unknown>): Record<string, unknown>;
@@ -176,9 +148,7 @@ interface DriverQuirks {
 
 const QUIRKS: Record<string, DriverQuirks> = {
   google_drive: {
-    // Without both of these Google issues a refresh token on the very first
-    // consent and never again, so a reconnect leaves a token that dies in an
-    // hour and no way to renew it.
+    // Without both of these, Google issues a refresh token only on the first consent.
     extraAuthParams: { access_type: 'offline', prompt: 'consent' },
     async accountFromExchange(deps, _payload, accessToken) {
       const info = await fetchJson(deps, 'https://www.googleapis.com/drive/v3/about?fields=user', {
@@ -210,13 +180,11 @@ const QUIRKS: Record<string, DriverQuirks> = {
   },
 
   notion: {
-    // Capabilities are set on the integration, so there are no scopes to ask
-    // for, and the public flow requires saying who is installing it.
+    // Notion has no scopes to ask for, and the public flow requires naming the installing owner.
     extraAuthParams: { owner: 'user' },
     basicAuthForToken: true,
     accountFromExchange(_deps, payload) {
-      // The workspace is what a person recognises; the bot id is the fallback
-      // so the row is never nameless.
+      // The workspace is what a person recognises; the bot id keeps the row from being nameless.
       return Promise.resolve(
         readString(payload, 'workspace_id') ??
           readString(payload, 'workspace_name') ??
@@ -227,8 +195,7 @@ const QUIRKS: Record<string, DriverQuirks> = {
 
   slack: {
     scopeParam: 'user_scope',
-    // Slack returns the user token nested under authed_user and puts a bot token
-    // at the top level. Reading channels as the person needs the user one.
+    // Slack nests the user token under authed_user; the top-level token is the bot's.
     normalizePayload(payload) {
       const authed = payload.authed_user;
       if (typeof authed !== 'object' || authed === null) return payload;
@@ -249,14 +216,7 @@ export function basicAuthHeader(clientId: string, clientSecret: string): Record<
   return { authorization: `Basic ${btoa(`${clientId}:${clientSecret}`)}` };
 }
 
-/**
- * What one provider's token endpoint disagrees about on a refresh grant.
- *
- * The renewal itself lives with the source drivers, because its failures are
- * values written onto the connection rather than exceptions. The knowledge of
- * which provider wants what stays here, where every other per-slug difference
- * already is, so a provider that is fixed in one grant is fixed in both.
- */
+/** What one provider's token endpoint disagrees about on a refresh grant. */
 export interface TokenGrantQuirks {
   basicAuth: boolean;
   normalizePayload(payload: Record<string, unknown>): Record<string, unknown>;
@@ -278,12 +238,7 @@ function requireAccessToken(payload: Record<string, unknown>, context: string): 
   return accessToken;
 }
 
-/**
- * Builds the driver for one provider row.
- *
- * Throws rather than returning null for an api_key provider: reaching here with
- * one is a routing mistake in the caller, not a request the user can fix.
- */
+/** Builds the driver for one provider row. Throws for an api_key provider. */
 export function oauthDriverFor(record: ProviderRecord, deps: HttpDeps = liveHttp): OAuthDriver {
   const provider: OAuthProviderRecord = requireOAuthProvider(record);
   const quirks = quirksFor(provider.slug);
@@ -299,8 +254,7 @@ export function oauthDriverFor(record: ProviderRecord, deps: HttpDeps = liveHttp
         client_id: clientId,
         redirect_uri: redirectUri,
         response_type: 'code',
-        // An empty scope parameter is not the same as none: Notion has no scopes
-        // at all and refuses a request carrying an empty one.
+        // An empty scope parameter is not the same as none, and Notion refuses an empty one.
         ...(scopes ? { [quirks.scopeParam ?? 'scope']: scopes } : {}),
         state,
         code_challenge: codeChallenge,
@@ -311,8 +265,7 @@ export function oauthDriverFor(record: ProviderRecord, deps: HttpDeps = liveHttp
     },
 
     async exchangeCode({ clientId, clientSecret, redirectUri, code, codeVerifier }) {
-      // Basic-auth providers still need the redirect and code in the body; only
-      // the credentials move to the header.
+      // Basic-auth providers still need the redirect and code in the body.
       const basic = quirks.basicAuthForToken === true;
       const form = new URLSearchParams({
         ...(basic ? {} : { client_id: clientId, client_secret: clientSecret }),
@@ -344,17 +297,12 @@ export function oauthDriverFor(record: ProviderRecord, deps: HttpDeps = liveHttp
   };
 }
 
-/**
- * Where a provider sends the browser back. From configuration, never from the
- * request, so a crafted redirect_uri cannot send the authorization code
- * somewhere else.
- */
+/** Where a provider sends the browser back. From configuration, never from the request. */
 export function callbackUrl(source: EnvSource = denoEnv): string {
   return `${functionsBaseUrl(source)}/connections-callback`;
 }
 
-// Same-site absolute paths only. A bad one is discarded rather than rejected, so
-// it cannot fail an otherwise successful connection.
+// Same-site absolute paths only. A bad one is discarded rather than rejected.
 export function safeReturnTo(value: string | null | undefined): string | null {
   if (typeof value !== 'string' || value.length === 0) return null;
   if (!value.startsWith('/') || value.startsWith('//')) return null;

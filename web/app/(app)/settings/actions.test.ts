@@ -155,8 +155,7 @@ describe('changing a display name', () => {
     expect(state).toEqual({ status: 'error', message: 'You need to sign in to do that.' });
   });
 
-  // Whether the caller is signed in is settled before their input is read, so
-  // a signed-out caller gets one answer whatever they sent.
+  // The session check runs before the input is read, so a signed-out caller gets one answer.
   it('tells a signed-out caller to sign in even when the name is also empty', async () => {
     account.signedIn = false;
 

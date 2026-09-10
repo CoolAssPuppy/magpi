@@ -1,10 +1,4 @@
-// POST /connections-begin. The PKCE verifier and the state stay server side in
-// oauth_states; the browser receives only the URL, so a compromised page cannot
-// complete the exchange.
-//
-// The space is chosen here, before the redirect, and travels in the state row.
-// The callback therefore cannot be talked into filing the connection somewhere
-// the user cannot see.
+// POST /connections-begin. The PKCE verifier, state and space stay server side in oauth_states.
 
 import { ApiError, jsonResponse } from '../_shared/errors.ts';
 import { serveFunction } from '../_shared/http.ts';
@@ -33,8 +27,7 @@ serveFunction('connections-begin', async (core) => {
     { bucket: `connections-begin:ip:${core.ip}`, limit: 40, windowSeconds: 600 },
   ]);
 
-  // Under the service role RLS enforces nothing, so membership is checked here
-  // rather than assumed from the caller having named a space id.
+  // RLS enforces nothing under the service role, so membership is checked here.
   await requireSpaceMembership(db, user.id, input.space_id);
 
   // The registry decides, so disabling a provider takes effect without a deploy.

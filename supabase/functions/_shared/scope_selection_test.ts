@@ -27,8 +27,7 @@ Deno.test('the picker keeps what is on offer alongside what was chosen', () => {
 });
 
 Deno.test('a choice the provider no longer offers is dropped', () => {
-  // An archived channel is not something the connection can read, and leaving it
-  // would show a choice that does nothing.
+  // An archived channel is not something the connection can read.
   assertEquals(buildScopeSelection('channel', CHANNELS, ['C01', 'C99']).selected, ['C01']);
 });
 
@@ -49,9 +48,7 @@ Deno.test('an empty selection is a real answer, not a missing one', () => {
 });
 
 Deno.test('a stored option carries an id and a name and nothing else', () => {
-  // The column is jsonb, so whatever was written stays readable forever. An
-  // option field the picker never renders is one the schema should not keep
-  // alive on the way back out.
+  // The column is jsonb, so the read drops any option field the picker does not render.
   const stored = storedSelectionOf({
     kind: 'channel',
     available: [{ id: 'C01', name: '#aurora', url: 'https://slack.example/C01' }],

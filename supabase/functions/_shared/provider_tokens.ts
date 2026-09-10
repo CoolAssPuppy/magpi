@@ -1,26 +1,4 @@
-// Encryption at rest for provider tokens. AES-256-GCM via WebCrypto, key from
-// SB_TOKEN_ENC_KEY.
-//
-// Not pgsodium: its transparent column encryption is deprecated on the platform
-// and would put the plaintext inside Postgres, where it reaches query logs and
-// `explain` output.
-//
-// Envelope layout, stored in the bytea column:
-//
-//   byte 0        format version
-//   byte 1        key id
-//   bytes 2..13   random 96-bit IV
-//   bytes 14..    ciphertext with its 128-bit tag
-//
-// The AAD is `${user_id}:${provider}`, so an attacker with write access to
-// connections cannot move another user's ciphertext into their own row.
-//
-// The key id byte is what makes rotation a migration rather than a data loss
-// event, and it cannot be added later because existing rows would not carry it.
-// Rotating: move the current key into SB_TOKEN_ENC_KEYS_PREVIOUS as `id:key`,
-// set SB_TOKEN_ENC_KEY to the new one, bump SB_TOKEN_ENC_KEY_ID. New writes use
-// the new key, old rows still decrypt, and the previous entry is dropped once
-// every row has been rewritten.
+// Encryption at rest for provider tokens: AES-256-GCM via WebCrypto, key from SB_TOKEN_ENC_KEY.
 
 import { ApiError, misconfigured } from './errors.ts';
 import { denoEnv, type EnvSource, tokenEncryptionEnv } from './env.ts';
@@ -30,17 +8,14 @@ const FORMAT_VERSION = 2;
 const IV_BYTES = 12;
 const KEY_BYTES = 32;
 
-// Keyed by the raw base64, so rotating a secret in place is picked up rather
-// than served from a stale import.
+// Keyed by the raw base64, so a rotated secret is not served from a stale import.
 const keyCache = new Map<string, CryptoKey>();
 
 function unreadable(): ApiError {
   return new ApiError(500, 'internal', 'stored token could not be read');
 }
 
-// WebCrypto's types require a view backed by a plain ArrayBuffer, not the
-// SharedArrayBuffer a bare Uint8Array may carry, so every buffer reaching
-// crypto.subtle goes through these two helpers.
+// WebCrypto needs a view backed by a plain ArrayBuffer, so every buffer goes through these.
 function allocate(length: number): Uint8Array<ArrayBuffer> {
   return new Uint8Array(new ArrayBuffer(length));
 }
@@ -82,8 +57,7 @@ async function importKey(raw: string, label: string): Promise<CryptoKey> {
     throw misconfigured(`${label} must decode to ${KEY_BYTES} bytes, got ${bytes.length}`);
   }
 
-  // extractable = false: the key material cannot be read back out, so it cannot
-  // reach a log line or a response body.
+  // extractable = false, so the key material cannot be read back out.
   const key = await crypto.subtle.importKey('raw', bytes, { name: 'AES-GCM' }, false, [
     'encrypt',
     'decrypt',
@@ -128,10 +102,7 @@ export async function encryptProviderToken(
   return '\\x' + toHex(envelope);
 }
 
-/**
- * Accepts the `\x<hex>` form PostgREST returns for bytea. Every failure is the
- * same generic error: telling them apart turns GCM into an oracle.
- */
+/** Accepts the `\x<hex>` bytea form. Every failure raises the same generic error. */
 export async function decryptProviderToken(
   stored: string,
   ctx: TokenContext,
@@ -147,8 +118,7 @@ export async function decryptProviderToken(
   const keyId = envelope[1];
   const raw = keyId === env.keyId ? env.key : env.previousKeys.get(keyId);
   if (!raw) {
-    // Same generic error as a failed decrypt: someone who can write a ciphertext
-    // must not learn which key ids are configured.
+    // Same generic error as a failed decrypt, so configured key ids stay hidden.
     console.error(`no key configured for id ${keyId}; set SB_TOKEN_ENC_KEYS_PREVIOUS`);
     throw unreadable();
   }

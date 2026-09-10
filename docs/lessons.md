@@ -505,3 +505,15 @@ already open.
 The tell for this failure is a claim about equivalence: this duplicates that,
 this is covered by that, this is written by nothing. Equivalence is the thing
 reading is worst at and executing is best at.
+
+## A comment says what the code does, in one line
+
+Comments across the repo ran to four and five lines of prose explaining why a
+decision was made and how the result reads. A four-line block above a marketing
+page section argued that a drawing beside a headline lets the eye read across on
+a wide screen. The code under it was `flex-col-reverse md:flex-row`.
+
+**Rule.** One line. Say what the code does. Do not explain the reasoning, do not
+describe how it reads, do not justify the choice. If the one-line version only
+restates the code, delete the comment. Rationale that a future reader genuinely
+needs goes in `docs/decisions.md`, not above the statement.

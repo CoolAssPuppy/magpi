@@ -1,13 +1,4 @@
-/**
- * Every model id in Magpi. Nowhere else.
- *
- * Pinned to exact ids, never a floating alias, so a provider changing what
- * "latest" means cannot change our behavior between two deploys. Costs and
- * context windows for each are recorded in docs/limits.md.
- *
- * Changing EMBEDDING changes chunks.embedding, which is a migration and a full
- * re-embed. Decide once.
- */
+/** Every model id in Magpi, pinned to exact ids rather than floating aliases. */
 export const MODELS = {
   /** Pinned 2026-09-09. 1536 dimensions, which is why chunks.embedding is vector(1536). */
   embedding: 'text-embedding-3-small',

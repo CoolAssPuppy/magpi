@@ -9,13 +9,7 @@ const TONE_CLASSES: Record<StatusTone, string> = {
   destructive: 'border-border-destructive bg-destructive-200 text-destructive-600',
 };
 
-/**
- * Status as a full border, a background tint and a leading dot. Never a side
- * stripe, and never a spinner: a revoked connection is a finished state and has
- * to read as one.
- *
- * Shared by connections and dreams, which is why it is written once here.
- */
+/** Status as a border, a background tint and a leading dot. Shared by connections and dreams. */
 export function StatusPill({ tone, label }: { tone: StatusTone; label: string }) {
   return (
     <span
@@ -29,8 +23,7 @@ export function StatusPill({ tone, label }: { tone: StatusTone; label: string })
         data-testid={tone === 'progress' ? 'progress-dot' : undefined}
         className={cn(
           'size-1.5 rounded-full bg-current',
-          // Reduced motion gets the same dot, held still. The label already says
-          // what is happening, so nothing is lost.
+          // Reduced motion gets the same dot, held still.
           tone === 'progress' && 'motion-safe:animate-pulse',
         )}
       />

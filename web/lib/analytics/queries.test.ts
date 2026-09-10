@@ -24,14 +24,7 @@ type Stub = {
   readonly tableQueries: () => readonly (readonly RecordedCall[])[];
 };
 
-/**
- * A postgrest builder that records the chain instead of talking to a database.
- * Recording is the point: these functions are the SQL for each panel, so a test
- * that does not look at the filters is not testing anything.
- *
- * The cast is confined to this factory. It is the one place a test double has to
- * stand in for a client whose full surface it does not implement.
- */
+/** A postgrest builder that records the chain instead of talking to a database. */
 function createStub(responses: Readonly<Record<string, readonly StubResponse[]>>): Stub {
   const calls = new Map<string, RecordedCall[]>();
   const queues = new Map<string, StubResponse[]>(
@@ -43,8 +36,7 @@ function createStub(responses: Readonly<Record<string, readonly StubResponse[]>>
     recorded.push(initial);
     calls.set(source, recorded);
 
-    // Claimed when the builder is created, not when it is awaited, so a panel
-    // that issues its queries concurrently still reads them back in source order.
+    // Claimed when the builder is created, so concurrent queries read back in source order.
     const next = queues.get(source)?.shift();
     if (!next) throw new Error(`stub has no response left for ${source}`);
     const settled = {
@@ -72,9 +64,7 @@ function createStub(responses: Readonly<Record<string, readonly StubResponse[]>>
     rpc: (name: string, args: unknown) => builderFor(name, ['rpc', name, args]),
   } as unknown as AnalyticsClient;
 
-  // Table reads only. An rpc closes the current group rather than opening an
-  // empty one: it used to push `[]`, so a chained call on an rpc landed in that
-  // empty group and the group survived as a query with no table and no filter.
+  // Table reads only. An rpc closes the current group rather than opening an empty one.
   function tableQueries(): readonly (readonly RecordedCall[])[] {
     const queries: RecordedCall[][] = [];
     let current: RecordedCall[] | null = null;
@@ -391,8 +381,7 @@ describe('usage against plan', () => {
 
     const usage = await fetchPlanUsage(stub.client, ORG, { now: NOW });
 
-    // The window is the database function's argument now, so this is what
-    // proves a monthly limit is not read over all time.
+    // The window is the database function's argument, so a monthly limit is not read over all time.
     expect(stub.callsFor('org_usage_totals')).toContainEqual([
       'rpc',
       'org_usage_totals',
@@ -416,13 +405,7 @@ describe('usage against plan', () => {
 });
 
 describe('organization scoping', () => {
-  /**
-   * These five run through the elevated client, which bypasses RLS, so nothing
-   * below them will catch a query that forgot its organization. This is that
-   * catch: every table query any panel issues has to carry a filter equal to the
-   * organization id, and a new query with no filter fails here rather than
-   * quietly returning another customer's rows.
-   */
+  /** Every table query any panel issues has to filter on the organization id. */
   const panels: readonly (readonly [string, (stub: Stub) => Promise<unknown>])[] = [
     ['ingest health', (stub) => fetchIngestHealth(stub.client, ORG)],
     ['answer latency', (stub) => fetchAnswerLatency(stub.client, ORG, { days: 7, now: NOW })],
@@ -453,9 +436,7 @@ describe('organization scoping', () => {
     });
   }
 
-  // The meters moved from three table reads to one rpc, and tableQueries only
-  // sees table reads. Without this the sweep above would pass while saying
-  // nothing about the query that carries the plan numbers.
+  // The meters moved to an rpc, which tableQueries does not see, so this covers them.
   it('scopes the usage totals to one organization through its argument', async () => {
     const stub = emptyStub();
     await fetchPlanUsage(stub.client, ORG, { now: NOW });

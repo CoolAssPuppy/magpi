@@ -2,10 +2,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { MagpieMark } from '@/components/brand/magpie-mark';
 
-/**
- * One frame for every auth screen. A single centered panel is the right
- * affordance here, so the card earns its place; nothing nests inside it.
- */
+/** One centered panel, used as the frame for every auth screen. */
 export function AuthShell({
   title,
   description,

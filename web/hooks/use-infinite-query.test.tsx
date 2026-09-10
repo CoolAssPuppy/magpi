@@ -37,10 +37,7 @@ const getRow = (id: string, overrides: Partial<ConversationRow> = {}): Conversat
   ...overrides,
 });
 
-/**
- * Enough of a PostgREST builder to record what the hook asked for. Every
- * shaping call returns the same object, which is how the real builder chains.
- */
+/** Enough of a PostgREST builder to record what the hook asked for, chained as the real one is. */
 function getBuilder(table: string, columns: string) {
   const shaping: string[] = [];
   const builder = {
@@ -92,8 +89,7 @@ function Probe({
     trailingQuery,
     trailingQueryKey,
   });
-  // After the commit rather than during the render, so reading it never races
-  // a render React has not finished.
+  // After the commit, so reading it never races a render React has not finished.
   useEffect(() => {
     current = query;
   });
@@ -166,8 +162,7 @@ describe('reading a table a page at a time', () => {
     expect(server.pages).toHaveLength(3);
   });
 
-  // Two overlapping requests would append the same rows twice, and a list that
-  // scrolls fast is the case where the second one arrives before the first.
+  // Two overlapping requests would append the same rows twice.
   it('ignores a second request for the next page while one is in flight', async () => {
     render(<Probe pageSize={2} />);
     await waitFor(() => expect(current.isSuccess).toBe(true));
@@ -202,9 +197,7 @@ describe('shaping the query', () => {
     expect(server.pages[0].shaping).toEqual(['order:updated_at']);
   });
 
-  // The shaping is read when the page is fetched, so a handler that changed
-  // since the last page applies to the next one. Rebuilding the store instead
-  // would throw away rows that are still correct.
+  // The shaping is read at fetch time, and the loaded rows are kept.
   it('uses the shaping in force at the moment of the fetch, keeping what is loaded', async () => {
     const view = render(<Probe pageSize={2} trailingQuery={byName} />);
     await waitFor(() => expect(current.isSuccess).toBe(true));
@@ -219,8 +212,7 @@ describe('shaping the query', () => {
     expect(current.data).toHaveLength(4);
   });
 
-  // A different filter is a different result set, so the rows already loaded
-  // are no longer part of it.
+  // A different filter is a different result set.
   it('throws away what is loaded when the caller says the shape itself changed', async () => {
     const view = render(<Probe pageSize={2} trailingQuery={byName} trailingQueryKey="all" />);
     await waitFor(() => expect(current.data).toHaveLength(2));
@@ -234,9 +226,7 @@ describe('shaping the query', () => {
 });
 
 describe('rendering on the server', () => {
-  // useSyncExternalStore asks for a server snapshot separately, and it has to
-  // be the empty one: the browser has fetched nothing yet at that point, so any
-  // other answer is a hydration mismatch.
+  // The server snapshot useSyncExternalStore asks for has to be empty, or hydration mismatches.
   it('holds nothing until the browser has had a chance to fetch', () => {
     function ServerProbe() {
       const query = useInfiniteQuery<ConversationRow, 'conversations'>({

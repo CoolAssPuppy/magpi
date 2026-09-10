@@ -1,17 +1,5 @@
 #!/usr/bin/env node
-/**
- * Fails when our own code references a shadcn compat alias.
- *
- * `web/styles/supabase/packages/ui/build/css/source/compat.css` is vendored
- * from upstream and says of itself that nothing new should reference it and
- * that the file goes away once it is empty. The primitives were written
- * against it, so the next `scripts/sync-tokens.mjs` run after upstream deletes
- * it would have unstyled twelve files with no error anywhere.
- *
- * The rewrite is done. This is what stops it coming back: an `npx shadcn add`
- * that overwrites a primitive brings the old names with it, and nothing else
- * in the build would notice.
- */
+/** Fails when our own code references a shadcn compat alias. */
 
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, extname, join, resolve } from 'node:path';
@@ -24,17 +12,14 @@ const SEARCHED = ['web/app', 'web/components', 'web/lib', 'web/hooks', 'web/styl
 const EXTENSIONS = new Set(['.ts', '.tsx', '.css']);
 
 function aliasNames(source) {
-  // The declarations inside compat.css, which are exactly the names it exists
-  // to keep resolving. The right-hand side is a semantic token and is fine.
+  // The custom property names compat.css declares.
   return [...source.matchAll(/^\s*(--[a-z0-9-]+):/gim)].map((match) => match[1].slice(2));
 }
 
 function filesUnder(path) {
   const full = resolve(ROOT, path);
 
-  // Not a try/catch. A configured path that has been renamed makes this check
-  // scan nothing and report success, which is the failure mode the audit found
-  // in two older gate scripts.
+  // Throws rather than catching, so a renamed path fails instead of scanning nothing.
   const entry = statSync(full);
   if (entry.isFile()) return [full];
 
@@ -47,10 +32,7 @@ function filesUnder(path) {
 }
 
 function main() {
-  // A name compat.css declares and web/styles/tokens.css declares again is not
-  // a dependency on compat.css: tokens.css loads last and wins, and it survives
-  // the file being deleted. --border-stronger is the only one, because it is a
-  // computed value rather than an alias and has no semantic twin to move to.
+  // Names tokens.css redeclares are not compat dependencies, since tokens.css loads last.
   const ours = new Set(aliasNames(readFileSync(resolve(ROOT, OURS), 'utf8')));
   const aliases = aliasNames(readFileSync(resolve(ROOT, COMPAT), 'utf8')).filter(
     (alias) => !ours.has(alias),
@@ -65,10 +47,7 @@ function main() {
     const lines = readFileSync(file, 'utf8').split('\n');
     lines.forEach((line, index) => {
       for (const alias of aliases) {
-        // Preceded by a hyphen, which covers both `var(--foreground-light)`
-        // and the Tailwind class `text-foreground-light` that the same token
-        // generates. Bounded on the right so `foreground-light` does not also
-        // count every use of `foreground-lighter`.
+        // Leading hyphen matches var() and Tailwind uses; right bound excludes longer names.
         if (!new RegExp(`-${alias}(?![a-z0-9-])`).test(line)) continue;
         found.push(`${file.replace(`${ROOT}/`, '')}:${index + 1}  ${alias}`);
       }

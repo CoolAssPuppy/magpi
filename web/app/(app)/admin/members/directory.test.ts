@@ -16,10 +16,7 @@ const GRACE = '22222222-2222-4222-8222-222222222222';
 
 type RpcCall = { name: string; args: unknown };
 
-/**
- * Stands in for the one rpc this module makes. How many requests a render makes
- * is the whole point here: the version this replaced made one per member.
- */
+/** Stands in for the one rpc this module makes, counting how many a render sends. */
 function clientReturning(
   rows: readonly { user_id: string; email: string }[],
   error: { message: string } | null = null,
@@ -50,9 +47,7 @@ describe('resolving the addresses on a member page', () => {
     expect(calls).toEqual([{ name: 'org_member_emails', args: { p_org_id: 'org-1' } }]);
   });
 
-  // The function returns nothing to a caller who is not an admin of that
-  // organization, which is a permission boundary rather than an error, and an
-  // empty list is what the page should render from.
+  // A caller who is not an admin gets nothing back, which is a boundary rather than an error.
   it('answers with nothing rather than failing when the caller may not read them', async () => {
     const { supabase } = clientReturning([]);
 

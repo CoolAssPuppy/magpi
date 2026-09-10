@@ -106,11 +106,7 @@ const upload = (overrides: Partial<Upload> = {}): Upload => ({
   ...overrides,
 });
 
-/**
- * A server action's argument arrives off the wire. The type on its signature
- * describes the client this repo ships, not what the action can be sent, and
- * the input worth testing is the input a typed caller cannot express.
- */
+/** A server action's argument arrives off the wire, whatever its signature says. */
 const fromTheWire = (input: Record<string, unknown>) =>
   enqueueUploadedDocument(input as unknown as Upload);
 
@@ -227,10 +223,7 @@ describe('recording an uploaded file as a document', () => {
     expect(state).toEqual({ status: 'success', data: { documentId: DOCUMENT_ID } });
   });
 
-  // The path was an input for the whole build, validated as z.string().min(1)
-  // and written by the service client, which skips RLS. A caller posting
-  // `<another space>/board-minutes.pdf` had that object read and indexed into a
-  // space they are a member of, and the citation then renders its text.
+  // The path used to be an unchecked input written by the service client, which skips RLS.
   it('reads only the space it just checked, whatever path the caller asks for', async () => {
     await enqueueUploadedDocument(upload({ objectName: '../other-space/board-minutes.pdf' }));
 
@@ -244,9 +237,7 @@ describe('recording an uploaded file as a document', () => {
     expect(dbState.writes).toEqual([]);
   });
 
-  // The extractor answers 415 for anything outside its table, so a document
-  // recorded with a type nothing can read is queued only to fail three jobs
-  // later. The upload surface is where that is knowable.
+  // The extractor answers 415 outside its table, so upload is where an unreadable type is caught.
   it('refuses a type nothing downstream can read', async () => {
     const state = await fromTheWire({ ...upload(), mimeType: 'image/png' });
 
@@ -275,8 +266,7 @@ describe('recording an uploaded file as a document', () => {
     consoleError.mockRestore();
   });
 
-  // The document row is in by this point, so the copy has to say what the reader
-  // is looking at: a file that will sit there unread until they upload it again.
+  // The document row is already in, so the copy says the file sits unread until re-uploaded.
   it('reports a document nothing was queued to read, which would otherwise sit there forever', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     dbState.jobError = { message: 'insert or update on table ingest_jobs violates check' };
@@ -291,9 +281,7 @@ describe('recording an uploaded file as a document', () => {
     consoleError.mockRestore();
   });
 
-  // The row the document meter is computed from. Discarding its error meant an
-  // organization could pass its plan limit without a single meter row saying
-  // so, and the upload reported success either way.
+  // The row the document meter is computed from; a discarded error let an org pass its limit.
   it('reports a meter that did not record, rather than a clean success', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     dbState.usageError = { message: 'permission denied for table usage_events' };

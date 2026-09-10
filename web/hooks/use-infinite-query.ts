@@ -6,9 +6,7 @@ import { useEffect, useMemo, useSyncExternalStore } from 'react';
 import type { Database } from '@/lib/database.types';
 import { createClient } from '@/lib/supabase/client';
 
-// The Supabase Library block, with its untyped-client fallback removed. That
-// fallback existed for projects whose client carries no Database generic; ours
-// does, so the whole IfAny dance resolved to this one line and six `any`s.
+// The Supabase Library block, with its untyped-client fallback removed.
 
 // Change this to the database schema you want to use
 type DatabaseSchema = Database['public'];
@@ -31,7 +29,7 @@ type SupabaseSelectBuilder<T extends SupabaseTableName> = ReturnType<
   >['select']
 >;
 
-// A function that modifies the query. Can be used to sort, filter, etc. If .range is used, it will be overwritten.
+// Modifies the query, for sorting or filtering. A .range call here is overwritten.
 type SupabaseQueryHandler<T extends SupabaseTableName> = (
   query: SupabaseSelectBuilder<T>,
 ) => SupabaseSelectBuilder<T>;
@@ -43,10 +41,9 @@ interface UseInfiniteQueryProps<T extends SupabaseTableName> {
   columns?: string;
   // The number of items to fetch per page, defaults to `20`
   pageSize?: number;
-  // A function that modifies the query. Can be used to sort, filter, etc. If .range is used, it will be overwritten.
+  // Modifies the query, for sorting or filtering. A .range call here is overwritten.
   trailingQuery?: SupabaseQueryHandler<T>;
-  // Optional key that identifies the current trailing query shape (e.g. filters/sort/search).
-  // When this changes, the internal store is recreated so stale paginated rows are discarded.
+  // Identifies the current trailing query shape. Changing it recreates the store.
   trailingQueryKey?: unknown;
 }
 
@@ -74,8 +71,7 @@ function createStore<TData extends SupabaseTableData<T>, T extends SupabaseTable
 ) {
   const { tableName, columns = '*', pageSize = 20, initialTrailingQuery } = props;
 
-  // Owned by the store rather than read out of a ref during render. The store
-  // outlives any single render and is the thing that fetches, so it holds it.
+  // Owned by the store rather than read out of a ref during render.
   let trailingQuery: SupabaseQueryHandler<T> | undefined = initialTrailingQuery;
 
   let state: StoreState<TData> = {
@@ -104,15 +100,12 @@ function createStore<TData extends SupabaseTableData<T>, T extends SupabaseTable
 
     setState({ isFetching: true });
 
-    // Constructed per fetch rather than at module scope. On Fluid compute a
-    // hoisted client is shared across requests, which the Library's own client
-    // block warns about.
+    // Constructed per fetch, because on Fluid compute a hoisted client is shared across requests.
     let query = createClient()
       .from(tableName)
       .select(columns, { count: 'exact' }) as unknown as SupabaseSelectBuilder<T>;
 
-    // Read at fetch time, so a handler replaced since the last page applies to
-    // the next one without rebuilding the store.
+    // Read at fetch time, so a replaced handler applies to the next page.
     if (trailingQuery) {
       query = trailingQuery(query);
     }
@@ -185,14 +178,12 @@ function useInfiniteQuery<
         pageSize,
         initialTrailingQuery: trailingQuery,
       }),
-    // A replaced handler reaches the store through setTrailingQuery below rather
-    // than by rebuilding it, so it is deliberately not a dependency.
+    // A replaced handler reaches the store through setTrailingQuery, so it is not a dependency.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [tableName, columns, pageSize, trailingQueryKey],
   );
 
-  // The store outlives any single render and is the thing that fetches, so it
-  // owns the current handler. No ref crosses into render scope.
+  // The store owns the current handler, so no ref crosses into render scope.
   useEffect(() => {
     store.setTrailingQuery(trailingQuery);
   }, [store, trailingQuery]);

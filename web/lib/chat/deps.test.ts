@@ -64,11 +64,7 @@ type ReaderClient = {
   readonly chunkLookups: string[][];
 };
 
-/**
- * The reader's own client, which is the thing under test here: every call in
- * these deps has to go through it so row level security stays in the path. The
- * cast is confined to this factory.
- */
+/** The reader's own client, which every call in these deps has to go through. */
 function readerClient(rows: readonly ChunkRow[] = [chunkRow()]): ReaderClient {
   const inserts: { table: string; values: Record<string, unknown> }[] = [];
   const searches: Record<string, unknown>[] = [];

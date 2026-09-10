@@ -1,8 +1,4 @@
-// The one place a model is called.
-//
-// Every call goes through here and writes a model_calls row with the model id,
-// token counts and latency. That is where admin analytics gets its numbers and
-// how a latency regression becomes visible. A second call path anywhere is a bug.
+// The one place a model is called. Every call writes a model_calls row.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -54,18 +50,7 @@ function readUsage(payload: Record<string, unknown>): Usage {
   };
 }
 
-/**
- * A failed call is logged before the error is rethrown.
- *
- * A model outage that leaves no trace is the one an operator cannot see, and
- * `succeeded` is what separates a slow day from a broken one on the analytics
- * page.
- *
- * The insert is awaited and its failure is logged rather than thrown. Awaited
- * because an edge isolate can be torn down the moment the response is written,
- * and a promise still in flight then is a row that never arrives. Not thrown
- * because a logging failure must not turn a successful answer into an error.
- */
+/** Logs the call, failures included. Awaited so the isolate cannot end before the insert. */
 async function record(
   deps: ModelRunnerDeps,
   row: {
@@ -109,8 +94,7 @@ async function callOpenAi(
   }
 
   if (!response.ok) {
-    // Status only. An OpenAI error body can quote the prompt back, and a prompt
-    // carries space content.
+    // Status only, because an error body can quote the prompt back.
     console.error('model call refused', { path, status: response.status });
     throw new ApiError(502, 'model_error', 'the model provider refused the request');
   }
@@ -133,8 +117,7 @@ function readEmbeddings(payload: Record<string, unknown>, expected: number): num
       ? (entry as Record<string, unknown>).embedding
       : null;
     if (!Array.isArray(vector) || vector.length !== EMBEDDING_DIMENSIONS) {
-      // A vector of the wrong width would be rejected by the column anyway, and
-      // failing here says which call produced it.
+      // Failing here says which call produced the wrong width.
       throw new ApiError(502, 'model_error', 'the embedding response had the wrong dimension');
     }
     return vector.map((value) => (typeof value === 'number' ? value : 0));

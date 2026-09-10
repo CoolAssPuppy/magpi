@@ -5,10 +5,7 @@ import { createServiceClient } from '@/lib/supabase/service';
 import type { ModelCallRecord } from './call';
 import { usageKindFor } from './usage-kind';
 
-/**
- * Writes through the service client. A user has no insert grant on model_calls
- * or usage_events, and billing numbers should not depend on one.
- */
+/** Writes through the service client: a user has no insert grant on model_calls or usage_events. */
 export async function recordModelCall(record: ModelCallRecord): Promise<void> {
   const supabase = createServiceClient();
   const tokens = record.usage.inputTokens + record.usage.outputTokens;
@@ -23,8 +20,7 @@ export async function recordModelCall(record: ModelCallRecord): Promise<void> {
     succeeded: record.succeeded,
   });
 
-  // A failed call has no tokens to meter, and a zero-quantity usage row only
-  // makes the plan counters harder to read.
+  // A failed call has no tokens to meter, and a zero-quantity row only clutters the counters.
   const usageWrite =
     tokens > 0
       ? supabase

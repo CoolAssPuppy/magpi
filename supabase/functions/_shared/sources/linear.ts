@@ -1,10 +1,4 @@
 // Linear, read over its single GraphQL endpoint.
-//
-// Two habits of Linear's shape this file. It answers HTTP 200 with a top-level
-// `errors` array when it refuses, so the status alone never says whether a call
-// worked. And it takes a personal api key raw on the authorization header while
-// an oauth token wants a Bearer prefix, with the key's own prefix the only way
-// to tell the two apart.
 
 import {
   type ChangePage,
@@ -35,8 +29,7 @@ const PAGE_SIZE = 50;
 const TEAM_PAGE_SIZE = 100;
 const API_KEY_PREFIX = 'lin_api_';
 
-// A pass reads at most this many pages. A workspace with more changes than that
-// finishes over the passes that follow, one page token at a time.
+// A pass reads at most this many pages, then resumes on the next pass.
 const MAX_REQUESTS = 5;
 
 /** An error code naming the credential rather than the request. */
@@ -45,9 +38,7 @@ const CREDENTIAL_CODE = /auth|forbidden|permission/i;
 const RECONNECT_MESSAGE = `${DISPLAY_NAME} refused this connection, reconnect it.`;
 const FAILURE_MESSAGE = `${DISPLAY_NAME} could not be read, the next sync will try again.`;
 
-// `orderBy` names the field and not a direction, and Linear is free to answer
-// either way, so coverage comes from walking `after: endCursor` to the end
-// rather than from trusting the first page to hold the oldest changes.
+// `orderBy` names a field, not a direction, so coverage means walking to the last page.
 const CHANGES_QUERY = `query MagpiChanges($first: Int!, $after: String, $filter: IssueFilter) {
   issues(first: $first, after: $after, filter: $filter, orderBy: updatedAt) {
     nodes { id identifier title url updatedAt }
@@ -75,20 +66,12 @@ const TEAMS_QUERY = `query MagpiTeams($first: Int!) {
   }
 }`;
 
-/**
- * Linear reads a personal api key as the whole header value and an oauth token
- * as a bearer credential. Sending either one the other way is a 400.
- */
+/** A personal api key is the whole header value, an oauth token needs a Bearer prefix. */
 function authorization(accessToken: string): string {
   return accessToken.startsWith(API_KEY_PREFIX) ? accessToken : `Bearer ${accessToken}`;
 }
 
-/**
- * Raises when the body carries GraphQL errors, whatever the status was.
- *
- * Only the codes are read. Linear's own error text can quote the request that
- * produced it, and the request carries the token.
- */
+/** Raises on GraphQL errors in the body, whatever the status was. Reads the codes only. */
 function raiseOnGraphqlErrors(body: Record<string, unknown>): void {
   const errors = asArray(body.errors);
   if (errors.length === 0) return;
@@ -128,12 +111,7 @@ async function query(
   return asRecord(body.data);
 }
 
-/**
- * The issue filter, or null when there is nothing to narrow by.
- *
- * A first pass sends no updatedAt clause at all, because `gt: null` would ask
- * Linear to compare against nothing and it answers with everything.
- */
+/** The issue filter, or null: an updatedAt clause of `gt: null` would match everything. */
 function changeFilter(cursor: string | null, teamIds: string[]): Record<string, unknown> | null {
   const filter: Record<string, unknown> = {};
   if (cursor) filter.updatedAt = { gt: cursor };
@@ -146,8 +124,7 @@ function toDocumentRef(node: Record<string, unknown>, deps: SourceDeps): SourceD
   const title = asString(node.title);
   return {
     externalId: asString(node.id),
-    // The identifier rides along so a citation reads as ENG-214 rather than as
-    // a title that could belong to any of four teams.
+    // The identifier rides along so a citation reads as ENG-214.
     title: [identifier, title].filter((part) => part.length > 0).join(' '),
     url: asString(node.url) || null,
     mimeType: 'text/markdown',
@@ -215,9 +192,7 @@ export const linearDriver: SourceDriver = {
       position.kind === 'backlog' ? position.watermark : position.since,
     );
 
-    // A pass that ran out of requests resumes at the page it stopped on. The
-    // newest stamp it saw is not where to resume: with no direction pinned on
-    // the query, the pages it has not read can hold anything.
+    // A pass that ran out of requests resumes at its last page, not at the newest stamp.
     if (nextPage !== null) {
       return {
         documents,
@@ -241,8 +216,7 @@ export const linearDriver: SourceDriver = {
 
     const issue = asRecord(data.issue);
     if (asString(issue.id).length === 0) {
-      // A deleted or moved issue is a normal thing to meet mid-sync, and asking
-      // the user to reconnect over it would be wrong.
+      // A deleted or moved issue is normal mid-sync, not a reason to reconnect.
       throw new SourceError(PROVIDER, 'That Linear issue is no longer available.', false);
     }
 

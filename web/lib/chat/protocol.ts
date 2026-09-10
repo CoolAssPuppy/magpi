@@ -12,21 +12,13 @@ export const citationSchema = z.object({
   documentId: z.uuid(),
   documentTitle: z.string(),
   excerpt: z.string(),
-  /**
-   * The position this passage held in the prompt, which is the number the
-   * answer cites. It stays fixed when a later reader cannot see one of the
-   * others, so [3] never comes to mean a different source.
-   */
+  /** The position this passage held in the prompt, which is the number the answer cites. */
   label: z.number().int().positive(),
 });
 
 export type Citation = z.infer<typeof citationSchema>;
 
-/**
- * One JSON object per line. Citations arrive before the first token so the UI
- * can show its sources while the answer is still being written, and the title
- * arrives after the answer is closed so naming a conversation never delays it.
- */
+/** One JSON object per line: citations before the first token, the title after it closes. */
 export const chatEventSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('citations'), citations: z.array(citationSchema) }),
   z.object({ type: z.literal('delta'), text: z.string() }),
@@ -42,8 +34,7 @@ export const CHAT_ERROR_CODES = [
   'invalid_request',
   'not_found',
   'rate_limited',
-  // Separate from rate_limited because the answer is different. Asking again in
-  // a minute works for one and not for the other.
+  // Separate from rate_limited because asking again in a minute works for one and not the other.
   'plan_limited',
   'server_error',
 ] as const;
@@ -59,10 +50,7 @@ export function encodeEvent(event: ChatEvent): string {
   return `${JSON.stringify(event)}\n`;
 }
 
-/**
- * Splits a buffer on line boundaries and returns whatever tail has not
- * completed yet, which the caller prepends to the next read.
- */
+/** Splits a buffer on line boundaries and returns the unfinished tail for the next read. */
 export function decodeEvents(buffer: string): {
   readonly events: readonly ChatEvent[];
   readonly rest: string;

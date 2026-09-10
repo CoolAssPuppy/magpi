@@ -57,8 +57,7 @@ describe('whether this deployment can reach Stripe at all', () => {
     expect(isBillingConfigured()).toBe(false);
   });
 
-  // The button the answer draws calls billingConfig(), so a true here that
-  // billingConfig() would reject puts a form on the page that throws.
+  // A true here that billingConfig() would reject puts a form on the page that throws.
   it('answers true only where billingConfig can be read', () => {
     withStripeEnv({ SB_STRIPE_SECRET_KEY: 'sk_test_1', SB_STRIPE_PRICE_TEAM: 'price_team_1' });
     expect(isBillingConfigured()).toBe(true);

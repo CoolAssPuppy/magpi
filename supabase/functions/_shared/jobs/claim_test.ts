@@ -54,8 +54,7 @@ Deno.test('a claim that matched nothing means somebody else got there first', as
 });
 
 Deno.test('the claim asks for the row to still be queued', async () => {
-  // Without that filter this is an unguarded update that always succeeds, which
-  // is the bug it exists to close.
+  // Without that filter this is an unguarded update that always succeeds.
   const stub = matching([{ id: RUN }]);
   try {
     await claimQueuedRow(stub.db, 'dream_runs', RUN, { status: 'running' });
@@ -87,8 +86,7 @@ Deno.test('a connection already syncing is not claimed again', async () => {
 });
 
 Deno.test('a connection abandoned by a dead worker can be claimed again', async () => {
-  // Otherwise one crash retires a connection permanently, and nothing about the
-  // row says why it stopped syncing.
+  // Otherwise one crash retires a connection permanently.
   const stub = matching([{ id: 'connection-1' }]);
   try {
     await claimConnectionForSync(stub.db, 'connection-1', NOW);
@@ -102,10 +100,7 @@ Deno.test('a connection abandoned by a dead worker can be claimed again', async 
 });
 
 Deno.test('a claim clears the reason the last pass left on the row', async () => {
-  // The connection row is the one the page renders. A claim that leaves the old
-  // error under a syncing status shows a connection that is working and broken
-  // at once, and clearing it from the job body afterwards is a second write and
-  // a second realtime broadcast for a column this statement already has open.
+  // The claim clears status_detail in the same statement that sets the syncing status.
   const stub = matching([{ id: 'connection-1' }]);
   try {
     await claimConnectionForSync(stub.db, 'connection-1', NOW);
@@ -125,13 +120,7 @@ Deno.test('the staleness window is longer than any pass the budget allows', () =
 });
 
 Deno.test('a run left running by a killed isolate is retired, not left spinning', async () => {
-  // The dream job's own budget writes a timeout for a run that goes long.
-  // Nothing of ours runs after the isolate is killed, so only this moves the row.
-  //
-  // ingest_jobs is deliberately absent from this file. Its stale claims are
-  // reclaimed inside claim_ingest_jobs, which puts them back on the queue for
-  // the attempt cap to retire. A sweep here would retire them first and the
-  // reclaim would never match a row.
+  // Only this sweep moves a run whose isolate was killed. ingest_jobs is swept elsewhere.
   const stub = matching([{ id: 'run-1' }, { id: 'run-2' }]);
   try {
     const retired = await retireAbandoned(stub.db, dreamSweep(), NOW);
@@ -147,8 +136,7 @@ Deno.test('a run left running by a killed isolate is retired, not left spinning'
 });
 
 Deno.test('a retired row says why it stopped and when it was given up on', async () => {
-  // The space page renders the row. Without a reason its only honest option is
-  // the spinner that never resolves.
+  // The space page needs a reason and a finish time to stop showing a spinner.
   const stub = matching([{ id: 'run-1' }]);
   try {
     await retireAbandoned(stub.db, dreamSweep(), NOW);
@@ -164,8 +152,7 @@ Deno.test('a retired row says why it stopped and when it was given up on', async
 });
 
 Deno.test('a table with nowhere to record when work stopped is not sent the column', async () => {
-  // PostgREST answers an unknown column with a 400, so a sweep that wrote it
-  // unconditionally would fail on every table but one.
+  // PostgREST answers an unknown column with a 400.
   const stub = matching([{ id: 'run-1' }]);
   try {
     await retireAbandoned(stub.db, dreamSweep({ finishedColumn: undefined }), NOW);
@@ -219,8 +206,7 @@ Deno.test('claiming asks the function for a batch and hands back what it took', 
 });
 
 Deno.test('a queue the database refused answers in the error envelope', async () => {
-  // A raw PostgrestError thrown out of a worker becomes a generic 500 with
-  // whatever the database said in it, which is neither legible nor ours to show.
+  // A raw PostgrestError thrown out of a worker leaks the database's own message.
   const stub = stubDb(() => ({ status: 500, body: { message: 'relation does not exist' } }));
   try {
     const err = await asyncApiErrorFrom(() => claimIngestJobs(stub.db, 5));

@@ -37,11 +37,7 @@ export function describeOrigin(origin: DocumentOrigin): string {
   }
 }
 
-/**
- * What a stalled import says to the person looking at it. A timed-out job names
- * the stage it died in, because "still working" for a document that will never
- * finish is the failure this product most has to avoid.
- */
+/** What a stalled import says to the reader. A timed-out job names the stage it died in. */
 export function describeIngest(ingest: IngestSummary | null): string | null {
   if (!ingest) return null;
 
@@ -73,9 +69,7 @@ export async function listDocuments(
       'id, title, space_id, origin, updated_at, spaces(name), ingest_jobs(status, stage, error)',
     )
     .order('updated_at', { ascending: false })
-    // A document can carry several import attempts. Only the newest one says
-    // where it stands, and the document page reads it the same way, so an
-    // unordered embed would let the two screens contradict each other.
+    // A document can carry several import attempts, and only the newest says where it stands.
     .order('updated_at', { ascending: false, referencedTable: 'ingest_jobs' })
     .limit(1, { referencedTable: 'ingest_jobs' })
     .limit(options.limit ?? 50);

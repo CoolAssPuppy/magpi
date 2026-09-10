@@ -31,8 +31,7 @@ export async function startConnection(
   let authorizeUrl: string | null = null;
 
   const state = await withSession(async (context) => {
-    // RLS is the space check: a space the caller cannot select is not one they
-    // can bind a connection to.
+    // RLS is the space check: a space the caller cannot select cannot take a connection.
     const { data: space } = await context.supabase
       .from('spaces')
       .select('id')
@@ -55,11 +54,7 @@ export async function startConnection(
   return state;
 }
 
-/**
- * Commits a token that the callback parked, under the caller's own verified
- * session. Without this step the person who finishes the flow decides whose
- * account the token lands on.
- */
+/** Commits a token the callback parked, under the caller's own verified session. */
 export async function claimPendingConnection(ticket: string): Promise<ActionState<undefined>> {
   const input = z.string().min(1).max(256).safeParse(ticket);
   if (!input.success) return errorState('That connection ticket is not valid.');
@@ -70,12 +65,7 @@ export async function claimPendingConnection(ticket: string): Promise<ActionStat
   }, CONNECTIONS_PATH);
 }
 
-/**
- * Saves what a connection reads, and answers with the selection as it now
- * stands. connections-scopes drops an id the provider no longer offers, so the
- * answer is what the screen renders: a tick that was quietly dropped would
- * otherwise read as saved.
- */
+/** Saves what a connection reads and answers with the selection as stored, ids dropped included. */
 export async function saveScopeSelection(
   connectionId: string,
   selected: readonly string[],
@@ -105,10 +95,7 @@ export async function disconnectConnection(connectionId: string): Promise<Action
   }, CONNECTIONS_PATH);
 }
 
-/**
- * A full re-sync re-reads a source from the beginning. It is its own action and
- * never a side effect of saving a scope or of opening a page.
- */
+/** Re-reads a source from the beginning. Its own action, never a side effect of another. */
 export async function resyncConnection(connectionId: string): Promise<ActionState<undefined>> {
   const input = idSchema.safeParse(connectionId);
   if (!input.success) return errorState('That is not a connection.');

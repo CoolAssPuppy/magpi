@@ -23,10 +23,7 @@ type SpaceFilterProps = {
   readonly onChange: (selected: readonly string[]) => void;
 };
 
-/**
- * A conversation searches every space its author can see. This narrows it, and
- * an empty selection means the whole knowledge base rather than nothing.
- */
+/** Narrows which spaces a conversation searches. An empty selection means all of them. */
 export function SpaceFilter({ spaces, selected, onChange }: SpaceFilterProps) {
   const label =
     selected.length === 0

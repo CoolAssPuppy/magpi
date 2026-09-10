@@ -6,15 +6,7 @@ import { SourceError } from './contract.ts';
 import { driverFor, hasDriver, SOURCE_PROVIDERS } from './index.ts';
 import { FIXTURE_NOW, stubAnswering, stubSource } from './testing/http_stub.ts';
 
-/**
- * A token must never reach a message.
- *
- * Every SourceError message ends up in connections.status_detail, which a user
- * reads on the connections page, and in the function log. A driver that
- * interpolated the credential it was handed would put a live secret in both.
- * The drivers are written not to; this is what keeps it that way when one of
- * them is edited.
- */
+/** A token must never reach a SourceError message, which users read and the log keeps. */
 
 const SECRET = 'xoxp-hUnTr2-do-not-leak-me-9f3a';
 const SECRET_FRAGMENT = 'hUnTr2';
@@ -22,8 +14,7 @@ const SECRET_FRAGMENT = 'hUnTr2';
 function credentials(): SourceCredentials {
   return {
     accessToken: SECRET,
-    // Ids reach a query string on three of the four drivers, so one carrying
-    // the token proves the query is not being echoed into an error either.
+    // Ids reach a query string, so a token-carrying id proves the query is not echoed into errors.
     scopeSelection: { ids: ['C0LEAK', SECRET] },
   };
 }
@@ -46,8 +37,7 @@ function depsAnswering(status: number): SourceDeps {
 function depsThatReject(): SourceDeps {
   return {
     now: () => FIXTURE_NOW,
-    // A fetch rejection carries the request URL in its cause, and a token can
-    // ride in a query string.
+    // A fetch rejection carries the request URL in its cause, and a token can ride in a query.
     fetch: () => Promise.reject(new Error(`connect failed to https://x/?token=${SECRET}`)),
   };
 }
@@ -95,18 +85,7 @@ const REFRESH_CALL: DriverCall = {
   run: (driver, deps) => driver.refresh(deps, REFRESH_INPUT),
 };
 
-/**
- * Which drivers renew over the wire, asked rather than listed.
- *
- * A provider whose tokens never expire answers `not_supported` without touching
- * deps, so every assertion below would hold just as well against a body that
- * did nothing at all. Those drivers are covered by the request-count test
- * instead, which is a claim an empty body cannot satisfy.
- *
- * Asking each driver keeps the split honest: one that starts making a request
- * moves itself into the leak tests, and one that stops making one moves itself
- * out.
- */
+/** Which drivers renew over the wire, asked rather than listed, so the split stays current. */
 const RENEWS_OVER_THE_WIRE = new Set<string>();
 for (const provider of SOURCE_PROVIDERS) {
   const outcome = await driverFor(provider).refresh(stubAnswering(500), REFRESH_INPUT);
@@ -117,15 +96,7 @@ function callsFor(provider: string): DriverCall[] {
   return RENEWS_OVER_THE_WIRE.has(provider) ? [...CALLS, REFRESH_CALL] : CALLS;
 }
 
-/**
- * The other half of the split above.
- *
- * `not_supported` is a promise about the network, not only about the return
- * value: the connection's stored refresh token is handed to this call, and a
- * driver that posted it somewhere while answering "there is nothing to trade"
- * would have sent a live credential to a token endpoint for no reason. The
- * request count is what says it did not.
- */
+/** A driver answering `not_supported` must make no request, since it holds a live refresh token. */
 for (const provider of SOURCE_PROVIDERS) {
   if (RENEWS_OVER_THE_WIRE.has(provider)) continue;
 
@@ -142,11 +113,7 @@ for (const provider of SOURCE_PROVIDERS) {
   });
 }
 
-/**
- * Everything a failure could carry, not just the message: a stack or a cause
- * holding the request URL leaks just as well. A RefreshOutcome is included
- * because `failed` carries a detail string straight onto the connection.
- */
+/** Everything a failure could carry: the message, the stack, the cause, and a RefreshOutcome. */
 async function surfaceOf(
   call: DriverCall,
   driver: SourceDriver,
@@ -213,24 +180,11 @@ Deno.test('a provider row with no driver behind it says so', () => {
   assertEquals(apiErrorFrom(() => driverFor('dropbox')).code, 'unknown_provider');
 });
 
-/**
- * A database key must never reach a person.
- *
- * Every SourceError message and every failed RefreshOutcome detail is written
- * into connections.status_detail, which the connections page shows to whoever
- * owns the connection. A slug is a database key that also reaches a URL, and
- * "google_drive refused to renew this connection" is what shipping one looks
- * like. The drivers carry a display name for exactly this; these tests are what
- * keep the two from being confused again.
- */
+/** A slug must never reach status_detail, which users read. Drivers carry a display name for it. */
 
 const SLUG_SHAPED = /\b[a-z]+_[a-z]+\b/;
 
-/**
- * Only what reaches connections.status_detail, which is the message and nothing
- * else. The stack is full of file names and never reaches a person, so checking
- * the whole surface the way the token tests do would fail on http_stub.ts.
- */
+/** Only the message, which is all that reaches connections.status_detail. */
 async function userFacingText(
   call: DriverCall,
   driver: SourceDriver,
@@ -247,11 +201,7 @@ async function userFacingText(
 
 for (const provider of SOURCE_PROVIDERS) {
   Deno.test(`${provider} writes status_detail as a finished sentence`, async () => {
-    // This column is rendered standalone, in its own paragraph under the status
-    // pill, with nothing before it. So unlike a dream error, which is joined
-    // onto a prefix the client owns, it has to arrive terminated. Two
-    // connections side by side differing by a trailing full stop is the tell
-    // that one of them was written for a different slot.
+    // This column renders standalone under the status pill, so it has to arrive terminated.
     const driver = driverFor(provider);
     for (const call of callsFor(provider)) {
       for (const status of [401, 500]) {

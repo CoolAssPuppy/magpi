@@ -12,11 +12,7 @@ type NewConversationProps = {
   readonly spaces: readonly SpaceOption[];
 };
 
-/**
- * The first question opens the conversation. The route handler owns persistence
- * from there, so the question travels to the new conversation and is asked once
- * the screen it belongs to is on.
- */
+/** The first question opens the conversation and travels to it in the query string. */
 export function NewConversation({ spaces }: NewConversationProps) {
   const router = useRouter();
   const [selected, setSelected] = useState<readonly string[]>([]);

@@ -1,8 +1,4 @@
-// What every dream kind is handed, and the few helpers more than one of them needs.
-//
-// This lives below dream.ts rather than inside it so the three kind files can
-// import the context without importing the module that dispatches to them. A
-// cycle here would resolve at runtime and still be a trap for the next reader.
+// Shared context and helpers for the dream passes, kept out of dream.ts to avoid an import cycle.
 
 import { z } from 'zod';
 
@@ -25,12 +21,7 @@ export interface DreamOutcome {
   produced: number;
 }
 
-/**
- * The four stages a run can die in.
- *
- * The web client parses dream_runs.error as "<stage>: <message>" and knows only
- * these four words, so a fifth stage name is a row it cannot read.
- */
+/** Stages a run can die in. The web client parses dream_runs.error as "<stage>: <message>". */
 export type DreamStage = 'collect' | 'extract' | 'synthesize' | 'write';
 
 /** The five things every phase needs, so no phase grows a sixth. */
@@ -39,22 +30,9 @@ export interface Pass {
   deps: JobDeps;
   db: SpaceScopedDb;
   budget: Budget;
-  /**
-   * Where the pass is now.
-   *
-   * A timeout carries its own stage. A failure does not, and dream_runs has no
-   * stage column to look it up in, so the pass has to leave a trail as it goes
-   * or the run row cannot say where the work stopped.
-   */
+  /** Where the pass is now, so a failed run row can report where the work stopped. */
   stage: DreamStage;
-  /**
-   * How many documents the pass had read when it stopped.
-   *
-   * Kept on the pass for the same reason as the stage: a run that times out is
-   * the one whose size mattered, and NOTHING would record it as having read
-   * zero. That number is the evidence the space was too large, so a timeout has
-   * to carry the count it reached rather than the count it finished with.
-   */
+  /** How many documents the pass had read when it stopped, including on a timeout. */
   inputDocumentCount: number;
 }
 
@@ -70,13 +48,7 @@ export function enter(pass: Pass, stage: DreamStage): void {
   pass.budget.checkpoint(stage);
 }
 
-/**
- * How far back a run reads.
- *
- * Runs are scheduled nightly, so one day covers everything that arrived since
- * the last one. A wider window re-summarises what yesterday already summarised
- * and pays the model again for the same content.
- */
+/** How far back a run reads. One day covers everything since the nightly run before it. */
 const LOOKBACK_MS = 24 * 60 * 60 * 1000;
 
 /** About one model call's worth of space content. */
@@ -109,11 +81,7 @@ export function ask(
   });
 }
 
-/**
- * A model answer is untrusted input like any other: parsed at the boundary,
- * trusted after. An answer that will not parse is a failed run with a sentence a
- * person can act on, never a crash part way through writing.
- */
+/** Parses a model answer at the boundary, turning an unreadable one into a 502. */
 export function parsed<T>(schema: z.ZodType<T>, value: unknown, what: string): T {
   const result = schema.safeParse(value);
   if (result.success) return result.data;

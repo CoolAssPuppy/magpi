@@ -34,8 +34,7 @@ export async function createTeamSpace(formData: FormData): Promise<ActionState<{
       });
     }
 
-    // The creator is not a member by construction, so join in the same action.
-    // A team space nobody is in is invisible to its own author.
+    // The creator is not a member by construction, so join them in the same action.
     const { error: joinError } = await supabase
       .from('space_members')
       .insert({ space_id: data.id, user_id: userId });

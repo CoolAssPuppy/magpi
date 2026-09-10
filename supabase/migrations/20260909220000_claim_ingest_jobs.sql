@@ -28,9 +28,6 @@ CREATE FUNCTION public.claim_ingest_jobs (
 $function$;
 
 GRANT ALL ON FUNCTION public.claim_ingest_jobs(integer) TO service_role;
--- pg-delta emits grants and never revokes, so a new function arrives carrying
--- the default execute to PUBLIC and PostgREST publishes it as an RPC. That is
--- how the anon key once came to be able to read a PKCE verifier. pgTAP
--- assertion 29 in 60_functions.test.sql caught this one by name.
+-- pg-delta emits grants and never revokes, so a new function arrives executable by PUBLIC.
 revoke all on function public.claim_ingest_jobs(integer) from public, anon, authenticated;
 grant execute on function public.claim_ingest_jobs(integer) to service_role;

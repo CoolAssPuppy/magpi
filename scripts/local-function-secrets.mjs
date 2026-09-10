@@ -1,11 +1,5 @@
 #!/usr/bin/env node
-/**
- * Materialises edge function secrets for a local run when Doppler is unavailable.
- *
- * A restricted sandbox can fail `doppler run` for keyring reasons, which is not
- * proof that Doppler or the token is missing. This is the fallback so a local
- * function invocation still works, and it writes to a gitignored path only.
- */
+/** Writes edge function secrets to a gitignored file when Doppler is unavailable. */
 
 import { spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
@@ -22,20 +16,7 @@ const LOCAL_DEFAULTS = {
   SB_TOKEN_ENC_KEY_ID: '1',
 };
 
-/**
- * The AES-256-GCM key provider tokens are encrypted under at rest.
- *
- * This used to be `Buffer.alloc(32, 7)`, a constant sitting in a public repo,
- * written whenever `doppler secrets download` exited non-zero. A wrong token or
- * a dropped network connection was enough, and the only sign was one line on
- * stderr. Every OAuth token stored on that machine was then readable by anyone
- * with the database and a copy of this file.
- *
- * A key is generated once per machine and reused from the file afterwards, so
- * connections made yesterday still decrypt today. Reused rather than
- * regenerated for that reason: a fresh key each run turns every stored token
- * into an undecryptable blob and the failure looks like a provider problem.
- */
+/** AES-256-GCM key for stored tokens. Generated once per machine and reused so old rows decrypt. */
 function localEncryptionKey() {
   if (existsSync(OUT)) {
     const existing = /^SB_TOKEN_ENC_KEY=(.+)$/m.exec(readFileSync(OUT, 'utf8'));
