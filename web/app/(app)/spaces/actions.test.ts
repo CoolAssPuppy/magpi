@@ -19,6 +19,7 @@ type DbError = { message: string; code?: string } | null;
 
 const dbState = {
   writes: [] as Write[],
+  rpcs: [] as { name: string; args: Record<string, unknown> }[],
   /** Keyed `table:operation`, so a failing join reads differently to a failing insert. */
   failures: {} as Record<string, string>,
   /** Keyed the same way. Only the codes a caller writes copy for need setting. */
@@ -35,6 +36,12 @@ const failureFor = (table: string, operation: string): DbError => {
 
 function fakeSupabase() {
   return {
+    rpc: async (name: string, args: Record<string, unknown>) => {
+      dbState.rpcs.push({ name, args });
+      const error = failureFor(name, 'rpc');
+      return { data: error ? null : SPACE_ID, error };
+    },
+
     from: (table: string) => ({
       insert: (values: Record<string, unknown>) => {
         dbState.writes.push({ table, operation: 'insert', values });
@@ -104,6 +111,7 @@ const form = (fields: Record<string, string>): FormData => {
 
 beforeEach(() => {
   dbState.writes = [];
+  dbState.rpcs = [];
   dbState.failures = {};
   dbState.failureCodes = {};
   dbState.signedIn = true;
@@ -111,70 +119,53 @@ beforeEach(() => {
 });
 
 describe('creating a team space', () => {
-  it('puts the space in the caller organization and the caller in the space', async () => {
+  it('creates the space and enrols the caller in one statement', async () => {
     const state = await createTeamSpace(form({ name: 'Growth' }));
 
     expect(state).toEqual({ status: 'success', data: { id: SPACE_ID } });
-    expect(dbState.writes).toEqual([
-      {
-        table: 'spaces',
-        operation: 'insert',
-        values: { org_id: ORG_ID, kind: 'team', name: 'Growth' },
-      },
-      {
-        table: 'space_members',
-        operation: 'insert',
-        values: { space_id: SPACE_ID, user_id: USER_ID },
-      },
+    expect(dbState.rpcs).toEqual([
+      { name: 'create_team_space', args: { p_org_id: ORG_ID, p_name: 'Growth' } },
     ]);
     expect(dbState.revalidated).toEqual(['/spaces']);
+  });
+
+  // A second statement could not read the row the first one wrote: the SELECT policy
+  // applies to RETURNING, and the creator is not a member until the enrol happens.
+  it('never writes the space and the membership as two separate statements', async () => {
+    await createTeamSpace(form({ name: 'Growth' }));
+
+    expect(dbState.writes).toEqual([]);
   });
 
   it('drops the whitespace around a name so no space is called a blank', async () => {
     await createTeamSpace(form({ name: '   Growth   ' }));
 
-    expect(dbState.writes[0].values).toMatchObject({ name: 'Growth' });
+    expect(dbState.rpcs[0].args).toMatchObject({ p_name: 'Growth' });
   });
 
   it('says a space needs a name, and creates nothing', async () => {
     const state = await createTeamSpace(form({ name: '   ' }));
 
     expect(state).toEqual({ status: 'error', message: 'A space needs a name.' });
-    expect(dbState.writes).toEqual([]);
+    expect(dbState.rpcs).toEqual([]);
   });
 
   it('refuses a name longer than a space name is allowed to be', async () => {
     const state = await createTeamSpace(form({ name: 'g'.repeat(121) }));
 
     expect(state.status).toBe('error');
-    expect(dbState.writes).toEqual([]);
+    expect(dbState.rpcs).toEqual([]);
   });
 
   it('answers in terms the reader can act on rather than with an id nobody can use', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    dbState.failures['spaces:insert'] = 'new row violates row-level security';
+    dbState.failures['create_team_space:rpc'] = 'not a member of that organization';
 
     const state = await createTeamSpace(form({ name: 'Growth' }));
 
     expect(state).toEqual({ status: 'error', message: 'That space could not be created.' });
-    expect(dbState.writes.map((write) => write.table)).toEqual(['spaces']);
     expect(dbState.revalidated).toEqual([]);
     expect(consoleError).toHaveBeenCalled();
-    consoleError.mockRestore();
-  });
-
-  // The space exists but its author cannot see it, so the copy says that.
-  it('reports a space whose author could not be joined to it, rather than claiming success', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    dbState.failures['space_members:insert'] = 'duplicate key value';
-
-    const state = await createTeamSpace(form({ name: 'Growth' }));
-
-    expect(state).toEqual({
-      status: 'error',
-      message: 'The space was created but you were not added to it.',
-    });
-    expect(dbState.revalidated).toEqual([]);
     consoleError.mockRestore();
   });
 
@@ -184,7 +175,7 @@ describe('creating a team space', () => {
     const state = await createTeamSpace(form({ name: 'Growth' }));
 
     expect(state).toEqual({ status: 'error', message: NOT_SIGNED_IN });
-    expect(dbState.writes).toEqual([]);
+    expect(dbState.rpcs).toEqual([]);
   });
 });
 

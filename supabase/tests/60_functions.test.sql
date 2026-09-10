@@ -275,8 +275,8 @@ select set_eq(
   array['visible_space_ids', 'is_org_member', 'is_org_admin', 'is_space_member',
         'search', 'plan_document_limit', 'plan_monthly_query_limit',
         'check_ingest_allowed', 'check_query_allowed', 'record_retrieval',
-        'org_member_emails', 'org_usage_totals'],
-  'the only functions a client role may execute are the twelve meant to be callable'
+        'org_member_emails', 'org_usage_totals', 'create_team_space'],
+  'the only functions a client role may execute are the thirteen meant to be callable'
 );
 
 -- Grants. A policy is only reachable if the role also holds the table privilege.
@@ -370,7 +370,7 @@ select set_eq(
       ('visible_space_ids'), ('is_org_member'), ('is_org_admin'), ('is_space_member'),
       ('search'), ('plan_document_limit'), ('plan_monthly_query_limit'),
       ('check_ingest_allowed'), ('check_query_allowed'), ('record_retrieval'),
-      ('org_member_emails'), ('org_usage_totals')
+      ('org_member_emails'), ('org_usage_totals'), ('create_team_space')
     ) as c(f)
   $$,
   'the applied function execute privileges are exactly the ones 80_functions.sql declares'

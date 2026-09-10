@@ -4,7 +4,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(51);
+select plan(56);
 
 -- Four users: Alice and Bob in separate orgs, Carol and Dave in one, only Carol in the team.
 insert into auth.users (id, email, instance_id, aud, role)
@@ -524,6 +524,54 @@ select lives_ok(
      where id = '50000000-0000-4000-8000-00000000000a' $$,
   'renaming a space and turning dreaming off are untouched'
 );
+
+-- Creating a team space, as the product does it.
+set local role authenticated;
+set local request.jwt.claims to '{"sub":"a0000000-0000-4000-8000-000000000001","role":"authenticated"}';
+
+-- The SELECT policy applies to a RETURNING clause, and the creator is not a member yet.
+select throws_ok(
+  $$ insert into public.spaces (org_id, kind, name)
+     select org_id, 'team', 'Refused by returning'
+     from public.org_members where user_id = 'a0000000-0000-4000-8000-000000000001'
+     returning id $$,
+  '42501',
+  'new row violates row-level security policy for table "spaces"',
+  'a plain insert cannot read back the team space it just wrote'
+);
+
+select lives_ok(
+  $$ select public.create_team_space(
+       (select org_id from public.org_members
+        where user_id = 'a0000000-0000-4000-8000-000000000001'),
+       'Made by the function') $$,
+  'create_team_space makes a team space for a member of the organization'
+);
+
+select is(
+  (select count(*)::int from public.spaces where name = 'Made by the function'),
+  1,
+  'and the creator can see it'
+);
+
+select is(
+  (select count(*)::int
+   from public.space_members m
+   join public.spaces s on s.id = m.space_id
+   where s.name = 'Made by the function'
+     and m.user_id = 'a0000000-0000-4000-8000-000000000001'),
+  1,
+  'and is a member of it'
+);
+
+select throws_ok(
+  $$ select public.create_team_space('00000000-0000-4000-8000-0000000000ff', 'Not my org') $$,
+  '42501',
+  'not a member of that organization',
+  'and cannot make one in an organization they are not in'
+);
+
+reset role;
 
 select * from finish();
 

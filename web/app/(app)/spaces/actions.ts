@@ -18,15 +18,16 @@ const addMemberSchema = spaceIdSchema.extend({ userId: z.uuid() });
 const dreamingSchema = spaceIdSchema.extend({ enabled: z.boolean() });
 
 export async function createTeamSpace(formData: FormData): Promise<ActionState<{ id: string }>> {
-  return withSession(async ({ supabase, orgId, userId }) => {
+  return withSession(async ({ supabase, orgId }) => {
     const parsed = createSpaceSchema.safeParse({ name: formData.get('name') });
     if (!parsed.success) return errorState(parsed.error.issues[0].message);
 
-    const { data, error } = await supabase
-      .from('spaces')
-      .insert({ org_id: orgId, kind: 'team', name: parsed.data.name })
-      .select('id')
-      .single();
+    // One statement, because the SELECT policy applies to a RETURNING clause and the
+    // creator is not a member yet, so an insert here cannot read back its own row.
+    const { data, error } = await supabase.rpc('create_team_space', {
+      p_org_id: orgId,
+      p_name: parsed.data.name,
+    });
 
     if (error) {
       return databaseErrorState('creating a team space', error, {
@@ -34,18 +35,7 @@ export async function createTeamSpace(formData: FormData): Promise<ActionState<{
       });
     }
 
-    // The creator is not a member by construction, so join them in the same action.
-    const { error: joinError } = await supabase
-      .from('space_members')
-      .insert({ space_id: data.id, user_id: userId });
-
-    if (joinError) {
-      return databaseErrorState('joining a new team space', joinError, {
-        fallback: 'The space was created but you were not added to it.',
-      });
-    }
-
-    return successState({ id: data.id });
+    return successState({ id: data });
   }, '/spaces');
 }
 

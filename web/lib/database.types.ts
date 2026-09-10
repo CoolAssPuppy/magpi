@@ -1155,6 +1155,10 @@ export type Database = {
           retry_after_s: number
         }[]
       }
+      create_team_space: {
+        Args: { p_name: string; p_org_id: string }
+        Returns: string
+      }
       invoke_worker: {
         Args: { p_batch: number; p_worker: string }
         Returns: undefined
