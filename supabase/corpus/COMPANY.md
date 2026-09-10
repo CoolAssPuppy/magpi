@@ -1,110 +1,158 @@
-# Alderwick
+# Supaphone
 
-Everything in `supabase/corpus/` is fiction. Alderwick does not exist, Portside
-does not exist, and none of the people named here are real. The documents were
-written for Magpi so the demo has something with structure in it. This file is
-the reference the rest of the corpus is consistent with. Read it before adding
-a document.
+Everything in `supabase/corpus/` is fiction. Supaphone does not exist, the Fold
+S1 does not exist, and none of the people named here are real. The documents
+were written for Magpi so the demo has something with structure in it. This file
+is the reference the rest of the corpus is consistent with. Read it before
+adding a document, and change it first if a fact needs to move.
 
-## What the company does
+The name is deliberately obvious. Nobody watching should wonder for a second
+whether this is a real customer's data.
 
-Alderwick sells one product, Portside. Portside is a shared inbox and job
-tracker for freight brokers and small logistics firms. Every shipment gets a
-thread. Email from the carrier, status messages from the shipper's EDI feed,
-the rate confirmation, the bill of lading, the photos the driver sent at the
-dock: all of it lands in the same thread instead of in one person's Outlook and
-a spreadsheet nobody else can open.
+## What the company makes
 
-The customers are brokerages with between four and sixty people. They are not
-buying a platform. They are buying a way to stop losing the email where the
-carrier agreed to a price.
+Supaphone makes the Fold S1, a four-panel folding phone. Three hinges, four
+panels, opening from phone to tablet to a desk-sized surface. Seven people. The
+device is pre-production, heading for carrier certification and a pilot line in
+Shenzhen.
 
-Portside charges $340 per month for the Standard plan, which includes five
-seats and 1,200 shipments a month, plus $0.11 per shipment above that. There is
-a Growth plan at $890 with twenty seats. Most revenue comes from Standard
-accounts that go over on shipments every month.
+Three names that appear constantly and mean specific things:
 
-Alderwick has 31 people. Nineteen are in engineering, product and design. The
-rest are sales, support and two people who do finance and everything else.
-There is an office in Manchester and about a third of the company is remote.
-The company is eight years old and has never raised more than a seed round,
-which is a fact leadership repeats often enough that it has become a personality
-trait.
+- **Meniscus** is the outer display layer, the part a user touches when the
+  phone is folded shut.
+- **Bellows** is the hinge assembly, all three hinges together.
+- **Ori** is the shell and window manager, the software that decides what shows
+  on how many panels.
 
-## Who works there
+Org slug `supaphone`. Email domain `example.com`, because these are demo
+accounts and nothing else should look plausible enough to type into a real form.
 
-| Name           | Role                                | What they are usually arguing for                                       |
-| -------------- | ----------------------------------- | ----------------------------------------------------------------------- |
-| Diane Ockley   | Chief executive                     | Getting the pricing change out before the October renewals.             |
-| Marcus Ilic    | Head of engineering                 | Fewer things in flight. He has said this in three consecutive quarters. |
-| Sofia Berg     | Product manager, core product       | Filters and saved views before any rewrite.                             |
-| Priya Raman    | Engineering lead, platform          | Owning less code. She inherited the billing service and did not want it.|
-| Nadia Osei     | Staff engineer, search              | Replacing the search index rather than patching the ranking again.      |
-| Jonah Kestrel  | Engineer, billing                   | Whatever gets the trueup job off his plate. He is moving to search.     |
-| Kenji Mori     | Infrastructure engineer             | The EU region, and being honest with customers about when it lands.     |
-| Ruth Adeyemi   | Designer                            | The conversation header, which she thinks has too many verbs in it.     |
-| Elena Vargas   | Head of sales                       | Knowing the new prices before the customers do.                         |
-| Hal Winters    | Support lead                        | Search, because half his tickets are people who cannot find a thread.   |
+## The people
 
-Two more names appear in passing and have no documents of their own: Ade
-Fashola in finance, and Rosa Delgado on support.
+| Person | Email | Role |
+| --- | --- | --- |
+| Jane Okonkwo | jane@example.com | CEO, co-founder |
+| Sam Lindqvist | sam@example.com | Hardware, hinge and display |
+| Ben Achilov | ben@example.com | Firmware and the Ori shell |
+| Maya Restrepo | maya@example.com | Head of marketing |
+| Priya Raghunathan | priya@example.com | Product marketing |
+| John Mbeki | john@example.com | Finance lead |
+| Dana Provenzano | dana@example.com | Supply chain and manufacturing ops |
 
-## The tools they use
+Every account has the password `supabasedemo`. They are demo accounts in a demo
+company and the password is in the README.
 
-- Notion for planning documents, specifications, decision records and meeting
-  notes. The longest documents.
-- Linear for issues. Prefixes are `BIL` for billing, `SRCH` for search, `INF`
-  for infrastructure, `WEB` for the web client, `MOB` for mobile, and `EDI` for
-  the EDI parsers.
-- Slack for the arguments. Channels are `#general`, `#product`, `#eng`,
-  `#billing`, `#design`, `#support`, `#sales` and `#leads`.
-- Google Drive for slide exports, PDFs and the occasional transcript. These are
-  the documents that survived a conversion and read like it.
+## The spaces
 
-## What they are arguing about this quarter
+| Space | Kind | Members |
+| --- | --- | --- |
+| Company | org | all seven, enrolled by the signup trigger |
+| Marketing | team | Jane, Maya, Priya, Ben |
+| Engineering | team | Jane, Sam, Ben, John |
+| Finance | team | Jane, John, Dana |
+| Personal | personal | one per person, seeded for Jane, Sam and John |
 
-**Billing.** In March they decided to build invoicing, proration and the
-month-end trueup themselves on top of Stripe payment primitives, rather than
-use Stripe Billing. In May the proration bugs made that decision look worse
-than it did in March. In June they reversed it. The cleanup runs through Q3 and
-is the largest single piece of engineering work in the quarter. In Linear it is
-the `BIL` project. In Slack it is the Stripe thing. In the planning documents it
-is the billing migration.
+Jane is the only person in every shared space, which is the whole reason she is
+the account the demo signs in as. She is not privileged: there is no role in
+this product that reads across a space boundary. She sees everything because she
+is a member of everything, and the moment you remove her from Finance she stops
+seeing Finance.
 
-**Search.** Customers cannot find old threads. Nadia wants to replace the index.
-Sofia wants filters and saved views first, on the grounds that most of the
-tickets Hal sees are people who know exactly which thread they want and cannot
-narrow the list. Neither has convinced the other. In Linear it is `SRCH`. In
-Slack it is the search rewrite, or occasionally the fuzzy search thing.
+The two walls that matter:
 
-**The EU region.** Two customers have asked for data to stay in Europe.
-Alderwick planned a Frankfurt deployment for Q3. It has slipped to Q4 because
-the audit log writer assumes one primary database and has to be rewritten
-first. In Linear it is `INF-311`. In Slack it is Frankfurt.
+- **Sam is not in Finance.** Anything about cost, margin or the launch price is
+  invisible to him.
+- **John is not in Marketing.** Anything about the launch date, the embargo or
+  the carrier deal is invisible to him.
 
-**Pricing.** Leadership is changing the Standard price and the overage rate in
-October. Nobody outside leadership has the numbers yet, and sales keeps asking.
-This is the only genuinely confidential thing in the company right now, which
-is why it is the thing everyone talks about.
+Ben is in Marketing and Engineering but not Finance. Dana is in Finance but not
+Engineering. Every question in `docs/corpus.md` names which of these people can
+answer it and which cannot.
 
-**Mobile.** The mobile app shipped in July without offline drafts. Sofia cut
-them. Support has opinions.
+## The timeline
 
-**The old EDI parser.** There is a 214 status parser written in 2021 that
-handles seven customers and times out on two of them. Retiring it means asking
-those seven to change something, which nobody wants to do in the same quarter
-as a price rise.
+Two tranches, and the split is the demo.
 
-## House style, for anyone adding a document
+**Tranche 1 runs 2026-08-10 to 2026-09-08.** Thirty days, loaded fully
+processed: documents, chunks, embeddings, entities, mentions, dream runs,
+digests, links, plus backdated conversations and usage.
 
-These are documents written by people under time pressure. They are allowed to
-be uneven. A Slack thread can trail off without a conclusion. A Linear comment
-can be one line. A meeting note can have a bullet that somebody started and did
-not finish. That is what makes the corpus useful.
+**Tranche 2 is 2026-09-09.** One day, loaded as documents with queued ingest
+jobs and nothing else. This is the input to tonight's dream, and running that
+dream on stage is the point.
 
-No emoji and no em dashes, anywhere, including inside a fictional person's
-Slack message. Sentence case in headers. No statistic about the real world that
-a viewer could mistake for a fact. Alderwick's own numbers are fine and
-necessary: seat counts, ticket numbers, its own prices, how many customers use
-the old parser. A claim about the freight industry or about a real vendor's
-capabilities is not.
+## What is planted in it
+
+Four properties, planted on purpose. A document that contradicts one of these is
+a bug in the corpus.
+
+**1. One thing under three names.** The outer layer decision is called the
+outer layer decision in Notion, `ENG-212` in Linear, and the crease thing in
+Slack. Entity extraction has something real to canonicalize.
+
+**2. A decision that reversed.** On 12 August the team picked UTG-3 ultra-thin
+glass for Meniscus. On 27 August they reversed it to Meniscus-C polymer after
+the hinge cycle test failed at 180,000 cycles on unit B7. Both decisions are
+written down. Asking what Meniscus is made of has to come back with the polymer,
+and the glass has to be findable as the thing that was superseded.
+
+**3. A fact only Finance holds.** The Fold S1 unit cost landed at $1,140, which
+is what set the $1,899 launch price. That number appears only in Finance
+documents. Jane and John can answer a question about margin. Sam gets a shorter
+answer with no error and no dialog about it.
+
+**4. A fact only Marketing holds.** The launch is 2026-11-04 under embargo, with
+two carriers signed. That date appears only in Marketing documents. John cannot
+see it.
+
+## Where the documents come from
+
+Five sources, and each one has to read like an export from that tool rather than
+like a memo. A citation to a Slack thread that looks identical to a citation to
+a Notion page teaches the audience nothing.
+
+- **Slack** is threaded messages with handles and timestamps, in
+  `#general`, `#hardware`, `#display`, `#firmware`, `#design`,
+  `#supply-chain`, `#gtm`, `#finance`, `#incidents`, `#random`.
+- **Linear** is issue bodies with a status line, labels, an assignee and a
+  comment thread. Prefixes: `ENG`, `HW`, `ORI`, `OPS`, `GTM`.
+- **Notion** is nested pages with headings, tables and decision records.
+- **Google Drive** is longer prose: memos, board updates, test reports.
+- **Direct upload** is what a person dragged in: a PDF report, a spreadsheet
+  export written out as a table, a scanned supplier quote.
+
+## Detail the corpus settled on
+
+Written down after the fact, because documents already depend on these and a new
+one that disagrees would be the inconsistency this file exists to prevent.
+
+- **Suppliers are places, not companies.** UTG-3 came from the Kyoto vendor,
+  Meniscus-C from the Suwon vendor. Carriers are A and B and never named.
+- **The cycle spec is 200,000**, for a two year life. Test units are B5, B6, B7
+  and B9 on glass, B11 and B12 on polymer.
+- **Four panels**, numbered from hinge 1. Hinge 2 is the middle one. Fold states
+  are phone, tablet and desk. A pane is a whole panel.
+- **The crease is measured** on a 60 degree gloss meter against a 2.5 GU gate,
+  with a three-observer panel behind it.
+- **Certification** is FCC Part 15B, SAR limit 1.6 W/kg, accredited lab booked
+  for the week of 21 September.
+- **Finance only.** Unit cost $1,140, launch price $1,899, about 40 percent
+  gross margin. Panels are 41 percent of the bill of materials, Bellows 14
+  percent. Polymer tooling $214k against $267k for glass.
+- **Marketing only.** Embargo lifts at 10:00 on 2026-11-04, retail 4 and 7
+  November, two carriers signed.
+
+## Rules for adding a document
+
+- Every fact must agree with this file. If it cannot, change this file first.
+- Authorship follows membership. An author, owner, assignee or commenter must be
+  a member of the space the document lands in. A Finance document written by Sam
+  is a bug, and so is a Slack thread in an Engineering channel with Dana posting
+  in it.
+- Being mentioned is not the same as taking part. An Engineering page can say
+  "Dana reordered the tooling" even though Dana is not in Engineering, because
+  people talk about colleagues on other teams constantly. She just cannot be the
+  one writing it.
+- Dates fall inside a tranche. Nothing is dated after 2026-09-09.
+- No document explains the permission model. The corpus is the company's work,
+  not a tutorial about Magpi.

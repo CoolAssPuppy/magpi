@@ -149,14 +149,29 @@ async function main() {
   const people = [];
   for (const person of PEOPLE) people.push(await ensurePerson(client, person));
 
+  // Jane's own organization, made by the signup trigger. Taking the oldest one instead would
+  // load Supaphone into whatever organization already happened to be in the database.
+  const [jane] = people;
+  const { data: membership } = await client
+    .from('org_members')
+    .select('org_id')
+    .eq('user_id', jane.id)
+    .eq('role', 'owner')
+    .limit(1);
+
+  const orgId = membership?.[0]?.org_id;
+  if (!orgId) {
+    throw new Error(`${jane.email} owns no organization, so the signup trigger did not fire`);
+  }
+
   const { data: orgs } = await client
     .from('organizations')
     .select('id, slug')
-    .order('created_at')
+    .eq('id', orgId)
     .limit(1);
 
   const org = orgs?.[0];
-  if (!org) throw new Error('no organization exists, which means the signup trigger did not fire');
+  if (!org) throw new Error('the organization the trigger made has gone missing');
 
   for (const person of people) await joinOrganization(client, org.id, person);
   await renameOrgSpace(client, org.id);

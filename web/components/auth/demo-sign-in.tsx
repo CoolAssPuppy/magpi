@@ -8,30 +8,34 @@ import { createClient } from '@/lib/supabase/client';
 
 import { FormError } from './form-error';
 
-/** The demo account from supabase/corpus/COMPANY.md, seeded by scripts/seed-demo.mjs. */
-const DEMO_EMAIL = 'jane@example.com';
 const DEMO_PASSWORD = 'supabasedemo';
 
 /**
- * Signs in as the seeded demo CEO. Rendered only where SB_DEMO_LOGIN is on, and coloured off the
- * product palette so nobody mistakes it for a way real people get in.
+ * Three of the seven seeded accounts, chosen so one question separates them. Jane sees every
+ * space. John holds the cost and not the launch date. Maya holds the launch date and not the cost.
  */
+const ACCOUNTS = [
+  { label: 'Log in as CEO', email: 'jane@example.com', who: 'Jane, in every space' },
+  { label: 'Log in as Finance', email: 'john@example.com', who: 'John, no Marketing' },
+  { label: 'Log in as Marketing', email: 'maya@example.com', who: 'Maya, no Finance' },
+] as const;
+
 export function DemoSignIn({ next }: { next: string }) {
   const [error, setError] = useState<string | null>(null);
-  const [isPending, setIsPending] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
 
-  async function signIn() {
-    setIsPending(true);
+  async function signIn(email: string) {
+    setPendingEmail(email);
     setError(null);
 
     const { error: signInError } = await createClient().auth.signInWithPassword({
-      email: DEMO_EMAIL,
+      email,
       password: DEMO_PASSWORD,
     });
 
     if (signInError) {
       setError(`${signInError.message}. Run scripts/seed-demo.mjs to create the demo accounts.`);
-      setIsPending(false);
+      setPendingEmail(null);
       return;
     }
 
@@ -42,17 +46,21 @@ export function DemoSignIn({ next }: { next: string }) {
     <div className="flex flex-col gap-2">
       <FormError message={error} />
 
-      <Button
-        type="button"
-        disabled={isPending}
-        onClick={signIn}
-        className="bg-demo text-demo-foreground hover:bg-demo/90 w-full"
-      >
-        Log in as Jane
-      </Button>
+      {ACCOUNTS.map((account) => (
+        <Button
+          key={account.email}
+          type="button"
+          disabled={pendingEmail !== null}
+          onClick={() => void signIn(account.email)}
+          className="bg-demo text-demo-foreground hover:bg-demo/90 w-full justify-between"
+        >
+          <span>{account.label}</span>
+          <span className="text-xs opacity-80">{account.who}</span>
+        </Button>
+      ))}
 
       <p className="text-center text-xs text-tertiary-foreground">
-        Demo account. Jane is in every space, so she can answer anything.
+        Demo accounts. Ask each of them what the Fold S1 costs and when it launches.
       </p>
     </div>
   );

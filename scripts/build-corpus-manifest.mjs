@@ -43,11 +43,16 @@ const URL_FOR = {
   upload: () => null,
 };
 
-const titleOf = (body, fallback) => {
-  const heading = /^#\s+(.+)$/m.exec(body);
-  if (!heading) return fallback;
+/** A scan has no heading, so it gets called what the file is called, like it would be in Drive. */
+const fromSlug = (slug) => {
+  const words = slug.replace(/^[a-z]+-/, '').replace(/-/g, ' ').trim();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+};
+
+const titleOf = (body, slug) => {
   // A Linear export leads with "ENG-212 · Title". Both halves belong in the title.
-  return heading[1].trim();
+  const heading = /^#\s+(.+)$/m.exec(body);
+  return heading ? heading[1].trim() : fromSlug(slug);
 };
 
 /** The last date the document mentions, so ordering in the app matches the story. */

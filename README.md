@@ -61,10 +61,18 @@ boundary. Ask Jane what the Fold S1 costs to build and she answers with a
 citation. Ask Sam the same question and the answer is shorter, with no error and
 no dialog about it, because the number lives in Finance and he is not in it.
 
-Set `SB_DEMO_LOGIN=true` to put a "Log in as Jane" button under the sign-in
-form. It is off unless that variable is exactly `true`, and it is deliberately
-the only thing in the app painted a colour the product palette does not contain.
-Do not set it on a deployment holding anything real.
+Set `SB_DEMO_LOGIN=true` to put three quick-login buttons under the sign-in
+form: CEO, Finance and Marketing. One question separates them, which is the only
+reason there are three.
+
+| Ask                                  | Jane, CEO | John, Finance            | Maya, Marketing          |
+| ------------------------------------ | --------- | ------------------------ | ------------------------ |
+| What does the Fold S1 cost to build? | answers   | answers                  | shorter answer, no error |
+| When do we launch?                   | answers   | shorter answer, no error | answers                  |
+
+The buttons are off unless that variable is exactly `true`, and they are
+deliberately the only thing in the app painted a colour the product palette does
+not contain. Do not set it on a deployment holding anything real.
 
 ## The permission model
 
