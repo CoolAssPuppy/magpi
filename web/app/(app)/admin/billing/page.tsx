@@ -1,4 +1,5 @@
 import { Panel } from '@/components/admin/panel';
+import { SectionHeader } from '@/components/admin/section-header';
 import { ErrorState } from '@/components/app/error-state';
 import { PlanCard } from '@/components/billing/plan-card';
 import { resolveAdminAccess } from '@/lib/analytics/access';
@@ -41,7 +42,9 @@ export default async function BillingPage({
   const message = params.error ? BILLING_ERRORS[params.error] : undefined;
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-10">
+      <SectionHeader title="Billing and payment" />
+
       {message ? <ErrorState title="Billing did not go through" detail={message} /> : null}
 
       {params.checkout === 'complete' ? (
@@ -50,7 +53,7 @@ export default async function BillingPage({
         </p>
       ) : null}
 
-      <Panel title="Plan" description="Choose your usage level">
+      <Panel title="Plan">
         <PlanCard
           state={{
             plan: organization.plan,

@@ -20,37 +20,6 @@ export default function PricingPage() {
       </section>
 
       <PricingTable />
-
-      <section className="flex flex-col gap-3">
-        <h2 className="font-heading text-lg font-medium text-foreground">Questions people ask</h2>
-        <dl className="grid gap-8 md:grid-cols-2">
-          <div>
-            <dt className="text-sm font-medium text-foreground">What counts as a question?</dt>
-            <dd className="mt-1.5 max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">
-              One answered turn in chat. Follow-ups count, because each one runs a search.
-            </dd>
-          </div>
-          <div>
-            <dt className="text-sm font-medium text-foreground">What happens at the limit?</dt>
-            <dd className="mt-1.5 max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">
-              New ingest is refused and everything already in Magpi keeps answering.
-            </dd>
-          </div>
-          <div>
-            <dt className="text-sm font-medium text-foreground">Can I cancel?</dt>
-            <dd className="mt-1.5 max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">
-              In the Stripe customer portal, in two clicks. Your organization drops back to Free and
-              your documents stay where they are.
-            </dd>
-          </div>
-          <div>
-            <dt className="text-sm font-medium text-foreground">Is it really open source?</dt>
-            <dd className="mt-1.5 max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">
-              MIT, the whole thing, including this billing code. Run it yourself and pay nobody.
-            </dd>
-          </div>
-        </dl>
-      </section>
     </ShellRow>
   );
 }

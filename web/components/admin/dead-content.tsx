@@ -31,7 +31,7 @@ export function DeadContent({ content, now }: { content: DeadContentData; now: D
 
       {content.samples.length > 0 ? (
         <div>
-          <h3 className="text-sm font-medium text-foreground">The oldest of it</h3>
+          <h3 className="font-heading text-sm font-medium text-foreground">The oldest of it</h3>
           <ul className="mt-3 flex flex-col divide-y divide-border border-y border-border">
             {content.samples.map((document) => (
               <li key={document.id} className="flex items-baseline justify-between gap-4 py-2.5">

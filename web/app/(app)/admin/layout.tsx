@@ -33,11 +33,6 @@ export default async function AdminLayout({ children }: { children: ReactNode })
 
   return (
     <>
-      <PageHeader
-        title="Admin"
-        description="Whether the brain is working, who is in the organization, and what it costs."
-      />
-
       <div className="flex flex-col gap-6 md:flex-row md:gap-8">
         <aside className="md:w-44 md:shrink-0">
           <SideNav items={ADMIN_SECTIONS} label="Admin sections" />

@@ -16,14 +16,17 @@ describe('an analytics panel', () => {
     expect(screen.getByText('Nothing has failed today.')).toBeInTheDocument();
   });
 
-  it('explains what the numbers mean when the panel needs explaining', () => {
-    render(
-      <Panel title="Dead content" description="Documents nobody has ever been shown.">
+  // A panel used to take a subtitle. Every one of them restated its own heading, so the heading
+  // is the whole story and anything else belongs in the panel's content.
+  it('draws no rule, so a page of panels is separated by space rather than by lines', () => {
+    const { container } = render(
+      <Panel title="Dead content">
         <p>48 of 100</p>
       </Panel>,
     );
 
-    expect(screen.getByText('Documents nobody has ever been shown.')).toBeInTheDocument();
+    const section = container.querySelector('section');
+    expect(section?.className ?? '').not.toMatch(/border/);
   });
 
   it('says nothing extra when the heading is the whole story', () => {

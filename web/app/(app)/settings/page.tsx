@@ -32,7 +32,10 @@ export default async function SettingsPage() {
     <div className="flex flex-col gap-8">
       <PageHeader title="Settings" description="Your account and your personal space." />
 
-      <Panel title="Profile" description={`Signed in as ${context.email ?? 'an unknown address'}.`}>
+      <Panel title="Profile">
+        <p className="mb-4 text-sm text-tertiary-foreground">
+          Signed in as {context.email ?? 'an unknown address'}.
+        </p>
         <NameForm
           action={updateDisplayName}
           fieldName="displayName"
@@ -45,7 +48,7 @@ export default async function SettingsPage() {
         />
       </Panel>
 
-      <Panel title="Your personal space" description="Only you can see what is in this space.">
+      <Panel title="Your personal space">
         {personalSpace ? (
           <NameForm
             action={renamePersonalSpace}
@@ -65,7 +68,7 @@ export default async function SettingsPage() {
         )}
       </Panel>
 
-      <Panel title="Sessions" description="Signs you out on every device.">
+      <Panel title="Sessions">
         <ActionButton
           action={signOutEverywhere}
           label="Sign out everywhere"

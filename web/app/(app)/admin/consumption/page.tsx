@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { Panel } from '@/components/admin/panel';
 import { PanelSkeleton } from '@/components/admin/panel-skeleton';
 import { PlanUsage } from '@/components/admin/plan-usage';
+import { SectionHeader } from '@/components/admin/section-header';
 import { resolveAdminAccess } from '@/lib/analytics/access';
 import { fetchPlanUsage, type AnalyticsClient } from '@/lib/analytics/queries';
 
@@ -30,10 +31,8 @@ export default async function AdminConsumptionPage() {
   };
 
   return (
-    <div className="flex flex-col gap-8">
-      <p className="text-sm text-tertiary-foreground">
-        What this organization has used this month.
-      </p>
+    <div className="flex flex-col gap-10">
+      <SectionHeader title="How much you're using" />
 
       <Panel title="Usage against plan">
         <Suspense fallback={<PanelSkeleton rows={3} />}>

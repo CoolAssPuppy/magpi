@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 
 import { Panel } from '@/components/admin/panel';
 import { PanelSkeleton } from '@/components/admin/panel-skeleton';
+import { SectionHeader } from '@/components/admin/section-header';
 import { parseRange, RangeFilter, type RangeDays } from '@/components/admin/range-filter';
 import { TopQuestions } from '@/components/admin/top-questions';
 import { ColumnChart } from '@/components/charts/column-chart';
@@ -43,7 +44,7 @@ async function SearchActivityPanel({ client, orgId, now, days }: RangedPanelProp
       />
       <LatencyChart
         title="Answer latency"
-        description="p95 is the one to watch. p50 sits behind it for context."
+        description="p95 and p50, in milliseconds."
         points={points}
       />
     </div>
@@ -73,22 +74,19 @@ export default async function AdminSearchesPage({
   const ranged = { client: access.elevated, orgId: access.context.orgId, now, days };
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-tertiary-foreground">What is being asked, and how it answers.</p>
+        <SectionHeader title="Search activity" />
         <RangeFilter basePath="/admin/searches" active={days} />
       </div>
 
-      <Panel
-        title="Search activity"
-        description="How much is being asked, and how long answers take."
-      >
+      <Panel title="Volume and latency">
         <Suspense fallback={<PanelSkeleton rows={6} />}>
           <SearchActivityPanel {...ranged} />
         </Suspense>
       </Panel>
 
-      <Panel title="Top questions" description="Questions grouped by wording.">
+      <Panel title="Top questions">
         <Suspense fallback={<PanelSkeleton rows={6} />}>
           <TopQuestionsPanel {...ranged} />
         </Suspense>

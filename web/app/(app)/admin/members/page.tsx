@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { InviteForm } from '@/components/admin/invite-form';
 import { MemberList, type MemberRow } from '@/components/admin/member-list';
 import { Panel } from '@/components/admin/panel';
+import { SectionHeader } from '@/components/admin/section-header';
 import { PendingInvites, type InviteRow } from '@/components/admin/pending-invites';
 import { ErrorState } from '@/components/app/error-state';
 import { resolveAdminAccess } from '@/lib/analytics/access';
@@ -87,15 +88,14 @@ export default async function MembersPage({
   }));
 
   return (
-    <div className="flex flex-col gap-8">
-      <Panel
-        title="Invite someone"
-        description="An invitation is a one-time link. Magpi stores a hash of it, so it can only be read once."
-      >
+    <div className="flex flex-col gap-10">
+      <SectionHeader title="Users and teams" />
+
+      <Panel title="Invite someone">
         <InviteForm action={inviteMember} baseUrl={baseUrl} />
       </Panel>
 
-      <Panel title="Members" description={`${total} in this organization.`}>
+      <Panel title={`Members (${total})`}>
         <MemberList members={members} now={now} removeAction={removeMember} />
         <MemberPager page={page} pageCount={pageCount} />
       </Panel>
