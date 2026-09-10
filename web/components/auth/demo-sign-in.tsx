@@ -15,9 +15,9 @@ const DEMO_PASSWORD = 'supabasedemo';
  * space. John holds the cost and not the launch date. Maya holds the launch date and not the cost.
  */
 const ACCOUNTS = [
-  { label: 'Log in as CEO', email: 'jane@example.com', who: 'Jane, in every space' },
-  { label: 'Log in as Finance', email: 'john@example.com', who: 'John, no Marketing' },
-  { label: 'Log in as Marketing', email: 'maya@example.com', who: 'Maya, no Finance' },
+  { label: 'Log in as CEO', email: 'jane@example.com' },
+  { label: 'Log in as Finance', email: 'john@example.com' },
+  { label: 'Log in as Marketing', email: 'maya@example.com' },
 ] as const;
 
 export function DemoSignIn({ next }: { next: string }) {
@@ -43,7 +43,7 @@ export function DemoSignIn({ next }: { next: string }) {
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="mt-4 flex flex-col gap-2">
       <FormError message={error} />
 
       {ACCOUNTS.map((account) => (
@@ -52,16 +52,11 @@ export function DemoSignIn({ next }: { next: string }) {
           type="button"
           disabled={pendingEmail !== null}
           onClick={() => void signIn(account.email)}
-          className="bg-demo text-demo-foreground hover:bg-demo/90 w-full justify-between"
+          className="w-full bg-demo text-demo-foreground hover:bg-demo/90"
         >
-          <span>{account.label}</span>
-          <span className="text-xs opacity-80">{account.who}</span>
+          {account.label}
         </Button>
       ))}
-
-      <p className="text-center text-xs text-tertiary-foreground">
-        Demo accounts. Ask each of them what the Fold S1 costs and when it launches.
-      </p>
     </div>
   );
 }
