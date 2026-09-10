@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from 'react';
 
-import { StatusPill } from '@/components/app/status-pill';
 import { Button } from '@/components/ui/button';
 import type { ActionState } from '@/lib/actions/state';
 import type { ScopeSelection } from '@/lib/connections/scope-selection';
@@ -40,6 +39,11 @@ export function ScopeEditor({
   const [isSaved, setSaved] = useState(false);
   const [isPending, startTransition] = useTransition();
 
+  // Nothing to save until the boxes differ from what is stored, so the button stays out of the way.
+  const saved = selection.kind === 'set' ? selection.selected : [];
+  const isChanged =
+    saved.length !== selected.length || saved.some((id) => !selected.includes(id));
+
   const save = () => {
     setFailure(null);
     setSaved(false);
@@ -58,16 +62,8 @@ export function ScopeEditor({
   };
 
   return (
-    <div className="flex flex-col gap-3 py-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <StatusPill tone={connection.status.tone} label={connection.status.label} />
-        <span className="text-sm text-foreground">{connection.spaceName}</span>
-        <span className="text-xs text-tertiary-foreground">{connection.account}</span>
-      </div>
-      <p className="max-w-[var(--measure-prose)] text-sm text-muted-foreground">
-        {connection.status.reason}
-      </p>
-
+    // The row above already names the space, the account and the status, so this starts at the scope.
+    <div className="flex flex-col gap-3 pt-3">
       <ScopePicker
         selection={selection}
         selected={selected}
@@ -75,7 +71,7 @@ export function ScopeEditor({
         disabled={isPending}
       />
 
-      {selection.kind === 'set' && selection.selectionKind !== 'workspace' ? (
+      {selection.kind === 'set' && selection.selectionKind !== 'workspace' && isChanged ? (
         <div className="flex items-center gap-3">
           <Button size="sm" disabled={isPending} onClick={save}>
             Save selection

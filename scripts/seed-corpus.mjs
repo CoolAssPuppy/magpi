@@ -216,18 +216,82 @@ async function uploadBody(db, storagePath, body) {
   }
 }
 
+/** The account each provider connects to. One company, so one workspace per tool. */
+const ACCOUNT_BY_PROVIDER = {
+  notion: 'Supaphone',
+  linear: 'linear.app/supaphone',
+  slack: 'supaphone.slack.com',
+  google_drive: 'Supaphone Shared Drive',
+};
+
+/** Which unit of the source a document sits in, read off the filename the corpus already uses. */
+const SCOPE_ITEM_OF = {
+  slack: (path) => {
+    const channel = /\/slack-(.+?)-\d{4}-\d{2}-\d{2}-/.exec(path);
+    return channel ? { id: channel[1], name: `#${channel[1]}` } : null;
+  },
+  linear: (path) => {
+    const team = /\/linear-([A-Z]+)-\d+-/.exec(path);
+    return team ? { id: team[1].toLowerCase(), name: `${team[1]} team` } : null;
+  },
+  notion: (path, spaceName) => ({ id: path.split('/')[0], name: `${spaceName} teamspace` }),
+  drive: (path, spaceName) => ({ id: path.split('/')[0], name: `${spaceName}/` }),
+};
+
+/**
+ * What each connection can see and what this space actually reads. `available` is every unit the
+ * account can reach, so it is the same for every space, and `selected` is only that space's own.
+ */
+function buildScopes(manifest, spaceNames) {
+  const available = {};
+  const selected = {};
+
+  for (const entry of manifest) {
+    const read = SCOPE_ITEM_OF[entry.source];
+    if (!read) continue;
+    const item = read(entry.path, spaceNames[entry.space] ?? entry.space);
+    if (!item) continue;
+
+    (available[entry.source] ??= new Map()).set(item.id, item);
+    (selected[`${entry.space}:${entry.source}`] ??= new Set()).add(item.id);
+  }
+
+  return { available, selected };
+}
+
 /** One connection per space and provider, so every synced document belongs to a named source. */
-async function ensureConnections(db, { orgId, spaces, manifest, ownerUserId }) {
+async function ensureConnections(db, { orgId, spaces, spaceNames, manifest, ownerUserId }) {
   const wanted = new Map();
   for (const entry of manifest) {
     const provider = PROVIDER_BY_SOURCE[entry.source];
     if (provider) wanted.set(`${entry.space}:${entry.source}`, { spaceKey: entry.space, provider });
   }
 
+  const { available, selected } = buildScopes(manifest, spaceNames);
+  const scopeKind = Object.fromEntries(
+    unwrap(
+      await db.from('providers').select('slug, scope_selection_kind'),
+      'reading provider scope kinds',
+    ).map((row) => [row.slug, row.scope_selection_kind]),
+  );
+
   const connections = new Map();
   for (const [key, { spaceKey, provider }] of wanted) {
     const spaceId = spaces[spaceKey];
     if (!spaceId) throw new SeedError(`manifest names unknown space ${spaceKey}`);
+
+    const source = key.split(':')[1];
+    const mine = [...(selected[key] ?? [])];
+    // A workspace connection is all or nothing, so it lists only what it reads. A channel or
+    // folder connection is a picker, so it lists everything the account can see.
+    const scopeSelection = {
+      kind: scopeKind[provider],
+      available:
+        scopeKind[provider] === 'workspace'
+          ? mine.map((id) => available[source].get(id))
+          : [...(available[source]?.values() ?? [])],
+      selected: mine,
+    };
 
     const existing = unwrap(
       await db
@@ -253,6 +317,8 @@ async function ensureConnections(db, { orgId, spaces, manifest, ownerUserId }) {
           space_id: spaceId,
           user_id: ownerUserId,
           provider,
+          external_account_id: ACCOUNT_BY_PROVIDER[provider],
+          scope_selection: scopeSelection,
           status: 'active',
           last_synced_at: new Date().toISOString(),
         })
@@ -339,10 +405,18 @@ async function main() {
   const { rows: members, byEmail } = await resolveMembers(db, org.id);
   const spaces = await resolveSpaces(db, org.id, byEmail);
 
+  // The name each corpus folder reads as inside its source, used to label folders and teamspaces.
+  const spaceNames = {
+    company: 'Company',
+    ...Object.fromEntries(TEAM_SPACES.map((team) => [team.key, team.name])),
+    ...Object.fromEntries(Object.keys(PERSONAL_FOLDERS).map((key) => [key, 'Personal'])),
+  };
+
   const ownerUserId = (members.find((member) => member.role === 'owner') ?? members[0]).user_id;
   const connections = await ensureConnections(db, {
     orgId: org.id,
     spaces,
+    spaceNames,
     manifest,
     ownerUserId,
   });

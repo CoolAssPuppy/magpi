@@ -1,0 +1,34 @@
+- generic [active] [ref=f4e1]:
+  - generic [ref=f4e2]:
+    - banner [ref=f4e3]:
+      - generic [ref=f4e4]:
+        - link "Magpi" [ref=f4e5] [cursor=pointer]:
+          - /url: /chat
+        - navigation "Sections" [ref=f4e11]:
+          - link "Chat" [ref=f4e12] [cursor=pointer]:
+            - /url: /chat
+          - link "Spaces" [ref=f4e13] [cursor=pointer]:
+            - /url: /spaces
+          - link "Documents" [ref=f4e14] [cursor=pointer]:
+            - /url: /documents
+          - link "Connections" [ref=f4e15] [cursor=pointer]:
+            - /url: /connections
+          - link "Dreams" [ref=f4e16] [cursor=pointer]:
+            - /url: /dreams
+        - button "Your account" [ref=f4e17]:
+          - generic [ref=f4e18]: "?"
+      - navigation "Breadcrumb" [ref=f4e22]:
+        - list [ref=f4e23]:
+          - listitem [ref=f4e24]:
+            - generic [ref=f4e25]: Connections
+    - main [ref=f4e26]
+    - contentinfo [ref=f4e52]:
+      - generic [ref=f4e53]:
+        - link "Source" [ref=f4e54] [cursor=pointer]:
+          - /url: https://github.com/supabase-community/magpi
+        - generic [ref=f4e55]:
+          - button "System" [pressed] [ref=f4e56]
+          - button "Light" [ref=f4e59]
+          - button "Dark" [ref=f4e66]
+  - button "Open Next.js Dev Tools" [ref=f4e74] [cursor=pointer]
+  - alert [ref=f4e78]
