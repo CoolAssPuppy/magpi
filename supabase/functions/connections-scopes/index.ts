@@ -6,7 +6,11 @@ import { connectionsScopesSchema, parseBody } from '../_shared/validate.ts';
 import { serviceClient } from '../_shared/db.ts';
 import { enforceRateLimits } from '../_shared/rate_limit.ts';
 import { requireUser } from '../_shared/auth.ts';
-import { loadConnection, requireConnectionAccess } from '../_shared/connections.ts';
+import {
+  loadConnection,
+  requireConnectionAccess,
+  requireRoutableSpaces,
+} from '../_shared/connections.ts';
 import { liveHttp } from '../_shared/deps.ts';
 import { buildScopeSelection, storedSelectionOf } from '../_shared/scope_selection.ts';
 import { SourceError } from '../_shared/sources/contract.ts';
@@ -34,6 +38,9 @@ serveFunction('connections-scopes', async (core) => {
 
   const stored = storedSelectionOf(connection.scope_selection);
   const routes = input.routes ?? stored?.routes ?? {};
+
+  // Only the routes the caller sent are checked. A stored route was checked when it was stored.
+  if (input.routes) await requireRoutableSpaces(db, user.id, connection.org_id, input.routes);
 
   const http = { fetch: liveHttp.fetch, now: () => new Date() };
   const credentials = await resolveCredentials(connection, { db, http });

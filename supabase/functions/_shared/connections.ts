@@ -136,3 +136,34 @@ export async function requireConnectionAccess(
     throw new ApiError(404, 'unknown_connection', 'no such connection');
   }
 }
+
+/**
+ * Every destination has to be a space in the connection's own organization that the caller is a
+ * member of. Without this a route can be saved that `documents_space_in_org` then rejects inside a
+ * background sync, or one that files documents into a space the caller cannot open.
+ */
+export async function requireRoutableSpaces(
+  db: SupabaseClient,
+  userId: string,
+  orgId: string,
+  routes: Record<string, string>,
+): Promise<void> {
+  const wanted = [...new Set(Object.values(routes))];
+  if (wanted.length === 0) return;
+
+  const { data, error } = await db
+    .from('spaces')
+    .select('id, space_members!inner(user_id)')
+    .eq('org_id', orgId)
+    .eq('space_members.user_id', userId)
+    .in('id', wanted)
+    .returns<{ id: string }[]>();
+  if (error) throw new ApiError(500, 'internal', 'space lookup failed');
+
+  const allowed = new Set((data ?? []).map((row) => row.id));
+  const refused = wanted.filter((id) => !allowed.has(id));
+  // Out of org and not a member are the same answer, so neither can be probed.
+  if (refused.length > 0) {
+    throw new ApiError(404, 'unknown_space', `${refused.length} destination(s) are not available`);
+  }
+}

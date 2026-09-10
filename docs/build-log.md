@@ -238,13 +238,35 @@ The page went from 6893px to 1889px across the two passes. Each connection is
 drawn once, the routing list is collapsed behind a chevron, and the destination
 control is the app's own `Select` rather than the browser's.
 
+A destination is checked when it is saved. `requireRoutableSpaces` refuses a
+route whose target is not a space in the connection's own organization that the
+caller is a member of. Without it a multi-org user could store a route that
+`documents_space_in_org` then rejects inside a background sync, or file documents
+into a space they cannot open. Out of org and not a member return the same
+answer, so neither can be probed. Verified by breaking the guard and watching the
+two tests that cover it fail.
+
 **Did not ship.** Re-routing a unit does not move the documents already filed
 under it. The routing decides where new documents land and nothing else.
 
 **Needs a human.** `public.search` still raises `tsquery stack too small` for a
 long enough `query_text`, unchanged from phase 15.
 
-**Notes.** pg-delta generated the migration and got the column grants right,
+A user can belong to more than one organization, and nothing in the new connect
+flow lets them say which one a connection is for. `requireOrgMembership` takes
+the oldest membership so a reconnect is at least deterministic. That is a guess,
+not an answer. Fixing it properly means an explicit org on the begin request,
+carried through `oauth_states` and `pending_connections`.
+
+A Drive file in two routed folders lands in whichever parent Drive lists first.
+Arbitrary, and it wants a rule.
+
+**Notes.** An empty routing now means a connection reads nothing. Drive used to
+treat no folders picked as read the whole account, which under routes would be
+documents with nowhere to land. Every new connection passes through that state
+between authorizing and routing.
+
+pg-delta generated the migration and got the column grants right,
 which `docs/decisions.md` says `supabase db diff` would not. It did not emit the
 `revoke ... from public, anon` that the declarative schema declares, so a new
 `SECURITY DEFINER` function would have been executable by PUBLIC. Those three
