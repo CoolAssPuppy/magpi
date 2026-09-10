@@ -1,4 +1,5 @@
-// POST /mcp-server stub, one whoami tool. TODO(edge-functions): real tools once BYO MCP ships.
+// POST /mcp-server stub, one whoami tool. The real tool contracts are in docs/mcp.md.
+// TODO(edge-functions): implement search, get_document, list_spaces and add_note on BYO MCP.
 
 import { ApiError, jsonResponse } from '../_shared/errors.ts';
 import { serveFunction } from '../_shared/http.ts';
