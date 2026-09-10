@@ -28,14 +28,13 @@ async function connection(overrides: Partial<ConnectionRow> = {}): Promise<Conne
   return {
     id: 'connection-1',
     org_id: ORG,
-    space_id: SPACE,
     user_id: USER,
     provider,
     external_account_id: 'account-1',
     access_token_enc: await encryptProviderToken('lin_oauth', { userId: USER, provider }, ENV),
     refresh_token_enc: null,
     scopes: [],
-    scope_selection: { ids: [] },
+    scope_selection: { routes: { [TEAM]: SPACE } },
     status: 'active',
     status_detail: null,
     cursor: null,
@@ -45,6 +44,8 @@ async function connection(overrides: Partial<ConnectionRow> = {}): Promise<Conne
   };
 }
 
+const TEAM = 'team-eng';
+
 function issuesPage(
   nodes: { id: string; identifier: string; title: string; updatedAt: string }[],
   next: string | null = null,
@@ -52,7 +53,12 @@ function issuesPage(
   return {
     data: {
       issues: {
-        nodes: nodes.map((node) => ({ ...node, url: `https://linear.app/${node.identifier}` })),
+        // Every issue belongs to a team, and the team is what routing is keyed on.
+        nodes: nodes.map((node) => ({
+          team: { id: TEAM },
+          ...node,
+          url: `https://linear.app/${node.identifier}`,
+        })),
         pageInfo: { hasNextPage: next !== null, endCursor: next },
       },
     },
@@ -112,6 +118,8 @@ function harness(options: {
         body: body.map((row, index) => ({
           id: `document-${index + 1}`,
           external_id: (row as { external_id: string }).external_id,
+          // The real insert selects the space back, and the ingest job is filed against it.
+          space_id: (row as { space_id: string }).space_id,
         })),
       };
     }
@@ -204,6 +212,7 @@ function filedDocument(overrides: Record<string, unknown> = {}): Record<string, 
     external_id: 'issue-1',
     title: 'ENG-1 Issue 1',
     url: 'https://linear.app/ENG-1',
+    space_id: SPACE,
     ...overrides,
   };
 }
@@ -530,7 +539,7 @@ Deno.test('a driver that reports more without moving its cursor is asked once mo
         scope_selection: {
           kind: 'channel',
           available: channels.map((id) => ({ id, name: id })),
-          selected: channels,
+          routes: Object.fromEntries(channels.map((id) => [id, SPACE])),
         },
       }),
       h.deps,

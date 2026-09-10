@@ -2,6 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { beginConnection, claimConnection, requestFullSync, requestScopes } from './edge';
 
+const ENGINEERING = '33333333-3333-4333-8333-333333333333';
+const FINANCE = '44444444-4444-4444-8444-444444444444';
+
 const getClient = (response: { data?: unknown; error?: { message: string } | null }) => ({
   functions: {
     invoke: vi
@@ -16,7 +19,6 @@ describe('starting a connection', () => {
 
     const result = await beginConnection(client, {
       provider: 'slack',
-      spaceId: 'space-1',
       returnTo: '/connections/slack',
     });
 
@@ -25,8 +27,18 @@ describe('starting a connection', () => {
       data: { authorizeUrl: 'https://slack.com/oauth?state=abc' },
     });
     expect(client.functions.invoke).toHaveBeenCalledWith('connections-begin', {
-      body: { provider: 'slack', space_id: 'space-1', return_to: '/connections/slack' },
+      body: { provider: 'slack', return_to: '/connections/slack' },
     });
+  });
+
+  // Authorizing an account decides nothing about where its units land. Routing comes after.
+  it('names no space, because one account can feed several', async () => {
+    const client = getClient({ data: { authorize_url: 'https://slack.com/oauth?state=abc' } });
+
+    await beginConnection(client, { provider: 'slack', returnTo: '/connections/slack' });
+
+    const [, options] = client.functions.invoke.mock.calls[0];
+    expect(options.body).not.toHaveProperty('space_id');
   });
 
   it('reports a transport failure rather than sending the browser nowhere', async () => {
@@ -34,7 +46,6 @@ describe('starting a connection', () => {
 
     const result = await beginConnection(client, {
       provider: 'slack',
-      spaceId: 'space-1',
       returnTo: '/connections/slack',
     });
 
@@ -47,7 +58,6 @@ describe('starting a connection', () => {
 
     const result = await beginConnection(client, {
       provider: 'slack',
-      spaceId: 'space-1',
       returnTo: '/connections/slack',
     });
 
@@ -121,23 +131,26 @@ describe('asking for a full re-sync', () => {
   });
 });
 
-describe('reading and saving what a connection may read', () => {
+describe('reading and saving where a connection sends each unit', () => {
   const populated = {
     kind: 'channel',
     available: [
       { id: 'C1', name: 'general' },
       { id: 'C2', name: 'engineering' },
     ],
-    selected: ['C1'],
+    routes: { C1: ENGINEERING },
   };
 
-  it('saves a selection and hands back the list the provider actually offers now', async () => {
+  it('saves a routing and hands back the list the provider actually offers now', async () => {
     const client = getClient({ data: { connection_id: 'conn-1', scope_selection: populated } });
 
-    const result = await requestScopes(client, { connectionId: 'conn-1', selected: ['C1'] });
+    const result = await requestScopes(client, {
+      connectionId: 'conn-1',
+      routes: { C1: ENGINEERING },
+    });
 
     expect(client.functions.invoke).toHaveBeenCalledWith('connections-scopes', {
-      body: { connection_id: 'conn-1', selected: ['C1'] },
+      body: { connection_id: 'conn-1', routes: { C1: ENGINEERING } },
     });
     expect(result).toEqual({
       ok: true,
@@ -148,12 +161,48 @@ describe('reading and saving what a connection may read', () => {
           { id: 'C1', name: 'general' },
           { id: 'C2', name: 'engineering' },
         ],
-        selected: ['C1'],
+        routes: { C1: ENGINEERING },
       },
     });
   });
 
-  it('refreshes the list without saving anything when no selection is given', async () => {
+  it('sends two units of one account to two different spaces in a single save', async () => {
+    const client = getClient({
+      data: {
+        connection_id: 'conn-1',
+        scope_selection: { ...populated, routes: { C1: ENGINEERING, C2: FINANCE } },
+      },
+    });
+
+    const result = await requestScopes(client, {
+      connectionId: 'conn-1',
+      routes: { C1: ENGINEERING, C2: FINANCE },
+    });
+
+    expect(client.functions.invoke).toHaveBeenCalledWith('connections-scopes', {
+      body: { connection_id: 'conn-1', routes: { C1: ENGINEERING, C2: FINANCE } },
+    });
+    expect(result).toEqual(
+      expect.objectContaining({
+        ok: true,
+        data: expect.objectContaining({ routes: { C1: ENGINEERING, C2: FINANCE } }),
+      }),
+    );
+  });
+
+  it('sends an empty routing as a save, which is how a person unroutes everything', async () => {
+    const client = getClient({
+      data: { connection_id: 'conn-1', scope_selection: { ...populated, routes: {} } },
+    });
+
+    await requestScopes(client, { connectionId: 'conn-1', routes: {} });
+
+    expect(client.functions.invoke).toHaveBeenCalledWith('connections-scopes', {
+      body: { connection_id: 'conn-1', routes: {} },
+    });
+  });
+
+  it('refreshes the list without saving anything when no routing is given', async () => {
     const client = getClient({ data: { connection_id: 'conn-1', scope_selection: populated } });
 
     await requestScopes(client, { connectionId: 'conn-1' });
@@ -163,10 +212,22 @@ describe('reading and saving what a connection may read', () => {
     });
   });
 
+  it('copies the routing it was given, so a later edit cannot change what was sent', async () => {
+    const client = getClient({ data: { connection_id: 'conn-1', scope_selection: populated } });
+    const routes: Record<string, string> = { C1: ENGINEERING };
+
+    await requestScopes(client, { connectionId: 'conn-1', routes });
+    routes.C2 = FINANCE;
+
+    expect(client.functions.invoke).toHaveBeenCalledWith('connections-scopes', {
+      body: { connection_id: 'conn-1', routes: { C1: ENGINEERING } },
+    });
+  });
+
   it('reports a connection whose token could not be renewed', async () => {
     const client = getClient({ error: { message: 'connection_expired' } });
 
-    const result = await requestScopes(client, { connectionId: 'conn-1', selected: [] });
+    const result = await requestScopes(client, { connectionId: 'conn-1', routes: {} });
 
     expect(result.ok).toBe(false);
   });

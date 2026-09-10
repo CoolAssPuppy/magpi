@@ -18,30 +18,15 @@ const CONNECTIONS_PATH = '/connections';
 const slugSchema = z.string().min(1).max(64);
 const idSchema = z.uuid();
 
-export async function startConnection(
-  providerSlug: string,
-  spaceId: string,
-): Promise<ActionState<undefined>> {
-  const input = z.object({ providerSlug: slugSchema, spaceId: idSchema }).safeParse({
-    providerSlug,
-    spaceId,
-  });
-  if (!input.success) return errorState('Choose a source and a space.');
+export async function startConnection(providerSlug: string): Promise<ActionState<undefined>> {
+  const input = z.object({ providerSlug: slugSchema }).safeParse({ providerSlug });
+  if (!input.success) return errorState('Choose a source.');
 
   let authorizeUrl: string | null = null;
 
   const state = await withSession(async (context) => {
-    // RLS is the space check: a space the caller cannot select cannot take a connection.
-    const { data: space } = await context.supabase
-      .from('spaces')
-      .select('id')
-      .eq('id', input.data.spaceId)
-      .maybeSingle();
-    if (!space) return errorState('You are not in that space.');
-
     const result = await beginConnection(context.supabase, {
       provider: input.data.providerSlug,
-      spaceId: input.data.spaceId,
       returnTo: `${CONNECTIONS_PATH}?provider=${input.data.providerSlug}`,
     });
     if (!result.ok) return errorState(result.error);
@@ -65,20 +50,26 @@ export async function claimPendingConnection(ticket: string): Promise<ActionStat
   }, CONNECTIONS_PATH);
 }
 
-/** Saves what a connection reads and answers with the selection as stored, ids dropped included. */
+/** Saves where a connection sends each unit, and answers with the routing as stored. */
 export async function saveScopeSelection(
   connectionId: string,
-  selected: readonly string[],
+  routes: Readonly<Record<string, string>>,
 ): Promise<ActionState<ScopeSelection>> {
   const input = z
-    .object({ connectionId: idSchema, selected: z.array(z.string().min(1).max(256)).max(500) })
-    .safeParse({ connectionId, selected });
-  if (!input.success) return errorState('That selection could not be saved.');
+    .object({
+      connectionId: idSchema,
+      // Keys are the provider's unit ids, values are space ids the caller has to be able to see.
+      routes: z
+        .record(z.string().min(1).max(256), idSchema)
+        .refine((value) => Object.keys(value).length <= 500, 'too many routes'),
+    })
+    .safeParse({ connectionId, routes });
+  if (!input.success) return errorState('That routing could not be saved.');
 
   return withSession(async (context) => {
     const result = await requestScopes(context.supabase, {
       connectionId: input.data.connectionId,
-      selected: input.data.selected,
+      routes: input.data.routes,
     });
     return result.ok ? successState(result.data) : errorState(result.error);
   }, CONNECTIONS_PATH);

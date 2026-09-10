@@ -13,6 +13,27 @@ $$;
 revoke all on function public.visible_space_ids() from public, anon;
 grant execute on function public.visible_space_ids() to authenticated, service_role;
 
+-- True when a connection sends at least one unit into a space the caller is a member of. A
+-- connection is not in a space any more, so this is what stands in for the old space_id check.
+create or replace function public.routes_into_visible_space(p_scope_selection jsonb)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from jsonb_each_text(coalesce(p_scope_selection -> 'routes', '{}'::jsonb)) as route(unit, space)
+    where route.space is not null
+      and route.space <> ''
+      and route.space::uuid in (select public.visible_space_ids())
+  )
+$$;
+
+revoke all on function public.routes_into_visible_space(jsonb) from public, anon;
+grant execute on function public.routes_into_visible_space(jsonb) to authenticated, service_role;
+
 create or replace function public.is_org_member(p_org_id uuid)
 returns boolean
 language sql
@@ -180,14 +201,14 @@ grant execute on function public.search(extensions.vector, text, uuid[], integer
 
 -- Deletes and returns an unexpired state row, so two callbacks with one state cannot both win.
 create or replace function public.consume_oauth_state(p_state text)
-returns table (user_id uuid, provider text, code_verifier text, space_id uuid, return_to text)
+returns table (user_id uuid, provider text, code_verifier text, return_to text)
 language sql
 security definer
 set search_path = ''
 as $$
   delete from public.oauth_states
   where state = p_state and expires_at > clock_timestamp()
-  returning user_id, provider, code_verifier, space_id, return_to;
+  returning user_id, provider, code_verifier, return_to;
 $$;
 
 revoke all on function public.consume_oauth_state(text) from public, anon, authenticated;
@@ -210,7 +231,6 @@ create or replace function public.consume_pending_connection(p_ticket_hash text)
 returns table (
   user_id uuid,
   provider text,
-  space_id uuid,
   external_account_id text,
   access_token_enc bytea,
   refresh_token_enc bytea,
@@ -224,7 +244,7 @@ set search_path = ''
 as $$
   delete from public.pending_connections
   where ticket_hash = p_ticket_hash and expires_at > clock_timestamp()
-  returning user_id, provider, space_id, external_account_id, access_token_enc,
+  returning user_id, provider, external_account_id, access_token_enc,
             refresh_token_enc, scopes, token_expires_at, return_to;
 $$;
 

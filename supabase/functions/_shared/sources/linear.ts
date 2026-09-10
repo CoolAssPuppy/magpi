@@ -41,7 +41,7 @@ const FAILURE_MESSAGE = `${DISPLAY_NAME} could not be read, the next sync will t
 // `orderBy` names a field, not a direction, so coverage means walking to the last page.
 const CHANGES_QUERY = `query MagpiChanges($first: Int!, $after: String, $filter: IssueFilter) {
   issues(first: $first, after: $after, filter: $filter, orderBy: updatedAt) {
-    nodes { id identifier title url updatedAt }
+    nodes { id identifier title url updatedAt team { id } }
     pageInfo { hasNextPage endCursor }
   }
 }`;
@@ -53,6 +53,7 @@ const ISSUE_QUERY = `query MagpiIssue($id: String!, $comments: Int!) {
     title
     url
     updatedAt
+    team { id }
     description
     comments(first: $comments) {
       nodes { body createdAt user { name } }
@@ -129,6 +130,8 @@ function toDocumentRef(node: Record<string, unknown>, deps: SourceDeps): SourceD
     url: asString(node.url) || null,
     mimeType: 'text/markdown',
     updatedAt: isoStamp(node.updatedAt, deps),
+    // An issue belongs to one team, and a team is what the scope picker offers.
+    unitId: asString(asRecord(node.team).id),
   };
 }
 
@@ -177,7 +180,8 @@ export const linearDriver: SourceDriver = {
       const issues = asRecord(data.issues);
       for (const node of asArray(issues.nodes)) {
         const document = toDocumentRef(asRecord(node), deps);
-        if (document.externalId.length > 0) documents.push(document);
+        // An issue with no team named has no unit, so nothing routes it to a space.
+        if (document.externalId.length > 0 && document.unitId.length > 0) documents.push(document);
       }
 
       const pageInfo = asRecord(issues.pageInfo);
@@ -221,6 +225,10 @@ export const linearDriver: SourceDriver = {
     }
 
     const ref = toDocumentRef(issue, deps);
+    if (ref.unitId.length === 0) {
+      throw new SourceError(PROVIDER, 'That Linear issue names no team to file it under.', false);
+    }
+
     return { ...ref, mimeType: 'text/markdown', text: issueText(issue) };
   },
 

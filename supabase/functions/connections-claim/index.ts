@@ -14,7 +14,7 @@ import {
   parsePendingConnectionRow,
 } from '../_shared/validate.ts';
 import { liveHttp } from '../_shared/deps.ts';
-import { buildScopeSelection } from '../_shared/scope_selection.ts';
+import { buildScopeSelection, storedSelectionOf } from '../_shared/scope_selection.ts';
 import { decryptProviderToken } from '../_shared/provider_tokens.ts';
 import { driverFor, hasDriver } from '../_shared/sources/index.ts';
 import { SourceError } from '../_shared/sources/contract.ts';
@@ -43,7 +43,6 @@ serveFunction('connections-claim', async (core) => {
       return {
         userId: row.user_id,
         provider: row.provider,
-        spaceId: row.space_id,
         externalAccountId: row.external_account_id ?? null,
         accessTokenEnc: row.access_token_enc,
         refreshTokenEnc: row.refresh_token_enc ?? null,
@@ -77,10 +76,13 @@ async function populatePicker(
   try {
     const { data } = await db
       .from('connections')
-      .select('access_token_enc')
+      .select('access_token_enc, scope_selection')
       .eq('id', connectionId)
-      .maybeSingle<{ access_token_enc: string | null }>();
+      .maybeSingle<{ access_token_enc: string | null; scope_selection: unknown }>();
     if (!data?.access_token_enc) return;
+
+    // A first claim has none. A reconnect keeps the routing the user already chose.
+    const routes = storedSelectionOf(data.scope_selection)?.routes ?? {};
 
     const http = { fetch: liveHttp.fetch, now: () => new Date() };
     const options = await driver.listScopeOptions(
@@ -94,7 +96,7 @@ async function populatePicker(
     await db
       .from('connections')
       .update({
-        scope_selection: buildScopeSelection(driver.scopeSelectionKind, options, []),
+        scope_selection: buildScopeSelection(driver.scopeSelectionKind, options, routes),
       })
       .eq('id', connectionId);
   } catch (err) {

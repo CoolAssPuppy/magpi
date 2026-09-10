@@ -23,6 +23,11 @@ export interface SourceDocumentRef {
   mimeType: string | null;
   /** The provider's own last-modified stamp, as RFC 3339. */
   updatedAt: string;
+  /**
+   * The channel, folder or workspace this came out of, as its id in `ScopeSelection.ids`. Sync
+   * reads the connection's routes with it to decide which space the document lands in.
+   */
+  unitId: string;
 }
 
 export interface ChangePage {

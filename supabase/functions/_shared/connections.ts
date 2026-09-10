@@ -9,7 +9,6 @@ export type ConnectionStatus = 'active' | 'syncing' | 'error' | 'revoked' | 'exp
 export interface ConnectionRow {
   id: string;
   org_id: string;
-  space_id: string;
   user_id: string;
   provider: string;
   external_account_id: string | null;
@@ -25,7 +24,7 @@ export interface ConnectionRow {
 }
 
 export const CONNECTION_COLUMNS =
-  'id, org_id, space_id, user_id, provider, external_account_id, access_token_enc, refresh_token_enc, scopes, scope_selection, status, status_detail, cursor, token_expires_at, last_synced_at';
+  'id, org_id, user_id, provider, external_account_id, access_token_enc, refresh_token_enc, scopes, scope_selection, status, status_detail, cursor, token_expires_at, last_synced_at';
 
 export async function loadConnection(
   db: SupabaseClient,
@@ -86,4 +85,54 @@ export async function advanceCursor(
     })
     .eq('id', connectionId);
   if (error) throw new ApiError(500, 'internal', 'cursor update failed');
+}
+
+/**
+ * Where each unit of a connection lands, as unit id to space id. A connection is not in a space,
+ * so this is the only thing that decides which space a synced document belongs to.
+ */
+export function routesOf(connection: ConnectionRow): Record<string, string> {
+  const routes = (connection.scope_selection as { routes?: unknown }).routes;
+  if (routes === null || typeof routes !== 'object' || Array.isArray(routes)) return {};
+
+  const out: Record<string, string> = {};
+  for (const [unit, space] of Object.entries(routes as Record<string, unknown>)) {
+    if (typeof space === 'string' && space.length > 0) out[unit] = space;
+  }
+  return out;
+}
+
+/** The units a driver is allowed to read, which is exactly the ones with somewhere to land. */
+export function routedUnitIds(connection: ConnectionRow): string[] {
+  return Object.keys(routesOf(connection));
+}
+
+/**
+ * The service role bypasses RLS, so an edge function has to re-state the read rule itself. This
+ * mirrors `connections_select_visible`: your own connection, or one that routes into a space you
+ * are in. A refusal reads as "no such connection", so ids cannot be probed.
+ */
+export async function requireConnectionAccess(
+  db: SupabaseClient,
+  userId: string,
+  connection: ConnectionRow,
+): Promise<void> {
+  if (connection.user_id === userId) return;
+
+  const spaceIds = [...new Set(Object.values(routesOf(connection)))];
+  if (spaceIds.length === 0) {
+    throw new ApiError(404, 'unknown_connection', 'no such connection');
+  }
+
+  const { data, error } = await db
+    .from('space_members')
+    .select('space_id')
+    .eq('user_id', userId)
+    .in('space_id', spaceIds)
+    .limit(1);
+
+  if (error) throw new ApiError(500, 'internal', 'space lookup failed');
+  if (!data || data.length === 0) {
+    throw new ApiError(404, 'unknown_connection', 'no such connection');
+  }
 }

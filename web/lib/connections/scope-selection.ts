@@ -11,11 +11,14 @@ const scopeItemSchema = z.object({
 const populatedSchema = z.object({
   kind: z.enum(['channel', 'folder', 'workspace']),
   available: z.array(scopeItemSchema),
-  selected: z.array(z.string()),
+  /** Unit id to space id. A unit that is absent is read by nobody. */
+  routes: z.record(z.string(), z.string().uuid()),
 });
 
 export type ScopeSelectionKind = z.infer<typeof populatedSchema>['kind'];
 export type ScopeItem = z.infer<typeof scopeItemSchema>;
+
+export type ScopeRoutes = Readonly<Record<string, string>>;
 
 export type ScopeSelection =
   | { readonly kind: 'unset' }
@@ -23,7 +26,7 @@ export type ScopeSelection =
       readonly kind: 'set';
       readonly selectionKind: ScopeSelectionKind;
       readonly available: readonly ScopeItem[];
-      readonly selected: readonly string[];
+      readonly routes: ScopeRoutes;
     };
 
 const UNSET: ScopeSelection = { kind: 'unset' };
@@ -41,7 +44,7 @@ export function parseScopeSelection(value: unknown): Result<ScopeSelection, stri
     kind: 'set',
     selectionKind: parsed.data.kind,
     available: parsed.data.available,
-    selected: parsed.data.selected,
+    routes: parsed.data.routes,
   });
 }
 
@@ -53,22 +56,25 @@ const NOUNS: Record<ScopeSelectionKind, string> = {
 
 export function describeScopeSelection(selection: ScopeSelection): string {
   if (selection.kind === 'unset') return 'Nothing chosen yet';
-  if (selection.selectionKind === 'workspace') return 'The whole workspace';
 
   const noun = NOUNS[selection.selectionKind];
-  if (selection.selected.length === 0) return `No ${noun} selected`;
-  return `${selection.selected.length} of ${selection.available.length} ${noun}`;
+  const routed = Object.keys(selection.routes).length;
+  if (routed === 0) return `No ${noun} routed`;
+
+  const spaces = new Set(Object.values(selection.routes)).size;
+  const place = spaces === 1 ? '1 space' : `${spaces} spaces`;
+  return `${routed} of ${selection.available.length} ${noun} into ${place}`;
 }
 
 /** What an empty selection means for this kind of source, keyed on the kind, not the provider. */
 export function describeEmptySelection(kind: ScopeSelectionKind): string | null {
   switch (kind) {
     case 'channel':
-      return 'With no channels selected, Magpi reads nothing from this source.';
+      return 'Send a channel to a space and Magpi starts reading it.';
     case 'folder':
-      return 'With no folders selected, Magpi reads everything this account can see.';
+      return 'Send a folder to a space and Magpi starts reading it.';
     case 'workspace':
-      return null;
+      return 'Send this workspace to a space and Magpi starts reading it.';
     default: {
       const unhandled: never = kind;
       throw new Error(`Unhandled scope selection kind: ${String(unhandled)}`);

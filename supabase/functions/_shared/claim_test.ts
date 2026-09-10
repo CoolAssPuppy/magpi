@@ -5,13 +5,11 @@ import { asyncApiErrorFrom } from './testing/assertions.ts';
 
 const OWNER = '11111111-1111-4111-8111-111111111111';
 const OTHER = '22222222-2222-4222-8222-222222222222';
-const SPACE = '33333333-3333-4333-8333-333333333333';
 
 function pending(overrides: Partial<PendingConnection> = {}): PendingConnection {
   return {
     userId: OWNER,
     provider: 'notion',
-    spaceId: SPACE,
     externalAccountId: 'workspace-1',
     accessTokenEnc: '\\x0201aabb',
     refreshTokenEnc: null,
@@ -24,7 +22,7 @@ function pending(overrides: Partial<PendingConnection> = {}): PendingConnection 
 
 function port(holding: PendingConnection | null) {
   const stored: PendingConnection[] = [];
-  const audits: { action: string; actor: string }[] = [];
+  const audits: { action: string; actor: string; meta?: Record<string, unknown> }[] = [];
   let consumed = 0;
 
   const claim: ClaimPort = {
@@ -37,7 +35,7 @@ function port(holding: PendingConnection | null) {
       stored.push(row);
       return Promise.resolve({ connectionId: 'connection-1' });
     },
-    audit: (entry) => audits.push({ action: entry.action, actor: entry.actor }),
+    audit: (entry) => audits.push({ action: entry.action, actor: entry.actor, meta: entry.meta }),
   };
 
   return { claim, stored, audits, consumedCount: () => consumed };
@@ -48,7 +46,6 @@ Deno.test('a claim by the account that started the flow stores the connection', 
   const result = await claimConnection(p.claim, OWNER, 'ticket');
 
   assertEquals(result.provider, 'notion');
-  assertEquals(result.space_id, SPACE);
   assertEquals(result.return_to, '/connections');
   assertEquals(p.stored.length, 1);
   assertEquals(p.audits[0].action, 'conn.link');
@@ -77,9 +74,14 @@ Deno.test('an unknown ticket and an expired one are one answer', async () => {
   assertEquals(err.code, 'claim_expired');
 });
 
-Deno.test('the space travels with the ticket, not with the claim', async () => {
-  // The caller never names a space here: it was chosen before the redirect.
-  const p = port(pending({ spaceId: SPACE }));
-  await claimConnection(p.claim, OWNER, 'ticket');
-  assertEquals(p.stored[0].spaceId, SPACE);
+Deno.test('a claim names no space, in the result or in the audit', async () => {
+  // Routing happens on the connections page. Nothing here decides where documents land.
+  const p = port(pending());
+  const result = await claimConnection(p.claim, OWNER, 'ticket');
+
+  assertEquals(Object.hasOwn(result, 'space_id'), false);
+  assertEquals(p.audits[0].meta, {
+    external_account_id: 'workspace-1',
+    scopes: ['read'],
+  });
 });

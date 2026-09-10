@@ -5,18 +5,18 @@ import { SourceMark } from '@/components/brand/source-mark';
 
 import { ConnectButton, type SpaceChoice } from './connect-button';
 import { ConnectionActions, type ConnectionAction } from './connection-actions';
-import { ScopeEditor, type ConnectionScope, type SaveScope } from './scope-editor';
+import { ScopeEditor, type SaveScope } from './scope-editor';
 import { StatusPill } from '@/components/app/status-pill';
 
 function ConnectionRow({
   connection,
-  scope,
+  spaces,
   onResync,
   onDisconnect,
   onSaveScope,
 }: {
   connection: ConnectionSummary;
-  scope: ConnectionScope | undefined;
+  spaces: readonly SpaceChoice[];
   onResync: ConnectionAction;
   onDisconnect: ConnectionAction;
   onSaveScope: SaveScope;
@@ -27,15 +27,19 @@ function ConnectionRow({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <StatusPill tone={connection.status.tone} label={connection.status.label} />
-            <span className="text-sm text-foreground">{connection.spaceName}</span>
-            <span className="text-xs text-tertiary-foreground">{connection.account}</span>
+            <span className="text-sm text-foreground">{connection.account}</span>
+            {connection.destinations.length > 0 ? (
+              <span className="text-xs text-tertiary-foreground">
+                into {connection.destinations.join(', ')}
+              </span>
+            ) : (
+              <span className="text-xs text-tertiary-foreground">not routed anywhere</span>
+            )}
           </div>
           <p className="mt-1 max-w-[var(--measure-prose)] text-sm text-muted-foreground">
             {connection.status.reason}
           </p>
-          <p className="mt-0.5 text-xs text-tertiary-foreground">
-            {connection.lastSynced} &middot; {connection.scope}
-          </p>
+          <p className="mt-0.5 text-xs text-tertiary-foreground">{connection.lastSynced}</p>
         </div>
 
         <ConnectionActions
@@ -45,7 +49,7 @@ function ConnectionRow({
         />
       </div>
 
-      {scope ? <ScopeEditor connection={scope} onSaveScope={onSaveScope} /> : null}
+      <ScopeEditor connection={connection} spaces={spaces} onSaveScope={onSaveScope} />
     </li>
   );
 }
@@ -54,7 +58,6 @@ function ConnectionRow({
 export function ConnectionList({
   listings,
   spaces,
-  scopes,
   onResync,
   onDisconnect,
   onBegin,
@@ -62,10 +65,9 @@ export function ConnectionList({
 }: {
   listings: readonly ProviderListing[];
   spaces: readonly SpaceChoice[];
-  scopes: readonly ConnectionScope[];
   onResync: ConnectionAction;
   onDisconnect: ConnectionAction;
-  onBegin: (providerSlug: string, spaceId: string) => Promise<ActionState<undefined>>;
+  onBegin: (providerSlug: string) => Promise<ActionState<undefined>>;
   onSaveScope: SaveScope;
 }) {
   return (
@@ -86,7 +88,6 @@ export function ConnectionList({
               <ConnectButton
                 providerSlug={listing.slug}
                 displayName={listing.displayName}
-                spaces={spaces}
                 hasConnection={listing.connections.length > 0}
                 onBegin={onBegin}
               />
@@ -103,7 +104,7 @@ export function ConnectionList({
                 <ConnectionRow
                   key={connection.id}
                   connection={connection}
-                  scope={scopes.find((candidate) => candidate.id === connection.id)}
+                  spaces={spaces}
                   onResync={onResync}
                   onDisconnect={onDisconnect}
                   onSaveScope={onSaveScope}

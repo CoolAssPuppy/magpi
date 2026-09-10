@@ -25,7 +25,7 @@ export default async function ConnectionsPage({
   const context = await getSessionContext();
   if (!context) redirect('/sign-in');
 
-  const [{ listings, spaceIds, spaces, scopes }, query] = await Promise.all([
+  const [{ listings, spaceIds, spaces }, query] = await Promise.all([
     loadConnectionsPage(context),
     searchParams,
   ]);
@@ -51,7 +51,6 @@ export default async function ConnectionsPage({
         <ConnectionList
           listings={listings}
           spaces={spaces}
-          scopes={scopes}
           onResync={resyncConnection}
           onDisconnect={disconnectConnection}
           onBegin={startConnection}

@@ -41,7 +41,6 @@ async function connection(overrides: Partial<ConnectionRow> = {}): Promise<Conne
   return {
     id: 'connection-1',
     org_id: '44444444-4444-4444-8444-444444444444',
-    space_id: SPACE,
     user_id: USER,
     provider,
     external_account_id: 'account-1',
@@ -51,7 +50,7 @@ async function connection(overrides: Partial<ConnectionRow> = {}): Promise<Conne
     scope_selection: {
       kind: 'folder',
       available: [{ id: 'folder-1', name: 'Runbooks' }],
-      selected: ['folder-1'],
+      routes: { 'folder-1': SPACE },
     },
     status: 'active',
     status_detail: null,

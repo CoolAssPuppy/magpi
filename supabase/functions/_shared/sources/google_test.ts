@@ -8,6 +8,7 @@ import { loadFixture, type StubCall, stubSource } from './testing/http_stub.ts';
 
 const TOKEN = 'ya29.stub-access-token';
 const HANDBOOK = '0AJhandbookFolderUk9PVA';
+const INCIDENTS = '0AJincidentsFolderTk1RUw';
 const RUNBOOK_ID = '1Qk7vNhandbookOnboard2fXpLa';
 const ROTATION_ID = '1Bt3mRoncallRotation7dYqCe';
 const REVIEW_ID = '1Zr4jVsecurityReviewPdf9Ct';
@@ -46,7 +47,9 @@ Deno.test('an incremental pass reports the files the changes touched', async () 
     body: await loadFixture('google', 'changes_recent'),
   }]);
 
-  const page = await googleDriver.listChanges(creds(), stub, { cursor: '18420' });
+  const page = await googleDriver.listChanges(creds([HANDBOOK, INCIDENTS]), stub, {
+    cursor: '18420',
+  });
 
   assertEquals(page.documents.length, 2);
   assertEquals(page.documents[0].externalId, RUNBOOK_ID);
@@ -54,6 +57,8 @@ Deno.test('an incremental pass reports the files the changes touched', async () 
   assertEquals(page.documents[0].updatedAt, '2026-09-08T09:13:58.117Z');
   assert(page.documents[0].url?.includes(RUNBOOK_ID));
   assertEquals(page.documents[1].mimeType, 'text/csv');
+  // Each file names the picked folder it was found in.
+  assertEquals(page.documents.map((doc) => doc.unitId), [HANDBOOK, INCIDENTS]);
   assertEquals(page.cursor, '18455');
   assertEquals(page.hasMore, false);
 });
@@ -64,10 +69,22 @@ Deno.test('deletions, trashed files and folders are not documents', async () => 
     body: await loadFixture('google', 'changes_noise'),
   }]);
 
-  const page = await googleDriver.listChanges(creds(), stub, { cursor: '18455' });
+  const page = await googleDriver.listChanges(creds([HANDBOOK]), stub, { cursor: '18455' });
 
   assertEquals(page.documents.map((doc) => doc.externalId), [RUNBOOK_ID]);
   assertEquals(page.cursor, '18461');
+});
+
+Deno.test('a connection with no folder picked has nowhere to put a file', async () => {
+  const stub = stubSource([{
+    when: matching('/changes?pageToken='),
+    body: await loadFixture('google', 'changes_recent'),
+  }]);
+
+  const page = await googleDriver.listChanges(creds(), stub, { cursor: '18420' });
+
+  assertEquals(page.documents, []);
+  assertEquals(page.cursor, '18455');
 });
 
 Deno.test('a folder selection keeps only files parented in it', async () => {
@@ -80,6 +97,8 @@ Deno.test('a folder selection keeps only files parented in it', async () => {
 
   // The rotation sheet lives in two folders, one of them selected, so it stays.
   assertEquals(page.documents.map((doc) => doc.externalId), [RUNBOOK_ID, ROTATION_ID]);
+  // It is filed under the selected folder, not the one that was never picked.
+  assertEquals(page.documents.map((doc) => doc.unitId), [HANDBOOK, HANDBOOK]);
 });
 
 Deno.test('a walk over several pages ends on the new start page token', async () => {
@@ -94,7 +113,9 @@ Deno.test('a walk over several pages ends on the new start page token', async ()
     },
   ]);
 
-  const page = await googleDriver.listChanges(creds(), stub, { cursor: '18470' });
+  const page = await googleDriver.listChanges(creds([HANDBOOK, INCIDENTS]), stub, {
+    cursor: '18470',
+  });
 
   assertEquals(stub.calls.length, 2);
   assertEquals(page.documents.map((doc) => doc.externalId), [RUNBOOK_ID, ROTATION_ID]);
@@ -108,7 +129,7 @@ Deno.test('a backlog longer than the page bound stops and asks for another pass'
     body: await loadFixture('google', 'changes_never_ending'),
   }]);
 
-  const page = await googleDriver.listChanges(creds(), stub, { cursor: '18470' });
+  const page = await googleDriver.listChanges(creds([HANDBOOK]), stub, { cursor: '18470' });
 
   assertEquals(stub.calls.length, 10);
   assertEquals(page.documents.length, 10);
@@ -126,12 +147,14 @@ Deno.test('a google document is exported as plain text', async () => {
     { when: matching(`/files/${RUNBOOK_ID}/export`), text: exported },
   ]);
 
-  const doc = await googleDriver.fetchDocument(creds(), stub, RUNBOOK_ID);
+  const doc = await googleDriver.fetchDocument(creds([HANDBOOK]), stub, RUNBOOK_ID);
 
   assertEquals(doc.mimeType, 'application/vnd.google-apps.document');
   assertEquals(doc.title, 'Onboarding runbook');
   assertEquals(doc.updatedAt, '2026-09-08T09:13:58.117Z');
+  assertEquals(doc.unitId, HANDBOOK);
   assertEquals(doc.text, exported);
+  assert(stub.calls[0].url.includes('parents'));
   assert(stub.calls[1].url.includes('mimeType=text%2Fplain'));
   assertEquals(stub.calls[1].headers.authorization, `Bearer ${TOKEN}`);
 });
@@ -146,12 +169,30 @@ Deno.test('a csv file is downloaded rather than exported', async () => {
     { when: matching(`/files/${ROTATION_ID}?alt=media`), text: downloaded },
   ]);
 
-  const doc = await googleDriver.fetchDocument(creds(), stub, ROTATION_ID);
+  const doc = await googleDriver.fetchDocument(creds([INCIDENTS]), stub, ROTATION_ID);
 
   assertEquals(doc.mimeType, 'text/csv');
+  assertEquals(doc.unitId, INCIDENTS);
   assertEquals(doc.text, downloaded);
   assert(doc.text.includes('week_starting'));
   assertEquals(stub.calls.length, 2);
+});
+
+Deno.test('a file outside every picked folder is refused without a reconnect', async () => {
+  const stub = stubSource([{
+    when: matching(`/files/${ROTATION_ID}?fields=`),
+    body: await loadFixture('google', 'file_spreadsheet_csv'),
+  }]);
+
+  const error = await assertRejects(
+    () => googleDriver.fetchDocument(creds([HANDBOOK]), stub, ROTATION_ID),
+    SourceError,
+    'That file sits outside every folder this connection reads.',
+  );
+
+  assertEquals(error.needsReconnect, false);
+  // The download is never asked for, since the file has nowhere to land.
+  assertEquals(stub.calls.length, 1);
 });
 
 Deno.test('a file type with no text extraction is refused without a reconnect', async () => {
@@ -161,7 +202,7 @@ Deno.test('a file type with no text extraction is refused without a reconnect', 
   }]);
 
   const error = await assertRejects(
-    () => googleDriver.fetchDocument(creds(), stub, REVIEW_ID),
+    () => googleDriver.fetchDocument(creds([HANDBOOK]), stub, REVIEW_ID),
     SourceError,
     'That file type is not indexed yet.',
   );
@@ -184,7 +225,7 @@ Deno.test('a refused export asks for a reconnect and quotes nothing back', async
   ]);
 
   const error = await assertRejects(
-    () => googleDriver.fetchDocument(creds(), stub, RUNBOOK_ID),
+    () => googleDriver.fetchDocument(creds([HANDBOOK]), stub, RUNBOOK_ID),
     SourceError,
   );
 

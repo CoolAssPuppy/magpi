@@ -86,7 +86,6 @@ Deno.serve(async (req: Request) => {
       ticket_hash: await sha256Hex(ticket),
       user_id: pending.user_id,
       provider: driver.slug,
-      space_id: pending.space_id,
       external_account_id: tokens.externalAccountId,
       access_token_enc: accessTokenEnc,
       refresh_token_enc: refreshTokenEnc,
@@ -110,7 +109,7 @@ Deno.serve(async (req: Request) => {
       action: 'conn.exchange',
       target: driver.slug,
       ip: core.ip,
-      meta: { external_account_id: tokens.externalAccountId, space_id: pending.space_id },
+      meta: { external_account_id: tokens.externalAccountId },
     });
 
     return back(CONNECTIONS, { ticket, provider: driver.slug });

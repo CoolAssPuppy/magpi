@@ -12,7 +12,14 @@ import {
 } from './testing/http_stub.ts';
 import { notionDriver } from './notion.ts';
 
+const WORKSPACE = '7c4d2ea1-9f36-4b58-8d0a-2e5f1c9b7d44';
+
 const CREDS: SourceCredentials = {
+  accessToken: 'ntn_fixture_token',
+  scopeSelection: { ids: [WORKSPACE] },
+};
+
+const NOTHING_PICKED: SourceCredentials = {
   accessToken: 'ntn_fixture_token',
   scopeSelection: { ids: [] },
 };
@@ -84,6 +91,8 @@ Deno.test('a first pass follows next_cursor and pins the api version', async () 
   assertEquals(page.documents.length, 5);
   assertEquals(page.hasMore, false);
   assertEquals(page.documents[0].mimeType, 'text/markdown');
+  // Every page comes out of the one workspace the connection picked.
+  assertEquals(page.documents.map((doc) => doc.unitId), Array(5).fill(WORKSPACE));
   assertEquals(
     page.documents[0].url,
     'https://www.notion.so/lumenlabs/Onboarding-checklist-5f2c1a903b474a0e9d218c6b4e77a101',
@@ -175,6 +184,7 @@ Deno.test('block text is one line per block and skips types with no text', async
   assertEquals(doc.externalId, PAGE_ID);
   assertEquals(doc.title, 'Onboarding checklist');
   assertEquals(doc.mimeType, 'text/markdown');
+  assertEquals(doc.unitId, WORKSPACE);
   assertEquals(doc.text.split('\n'), [
     '# Onboarding checklist',
     'Everything a new engineer at Lumen Labs needs in week one.',
@@ -186,6 +196,30 @@ Deno.test('block text is one line per block and skips types with no text', async
   ]);
   // The image block between them contributed nothing.
   assert(!doc.text.includes('notion-static'));
+});
+
+Deno.test('a connection with no workspace picked makes no request', async () => {
+  const stub = stubSource(await searchRoutes());
+
+  const page = await notionDriver.listChanges(NOTHING_PICKED, stub, { cursor: null });
+
+  assertEquals(stub.calls.length, 0);
+  assertEquals(page.documents, []);
+  assertEquals(page.cursor, null);
+  assertEquals(page.hasMore, false);
+});
+
+Deno.test('a page cannot be fetched while no workspace is picked', async () => {
+  const stub = stubSource(await documentRoutes());
+
+  try {
+    await notionDriver.fetchDocument(NOTHING_PICKED, stub, PAGE_ID);
+    throw new Error('did not raise');
+  } catch (err) {
+    assert(err instanceof SourceError);
+    assertEquals(err.needsReconnect, false);
+    assertEquals(stub.calls.length, 0);
+  }
 });
 
 Deno.test('a refusal answered with http 200 asks for a reconnect', async () => {

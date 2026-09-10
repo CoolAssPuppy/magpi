@@ -1,6 +1,10 @@
 import type { Json, Tables } from '@/lib/database.types';
 
-import { describeScopeSelection, parseScopeSelection } from './scope-selection';
+import {
+  describeScopeSelection,
+  parseScopeSelection,
+  type ScopeSelection,
+} from './scope-selection';
 import { describeConnectionStatus, formatLastSynced, type ConnectionStatusView } from './status';
 
 export type ProviderRecord = Pick<
@@ -16,13 +20,7 @@ export type ProviderRecord = Pick<
 
 export type ConnectionRecord = Pick<
   Tables<'connections'>,
-  | 'id'
-  | 'provider'
-  | 'space_id'
-  | 'external_account_id'
-  | 'status'
-  | 'status_detail'
-  | 'last_synced_at'
+  'id' | 'provider' | 'external_account_id' | 'status' | 'status_detail' | 'last_synced_at'
 > & { readonly scope_selection: Json };
 
 export type SpaceRecord = Pick<Tables<'spaces'>, 'id' | 'name' | 'kind'>;
@@ -30,12 +28,13 @@ export type SpaceRecord = Pick<Tables<'spaces'>, 'id' | 'name' | 'kind'>;
 export type ConnectionSummary = {
   readonly id: string;
   readonly provider: string;
-  readonly spaceId: string;
-  readonly spaceName: string;
   readonly account: string;
+  /** Names of the spaces this feeds, already narrowed to the ones the reader is in. */
+  readonly destinations: readonly string[];
   readonly scope: string;
   readonly lastSynced: string;
   readonly status: ConnectionStatusView;
+  readonly selection: ScopeSelection;
 };
 
 export type ProviderListing = {
@@ -48,25 +47,51 @@ export type ProviderListing = {
   readonly connections: readonly ConnectionSummary[];
 };
 
-function summarizeScope(scopeSelection: Json): string {
+/**
+ * The routing as this reader is allowed to see it. RLS lets a whole row through when one route
+ * reaches a space they are in, so the routes to spaces they are not in are dropped here.
+ */
+function visibleSelection(
+  scopeSelection: Json,
+  visibleSpaceIds: ReadonlySet<string>,
+): ScopeSelection {
   const parsed = parseScopeSelection(scopeSelection);
-  return parsed.ok ? describeScopeSelection(parsed.data) : 'Scope could not be read';
+  if (!parsed.ok) return { kind: 'unset' };
+  if (parsed.data.kind === 'unset') return parsed.data;
+
+  const routes = Object.fromEntries(
+    Object.entries(parsed.data.routes).filter(([, spaceId]) => visibleSpaceIds.has(spaceId)),
+  );
+  return { ...parsed.data, routes };
 }
 
-function toSummary(connection: ConnectionRecord, spaceName: string, now: Date): ConnectionSummary {
+function toSummary(
+  connection: ConnectionRecord,
+  selection: ScopeSelection,
+  spaceNames: ReadonlyMap<string, string>,
+  now: Date,
+): ConnectionSummary {
+  const destinations =
+    selection.kind === 'set'
+      ? [...new Set(Object.values(selection.routes))].flatMap((id) => {
+          const name = spaceNames.get(id);
+          return name ? [name] : [];
+        })
+      : [];
+
   return {
     id: connection.id,
     provider: connection.provider,
-    spaceId: connection.space_id,
-    spaceName,
     account: connection.external_account_id ?? 'Account not recorded',
-    scope: summarizeScope(connection.scope_selection),
+    destinations: destinations.sort((a, b) => a.localeCompare(b)),
+    scope: describeScopeSelection(selection),
     lastSynced: formatLastSynced(connection.last_synced_at, now),
     status: describeConnectionStatus({
       status: connection.status,
       statusDetail: connection.status_detail,
       lastSyncedAt: connection.last_synced_at,
     }),
+    selection,
   };
 }
 
@@ -83,6 +108,7 @@ export function buildProviderListings({
   readonly now: Date;
 }): readonly ProviderListing[] {
   const spaceNames = new Map(spaces.map((space) => [space.id, space.name]));
+  const visibleSpaceIds = new Set(spaces.map((space) => space.id));
 
   return (
     providers
@@ -98,11 +124,14 @@ export function buildProviderListings({
         enabled: provider.enabled,
         connections: connections
           .filter((connection) => connection.provider === provider.slug)
-          // Not a permission check. It drops a row from a torn read where the space name is missing.
-          .flatMap((connection) => {
-            const spaceName = spaceNames.get(connection.space_id);
-            return spaceName ? [toSummary(connection, spaceName, now)] : [];
-          }),
+          .map((connection) =>
+            toSummary(
+              connection,
+              visibleSelection(connection.scope_selection, visibleSpaceIds),
+              spaceNames,
+              now,
+            ),
+          ),
       }))
   );
 }

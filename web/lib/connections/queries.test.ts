@@ -8,6 +8,7 @@ const { loadConnectionsPage } = await import('./queries');
 
 const SPACE_ID = '33333333-3333-4333-8333-333333333333';
 const OTHER_SPACE_ID = '33333333-3333-4333-8333-444444444444';
+const UNSEEN_SPACE_ID = '55555555-5555-4555-8555-555555555555';
 const CONNECTION_ID = '22222222-2222-4222-8222-222222222222';
 
 type Provider = {
@@ -34,7 +35,6 @@ const getProvider = (overrides: Partial<Provider> = {}): Provider => ({
 type Connection = {
   id: string;
   provider: string;
-  space_id: string;
   user_id: string;
   external_account_id: string | null;
   status: 'active' | 'syncing' | 'error' | 'revoked' | 'expired';
@@ -46,7 +46,6 @@ type Connection = {
 const getConnection = (overrides: Partial<Connection> = {}): Connection => ({
   id: CONNECTION_ID,
   provider: 'slack',
-  space_id: SPACE_ID,
   user_id: '77777777-7777-4777-8777-777777777777',
   external_account_id: 'Acme workspace',
   status: 'active',
@@ -65,14 +64,14 @@ const getSpace = (overrides: Partial<Space> = {}): Space => ({
   ...overrides,
 });
 
-const populatedScope = {
+const getScope = (routes: Readonly<Record<string, string>>) => ({
   kind: 'channel',
   available: [
     { id: 'C1', name: 'general' },
     { id: 'C2', name: 'engineering' },
   ],
-  selected: ['C1'],
-};
+  routes,
+});
 
 function selectArgument(calls: readonly (readonly [string, ...unknown[]])[]): string {
   const select = calls.find((call) => call[0] === 'select');
@@ -85,7 +84,7 @@ describe('the connections page', () => {
     const { context } = recordingContext({
       responses: {
         providers: [{ data: [getProvider()] }],
-        connections: [{ data: [getConnection()] }],
+        connections: [{ data: [getConnection({ scope_selection: getScope({ C1: SPACE_ID }) })] }],
         spaces: [{ data: [getSpace()] }],
       },
     });
@@ -94,7 +93,7 @@ describe('the connections page', () => {
 
     expect(page.listings).toHaveLength(1);
     expect(page.listings[0].displayName).toBe('Slack');
-    expect(page.listings[0].connections[0].spaceName).toBe('Engineering');
+    expect(page.listings[0].connections[0].destinations).toEqual(['Engineering']);
     expect(page.listings[0].connections[0].account).toBe('Acme workspace');
     expect(page.spaceIds).toEqual([SPACE_ID]);
   });
@@ -114,20 +113,6 @@ describe('the connections page', () => {
     expect(columns).not.toContain('*');
     expect(columns).not.toContain('access_token_enc');
     expect(columns).not.toContain('refresh_token_enc');
-  });
-
-  it('drops a connection whose space left the caller between the two reads', async () => {
-    const { context } = recordingContext({
-      responses: {
-        providers: [{ data: [getProvider()] }],
-        connections: [{ data: [getConnection({ space_id: OTHER_SPACE_ID })] }],
-        spaces: [{ data: [getSpace()] }],
-      },
-    });
-
-    const page = await loadConnectionsPage(context);
-
-    expect(page.listings[0].connections).toEqual([]);
   });
 
   it('throws when the provider table is refused, rather than showing no sources', async () => {
@@ -173,8 +158,8 @@ describe('the connections page', () => {
   });
 });
 
-describe('the scope a connection reads', () => {
-  it('says which space each connection reads into, and what state it is in', async () => {
+describe('the routing a connection carries', () => {
+  it('rides on the connection itself, with the state the connection is in', async () => {
     const { context } = recordingContext({
       responses: {
         providers: [{ data: [getProvider()] }],
@@ -184,7 +169,7 @@ describe('the scope a connection reads', () => {
               getConnection({
                 status: 'expired',
                 status_detail: 'The Slack token expired.',
-                scope_selection: populatedScope,
+                scope_selection: getScope({ C1: SPACE_ID }),
               }),
             ],
           },
@@ -195,12 +180,14 @@ describe('the scope a connection reads', () => {
 
     const page = await loadConnectionsPage(context);
 
-    expect(page.scopes).toEqual([
+    expect(page.listings[0].connections).toEqual([
       {
         id: CONNECTION_ID,
-        spaceId: SPACE_ID,
-        spaceName: 'Engineering',
+        provider: 'slack',
         account: 'Acme workspace',
+        destinations: ['Engineering'],
+        scope: '1 of 2 channels into 1 space',
+        lastSynced: expect.any(String),
         status: {
           status: 'expired',
           label: 'Access expired',
@@ -215,22 +202,54 @@ describe('the scope a connection reads', () => {
             { id: 'C1', name: 'general' },
             { id: 'C2', name: 'engineering' },
           ],
-          selected: ['C1'],
+          routes: { C1: SPACE_ID },
         },
       },
     ]);
   });
 
-  it('drops a connection whose space left the caller between the two reads', async () => {
+  it('sends one channel of an account to one space and another to a second space', async () => {
     const { context } = recordingContext({
       responses: {
         providers: [{ data: [getProvider()] }],
-        connections: [{ data: [getConnection({ space_id: OTHER_SPACE_ID })] }],
+        connections: [
+          {
+            data: [
+              getConnection({
+                scope_selection: getScope({ C1: SPACE_ID, C2: OTHER_SPACE_ID }),
+              }),
+            ],
+          },
+        ],
+        spaces: [{ data: [getSpace(), getSpace({ id: OTHER_SPACE_ID, name: 'Finance' })] }],
+      },
+    });
+
+    const page = await loadConnectionsPage(context);
+
+    expect(page.listings[0].connections[0].destinations).toEqual(['Engineering', 'Finance']);
+  });
+
+  // The row comes back whole once one route reaches a space the caller is in. The rest is theirs.
+  it('drops a route to a space the caller left between the two reads', async () => {
+    const { context } = recordingContext({
+      responses: {
+        providers: [{ data: [getProvider()] }],
+        connections: [
+          {
+            data: [
+              getConnection({ scope_selection: getScope({ C1: SPACE_ID, C2: UNSEEN_SPACE_ID }) }),
+            ],
+          },
+        ],
         spaces: [{ data: [getSpace()] }],
       },
     });
 
-    expect((await loadConnectionsPage(context)).scopes).toEqual([]);
+    const connection = (await loadConnectionsPage(context)).listings[0].connections[0];
+
+    expect(connection.destinations).toEqual(['Engineering']);
+    expect(connection.selection).toEqual(expect.objectContaining({ routes: { C1: SPACE_ID } }));
   });
 
   it('says the account was not recorded rather than showing a blank name', async () => {
@@ -242,7 +261,9 @@ describe('the scope a connection reads', () => {
       },
     });
 
-    expect((await loadConnectionsPage(context)).scopes[0].account).toBe('Account not recorded');
+    const page = await loadConnectionsPage(context);
+
+    expect(page.listings[0].connections[0].account).toBe('Account not recorded');
   });
 
   it('reads a stored scope the app cannot parse as nothing chosen yet', async () => {
@@ -254,7 +275,9 @@ describe('the scope a connection reads', () => {
       },
     });
 
-    expect((await loadConnectionsPage(context)).scopes[0].selection).toEqual({ kind: 'unset' });
+    const page = await loadConnectionsPage(context);
+
+    expect(page.listings[0].connections[0].selection).toEqual({ kind: 'unset' });
   });
 
   it('offers every space the caller holds, not only the ones already connected', async () => {

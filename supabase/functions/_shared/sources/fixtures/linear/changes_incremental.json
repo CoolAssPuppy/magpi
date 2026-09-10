@@ -7,14 +7,20 @@
           "identifier": "PLT-64",
           "title": "Index rebuild job times out on workspaces over 40k pages",
           "url": "https://linear.app/atlas-knowledge/issue/PLT-64/index-rebuild-job-times-out-on-workspaces-over-40k-pages",
-          "updatedAt": "2026-09-09T07:02:44.130Z"
+          "updatedAt": "2026-09-09T07:02:44.130Z",
+          "team": {
+            "id": "a5e2b719-6c84-4f13-8d70-2b96e0af4c58"
+          }
         },
         {
           "id": "e40f2b8d-71c9-4a35-8b26-0d7e93f5c122",
           "identifier": "KB-124",
           "title": "Onboarding guide links to the old glossary",
           "url": "https://linear.app/atlas-knowledge/issue/KB-124/onboarding-guide-links-to-the-old-glossary",
-          "updatedAt": "2026-09-09T11:18:07.556Z"
+          "updatedAt": "2026-09-09T11:18:07.556Z",
+          "team": {
+            "id": "8d1f6c40-3b72-4e95-9a08-51cd7e2b6a37"
+          }
         }
       ],
       "pageInfo": {

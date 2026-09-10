@@ -1,11 +1,11 @@
-// POST /connections-begin. The PKCE verifier, state and space stay server side in oauth_states.
+// POST /connections-begin. The PKCE verifier and state stay server side in oauth_states.
 
 import { ApiError, jsonResponse } from '../_shared/errors.ts';
 import { serveFunction } from '../_shared/http.ts';
 import { connectionsBeginSchema, parseBody } from '../_shared/validate.ts';
 import { audit, serviceClient } from '../_shared/db.ts';
 import { enforceRateLimits } from '../_shared/rate_limit.ts';
-import { requireSpaceMembership, requireUser } from '../_shared/auth.ts';
+import { requireOrgMembership, requireUser } from '../_shared/auth.ts';
 import { loadProvider, requireEnabledProvider } from '../_shared/providers.ts';
 import { oauthCredentials } from '../_shared/env.ts';
 import {
@@ -28,7 +28,7 @@ serveFunction('connections-begin', async (core) => {
   ]);
 
   // RLS enforces nothing under the service role, so membership is checked here.
-  await requireSpaceMembership(db, user.id, input.space_id);
+  await requireOrgMembership(db, user.id);
 
   // The registry decides, so disabling a provider takes effect without a deploy.
   const provider = requireEnabledProvider(await loadProvider(db, input.provider));
@@ -44,7 +44,6 @@ serveFunction('connections-begin', async (core) => {
     user_id: user.id,
     provider: driver.slug,
     code_verifier: verifier,
-    space_id: input.space_id,
     return_to: safeReturnTo(input.return_to ?? null),
     expires_at: new Date(Date.now() + STATE_TTL_SECONDS * 1000).toISOString(),
   });
@@ -55,7 +54,7 @@ serveFunction('connections-begin', async (core) => {
     action: 'conn.begin',
     target: driver.slug,
     ip: core.ip,
-    meta: { space_id: input.space_id, scopes: driver.scopes },
+    meta: { scopes: driver.scopes },
   });
 
   return jsonResponse({

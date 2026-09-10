@@ -4,15 +4,13 @@ import { useState, useTransition } from 'react';
 
 import { Button } from '@/components/ui/button';
 import type { ActionState } from '@/lib/actions/state';
-import type { ScopeSelection } from '@/lib/connections/scope-selection';
+import type { ScopeRoutes, ScopeSelection } from '@/lib/connections/scope-selection';
 import type { ConnectionStatusView } from '@/lib/connections/status';
 
-import { ScopePicker } from './scope-picker';
+import { ScopePicker, type RoutableSpace } from './scope-picker';
 
 export type ConnectionScope = {
   readonly id: string;
-  readonly spaceId: string;
-  readonly spaceName: string;
   readonly account: string;
   readonly status: ConnectionStatusView;
   readonly selection: ScopeSelection;
@@ -20,60 +18,69 @@ export type ConnectionScope = {
 
 export type SaveScope = (
   connectionId: string,
-  selected: readonly string[],
+  routes: ScopeRoutes,
 ) => Promise<ActionState<ScopeSelection>>;
+
+const NO_ROUTES: ScopeRoutes = {};
+
+function sameRoutes(left: ScopeRoutes, right: ScopeRoutes): boolean {
+  const keys = Object.keys(left);
+  return keys.length === Object.keys(right).length && keys.every((k) => left[k] === right[k]);
+}
 
 export function ScopeEditor({
   connection,
+  spaces,
   onSaveScope,
 }: {
   connection: ConnectionScope;
+  spaces: readonly RoutableSpace[];
   onSaveScope: SaveScope;
 }) {
-  // The saved selection replaces what is on screen, since dropped ids are not saved.
+  // The saved routing replaces what is on screen, since a route to a dead space is not stored.
   const [selection, setSelection] = useState<ScopeSelection>(connection.selection);
-  const [selected, setSelected] = useState<readonly string[]>(
-    connection.selection.kind === 'set' ? connection.selection.selected : [],
+  const [routes, setRoutes] = useState<ScopeRoutes>(
+    connection.selection.kind === 'set' ? connection.selection.routes : NO_ROUTES,
   );
   const [failure, setFailure] = useState<string | null>(null);
   const [isSaved, setSaved] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  // Nothing to save until the boxes differ from what is stored, so the button stays out of the way.
-  const saved = selection.kind === 'set' ? selection.selected : [];
-  const isChanged = saved.length !== selected.length || saved.some((id) => !selected.includes(id));
+  const saved = selection.kind === 'set' ? selection.routes : NO_ROUTES;
+  const isChanged = !sameRoutes(saved, routes);
 
   const save = () => {
     setFailure(null);
     setSaved(false);
     startTransition(async () => {
-      const result = await onSaveScope(connection.id, selected);
+      const result = await onSaveScope(connection.id, routes);
       if (result.status === 'error') {
         setFailure(result.message);
         return;
       }
       if (result.status === 'success') {
         setSelection(result.data);
-        setSelected(result.data.kind === 'set' ? result.data.selected : []);
+        setRoutes(result.data.kind === 'set' ? result.data.routes : NO_ROUTES);
         setSaved(true);
       }
     });
   };
 
   return (
-    // The row above already names the space, the account and the status, so this starts at the scope.
+    // The row above already names the account and the status, so this starts at the routing.
     <div className="flex flex-col gap-3 pt-3">
       <ScopePicker
         selection={selection}
-        selected={selected}
-        onChange={setSelected}
+        routes={routes}
+        spaces={spaces}
+        onChange={setRoutes}
         disabled={isPending}
       />
 
-      {selection.kind === 'set' && selection.selectionKind !== 'workspace' && isChanged ? (
+      {isChanged ? (
         <div className="flex items-center gap-3">
           <Button size="sm" disabled={isPending} onClick={save}>
-            Save selection
+            Save routing
           </Button>
           {isSaved ? <span className="text-xs text-tertiary-foreground">Saved</span> : null}
         </div>

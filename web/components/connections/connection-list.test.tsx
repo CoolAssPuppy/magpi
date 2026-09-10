@@ -7,15 +7,18 @@ import type { ProviderListing } from '@/lib/connections/view-model';
 
 import { ConnectionList } from './connection-list';
 
+const EVERYONE = '11111111-1111-4111-8111-111111111111';
+const ENGINEERING = '33333333-3333-4333-8333-333333333333';
+const FINANCE = '44444444-4444-4444-8444-444444444444';
+
 const getConnectionSummary = (
   overrides?: Partial<ProviderListing['connections'][number]>,
 ): ProviderListing['connections'][number] => ({
   id: 'conn-1',
   provider: 'notion',
-  spaceId: 'space-1',
-  spaceName: 'Engineering',
   account: 'Acme workspace',
-  scope: 'The whole workspace',
+  destinations: ['Engineering'],
+  scope: '1 of 1 workspaces into 1 space',
   lastSynced: 'Synced 3 hours ago',
   status: {
     status: 'active',
@@ -24,6 +27,7 @@ const getConnectionSummary = (
     reason: 'Reading on the usual schedule.',
     recovery: { kind: 'resync', label: 'Sync now' },
   },
+  selection: { kind: 'unset' },
   ...overrides,
 });
 
@@ -39,13 +43,13 @@ const getListing = (overrides?: Partial<ProviderListing>): ProviderListing => ({
 });
 
 const SPACES = [
-  { id: 'space-1', name: 'Everyone' },
-  { id: 'space-2', name: 'Engineering' },
+  { id: EVERYONE, name: 'Everyone' },
+  { id: ENGINEERING, name: 'Engineering' },
+  { id: FINANCE, name: 'Finance' },
 ];
 
 const getActions = () => ({
   spaces: SPACES,
-  scopes: [],
   onResync: vi.fn().mockResolvedValue(successState(undefined)),
   onDisconnect: vi.fn().mockResolvedValue(successState(undefined)),
   onBegin: vi.fn().mockResolvedValue(successState(undefined)),
@@ -82,8 +86,8 @@ describe('the connections list', () => {
     expect(screen.getByRole('button', { name: /connect slack/i })).toBeInTheDocument();
   });
 
-  // The space is the permission decision, so it is made here rather than on a page in between.
-  it('starts the authorization from the list, with the space the reader chose', async () => {
+  // Authorizing the account is the whole step. Where its units land is chosen on the row after.
+  it('starts the authorization from the list, naming only the source', async () => {
     const actions = getActions();
     render(
       <ConnectionList
@@ -94,15 +98,53 @@ describe('the connections list', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /connect slack/i }));
 
-    expect(actions.onBegin).toHaveBeenCalledWith('slack', 'space-1');
+    expect(actions.onBegin).toHaveBeenCalledWith('slack');
   });
 
-  it('says which space a connection is bound to and what it reads', () => {
-    render(<ConnectionList listings={[getListing()]} {...getActions()} />);
+  it('says which spaces a connection feeds, and what it routes, once each', () => {
+    render(
+      <ConnectionList
+        listings={[
+          getListing({
+            connections: [
+              getConnectionSummary({
+                destinations: ['Engineering', 'Finance'],
+                selection: {
+                  kind: 'set',
+                  selectionKind: 'channel',
+                  available: [
+                    { id: 'C1', name: '#one' },
+                    { id: 'C2', name: '#two' },
+                  ],
+                  routes: { C1: ENGINEERING, C2: FINANCE },
+                },
+              }),
+            ],
+          }),
+        ]}
+        {...getActions()}
+      />,
+    );
 
-    expect(screen.getByText('Engineering')).toBeInTheDocument();
-    expect(screen.getByText(/the whole workspace/i)).toBeInTheDocument();
+    expect(screen.getByText('into Engineering, Finance')).toBeInTheDocument();
     expect(screen.getByText(/synced 3 hours ago/i)).toBeInTheDocument();
+    // The routing summary belongs to the picker, so the row above must not repeat it.
+    expect(screen.getAllByText(/2 of 2 channels into 2 spaces/)).toHaveLength(1);
+  });
+
+  it('says a connection nobody reads is routed nowhere, rather than showing a blank', () => {
+    render(
+      <ConnectionList
+        listings={[
+          getListing({
+            connections: [getConnectionSummary({ destinations: [], scope: 'No channels routed' })],
+          }),
+        ]}
+        {...getActions()}
+      />,
+    );
+
+    expect(screen.getByText('not routed anywhere')).toBeInTheDocument();
   });
 
   it('gives a revoked connection a real reason and a way to reconnect', () => {
@@ -130,7 +172,7 @@ describe('the connections list', () => {
     expect(screen.getByText('The workspace owner removed Magpi.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /reconnect/i })).toHaveAttribute(
       'href',
-      '/connections/notion?space=space-1',
+      '/connections/notion',
     );
   });
 
@@ -168,6 +210,36 @@ describe('the connections list', () => {
     await userEvent.click(screen.getByRole('button', { name: /sync now/i }));
 
     expect(actions.onResync).toHaveBeenCalledWith('conn-1');
+  });
+
+  it('saves the routing a person edited on the row, against that connection', async () => {
+    const actions = getActions();
+    render(
+      <ConnectionList
+        listings={[
+          getListing({
+            connections: [
+              getConnectionSummary({
+                selection: {
+                  kind: 'set',
+                  selectionKind: 'channel',
+                  available: [{ id: 'C1', name: 'general' }],
+                  routes: {},
+                },
+              }),
+            ],
+          }),
+        ]}
+        {...actions}
+      />,
+    );
+
+    // Radix keeps its options out of the DOM until the trigger opens.
+    await userEvent.click(screen.getByRole('combobox', { name: 'Space for general' }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Engineering' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save routing' }));
+
+    expect(actions.onSaveScope).toHaveBeenCalledWith('conn-1', { C1: ENGINEERING });
   });
 
   it('says what disconnecting does and does not do before it happens', async () => {

@@ -319,30 +319,39 @@ one line for line, so the transport is spelled out.
   `Database['public']['Tables']['providers']['Row']` and
   `Database['public']['Tables']['connections']['Row']`. The page renders from
   the `providers` table, so a new provider is a seed row and never a client
-  change on any platform.
+  change on any platform. A connection is one authorized account and does not
+  belong to a space. `scope_selection` holds `{kind, available, routes}`, where
+  `routes` maps a unit id to a space id, so one account can send one channel to
+  Engineering and another to Finance.
 - **Loading.** Provider list skeleton.
 - **Empty.** No connections yet, with the four providers listed and one action
   each.
 - **Error.** A `revoked` or `expired` connection shows `status_detail` and a
   reconnect action. It never shows a spinner that does not resolve.
-- **Content.** Provider rows with status, last sync, and the reconnect or
-  disconnect action.
+- **Content.** Provider rows. Under each, one row per connected account showing
+  status, the account, the spaces it feeds, last sync, and the reconnect or
+  disconnect action. Under that, a collapsed routing list with one destination
+  control per unit.
 - **Navigation.** Tab 4.
-- **Components.** Web `components/connections/*`, including the space selector on
-  each provider row and `scope-picker.tsx` under each connection. iOS `List` with
-  `ASWebAuthenticationSession` for the OAuth leg. Android `LazyColumn` with
-  Chrome Custom Tabs.
+- **Components.** Web `components/connections/*`. `connect-button.tsx` starts
+  the OAuth leg and asks for nothing first, because a space is no longer chosen
+  before the redirect. `scope-picker.tsx` renders a destination control per unit,
+  collapsed by default. iOS `List` with `ASWebAuthenticationSession` for the
+  OAuth leg and a `Picker` per unit. Android `LazyColumn` with Chrome Custom Tabs
+  and an `ExposedDropdownMenuBox` per unit.
 - **Proposed string keys.** `connections.title`, `connections.status.active`,
   `connections.status.syncing`, `connections.status.error`,
   `connections.status.revoked`, `connections.status.expired`,
-  `connections.reconnect`, `connections.disconnect`, `connections.resync`.
+  `connections.reconnect`, `connections.disconnect`, `connections.resync`,
+  `connections.routing.save`, `connections.routing.unrouted`,
+  `connections.routing.destinations`.
 - **Permissions.** None. The OAuth leg opens a system browser, never an
   embedded webview, because an embedded webview cannot be trusted with a
   provider password.
 - **Offline and refresh.** Status is cached. Connecting requires a network.
   Pull-to-refresh refetches status without triggering a sync.
 - **Proposed analytics events.** `connection_started`, `connection_claimed`,
-  `connection_failed`, `resync_requested`.
+  `connection_failed`, `resync_requested`, `unit_routed`, `unit_unrouted`.
 
 ### Dreams
 

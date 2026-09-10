@@ -114,13 +114,23 @@ function pageTitle(page: Record<string, unknown>): string {
   return 'Untitled';
 }
 
-function toRef(page: Record<string, unknown>, deps: SourceDeps): SourceDocumentRef {
+/** The workspace this connection reads. A token reaches one, so the selection names it. */
+function pickedWorkspace(creds: SourceCredentials): string | null {
+  return creds.scopeSelection.ids[0] ?? null;
+}
+
+function toRef(
+  page: Record<string, unknown>,
+  unitId: string,
+  deps: SourceDeps,
+): SourceDocumentRef {
   return {
     externalId: asString(page.id),
     title: pageTitle(page),
     url: asString(page.url) || null,
     mimeType: MIME,
     updatedAt: isoStamp(page.last_edited_time, deps),
+    unitId,
   };
 }
 
@@ -149,6 +159,10 @@ async function listChanges(
   deps: SourceDeps,
   input: { cursor: string | null },
 ): Promise<ChangePage> {
+  const unitId = pickedWorkspace(creds);
+  // A connection with no workspace picked has nowhere to put a page.
+  if (unitId === null) return { documents: [], cursor: input.cursor, hasMore: false };
+
   const position = parseCursor(input.cursor);
   const since = parseInstant(position.since);
   const documents: SourceDocumentRef[] = [];
@@ -159,7 +173,7 @@ async function listChanges(
   for (let request = 0; request < MAX_REQUESTS; request++) {
     const body = await postJson(creds, deps, `${API}/search`, searchBody(startCursor));
     const walked = takeNewerThan(asArray(body.results), since);
-    for (const page of walked.pages) documents.push(toRef(page, deps));
+    for (const page of walked.pages) documents.push(toRef(page, unitId, deps));
 
     const next = asString(body.next_cursor);
     nextPage = !walked.reachedCursor && body.has_more === true && next.length > 0 ? next : null;
@@ -242,8 +256,13 @@ async function fetchDocument(
   deps: SourceDeps,
   externalId: string,
 ): Promise<FetchedDocument> {
+  const unitId = pickedWorkspace(creds);
+  if (unitId === null) {
+    throw new SourceError(PROVIDER, 'No Notion workspace is picked for this connection.');
+  }
+
   const page = await getJson(creds, deps, `${API}/pages/${encodeURIComponent(externalId)}`);
-  const ref = toRef(page, deps);
+  const ref = toRef(page, unitId, deps);
 
   return {
     ...ref,

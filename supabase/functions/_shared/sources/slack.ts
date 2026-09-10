@@ -150,6 +150,7 @@ async function readChannel(
       url: null,
       mimeType: 'text/plain',
       updatedAt: instantFromTs(ts, deps),
+      unitId: channel,
     });
   }
 
@@ -230,6 +231,7 @@ export const slackDriver: SourceDriver = {
       url: null,
       mimeType: 'text/plain',
       updatedAt: instantFromTs(asString(parent.ts, ts), deps),
+      unitId: channel,
       text: blocks.join('\n\n'),
     };
   },

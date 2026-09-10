@@ -47,9 +47,7 @@ export function ConnectionActions({
       <div className="flex items-center gap-2">
         {recovery.kind === 'reconnect' ? (
           <Button asChild variant="outline" size="sm">
-            <Link href={`/connections/${connection.provider}?space=${connection.spaceId}`}>
-              {recovery.label}
-            </Link>
+            <Link href={`/connections/${connection.provider}`}>{recovery.label}</Link>
           </Button>
         ) : null}
 
@@ -67,10 +65,10 @@ export function ConnectionActions({
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Disconnect {connection.spaceName} from this source?</DialogTitle>
+              <DialogTitle>Disconnect {connection.account}?</DialogTitle>
               <DialogDescription>
-                Magpi stops reading this account. Documents already imported stay in the space and
-                stay searchable.
+                Magpi stops reading this account. Documents already imported stay in their spaces
+                and stay searchable.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>

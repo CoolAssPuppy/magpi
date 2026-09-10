@@ -45,3 +45,26 @@ export async function requireSpaceMembership(
   if (!data) throw new ApiError(404, 'unknown_space', 'no such space');
   return { orgId: data.org_id };
 }
+
+/**
+ * The caller's org, for writes that belong to an org rather than a space. Reads org_members
+ * directly, as RLS is off here. Takes the oldest membership, so a user who belongs to two orgs
+ * gets the same one on every call.
+ */
+export async function requireOrgMembership(
+  db: SupabaseClient,
+  userId: string,
+): Promise<{ orgId: string }> {
+  const { data, error } = await db
+    .from('org_members')
+    .select('org_id')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true })
+    .order('org_id', { ascending: true })
+    .limit(1)
+    .maybeSingle<{ org_id: string }>();
+
+  if (error) throw new ApiError(500, 'internal', 'org lookup failed');
+  if (!data) throw new ApiError(403, 'no_org', 'you do not belong to an organization');
+  return { orgId: data.org_id };
+}

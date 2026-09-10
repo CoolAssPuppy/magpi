@@ -13,15 +13,16 @@ export const scopeOptionSchema = z.object({
 export const storedScopeSelectionSchema = z.object({
   kind: z.enum(['channel', 'folder', 'workspace']),
   available: z.array(scopeOptionSchema).max(1000),
-  selected: z.array(z.string().min(1).max(200)).max(500),
+  /** Unit id to space id. A unit with no entry is read by nobody. */
+  routes: z.record(z.string().min(1).max(200), z.uuid()),
 });
 
 export type StoredScopeSelection = z.infer<typeof storedScopeSelectionSchema>;
 
-/** The ids a driver should read. Returns none when the column has not been populated. */
+/** The ids a driver should read, which is every unit that has somewhere to land. */
 export function selectedIdsOf(raw: unknown): ScopeSelection {
   const parsed = storedScopeSelectionSchema.safeParse(raw);
-  return { ids: parsed.success ? parsed.data.selected : [] };
+  return { ids: parsed.success ? Object.keys(parsed.data.routes) : [] };
 }
 
 /** What is already stored, or null when the picker has never been populated. */
@@ -30,16 +31,16 @@ export function storedSelectionOf(raw: unknown): StoredScopeSelection | null {
   return parsed.success ? parsed.data : null;
 }
 
-/** Merges a fresh listing with the existing choices, dropping ids the provider no longer offers. */
+/** Merges a fresh listing with the existing routing, dropping units the provider no longer offers. */
 export function buildScopeSelection(
   kind: ScopeSelectionKind,
   available: ScopeOption[],
-  selected: string[],
+  routes: Record<string, string>,
 ): StoredScopeSelection {
   const offered = new Set(available.map((option) => option.id));
   return {
     kind,
     available: available.map((option) => ({ id: option.id, name: option.name })),
-    selected: selected.filter((id) => offered.has(id)),
+    routes: Object.fromEntries(Object.entries(routes).filter(([unit]) => offered.has(unit))),
   };
 }

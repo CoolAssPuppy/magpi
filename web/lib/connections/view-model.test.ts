@@ -3,6 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { buildProviderListings, countConnections } from './view-model';
 import type { ConnectionRecord, ProviderRecord, SpaceRecord } from './view-model';
 
+const ENGINEERING = '33333333-3333-4333-8333-333333333333';
+const FINANCE = '44444444-4444-4444-8444-444444444444';
+const UNSEEN = '55555555-5555-4555-8555-555555555555';
+
 const getProvider = (overrides?: Partial<ProviderRecord>): ProviderRecord => ({
   slug: 'notion',
   display_name: 'Notion',
@@ -17,7 +21,6 @@ const getProvider = (overrides?: Partial<ProviderRecord>): ProviderRecord => ({
 const getConnection = (overrides?: Partial<ConnectionRecord>): ConnectionRecord => ({
   id: 'conn-1',
   provider: 'notion',
-  space_id: 'space-1',
   external_account_id: 'Acme workspace',
   status: 'active',
   status_detail: null,
@@ -27,10 +30,22 @@ const getConnection = (overrides?: Partial<ConnectionRecord>): ConnectionRecord 
 });
 
 const getSpace = (overrides?: Partial<SpaceRecord>): SpaceRecord => ({
-  id: 'space-1',
-  name: 'Personal',
+  id: ENGINEERING,
+  name: 'Engineering',
   kind: 'personal',
   ...overrides,
+});
+
+const getFinance = () => getSpace({ id: FINANCE, name: 'Finance', kind: 'team' });
+
+// Two channels of one Slack account, each sent somewhere different.
+const getSplitScope = (routes: Readonly<Record<string, string>>) => ({
+  kind: 'channel',
+  available: [
+    { id: 'C1', name: 'general' },
+    { id: 'C2', name: 'design' },
+  ],
+  routes,
 });
 
 const NOW = new Date('2026-09-09T12:00:00.000Z');
@@ -90,26 +105,75 @@ describe('provider listings', () => {
     expect(listings[0].connections).toHaveLength(1);
   });
 
-  it('names the space a connection is bound to', () => {
+  it('names the space a routed unit lands in', () => {
     const listings = buildProviderListings({
       providers: [getProvider()],
-      connections: [getConnection({ space_id: 'space-2' })],
-      spaces: [getSpace(), getSpace({ id: 'space-2', name: 'Engineering', kind: 'team' })],
+      connections: [getConnection({ scope_selection: getSplitScope({ C1: FINANCE }) })],
+      spaces: [getSpace(), getFinance()],
       now: NOW,
     });
 
-    expect(listings[0].connections[0].spaceName).toBe('Engineering');
+    expect(listings[0].connections[0].destinations).toEqual(['Finance']);
   });
 
-  it('drops a connection whose space was missing from the same read', () => {
+  it('sends one channel of an account to Engineering and another to Finance', () => {
     const listings = buildProviderListings({
       providers: [getProvider()],
-      connections: [getConnection({ space_id: 'space-gone' })],
+      connections: [
+        getConnection({ scope_selection: getSplitScope({ C1: ENGINEERING, C2: FINANCE }) }),
+      ],
+      spaces: [getSpace(), getFinance()],
+      now: NOW,
+    });
+
+    const summary = listings[0].connections[0];
+    expect(summary.destinations).toEqual(['Engineering', 'Finance']);
+    expect(summary.scope).toBe('2 of 2 channels into 2 spaces');
+  });
+
+  it('names each destination once when two units land in the same space', () => {
+    const listings = buildProviderListings({
+      providers: [getProvider()],
+      connections: [
+        getConnection({ scope_selection: getSplitScope({ C1: FINANCE, C2: FINANCE }) }),
+      ],
+      spaces: [getSpace(), getFinance()],
+      now: NOW,
+    });
+
+    expect(listings[0].connections[0].destinations).toEqual(['Finance']);
+  });
+
+  // RLS lets the whole row through once one route reaches a space the reader is in. The route to
+  // the space they are not in must not reach the screen, in the name or in the routing it edits.
+  it('hides a route to a space the reader is not in, and keeps the rest of the connection', () => {
+    const listings = buildProviderListings({
+      providers: [getProvider()],
+      connections: [
+        getConnection({ scope_selection: getSplitScope({ C1: ENGINEERING, C2: UNSEEN }) }),
+      ],
       spaces: [getSpace()],
       now: NOW,
     });
 
-    expect(listings[0].connections).toEqual([]);
+    const summary = listings[0].connections[0];
+    expect(summary.destinations).toEqual(['Engineering']);
+    expect(summary.selection).toEqual(expect.objectContaining({ routes: { C1: ENGINEERING } }));
+    expect(summary.scope).toBe('1 of 2 channels into 1 space');
+  });
+
+  it('keeps a connection whose every route is to a space the reader is not in, routed nowhere', () => {
+    const listings = buildProviderListings({
+      providers: [getProvider()],
+      connections: [getConnection({ scope_selection: getSplitScope({ C1: UNSEEN }) })],
+      spaces: [getSpace()],
+      now: NOW,
+    });
+
+    const summary = listings[0].connections[0];
+    expect(summary.destinations).toEqual([]);
+    expect(summary.selection).toEqual(expect.objectContaining({ routes: {} }));
+    expect(summary.scope).toBe('No channels routed');
   });
 
   it('carries the failure reason through to the connection it belongs to', () => {
@@ -131,13 +195,18 @@ describe('provider listings', () => {
       providers: [getProvider()],
       connections: [
         getConnection({ id: 'conn-1', external_account_id: 'Acme' }),
-        getConnection({ id: 'conn-2', external_account_id: 'Personal', space_id: 'space-2' }),
+        getConnection({
+          id: 'conn-2',
+          external_account_id: 'Personal',
+          scope_selection: getSplitScope({ C1: FINANCE }),
+        }),
       ],
-      spaces: [getSpace(), getSpace({ id: 'space-2', name: 'Engineering', kind: 'team' })],
+      spaces: [getSpace(), getFinance()],
       now: NOW,
     });
 
     expect(listings[0].connections.map((c) => c.id)).toEqual(['conn-1', 'conn-2']);
+    expect(listings[0].connections[1].destinations).toEqual(['Finance']);
   });
 
   it('says which account a connection reads when the provider recorded one', () => {
@@ -151,29 +220,18 @@ describe('provider listings', () => {
     expect(listings[0].connections[0].account).toBe('Account not recorded');
   });
 
-  it('summarises the scope a connection reads', () => {
+  it('summarises the routing a connection reads', () => {
     const listings = buildProviderListings({
       providers: [getProvider({ scope_selection_kind: 'channel' })],
-      connections: [
-        getConnection({
-          scope_selection: {
-            kind: 'channel',
-            available: [
-              { id: 'C1', name: 'general' },
-              { id: 'C2', name: 'design' },
-            ],
-            selected: ['C1'],
-          },
-        }),
-      ],
+      connections: [getConnection({ scope_selection: getSplitScope({ C1: ENGINEERING }) })],
       spaces: [getSpace()],
       now: NOW,
     });
 
-    expect(listings[0].connections[0].scope).toBe('1 of 2 channels');
+    expect(listings[0].connections[0].scope).toBe('1 of 2 channels into 1 space');
   });
 
-  it('says the scope is unreadable rather than guessing when the stored shape is wrong', () => {
+  it('reads a stored shape it cannot parse as nothing chosen, rather than guessing a routing', () => {
     const listings = buildProviderListings({
       providers: [getProvider()],
       connections: [getConnection({ scope_selection: { kind: 'mailbox' } })],
@@ -181,7 +239,9 @@ describe('provider listings', () => {
       now: NOW,
     });
 
-    expect(listings[0].connections[0].scope).toBe('Scope could not be read');
+    expect(listings[0].connections[0].selection).toEqual({ kind: 'unset' });
+    expect(listings[0].connections[0].destinations).toEqual([]);
+    expect(listings[0].connections[0].scope).toBe('Nothing chosen yet');
   });
 });
 

@@ -82,6 +82,15 @@ async function requestText(
   return await response.text();
 }
 
+/** The picked folder a file sits in, or null when none of its parents was picked. */
+function pickedFolderOf(parents: unknown, keep: Set<string>): string | null {
+  for (const parent of asArray(parents)) {
+    const id = asString(parent);
+    if (keep.has(id)) return id;
+  }
+  return null;
+}
+
 /** One change as a document ref, or null. A change with no `file` body counts as a deletion. */
 function changeToRef(
   change: unknown,
@@ -98,7 +107,9 @@ function changeToRef(
   const mimeType = asString(file.mimeType);
   if (mimeType === FOLDER_MIME) return null;
 
-  if (keep.size > 0 && !asArray(file.parents).some((id) => keep.has(asString(id)))) return null;
+  // A file outside every picked folder has no space to land in.
+  const unitId = pickedFolderOf(file.parents, keep);
+  if (unitId === null) return null;
 
   return {
     externalId,
@@ -106,6 +117,7 @@ function changeToRef(
     url: asString(file.webViewLink) || null,
     mimeType: mimeType || null,
     updatedAt: isoStamp(file.modifiedTime, deps),
+    unitId,
   };
 }
 
@@ -200,11 +212,16 @@ export const googleDriver: SourceDriver = {
     deps: SourceDeps,
     externalId: string,
   ): Promise<FetchedDocument> {
-    const fields = 'id,name,mimeType,modifiedTime,webViewLink';
+    const fields = 'id,name,mimeType,modifiedTime,webViewLink,parents';
     const file = asRecord(
       await getJson(creds, deps, `${API}/files/${encodeURIComponent(externalId)}?fields=${fields}`),
     );
     const mimeType = asString(file.mimeType);
+
+    const unitId = pickedFolderOf(file.parents, selectedIds(creds.scopeSelection.ids));
+    if (unitId === null) {
+      throw new SourceError(PROVIDER, 'That file sits outside every folder this connection reads.');
+    }
 
     return {
       externalId,
@@ -212,6 +229,7 @@ export const googleDriver: SourceDriver = {
       url: asString(file.webViewLink) || null,
       mimeType,
       updatedAt: isoStamp(file.modifiedTime, deps),
+      unitId,
       text: await requestText(creds, deps, textUrl(externalId, mimeType)),
     };
   },

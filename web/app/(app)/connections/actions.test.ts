@@ -9,6 +9,7 @@ import {
 } from '@/lib/supabase/test-support';
 
 const SPACE_ID = '33333333-3333-4333-8333-333333333333';
+const FINANCE_ID = '44444444-4444-4444-8444-444444444444';
 const CONNECTION_ID = '22222222-2222-4222-8222-222222222222';
 const AUTHORIZE_URL = 'https://slack.com/oauth/v2/authorize?state=abc';
 
@@ -55,16 +56,14 @@ function database(responses: Record<string, readonly StubResponse[]>): Recording
   return recorder;
 }
 
-const visibleSpace = { data: { id: SPACE_ID } };
-
-const populatedScope = {
+const getScope = (routes: Readonly<Record<string, string>>) => ({
   kind: 'channel',
   available: [
     { id: 'C1', name: 'general' },
     { id: 'C2', name: 'engineering' },
   ],
-  selected: ['C1'],
-};
+  routes,
+});
 
 beforeEach(() => {
   caller.signedIn = true;
@@ -73,14 +72,13 @@ beforeEach(() => {
   caller.sentTo = [];
 });
 
-describe('connecting a source to a space', () => {
+describe('authorizing a source', () => {
   it('sends the person to the provider, and asks to be returned to the connections list', async () => {
     const { callsFor } = database({
-      spaces: [visibleSpace],
       'connections-begin': [{ data: { authorize_url: AUTHORIZE_URL } }],
     });
 
-    const state = await startConnection('slack', SPACE_ID);
+    const state = await startConnection('slack');
 
     expect(state).toEqual({ status: 'success', data: undefined });
     expect(caller.sentTo).toEqual([AUTHORIZE_URL]);
@@ -88,49 +86,45 @@ describe('connecting a source to a space', () => {
       [
         'invoke',
         'connections-begin',
-        { provider: 'slack', space_id: SPACE_ID, return_to: '/connections?provider=slack' },
+        { provider: 'slack', return_to: '/connections?provider=slack' },
       ],
     ]);
   });
 
-  it('refuses a space the caller cannot select, before asking for an authorize url', async () => {
-    const { callsFor } = database({ spaces: [{ data: null }] });
-
-    const state = await startConnection('slack', SPACE_ID);
-
-    expect(state).toEqual({
-      status: 'error',
-      message: 'You are not in that space.',
+  // A connection is one authorized account. Which space each of its units feeds is decided later.
+  it('names no space, so the same account can go on to feed several', async () => {
+    const { callsFor } = database({
+      'connections-begin': [{ data: { authorize_url: AUTHORIZE_URL } }],
     });
-    expect(callsFor('connections-begin')).toEqual([]);
-    expect(caller.sentTo).toEqual([]);
-  });
 
-  it('refuses a space id that is not a space', async () => {
-    const { callsFor } = database({});
+    await startConnection('slack');
 
-    const state = await startConnection('slack', 'engineering');
-
-    expect(state.status).toBe('error');
-    expect(callsFor('spaces')).toEqual([]);
+    const [call] = callsFor('connections-begin');
+    expect(call[2]).not.toHaveProperty('space_id');
   });
 
   it('refuses a request that names no source', async () => {
     const { callsFor } = database({});
 
-    const state = await startConnection('', SPACE_ID);
+    const state = await startConnection('');
+
+    expect(state).toEqual({ status: 'error', message: 'Choose a source.' });
+    expect(callsFor('connections-begin')).toEqual([]);
+  });
+
+  it('refuses a source name longer than any slug this app knows', async () => {
+    const { callsFor } = database({});
+
+    const state = await startConnection('s'.repeat(65));
 
     expect(state.status).toBe('error');
-    expect(callsFor('spaces')).toEqual([]);
+    expect(callsFor('connections-begin')).toEqual([]);
   });
 
   it('reports what the edge function refused and sends the browser nowhere', async () => {
-    database({
-      spaces: [visibleSpace],
-      'connections-begin': [{ error: { message: 'slack is not configured' } }],
-    });
+    database({ 'connections-begin': [{ error: { message: 'slack is not configured' } }] });
 
-    const state = await startConnection('slack', SPACE_ID);
+    const state = await startConnection('slack');
 
     expect(state.status).toBe('error');
     expect(caller.sentTo).toEqual([]);
@@ -140,7 +134,7 @@ describe('connecting a source to a space', () => {
   it('refuses a caller with no session', async () => {
     caller.signedIn = false;
 
-    expect((await startConnection('slack', SPACE_ID)).status).toBe('error');
+    expect((await startConnection('slack')).status).toBe('error');
     expect(caller.sentTo).toEqual([]);
   });
 });
@@ -188,13 +182,13 @@ describe('claiming the token the callback parked', () => {
   });
 });
 
-describe('choosing what a connection reads', () => {
-  it('answers with the selection as it now stands, not with what was sent', async () => {
+describe('choosing where a connection sends each unit', () => {
+  it('answers with the routing as it now stands, not with what was sent', async () => {
     const { callsFor } = database({
-      'connections-scopes': [{ data: { scope_selection: populatedScope } }],
+      'connections-scopes': [{ data: { scope_selection: getScope({ C1: SPACE_ID }) } }],
     });
 
-    const state = await saveScopeSelection(CONNECTION_ID, ['C1', 'C9']);
+    const state = await saveScopeSelection(CONNECTION_ID, { C1: SPACE_ID, C9: SPACE_ID });
 
     expect(state).toEqual({
       status: 'success',
@@ -205,47 +199,89 @@ describe('choosing what a connection reads', () => {
           { id: 'C1', name: 'general' },
           { id: 'C2', name: 'engineering' },
         ],
-        selected: ['C1'],
+        routes: { C1: SPACE_ID },
       },
     });
     expect(callsFor('connections-scopes')).toEqual([
-      ['invoke', 'connections-scopes', { connection_id: CONNECTION_ID, selected: ['C1', 'C9'] }],
+      [
+        'invoke',
+        'connections-scopes',
+        { connection_id: CONNECTION_ID, routes: { C1: SPACE_ID, C9: SPACE_ID } },
+      ],
     ]);
   });
 
-  it('saves an empty choice, which for a channel source means reading nothing', async () => {
+  it('sends one channel to one space and another to a second, from the one account', async () => {
     const { callsFor } = database({
-      'connections-scopes': [{ data: { scope_selection: { ...populatedScope, selected: [] } } }],
+      'connections-scopes': [
+        { data: { scope_selection: getScope({ C1: SPACE_ID, C2: FINANCE_ID }) } },
+      ],
     });
 
-    const state = await saveScopeSelection(CONNECTION_ID, []);
+    const state = await saveScopeSelection(CONNECTION_ID, { C1: SPACE_ID, C2: FINANCE_ID });
+
+    expect(state).toEqual({
+      status: 'success',
+      data: expect.objectContaining({ routes: { C1: SPACE_ID, C2: FINANCE_ID } }),
+    });
+    expect(callsFor('connections-scopes')).toEqual([
+      [
+        'invoke',
+        'connections-scopes',
+        { connection_id: CONNECTION_ID, routes: { C1: SPACE_ID, C2: FINANCE_ID } },
+      ],
+    ]);
+  });
+
+  it('saves an empty routing, which means the account is read by nobody', async () => {
+    const { callsFor } = database({
+      'connections-scopes': [{ data: { scope_selection: getScope({}) } }],
+    });
+
+    const state = await saveScopeSelection(CONNECTION_ID, {});
 
     expect(state.status).toBe('success');
     expect(callsFor('connections-scopes')).toContainEqual([
       'invoke',
       'connections-scopes',
-      { connection_id: CONNECTION_ID, selected: [] },
+      { connection_id: CONNECTION_ID, routes: {} },
     ]);
   });
 
   it('refuses a connection id that is not a connection', async () => {
     const { callsFor } = database({});
 
-    const state = await saveScopeSelection('slack', ['C1']);
+    const state = await saveScopeSelection('slack', { C1: SPACE_ID });
 
-    expect(state).toEqual({
-      status: 'error',
-      message: 'That selection could not be saved.',
-    });
+    expect(state).toEqual({ status: 'error', message: 'That routing could not be saved.' });
     expect(callsFor('connections-scopes')).toEqual([]);
   });
 
-  it('refuses a choice longer than any picker offers', async () => {
+  // The destination decides who can read what the unit imports, so it has to be a real space id.
+  it('refuses a route that points at something other than a space, before it reaches the edge', async () => {
+    const { callsFor } = database({});
+
+    const state = await saveScopeSelection(CONNECTION_ID, { C1: 'engineering' });
+
+    expect(state).toEqual({ status: 'error', message: 'That routing could not be saved.' });
+    expect(callsFor('connections-scopes')).toEqual([]);
+  });
+
+  it('refuses a unit id longer than any provider issues', async () => {
+    const { callsFor } = database({});
+
+    const state = await saveScopeSelection(CONNECTION_ID, { ['C'.repeat(257)]: SPACE_ID });
+
+    expect(state.status).toBe('error');
+    expect(callsFor('connections-scopes')).toEqual([]);
+  });
+
+  it('refuses a routing longer than any picker offers', async () => {
     const { callsFor } = database({});
 
     const state = await saveScopeSelection(
       CONNECTION_ID,
-      Array.from({ length: 501 }, (_unused, index) => `C${index}`),
+      Object.fromEntries(Array.from({ length: 501 }, (_unused, index) => [`C${index}`, SPACE_ID])),
     );
 
     expect(state.status).toBe('error');
@@ -255,13 +291,13 @@ describe('choosing what a connection reads', () => {
   it('reports a save the function refused', async () => {
     database({ 'connections-scopes': [{ error: { message: 'connection_expired' } }] });
 
-    expect((await saveScopeSelection(CONNECTION_ID, ['C1'])).status).toBe('error');
+    expect((await saveScopeSelection(CONNECTION_ID, { C1: SPACE_ID })).status).toBe('error');
   });
 
-  it('refuses a selection the app cannot read back, rather than showing a tick that did not save', async () => {
+  it('refuses a routing the app cannot read back, rather than showing a tick that did not save', async () => {
     database({ 'connections-scopes': [{ data: { scope_selection: 'everything' } }] });
 
-    expect((await saveScopeSelection(CONNECTION_ID, ['C1'])).status).toBe('error');
+    expect((await saveScopeSelection(CONNECTION_ID, { C1: SPACE_ID })).status).toBe('error');
   });
 });
 

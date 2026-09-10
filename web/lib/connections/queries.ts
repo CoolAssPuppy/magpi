@@ -3,8 +3,6 @@ import 'server-only';
 import { listSpaceOptions } from '@/lib/spaces/spaces';
 import type { SessionContext } from '@/lib/supabase/context';
 
-import { parseScopeSelection, type ScopeSelection } from './scope-selection';
-import { describeConnectionStatus } from './status';
 import {
   buildProviderListings,
   type ConnectionRecord,
@@ -15,7 +13,7 @@ import {
 
 /** Named columns, never a star: `authenticated` holds column-level select, not a table grant. */
 const CONNECTION_COLUMNS =
-  'id, provider, space_id, user_id, external_account_id, status, status_detail, last_synced_at, scope_selection';
+  'id, provider, user_id, external_account_id, status, status_detail, last_synced_at, scope_selection';
 
 const PROVIDER_COLUMNS =
   'slug, display_name, description, docs_url, enabled, position, scope_selection_kind';
@@ -49,20 +47,10 @@ async function fetchConnections(
   return data;
 }
 
-export type ProviderScreenConnection = {
-  readonly id: string;
-  readonly spaceId: string;
-  readonly spaceName: string;
-  readonly account: string;
-  readonly status: ReturnType<typeof describeConnectionStatus>;
-  readonly selection: ScopeSelection;
-};
-
 export type ConnectionsPageData = {
   readonly listings: readonly ProviderListing[];
   readonly spaceIds: readonly string[];
   readonly spaces: readonly { readonly id: string; readonly name: string }[];
-  readonly scopes: readonly ProviderScreenConnection[];
 };
 
 export async function loadConnectionsPage(context: SessionContext): Promise<ConnectionsPageData> {
@@ -72,32 +60,9 @@ export async function loadConnectionsPage(context: SessionContext): Promise<Conn
     fetchSpaces(context),
   ]);
 
-  const spaceNames = new Map(spaces.map((space) => [space.id, space.name]));
-
   return {
     listings: buildProviderListings({ providers, connections, spaces, now: new Date() }),
     spaceIds: spaces.map((space) => space.id),
     spaces: spaces.map((space) => ({ id: space.id, name: space.name })),
-    scopes: connections.flatMap((connection) => {
-      const spaceName = spaceNames.get(connection.space_id);
-      if (!spaceName) return [];
-
-      const parsed = parseScopeSelection(connection.scope_selection);
-
-      return [
-        {
-          id: connection.id,
-          spaceId: connection.space_id,
-          spaceName,
-          account: connection.external_account_id ?? 'Account not recorded',
-          status: describeConnectionStatus({
-            status: connection.status,
-            statusDetail: connection.status_detail,
-            lastSyncedAt: connection.last_synced_at,
-          }),
-          selection: parsed.ok ? parsed.data : { kind: 'unset' },
-        },
-      ];
-    }),
   };
 }

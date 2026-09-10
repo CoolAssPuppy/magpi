@@ -4,8 +4,6 @@ import { ApiError } from './errors.ts';
 export interface PendingConnection {
   userId: string;
   provider: string;
-  /** Chosen before the redirect, so the callback cannot be talked into another. */
-  spaceId: string;
   externalAccountId: string | null;
   /** Ciphertext, moved as-is. The AAD binds it to userId, so nothing decrypts here. */
   accessTokenEnc: string;
@@ -32,7 +30,6 @@ export interface ClaimPort {
 export interface ClaimResult {
   connection_id: string;
   provider: string;
-  space_id: string;
   return_to: string | null;
 }
 
@@ -54,7 +51,7 @@ export async function claimConnection(
       action: 'conn.claim_rejected',
       actor: `user:${userId}`,
       target: pending.provider,
-      meta: { intended_user: pending.userId, space_id: pending.spaceId },
+      meta: { intended_user: pending.userId, external_account_id: pending.externalAccountId },
     });
     throw new ApiError(403, 'claim_mismatch', 'that connection was started by another account');
   }
@@ -68,14 +65,12 @@ export async function claimConnection(
     meta: {
       external_account_id: pending.externalAccountId,
       scopes: pending.scopes,
-      space_id: pending.spaceId,
     },
   });
 
   return {
     connection_id: connectionId,
     provider: pending.provider,
-    space_id: pending.spaceId,
     return_to: pending.returnTo,
   };
 }

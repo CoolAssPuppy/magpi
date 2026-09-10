@@ -28,8 +28,6 @@ create table public.oauth_states (
   user_id uuid not null references auth.users (id) on delete cascade,
   provider text not null references public.providers (slug),
   code_verifier text not null,
-  -- Which space the resulting connection lands in, chosen before the redirect.
-  space_id uuid not null references public.spaces (id) on delete cascade,
   return_to text,
   created_at timestamptz not null default now(),
   expires_at timestamptz not null
@@ -48,7 +46,6 @@ create table public.pending_connections (
   ticket_hash text primary key,
   user_id uuid not null references auth.users (id) on delete cascade,
   provider text not null references public.providers (slug),
-  space_id uuid not null references public.spaces (id) on delete cascade,
   external_account_id text,
   access_token_enc bytea not null,
   refresh_token_enc bytea,

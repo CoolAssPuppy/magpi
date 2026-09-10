@@ -11,8 +11,6 @@ const slug = z.string().regex(SLUG_RE).max(64);
 
 export const connectionsBeginSchema = z.strictObject({
   provider: slug,
-  /** The space this connection lands in, chosen before the redirect. */
-  space_id: z.uuid(),
   // Where to send the browser after connecting. safeReturnTo decides if it is same-site.
   return_to: z.string().max(512).optional(),
 });
@@ -25,7 +23,7 @@ export const connectionsClaimSchema = z.strictObject({
 /** The picker, both halves in one call. `selected` present saves a choice, absent refreshes. */
 export const connectionsScopesSchema = z.strictObject({
   connection_id: z.uuid(),
-  selected: z.array(z.string().min(1).max(200)).max(500).optional(),
+  routes: z.record(z.string().min(1).max(200), z.uuid()).optional(),
 });
 
 export const connectionsSyncSchema = z.strictObject({
@@ -81,7 +79,6 @@ export function isValidSlug(value: string): boolean {
 const pendingConnectionRowSchema = z.object({
   user_id: z.uuid(),
   provider: slug,
-  space_id: z.uuid(),
   external_account_id: z.string().nullish(),
   access_token_enc: z.string().min(1),
   refresh_token_enc: z.string().nullish(),
@@ -94,7 +91,6 @@ const oauthStateRowSchema = z.object({
   user_id: z.uuid(),
   provider: slug,
   code_verifier: z.string().min(1),
-  space_id: z.uuid(),
   return_to: z.string().nullish(),
 });
 

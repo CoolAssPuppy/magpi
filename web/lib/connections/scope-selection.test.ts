@@ -7,6 +7,9 @@ import {
   type ScopeSelection,
 } from './scope-selection';
 
+const ENGINEERING = '33333333-3333-4333-8333-333333333333';
+const FINANCE = '44444444-4444-4444-8444-444444444444';
+
 const getPopulatedSelection = (overrides?: Partial<Record<string, unknown>>) => ({
   kind: 'channel',
   available: [
@@ -14,7 +17,7 @@ const getPopulatedSelection = (overrides?: Partial<Record<string, unknown>>) => 
     { id: 'C2', name: 'engineering' },
     { id: 'C3', name: 'design' },
   ],
-  selected: ['C1'],
+  routes: { C1: ENGINEERING },
   ...overrides,
 });
 
@@ -40,12 +43,26 @@ describe('scope selection parsing', () => {
         { id: 'C2', name: 'engineering' },
         { id: 'C3', name: 'design' },
       ],
-      selected: ['C1'],
+      routes: { C1: ENGINEERING },
     });
+  });
+
+  it('reads two units of one account routed to two different spaces', () => {
+    const selection = parsed(getPopulatedSelection({ routes: { C1: ENGINEERING, C2: FINANCE } }));
+
+    expect(selection).toEqual(
+      expect.objectContaining({ routes: { C1: ENGINEERING, C2: FINANCE } }),
+    );
   });
 
   it('refuses a selection kind the schema does not define', () => {
     const result = parseScopeSelection(getPopulatedSelection({ kind: 'mailbox' }));
+
+    expect(result.ok).toBe(false);
+  });
+
+  it('refuses a route that points at something other than a space id', () => {
+    const result = parseScopeSelection(getPopulatedSelection({ routes: { C1: 'engineering' } }));
 
     expect(result.ok).toBe(false);
   });
@@ -64,26 +81,36 @@ describe('scope selection parsing', () => {
 });
 
 describe('describing a selection', () => {
-  it('counts what is selected against what is available', () => {
-    expect(describeScopeSelection(parsed(getPopulatedSelection()))).toBe('1 of 3 channels');
+  it('counts what is routed against what is available, and names one destination', () => {
+    expect(describeScopeSelection(parsed(getPopulatedSelection()))).toBe(
+      '1 of 3 channels into 1 space',
+    );
   });
 
-  it('says nothing is selected rather than showing a zero', () => {
-    const selection = parsed(getPopulatedSelection({ selected: [] }));
+  it('counts the spaces, not the routes, when one account feeds two spaces', () => {
+    const selection = parsed(
+      getPopulatedSelection({ routes: { C1: ENGINEERING, C2: FINANCE, C3: FINANCE } }),
+    );
 
-    expect(describeScopeSelection(selection)).toBe('No channels selected');
+    expect(describeScopeSelection(selection)).toBe('3 of 3 channels into 2 spaces');
   });
 
-  it('names a whole workspace rather than counting it', () => {
+  it('says nothing is routed rather than showing a zero', () => {
+    const selection = parsed(getPopulatedSelection({ routes: {} }));
+
+    expect(describeScopeSelection(selection)).toBe('No channels routed');
+  });
+
+  it('names the unit a workspace source offers, rather than calling it a channel', () => {
     const selection = parsed(
       getPopulatedSelection({
         kind: 'workspace',
         available: [{ id: 'W1', name: 'Acme' }],
-        selected: ['W1'],
+        routes: { W1: ENGINEERING },
       }),
     );
 
-    expect(describeScopeSelection(selection)).toBe('The whole workspace');
+    expect(describeScopeSelection(selection)).toBe('1 of 1 workspaces into 1 space');
   });
 
   it('says the provider has not answered yet when the selection is unset', () => {
@@ -92,19 +119,21 @@ describe('describing a selection', () => {
 });
 
 describe('what an empty selection means', () => {
-  it('says a channel source reads nothing, because that is what Slack does', () => {
+  it('tells a channel source what routing one channel would do', () => {
     expect(describeEmptySelection('channel')).toBe(
-      'With no channels selected, Magpi reads nothing from this source.',
+      'Send a channel to a space and Magpi starts reading it.',
     );
   });
 
-  it('says a folder source reads everything, because that is what Drive does', () => {
+  it('tells a folder source what routing one folder would do', () => {
     expect(describeEmptySelection('folder')).toBe(
-      'With no folders selected, Magpi reads everything this account can see.',
+      'Send a folder to a space and Magpi starts reading it.',
     );
   });
 
-  it('has nothing to add for a source that reads a whole workspace either way', () => {
-    expect(describeEmptySelection('workspace')).toBeNull();
+  it('tells a workspace source what routing the workspace would do', () => {
+    expect(describeEmptySelection('workspace')).toBe(
+      'Send this workspace to a space and Magpi starts reading it.',
+    );
   });
 });

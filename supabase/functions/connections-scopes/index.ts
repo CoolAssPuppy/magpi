@@ -1,12 +1,12 @@
-// POST /connections-scopes. Lists what the provider offers, and saves `selected` when it is sent.
+// POST /connections-scopes. Lists what the provider offers, and saves `routes` when it is sent.
 
 import { ApiError, jsonResponse } from '../_shared/errors.ts';
 import { serveFunction } from '../_shared/http.ts';
 import { connectionsScopesSchema, parseBody } from '../_shared/validate.ts';
 import { serviceClient } from '../_shared/db.ts';
 import { enforceRateLimits } from '../_shared/rate_limit.ts';
-import { requireSpaceMembership, requireUser } from '../_shared/auth.ts';
-import { loadConnection } from '../_shared/connections.ts';
+import { requireUser } from '../_shared/auth.ts';
+import { loadConnection, requireConnectionAccess } from '../_shared/connections.ts';
 import { liveHttp } from '../_shared/deps.ts';
 import { buildScopeSelection, storedSelectionOf } from '../_shared/scope_selection.ts';
 import { SourceError } from '../_shared/sources/contract.ts';
@@ -25,7 +25,7 @@ serveFunction('connections-scopes', async (core) => {
   const connection = await loadConnection(db, input.connection_id);
   if (!connection) throw new ApiError(404, 'unknown_connection', 'no such connection');
   // Membership rather than ownership, since a team space's connections belong to the space.
-  await requireSpaceMembership(db, user.id, connection.space_id);
+  await requireConnectionAccess(db, user.id, connection);
 
   const driver = driverFor(connection.provider);
   if (driver.scopeSelectionKind === null) {
@@ -33,7 +33,7 @@ serveFunction('connections-scopes', async (core) => {
   }
 
   const stored = storedSelectionOf(connection.scope_selection);
-  const selected = input.selected ?? stored?.selected ?? [];
+  const routes = input.routes ?? stored?.routes ?? {};
 
   const http = { fetch: liveHttp.fetch, now: () => new Date() };
   const credentials = await resolveCredentials(connection, { db, http });
@@ -54,7 +54,7 @@ serveFunction('connections-scopes', async (core) => {
   const scopeSelection = buildScopeSelection(
     driver.scopeSelectionKind,
     available.map((option) => ({ ...option, kind: driver.scopeSelectionKind ?? 'workspace' })),
-    selected,
+    routes,
   );
 
   const { error } = await db

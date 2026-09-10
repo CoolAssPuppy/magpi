@@ -2,7 +2,12 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import { advanceCursor, type ConnectionRow, markConnectionStatus } from '../connections.ts';
+import {
+  advanceCursor,
+  type ConnectionRow,
+  markConnectionStatus,
+  routesOf,
+} from '../connections.ts';
 import { ApiError } from '../errors.ts';
 import { SourceError } from '../sources/contract.ts';
 import type { SourceDocumentRef } from '../sources/contract.ts';
@@ -32,9 +37,17 @@ interface ExistingDocument {
   /** Read back so a pass can tell a document that moved from one that did not. */
   title: string;
   url: string | null;
+  /** Where it already lives. A rename must not re-file a document that is already placed. */
+  space_id: string;
 }
 
-const FILED_COLUMNS = 'id, external_id, title, url';
+const FILED_COLUMNS = 'id, external_id, title, url, space_id';
+
+/** A filed document and the space its unit routes to, which the ingest job has to match. */
+interface FiledDocument {
+  id: string;
+  spaceId: string;
+}
 
 /** Documents this connection has already filed, for the external ids in this page. */
 async function existingDocuments(
@@ -70,7 +83,7 @@ async function relabelDocuments(
     moved.set(row.id, {
       id: row.id,
       org_id: connection.org_id,
-      space_id: connection.space_id,
+      space_id: row.space_id,
       connection_id: connection.id,
       external_id: ref.externalId,
       title: ref.title,
@@ -92,21 +105,32 @@ async function fileDocuments(
   deps: JobDeps,
   connection: ConnectionRow,
   refs: SourceDocumentRef[],
-): Promise<string[]> {
+): Promise<FiledDocument[]> {
+  const routes = routesOf(connection);
+  // A unit with no route has nowhere to land. The driver should not have read it, so say so.
+  const routed = refs.filter((ref) => {
+    if (routes[ref.unitId]) return true;
+    console.warn('dropping a document from an unrouted unit', {
+      connection: connection.id,
+      unit: ref.unitId,
+    });
+    return false;
+  });
+
   const known = await existingDocuments(
     deps.db,
     connection.id,
-    refs.map((ref) => ref.externalId),
+    routed.map((ref) => ref.externalId),
   );
 
-  const fresh = refs.filter((ref) => !known.has(ref.externalId));
+  const fresh = routed.filter((ref) => !known.has(ref.externalId));
   if (fresh.length > 0) {
     const { data, error } = await deps.db
       .from('documents')
       .insert(
         fresh.map((ref) => ({
           org_id: connection.org_id,
-          space_id: connection.space_id,
+          space_id: routes[ref.unitId],
           connection_id: connection.id,
           external_id: ref.externalId,
           title: ref.title,
@@ -122,32 +146,34 @@ async function fileDocuments(
   }
 
   // Only rows a previous pass filed can look renamed, so this walks those.
-  await relabelDocuments(deps, connection, refs, known);
+  await relabelDocuments(deps, connection, routed, known);
 
-  return refs
-    .map((ref) => known.get(ref.externalId)?.id)
-    .filter((id): id is string => typeof id === 'string');
+  return routed.flatMap((ref) => {
+    const row = known.get(ref.externalId);
+    return row ? [{ id: row.id, spaceId: row.space_id }] : [];
+  });
 }
 
 async function enqueueIngest(
   deps: JobDeps,
   connection: ConnectionRow,
-  documentIds: string[],
+  documents: FiledDocument[],
 ): Promise<number> {
-  if (documentIds.length === 0) return 0;
+  if (documents.length === 0) return 0;
 
+  // The job carries the document's own space, so a re-route never files a job against the old one.
   const { error } = await deps.db.from('ingest_jobs').insert(
-    documentIds.map((documentId) => ({
+    documents.map((document) => ({
       org_id: connection.org_id,
-      space_id: connection.space_id,
-      document_id: documentId,
+      space_id: document.spaceId,
+      document_id: document.id,
       connection_id: connection.id,
       status: 'queued',
       stage: 'fetch',
     })),
   );
   if (error) throw new ApiError(500, 'internal', 'the ingest jobs could not be queued');
-  return documentIds.length;
+  return documents.length;
 }
 
 export async function runSyncJob(connection: ConnectionRow, deps: JobDeps): Promise<SyncResult> {
@@ -179,10 +205,10 @@ export async function runSyncJob(connection: ConnectionRow, deps: JobDeps): Prom
       const page = await driver.listChanges(outcome.credentials, deps.http, { cursor: from });
 
       budget.checkpoint('file');
-      const documentIds = await fileDocuments(deps, connection, page.documents);
+      const filed = await fileDocuments(deps, connection, page.documents);
 
       budget.checkpoint('enqueue');
-      enqueued += await enqueueIngest(deps, connection, documentIds);
+      enqueued += await enqueueIngest(deps, connection, filed);
       documentCount += page.documents.length;
 
       // Advance the cursor only after the ingest jobs exist, or documents get skipped.

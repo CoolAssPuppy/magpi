@@ -88,13 +88,18 @@ create policy providers_select_authenticated on public.providers
 
 -- Content ------------------------------------------------------------------
 
+-- A connection you made is yours to see even before you have routed it anywhere. After that it is
+-- visible to whoever shares one of its destinations, and the view filters the routes they cannot see.
 create policy connections_select_visible on public.connections
   for select to authenticated
-  using (space_id in (select public.visible_space_ids()));
+  using (
+    user_id = (select auth.uid())
+    or public.routes_into_visible_space(scope_selection)
+  );
 
 create policy connections_delete_owner on public.connections
   for delete to authenticated
-  using (user_id = (select auth.uid()) and space_id in (select public.visible_space_ids()));
+  using (user_id = (select auth.uid()));
 
 create policy documents_select_visible on public.documents
   for select to authenticated

@@ -11,6 +11,7 @@ const API_KEY = 'lin_api_7b4c2f90e1a84d63b0f5';
 const OAUTH_TOKEN = 'lin_oauth_9f31c07a4b6d48e2b5c1';
 
 const KNOWLEDGE_BASE_TEAM = '8d1f6c40-3b72-4e95-9a08-51cd7e2b6a37';
+const PLATFORM_TEAM = 'a5e2b719-6c84-4f13-8d70-2b96e0af4c58';
 
 function creds(overrides: Partial<SourceCredentials> = {}): SourceCredentials {
   return { accessToken: API_KEY, scopeSelection: { ids: [] }, ...overrides };
@@ -136,6 +137,19 @@ Deno.test('a citation carries the issue identifier and the issue url', async () 
   );
 });
 
+Deno.test('an issue carries the team it belongs to', async () => {
+  const deps = await answering(await loadFixture('linear', 'changes_first'));
+
+  const page = await linearDriver.listChanges(creds(), deps, { cursor: null });
+
+  // KB-118 and KB-121 are Knowledge Base issues, PLT-64 is a Platform one.
+  assertEquals(page.documents.map((document) => document.unitId), [
+    KNOWLEDGE_BASE_TEAM,
+    KNOWLEDGE_BASE_TEAM,
+    PLATFORM_TEAM,
+  ]);
+});
+
 Deno.test('the next pass resumes from the newest updatedAt in the page', async () => {
   const deps = await answering(await loadFixture('linear', 'changes_incremental'));
 
@@ -200,6 +214,7 @@ Deno.test('a document is the description followed by each named comment', async 
 
   assertEquals(document.title, 'KB-121 Write the retention policy for archived handbook pages');
   assertEquals(document.mimeType, 'text/markdown');
+  assertEquals(document.unitId, KNOWLEDGE_BASE_TEAM);
   assert(document.text.startsWith('Archived handbook pages stay in the index forever'));
   const nadia = document.text.indexOf('\n\nNadia Okonkwo: Legal wants two years');
   const tomas = document.text.indexOf('\n\nTomas Ferreira: Ninety days works');

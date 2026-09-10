@@ -5,8 +5,8 @@ import { serveFunction } from '../_shared/http.ts';
 import { connectionsSyncSchema, parseBody } from '../_shared/validate.ts';
 import { audit, serviceClient } from '../_shared/db.ts';
 import { enforceRateLimits } from '../_shared/rate_limit.ts';
-import { requireSpaceMembership, requireUser } from '../_shared/auth.ts';
-import { loadConnection } from '../_shared/connections.ts';
+import { requireUser } from '../_shared/auth.ts';
+import { loadConnection, requireConnectionAccess } from '../_shared/connections.ts';
 import { runSyncJob } from '../_shared/jobs/sync.ts';
 import { claimConnectionForSync } from '../_shared/jobs/claim.ts';
 import { jobDepsFromEnv } from '../_shared/jobs/runtime.ts';
@@ -25,7 +25,7 @@ serveFunction('connections-sync', async (core) => {
 
   const connection = await loadConnection(db, input.connection_id);
   if (!connection) throw new ApiError(404, 'unknown_connection', 'no such connection');
-  await requireSpaceMembership(db, user.id, connection.space_id);
+  await requireConnectionAccess(db, user.id, connection);
 
   if (!hasDriver(connection.provider)) {
     throw new ApiError(400, 'unknown_provider', `${connection.provider} cannot be synced yet`);

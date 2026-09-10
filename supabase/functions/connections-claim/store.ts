@@ -1,17 +1,17 @@
-// Where a claimed exchange becomes a row in connections: one per provider account per space.
+// Where a claimed exchange becomes a row in connections: one per provider account per org.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { ApiError } from '../_shared/errors.ts';
-import { requireSpaceMembership } from '../_shared/auth.ts';
+import { requireOrgMembership } from '../_shared/auth.ts';
 import type { PendingConnection } from '../_shared/claim.ts';
 
 /** The connection this account already has here. A null external id needs `is`, not `eq`. */
-function findExisting(db: SupabaseClient, pending: PendingConnection) {
+function findExisting(db: SupabaseClient, orgId: string, pending: PendingConnection) {
   const scoped = db
     .from('connections')
     .select('id')
-    .eq('space_id', pending.spaceId)
+    .eq('org_id', orgId)
     .eq('user_id', pending.userId)
     .eq('provider', pending.provider);
 
@@ -26,13 +26,12 @@ export async function storeConnection(
   pending: PendingConnection,
 ): Promise<{ connectionId: string }> {
   // A membership can be revoked while a flow is in the air.
-  const { orgId } = await requireSpaceMembership(db, pending.userId, pending.spaceId);
+  const { orgId } = await requireOrgMembership(db, pending.userId);
 
-  const { data: existing } = await findExisting(db, pending);
+  const { data: existing } = await findExisting(db, orgId, pending);
 
   const row = {
     org_id: orgId,
-    space_id: pending.spaceId,
     user_id: pending.userId,
     provider: pending.provider,
     external_account_id: pending.externalAccountId,

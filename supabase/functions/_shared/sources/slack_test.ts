@@ -54,7 +54,13 @@ Deno.test('a first pass reads every selected channel and skips system messages',
   assertEquals(page.documents[0].title, 'Reindex runbook is written up at last.');
   assertEquals(page.documents[0].mimeType, 'text/plain');
   assertEquals(page.documents[0].url, null);
+  assertEquals(page.documents[0].unitId, AURORA);
   assert(!page.documents.some((doc) => doc.externalId.endsWith('1788946245.000300')));
+  // Every message carries the channel it was read out of, whichever channel that was.
+  for (const doc of page.documents) {
+    assertEquals(doc.externalId.startsWith(`${doc.unitId}:`), true);
+  }
+  assertEquals(new Set(page.documents.map((doc) => doc.unitId)), new Set([AURORA, BEACON]));
 });
 
 Deno.test('a first pass sends no oldest and carries the bearer token', async () => {
@@ -180,6 +186,7 @@ Deno.test('a thread is fetched as the parent followed by each reply', async () =
   assertEquals(paramOf(stub.calls[0], 'channel'), AURORA);
   assertEquals(paramOf(stub.calls[0], 'ts'), '1788954450.000200');
   assertEquals(doc.mimeType, 'text/plain');
+  assertEquals(doc.unitId, AURORA);
   assertEquals(doc.updatedAt, '2026-09-09T11:47:30.000Z');
   assertEquals(doc.text.split('\n\n').length, 3);
   assert(doc.text.startsWith('Reindex runbook is written up at last.'));

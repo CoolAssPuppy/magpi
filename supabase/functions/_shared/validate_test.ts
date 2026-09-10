@@ -7,19 +7,25 @@ import {
   isUploadInSpace,
   isValidSlug,
   parseBody,
+  parseOAuthStateRow,
+  parsePendingConnectionRow,
   workerBatchSchema,
 } from './validate.ts';
 import { apiErrorFrom } from './testing/assertions.ts';
 
 const SPACE = '33333333-3333-4333-8333-333333333333';
 
-Deno.test('beginning a connection names a provider and a space', () => {
-  const parsed = parseBody(connectionsBeginSchema, { provider: 'notion', space_id: SPACE });
-  assertEquals(parsed.space_id, SPACE);
+Deno.test('beginning a connection names only a provider', () => {
+  const parsed = parseBody(connectionsBeginSchema, { provider: 'notion' });
+  assertEquals(parsed.provider, 'notion');
+  assertEquals(parsed.return_to, undefined);
 });
 
-Deno.test('a connection cannot be started without a space', () => {
-  const err = apiErrorFrom(() => parseBody(connectionsBeginSchema, { provider: 'notion' }));
+Deno.test('a connection cannot name the space it lands in', () => {
+  // Routing happens on the connections page, after the redirect.
+  const err = apiErrorFrom(() =>
+    parseBody(connectionsBeginSchema, { provider: 'notion', space_id: SPACE })
+  );
   assertEquals(err.status, 400);
   assertEquals(err.code, 'invalid_request');
 });
@@ -27,7 +33,7 @@ Deno.test('a connection cannot be started without a space', () => {
 Deno.test('an unknown key is rejected rather than stripped', () => {
   // Otherwise a handler that spreads the parsed object carries it through.
   const err = apiErrorFrom(() =>
-    parseBody(connectionsBeginSchema, { provider: 'notion', space_id: SPACE, org_id: SPACE })
+    parseBody(connectionsBeginSchema, { provider: 'notion', org_id: SPACE })
   );
   assertEquals(err.status, 400);
 });
@@ -56,6 +62,29 @@ Deno.test('a worker batch is bounded so one call cannot ask for unbounded work',
 Deno.test('a dream run names one space and one of the three kinds', () => {
   assertEquals(parseBody(dreamRunSchema, { space_id: SPACE, kind: 'digest' }).kind, 'digest');
   apiErrorFrom(() => parseBody(dreamRunSchema, { space_id: SPACE, kind: 'summarise' }));
+});
+
+Deno.test('a consumed oauth state carries no space', () => {
+  const row = parseOAuthStateRow([{
+    user_id: SPACE,
+    provider: 'notion',
+    code_verifier: 'verifier',
+    return_to: '/connections',
+  }]);
+  assertEquals(row?.provider, 'notion');
+  assertEquals(Object.hasOwn(row ?? {}, 'space_id'), false);
+});
+
+Deno.test('a consumed pending connection carries an account rather than a space', () => {
+  const row = parsePendingConnectionRow([{
+    user_id: SPACE,
+    provider: 'slack',
+    external_account_id: 'T04LUMEN',
+    access_token_enc: '\\x0201aabb',
+    scopes: ['channels:read'],
+  }]);
+  assertEquals(row?.external_account_id, 'T04LUMEN');
+  assertEquals(Object.hasOwn(row ?? {}, 'space_id'), false);
 });
 
 Deno.test('a slug that could climb a path is not a slug', () => {

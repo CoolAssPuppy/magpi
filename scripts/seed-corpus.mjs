@@ -239,12 +239,12 @@ const SCOPE_ITEM_OF = {
 };
 
 /**
- * What each connection can see and what this space actually reads. `available` is every unit the
- * account can reach, so it is the same for every space, and `selected` is only that space's own.
+ * What each account can see, and where each unit lands. `available` is every unit the account
+ * reaches. `routes` sends each one to a single space, because a unit belongs to one place.
  */
-function buildScopes(manifest, spaceNames) {
+function buildScopes(manifest, spaceNames, spaces) {
   const available = {};
-  const selected = {};
+  const claims = {};
 
   for (const entry of manifest) {
     const read = SCOPE_ITEM_OF[entry.source];
@@ -253,21 +253,41 @@ function buildScopes(manifest, spaceNames) {
     if (!item) continue;
 
     (available[entry.source] ??= new Map()).set(item.id, item);
-    (selected[`${entry.space}:${entry.source}`] ??= new Set()).add(item.id);
+    const counts = (claims[entry.source] ??= new Map()).get(item.id) ?? new Map();
+    counts.set(entry.space, (counts.get(entry.space) ?? 0) + 1);
+    claims[entry.source].set(item.id, counts);
   }
 
-  return { available, selected };
+  const routes = {};
+  for (const [source, units] of Object.entries(claims)) {
+    routes[source] = {};
+    for (const [unitId, counts] of units) {
+      const ranked = [...counts].sort((a, b) => b[1] - a[1]);
+      // A unit routes to one space. The corpus can name two, and the busier one wins out loud.
+      if (ranked.length > 1) {
+        const others = ranked
+          .slice(1)
+          .map(([key, n]) => `${key} (${n})`)
+          .join(', ');
+        console.warn(
+          `  ${source}/${unitId} appears in more than one space, routing to ${ranked[0][0]} ` +
+            `(${ranked[0][1]}) over ${others}`,
+        );
+      }
+      routes[source][unitId] = spaces[ranked[0][0]];
+    }
+  }
+
+  return { available, routes };
 }
 
-/** One connection per space and provider, so every synced document belongs to a named source. */
+/** One connection per account, so a provider is connected once and its units are routed. */
 async function ensureConnections(db, { orgId, spaces, spaceNames, manifest, ownerUserId }) {
-  const wanted = new Map();
-  for (const entry of manifest) {
-    const provider = PROVIDER_BY_SOURCE[entry.source];
-    if (provider) wanted.set(`${entry.space}:${entry.source}`, { spaceKey: entry.space, provider });
-  }
+  const providers = new Set(
+    manifest.map((entry) => PROVIDER_BY_SOURCE[entry.source]).filter(Boolean),
+  );
 
-  const { available, selected } = buildScopes(manifest, spaceNames);
+  const { available, routes } = buildScopes(manifest, spaceNames, spaces);
   const scopeKind = Object.fromEntries(
     unwrap(
       await db.from('providers').select('slug, scope_selection_kind'),
@@ -275,37 +295,32 @@ async function ensureConnections(db, { orgId, spaces, spaceNames, manifest, owne
     ).map((row) => [row.slug, row.scope_selection_kind]),
   );
 
-  const connections = new Map();
-  for (const [key, { spaceKey, provider }] of wanted) {
-    const spaceId = spaces[spaceKey];
-    if (!spaceId) throw new SeedError(`manifest names unknown space ${spaceKey}`);
+  const sourceOfProvider = Object.fromEntries(
+    Object.entries(PROVIDER_BY_SOURCE).map(([source, provider]) => [provider, source]),
+  );
 
-    const source = key.split(':')[1];
-    const mine = [...(selected[key] ?? [])];
-    // A workspace connection is all or nothing, so it lists only what it reads. A channel or
-    // folder connection is a picker, so it lists everything the account can see.
+  const connections = new Map();
+  for (const provider of providers) {
+    const source = sourceOfProvider[provider];
     const scopeSelection = {
       kind: scopeKind[provider],
-      available:
-        scopeKind[provider] === 'workspace'
-          ? mine.map((id) => available[source].get(id))
-          : [...(available[source]?.values() ?? [])],
-      selected: mine,
+      available: [...(available[source]?.values() ?? [])],
+      routes: routes[source] ?? {},
     };
 
     const existing = unwrap(
       await db
         .from('connections')
         .select('id')
-        .eq('space_id', spaceId)
+        .eq('org_id', orgId)
         .eq('user_id', ownerUserId)
         .eq('provider', provider)
         .limit(1),
-      `reading the ${provider} connection for ${spaceKey}`,
+      `reading the ${provider} connection`,
     );
 
     if (existing.length > 0) {
-      connections.set(key, existing[0].id);
+      connections.set(source, existing[0].id);
       continue;
     }
 
@@ -314,7 +329,6 @@ async function ensureConnections(db, { orgId, spaces, spaceNames, manifest, owne
         .from('connections')
         .insert({
           org_id: orgId,
-          space_id: spaceId,
           user_id: ownerUserId,
           provider,
           external_account_id: ACCOUNT_BY_PROVIDER[provider],
@@ -324,9 +338,9 @@ async function ensureConnections(db, { orgId, spaces, spaceNames, manifest, owne
         })
         .select('id')
         .single(),
-      `creating the ${provider} connection for ${spaceKey}`,
+      `creating the ${provider} connection`,
     );
-    connections.set(key, created.id);
+    connections.set(source, created.id);
   }
 
   return connections;
@@ -436,7 +450,7 @@ async function main() {
     if (entry.author && !authorId) {
       throw new SeedError(`manifest entry ${entry.path} names unknown author ${entry.author}`);
     }
-    const connectionId = connections.get(`${entry.space}:${entry.source}`) ?? null;
+    const connectionId = connections.get(entry.source) ?? null;
     const outcome = await loadEntry(db, {
       entry,
       orgId: org.id,

@@ -21,7 +21,7 @@ grant select on public.providers to authenticated;
 -- A column list, not a table grant, so the encrypted token columns stay unreadable.
 grant delete on public.connections to authenticated;
 grant select (
-  id, org_id, space_id, user_id, provider, external_account_id, scopes,
+  id, org_id, user_id, provider, external_account_id, scopes,
   scope_selection, status, status_detail, cursor, token_expires_at,
   last_synced_at, created_at, updated_at
 ) on public.connections to authenticated;

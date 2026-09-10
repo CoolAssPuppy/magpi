@@ -188,9 +188,7 @@ The connections page was rendering each connection twice, because
 also always open, 56 checkboxes on screen at once. The page went from 6893px to
 3385px.
 
-**Did not ship.** The connections model change. `connections.space_id` is still
-being removed as this is written, so `docs/mobile-spec.md` still describes the
-space selector on each provider row.
+**Did not ship.** Nothing. The connections model change landed in phase 16.
 
 **Needs a human.** `public.search` still raises `tsquery stack too small` for a
 long enough `query_text`. The dream no longer sends one, but a user pasting a
@@ -206,3 +204,54 @@ happened three times in one afternoon and which nothing else would have caught.
 The corpus was written by five agents in parallel off one file list. Two of them
 stopped and asked rather than write the colliding issue numbers they had been
 handed, which is the only reason the collisions were caught before the seed ran.
+
+## Phase 16: A connection is an account, not a space
+
+**Shipped.** `connections.space_id` is gone. A connection is one authorized
+account, and `scope_selection.routes` maps each unit to a space, so one Slack
+workspace sends `#hardware` to Engineering and `#finance` to Finance. The demo
+org went from sixteen connections, four per provider with one per space, to
+four.
+
+The read rule moved with it. `routes_into_visible_space(jsonb)` is the new
+predicate and `connections_select_visible` is now your own connection, or one
+that routes into a space you are in. The view model then drops the routes to
+spaces the reader is not in, so a whole row passing RLS does not leak the rest of
+it. Checked against the seeded org under real RLS: Jane resolves all four
+destinations on every connection, Sam resolves Company and Engineering and cannot
+learn that a Finance teamspace or a `#finance` channel exists.
+
+Nobody picks a space before the redirect any more, so `space_id` came off
+`oauth_states` and `pending_connections` and out of both consume functions. The
+connect button asks for nothing and the routing is set on the row afterwards.
+
+`SourceDocumentRef` gained `unitId`, because only Slack could recover its unit
+and only by accident, from `externalId` being `${channel}:${ts}`. All four
+drivers now report it: Slack the channel, Linear the team off each issue, Notion
+the workspace, Drive the folder the file was found under. Sync routes on it, and
+a document from a unit with no route is dropped with a warning rather than filed
+somewhere arbitrary. A rename keeps a document where it already sits, so
+re-routing a unit does not silently move documents whose chunks would then
+disagree.
+
+The page went from 6893px to 1889px across the two passes. Each connection is
+drawn once, the routing list is collapsed behind a chevron, and the destination
+control is the app's own `Select` rather than the browser's.
+
+**Did not ship.** Re-routing a unit does not move the documents already filed
+under it. The routing decides where new documents land and nothing else.
+
+**Needs a human.** `public.search` still raises `tsquery stack too small` for a
+long enough `query_text`, unchanged from phase 15.
+
+**Notes.** pg-delta generated the migration and got the column grants right,
+which `docs/decisions.md` says `supabase db diff` would not. It did not emit the
+`revoke ... from public, anon` that the declarative schema declares, so a new
+`SECURITY DEFINER` function would have been executable by PUBLIC. Those three
+revokes are hand-written into the migration. It also ordered the column drop
+before a `REVOKE SELECT` naming that column, which fails; dropping a column drops
+its grants anyway, so the revoke no longer names it.
+
+`test/setup.ts` gained the pointer-capture and `scrollIntoView` stubs Radix needs
+under jsdom. Without them any component using `Select` throws before it opens,
+which is why the picker had been a bare `<select>`.

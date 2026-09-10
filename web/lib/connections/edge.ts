@@ -17,12 +17,12 @@ const scopesResponse = z.object({ scope_selection: z.unknown() });
 
 export async function beginConnection(
   client: FunctionsClient,
-  input: { provider: string; spaceId: string; returnTo: string },
+  input: { provider: string; returnTo: string },
 ): Promise<Result<{ authorizeUrl: string }, string>> {
   const result = await invokeEdgeFunction(
     client,
     'connections-begin',
-    { provider: input.provider, space_id: input.spaceId, return_to: input.returnTo },
+    { provider: input.provider, return_to: input.returnTo },
     beginResponse,
   );
 
@@ -63,13 +63,13 @@ export async function requestFullSync(
   return ok({ jobCount: result.data.job_count });
 }
 
-/** Reads and saves what a connection may read. Omit `selected` to refresh the list only. */
+/** Reads and saves where a connection sends each unit. Omit `routes` to refresh the list only. */
 export async function requestScopes(
   client: FunctionsClient,
-  input: { connectionId: string; selected?: readonly string[] },
+  input: { connectionId: string; routes?: Readonly<Record<string, string>> },
 ): Promise<Result<ScopeSelection, string>> {
   const body: Record<string, unknown> = { connection_id: input.connectionId };
-  if (input.selected) body.selected = [...input.selected];
+  if (input.routes) body.routes = { ...input.routes };
 
   const result = await invokeEdgeFunction(client, 'connections-scopes', body, scopesResponse);
   if (!result.ok) return result;
