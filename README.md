@@ -40,8 +40,15 @@ ones. `supabase/corpus/COMPANY.md` is the reference every document in it agrees
 with, and it names the four facts planted in the corpus on purpose.
 
 ```bash
-node scripts/seed-demo.mjs        # the seven accounts, the spaces, then the corpus
+supabase functions serve --env-file supabase/.env.local   # in another terminal
+node scripts/seed-demo.mjs                                # accounts, spaces, corpus, ingest
 ```
+
+That goes from an empty database to answerable questions. It creates the seven
+accounts, renames the org space, builds the team spaces, loads the corpus and
+then drains the ingest queue through the same worker the cron calls. Pass
+`--skip-ingest` to stop after loading, which leaves documents nobody can ask
+about. Running it twice writes nothing the second time.
 
 | Person            | Email             | Sees                                     |
 | ----------------- | ----------------- | ---------------------------------------- |
