@@ -32,3 +32,6 @@ blob-report/
 .playwright/
 supabase/.env.local
 supabase/.stack-lock
+
+# Browser automation artifacts
+.playwright-mcp/
