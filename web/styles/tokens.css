@@ -1,6 +1,12 @@
 /* Magpi's own tokens. Loads last, so it wins over the vendored Supabase layers. */
 
 @theme {
+  /* The only colour off the derived palette, and the only one that should be. The demo sign-in
+     buttons have to look unlike the product so nobody reads them as a way real people get in.
+     It lives here rather than in :root because Tailwind builds utilities from @theme. */
+  --color-demo: oklch(0.52 0.19 295);
+  --color-demo-foreground: oklch(0.99 0 295);
+
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-heading: var(--font-manrope), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-source-code-pro), ui-monospace, SFMono-Regular, monospace;
@@ -24,11 +30,6 @@
 
   /* One shell width for every row of the site, header and footer included. */
   --measure-shell: 72rem;
-
-  /* The only colour off the derived palette, and the only one that should be. The demo sign-in
-     button has to look unlike the product so nobody reads it as a way real people get in. */
-  --color-demo: oklch(0.52 0.19 295);
-  --color-demo-foreground: oklch(0.99 0 295);
 
   /* Copied unchanged from the compat layer, which computes this value rather than aliasing it. */
   --border-stronger: oklch(
