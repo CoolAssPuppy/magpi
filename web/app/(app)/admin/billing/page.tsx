@@ -46,8 +46,7 @@ export default async function BillingPage({
 
       {params.checkout === 'complete' ? (
         <p className="rounded-[var(--radius-panel)] border border-border-brand bg-brand-200 p-4 text-sm text-brand-600">
-          Stripe has your payment. The plan updates here as soon as Stripe confirms the
-          subscription, which is usually within a few seconds.
+          Stripe has your payment. The plan updates here when Stripe confirms the subscription.
         </p>
       ) : null}
 

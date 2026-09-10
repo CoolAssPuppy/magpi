@@ -32,8 +32,7 @@ export default function PricingPage() {
           <div>
             <dt className="text-sm font-medium text-foreground">What happens at the limit?</dt>
             <dd className="mt-1.5 max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">
-              New ingest is refused and everything already in Magpi keeps answering. The check runs
-              in the database, so it is the same answer everywhere.
+              New ingest is refused and everything already in Magpi keeps answering.
             </dd>
           </div>
           <div>

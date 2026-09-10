@@ -47,8 +47,7 @@ function SpaceRow({
 }) {
   const kindFieldId = useId();
   const [kind, setKind] = useState<DreamKind>('digest');
-  // Held here as well as written, so the switch shows the value that was saved
-  // rather than snapping back until the page is read again.
+  // Held here as well as written, so the switch shows the saved value without a reload.
   const [isDreaming, setDreaming] = useState(space.dreaming_enabled);
   const [failure, setFailure] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<DreamRunOutcome | null>(null);
@@ -140,11 +139,7 @@ function SpaceRow({
   );
 }
 
-/**
- * Dreaming is a per-space setting because a dream run is scoped to exactly one
- * space. A person who does not want synthesis over their personal space turns it
- * off there and leaves it on everywhere else.
- */
+/** Dreaming is a per-space setting, because a dream run is scoped to exactly one space. */
 export function SpaceDreaming({
   spaces,
   onToggle,
@@ -158,8 +153,7 @@ export function SpaceDreaming({
     <section className="flex flex-col gap-3">
       <h2 className="font-heading text-sm font-medium text-foreground">Dreaming by space</h2>
       <p className="max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">
-        A run reads one space and writes back into that space only. Switch it off for a space and
-        nothing in that space is read overnight.
+        Switch it off for a space and nothing in that space is read overnight.
       </p>
       <div className="divide-y divide-border rounded-[var(--radius-panel)] border border-border">
         {spaces.map((space) => (

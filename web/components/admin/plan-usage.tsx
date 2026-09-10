@@ -42,12 +42,6 @@ export function PlanUsage({ usage }: { usage: PlanUsageData }) {
           formatValue={formatBytes}
         />
       </div>
-
-      <p className="max-w-[var(--measure-prose)] text-xs text-tertiary-foreground">
-        Every number here is read from the metered usage events, which is the same count the
-        database checks before it accepts an ingest job. Storage has no plan limit, so it is a
-        running total rather than a gauge.
-      </p>
     </div>
   );
 }

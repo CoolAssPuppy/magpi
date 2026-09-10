@@ -8,11 +8,7 @@ export type BillingState = {
   readonly isStripeConfigured: boolean;
 };
 
-/**
- * The whole billing surface. One card, one button, and a sentence saying where
- * everything else lives. Stripe already has an invoice viewer and a card form,
- * and a second one here could only ever disagree with it.
- */
+/** The whole billing UI: one card and one button. Invoices and cards stay in the Stripe portal. */
 export function PlanCard({ state }: { state: BillingState }) {
   const plan = planById(state.plan);
 
@@ -72,7 +68,7 @@ function BillingAction({ state }: { state: BillingState }) {
     <form method="post" action="/api/stripe/checkout" className="flex flex-col items-start gap-2">
       <Button type="submit">Upgrade to Team</Button>
       <p className="text-xs text-tertiary-foreground">
-        Checkout runs on Stripe. Your plan changes when Stripe confirms the payment, not before.
+        Checkout runs on Stripe. Your plan changes when Stripe confirms the payment.
       </p>
     </form>
   );

@@ -49,7 +49,7 @@ function DeleteOutput({
             <DialogTitle>Delete this dream document?</DialogTitle>
             <DialogDescription>
               This removes the document the run wrote. The documents it was written from are not
-              touched, and the run stays in the list with its record of what it read.
+              touched.
             </DialogDescription>
           </DialogHeader>
           {failure ? (
@@ -71,10 +71,7 @@ function DeleteOutput({
   );
 }
 
-/**
- * There is no uncited synthesis. An output document that cites nothing is
- * reported as having produced nothing, and its text is not rendered at all.
- */
+/** An output document that cites nothing reads as producing nothing, and its text is hidden. */
 export function DreamOutput({
   output,
   onDelete,
@@ -98,8 +95,7 @@ export function DreamOutput({
             className="rounded-[var(--radius-panel)] border border-border-warning bg-warning-200 px-4 py-3"
           >
             <p className="max-w-[var(--measure-prose)] text-sm text-warning-600">
-              This run produced nothing. It wrote a document that cites no source, and Magpi does
-              not show synthesis it cannot trace back to a chunk.
+              This run produced nothing. It wrote a document that cites no source.
             </p>
           </div>
           <DeleteOutput documentId={output.documentId} onDelete={onDelete} />

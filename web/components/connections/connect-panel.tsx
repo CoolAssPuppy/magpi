@@ -48,9 +48,7 @@ function ScopeEditor({
   connection: ConnectionScope;
   onSaveScope: SaveScope;
 }) {
-  // The saved selection replaces what is on screen, because connections-scopes
-  // drops an id the provider no longer offers. A tick that was quietly dropped
-  // would otherwise sit there reading as saved.
+  // The saved selection replaces what is on screen, since dropped ids are not saved.
   const [selection, setSelection] = useState<ScopeSelection>(connection.selection);
   const [selected, setSelected] = useState<readonly string[]>(
     connection.selection.kind === 'set' ? connection.selection.selected : [],
@@ -112,10 +110,7 @@ function ScopeEditor({
   );
 }
 
-/**
- * One screen. A connection is bound to exactly one space, so the space it lands
- * in and the channels it reads are chosen together rather than in two steps.
- */
+/** One screen: the space a connection lands in and the channels it reads are chosen together. */
 export function ConnectPanel({
   provider,
   spaces,
@@ -169,8 +164,7 @@ export function ConnectPanel({
             </SelectContent>
           </Select>
           <p className="max-w-[var(--measure-prose)] text-xs text-tertiary-foreground">
-            Everything this connection imports lands in this space, and only people in the space can
-            read it.
+            Everything this connection imports lands in this space.
           </p>
         </div>
 

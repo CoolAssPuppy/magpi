@@ -25,7 +25,7 @@ export function SpaceMembers({
 
       {kind === 'org' ? (
         <p className="text-sm text-tertiary-foreground">
-          Everyone in the organization is in this space. Membership follows the organization.
+          Everyone in the organization is in this space.
         </p>
       ) : null}
 

@@ -41,7 +41,7 @@ describe('the dreaming switch', () => {
     render(<DreamingToggle spaceId={SPACE_ID} enabled={false} />);
 
     expect(screen.getByText(/re-reads what came into this space that day/i)).toBeInTheDocument();
-    expect(screen.getByText(/Everything it writes cites its sources/i)).toBeInTheDocument();
+    expect(screen.getByText(/writes a digest back into the space/i)).toBeInTheDocument();
   });
 
   it('shows dreaming already on for a space that dreams', () => {
