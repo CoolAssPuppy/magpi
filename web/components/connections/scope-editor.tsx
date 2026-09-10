@@ -41,8 +41,7 @@ export function ScopeEditor({
 
   // Nothing to save until the boxes differ from what is stored, so the button stays out of the way.
   const saved = selection.kind === 'set' ? selection.selected : [];
-  const isChanged =
-    saved.length !== selected.length || saved.some((id) => !selected.includes(id));
+  const isChanged = saved.length !== selected.length || saved.some((id) => !selected.includes(id));
 
   const save = () => {
     setFailure(null);
