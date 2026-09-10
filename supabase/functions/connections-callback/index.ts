@@ -11,10 +11,8 @@ import { isValidSlug, parseOAuthStateRow } from '../_shared/validate.ts';
 import { oauthCredentials, webBaseUrl } from '../_shared/env.ts';
 import { callbackUrl, oauthDriverFor, PENDING_TTL_SECONDS } from '../_shared/oauth.ts';
 
+// Every leg returns here, because only the web app origin holds the session cookie the claim needs.
 const CONNECTIONS = '/connections';
-
-// Where the browser goes to prove who it is; only the web app origin holds the session cookie.
-const COMPLETE = '/connections/complete';
 
 function back(path: string, params: Record<string, string>): Response {
   const url = new URL(webBaseUrl() + path);
@@ -115,7 +113,7 @@ Deno.serve(async (req: Request) => {
       meta: { external_account_id: tokens.externalAccountId, space_id: pending.space_id },
     });
 
-    return back(COMPLETE, { ticket, provider: driver.slug });
+    return back(CONNECTIONS, { ticket, provider: driver.slug });
   } catch (err) {
     console.error('connections-callback failed', err);
     return back(CONNECTIONS, { connection: 'error', code: 'callback_failed' });

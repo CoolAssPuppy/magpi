@@ -74,7 +74,7 @@ beforeEach(() => {
 });
 
 describe('connecting a source to a space', () => {
-  it('sends the person to the provider, and asks to be returned to that provider screen', async () => {
+  it('sends the person to the provider, and asks to be returned to the connections list', async () => {
     const { callsFor } = database({
       spaces: [visibleSpace],
       'connections-begin': [{ data: { authorize_url: AUTHORIZE_URL } }],
@@ -88,7 +88,7 @@ describe('connecting a source to a space', () => {
       [
         'invoke',
         'connections-begin',
-        { provider: 'slack', space_id: SPACE_ID, return_to: '/connections/slack' },
+        { provider: 'slack', space_id: SPACE_ID, return_to: '/connections?provider=slack' },
       ],
     ]);
   });

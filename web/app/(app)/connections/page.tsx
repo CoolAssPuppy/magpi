@@ -1,24 +1,33 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { EmptyState } from '@/components/app/empty-state';
 import { PageHeader } from '@/components/app/page-header';
+import { ConnectionClaim } from '@/components/connections/connection-claim';
 import { ConnectionList } from '@/components/connections/connection-list';
 import { SyncActivity } from '@/components/connections/sync-activity';
-import { Button } from '@/components/ui/button';
 import { loadConnectionsPage } from '@/lib/connections/queries';
-import { countConnections } from '@/lib/connections/view-model';
 import { getSessionContext } from '@/lib/supabase/context';
 
-import { disconnectConnection, resyncConnection } from './actions';
+import {
+  claimPendingConnection,
+  disconnectConnection,
+  resyncConnection,
+  saveScopeSelection,
+  startConnection,
+} from './actions';
 
-export default async function ConnectionsPage() {
+export default async function ConnectionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ticket?: string; provider?: string }>;
+}) {
   const context = await getSessionContext();
   if (!context) redirect('/sign-in');
 
-  const { listings, spaceIds } = await loadConnectionsPage(context);
-  const connected = countConnections(listings);
-  const first = listings[0];
+  const [{ listings, spaceIds, spaces, scopes }, query] = await Promise.all([
+    loadConnectionsPage(context),
+    searchParams,
+  ]);
 
   return (
     <>
@@ -27,13 +36,25 @@ export default async function ConnectionsPage() {
         description="A connection imports one account of one source into one space."
       />
 
+      {query.ticket && query.provider ? (
+        <ConnectionClaim
+          provider={query.provider}
+          ticket={query.ticket}
+          onClaim={claimPendingConnection}
+        />
+      ) : null}
+
       <SyncActivity spaceIds={spaceIds} />
 
       {listings.length > 0 ? (
         <ConnectionList
           listings={listings}
+          spaces={spaces}
+          scopes={scopes}
           onResync={resyncConnection}
           onDisconnect={disconnectConnection}
+          onBegin={startConnection}
+          onSaveScope={saveScopeSelection}
         />
       ) : (
         <EmptyState

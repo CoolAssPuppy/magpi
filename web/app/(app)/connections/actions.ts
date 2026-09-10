@@ -42,7 +42,7 @@ export async function startConnection(
     const result = await beginConnection(context.supabase, {
       provider: input.data.providerSlug,
       spaceId: input.data.spaceId,
-      returnTo: `${CONNECTIONS_PATH}/${input.data.providerSlug}`,
+      returnTo: `${CONNECTIONS_PATH}?provider=${input.data.providerSlug}`,
     });
     if (!result.ok) return errorState(result.error);
 

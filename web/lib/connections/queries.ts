@@ -49,24 +49,6 @@ async function fetchConnections(
   return data;
 }
 
-export type ConnectionsPageData = {
-  readonly listings: readonly ProviderListing[];
-  readonly spaceIds: readonly string[];
-};
-
-export async function loadConnectionsPage(context: SessionContext): Promise<ConnectionsPageData> {
-  const [providers, connections, spaces] = await Promise.all([
-    fetchProviders(context),
-    fetchConnections(context),
-    fetchSpaces(context),
-  ]);
-
-  return {
-    listings: buildProviderListings({ providers, connections, spaces, now: new Date() }),
-    spaceIds: spaces.map((space) => space.id),
-  };
-}
-
 export type ProviderScreenConnection = {
   readonly id: string;
   readonly spaceId: string;
@@ -76,34 +58,27 @@ export type ProviderScreenConnection = {
   readonly selection: ScopeSelection;
 };
 
-export type ProviderScreenData = {
-  readonly provider: ProviderRecord;
-  readonly spaces: readonly SpaceRecord[];
-  readonly connections: readonly ProviderScreenConnection[];
+export type ConnectionsPageData = {
+  readonly listings: readonly ProviderListing[];
+  readonly spaceIds: readonly string[];
+  readonly spaces: readonly { readonly id: string; readonly name: string }[];
+  readonly scopes: readonly ProviderScreenConnection[];
 };
 
-export async function loadProviderScreen(
-  context: SessionContext,
-  providerSlug: string,
-): Promise<ProviderScreenData | null> {
-  const [{ data: provider }, connections, spaces] = await Promise.all([
-    context.supabase
-      .from('providers')
-      .select(PROVIDER_COLUMNS)
-      .eq('slug', providerSlug)
-      .maybeSingle(),
-    fetchConnections(context, providerSlug),
+export async function loadConnectionsPage(context: SessionContext): Promise<ConnectionsPageData> {
+  const [providers, connections, spaces] = await Promise.all([
+    fetchProviders(context),
+    fetchConnections(context),
     fetchSpaces(context),
   ]);
-
-  if (!provider) return null;
 
   const spaceNames = new Map(spaces.map((space) => [space.id, space.name]));
 
   return {
-    provider,
-    spaces,
-    connections: connections.flatMap((connection) => {
+    listings: buildProviderListings({ providers, connections, spaces, now: new Date() }),
+    spaceIds: spaces.map((space) => space.id),
+    spaces: spaces.map((space) => ({ id: space.id, name: space.name })),
+    scopes: connections.flatMap((connection) => {
       const spaceName = spaceNames.get(connection.space_id);
       if (!spaceName) return [];
 

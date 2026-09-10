@@ -4,7 +4,7 @@ import { recordingContext } from '@/lib/supabase/test-support';
 
 vi.mock('server-only', () => ({}));
 
-const { loadConnectionsPage, loadProviderScreen } = await import('./queries');
+const { loadConnectionsPage } = await import('./queries');
 
 const SPACE_ID = '33333333-3333-4333-8333-333333333333';
 const OTHER_SPACE_ID = '33333333-3333-4333-8333-444444444444';
@@ -173,38 +173,11 @@ describe('the connections page', () => {
   });
 });
 
-describe('one provider screen', () => {
-  it('answers with nothing for a slug that names no provider', async () => {
-    const { context } = recordingContext({
-      responses: {
-        providers: [{ data: null }],
-        connections: [{ data: [] }],
-        spaces: [{ data: [] }],
-      },
-    });
-
-    expect(await loadProviderScreen(context, 'mailchimp')).toBeNull();
-  });
-
-  it('asks only for that provider, and only for the connections that belong to it', async () => {
-    const { context, callsFor } = recordingContext({
-      responses: {
-        providers: [{ data: getProvider() }],
-        connections: [{ data: [] }],
-        spaces: [{ data: [] }],
-      },
-    });
-
-    await loadProviderScreen(context, 'slack');
-
-    expect(callsFor('providers')).toContainEqual(['eq', 'slug', 'slack']);
-    expect(callsFor('connections')).toContainEqual(['eq', 'provider', 'slack']);
-  });
-
+describe('the scope a connection reads', () => {
   it('says which space each connection reads into, and what state it is in', async () => {
     const { context } = recordingContext({
       responses: {
-        providers: [{ data: getProvider() }],
+        providers: [{ data: [getProvider()] }],
         connections: [
           {
             data: [
@@ -220,9 +193,9 @@ describe('one provider screen', () => {
       },
     });
 
-    const screen = await loadProviderScreen(context, 'slack');
+    const page = await loadConnectionsPage(context);
 
-    expect(screen?.connections).toEqual([
+    expect(page.scopes).toEqual([
       {
         id: CONNECTION_ID,
         spaceId: SPACE_ID,
@@ -251,56 +224,51 @@ describe('one provider screen', () => {
   it('drops a connection whose space left the caller between the two reads', async () => {
     const { context } = recordingContext({
       responses: {
-        providers: [{ data: getProvider() }],
+        providers: [{ data: [getProvider()] }],
         connections: [{ data: [getConnection({ space_id: OTHER_SPACE_ID })] }],
         spaces: [{ data: [getSpace()] }],
       },
     });
 
-    const screen = await loadProviderScreen(context, 'slack');
-
-    expect(screen?.connections).toEqual([]);
+    expect((await loadConnectionsPage(context)).scopes).toEqual([]);
   });
 
   it('says the account was not recorded rather than showing a blank name', async () => {
     const { context } = recordingContext({
       responses: {
-        providers: [{ data: getProvider() }],
+        providers: [{ data: [getProvider()] }],
         connections: [{ data: [getConnection({ external_account_id: null })] }],
         spaces: [{ data: [getSpace()] }],
       },
     });
 
-    const screen = await loadProviderScreen(context, 'slack');
-
-    expect(screen?.connections[0].account).toBe('Account not recorded');
+    expect((await loadConnectionsPage(context)).scopes[0].account).toBe('Account not recorded');
   });
 
   it('reads a stored scope the app cannot parse as nothing chosen yet', async () => {
     const { context } = recordingContext({
       responses: {
-        providers: [{ data: getProvider() }],
+        providers: [{ data: [getProvider()] }],
         connections: [{ data: [getConnection({ scope_selection: { kind: 'mailbox' } })] }],
         spaces: [{ data: [getSpace()] }],
       },
     });
 
-    const screen = await loadProviderScreen(context, 'slack');
-
-    expect(screen?.connections[0].selection).toEqual({ kind: 'unset' });
+    expect((await loadConnectionsPage(context)).scopes[0].selection).toEqual({ kind: 'unset' });
   });
 
   it('offers every space the caller holds, not only the ones already connected', async () => {
     const { context } = recordingContext({
       responses: {
-        providers: [{ data: getProvider() }],
+        providers: [{ data: [getProvider()] }],
         connections: [{ data: [] }],
         spaces: [{ data: [getSpace(), getSpace({ id: OTHER_SPACE_ID, name: 'Personal' })] }],
       },
     });
 
-    const screen = await loadProviderScreen(context, 'slack');
-
-    expect(screen?.spaces.map((space) => space.name)).toEqual(['Engineering', 'Personal']);
+    expect((await loadConnectionsPage(context)).spaces.map((space) => space.name)).toEqual([
+      'Engineering',
+      'Personal',
+    ]);
   });
 });

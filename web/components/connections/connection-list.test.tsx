@@ -37,9 +37,18 @@ const getListing = (overrides?: Partial<ProviderListing>): ProviderListing => ({
   ...overrides,
 });
 
+const SPACES = [
+  { id: 'space-1', name: 'Everyone' },
+  { id: 'space-2', name: 'Engineering' },
+];
+
 const getActions = () => ({
+  spaces: SPACES,
+  scopes: [],
   onResync: vi.fn().mockResolvedValue(successState(undefined)),
   onDisconnect: vi.fn().mockResolvedValue(successState(undefined)),
+  onBegin: vi.fn().mockResolvedValue(successState(undefined)),
+  onSaveScope: vi.fn().mockResolvedValue(successState({ kind: 'unset' as const })),
 });
 
 describe('the connections list', () => {
@@ -55,10 +64,22 @@ describe('the connections list', () => {
     );
 
     expect(screen.getByRole('heading', { name: 'Notion' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /connect slack/i })).toHaveAttribute(
-      'href',
-      '/connections/slack',
+    expect(screen.getByRole('button', { name: /connect slack/i })).toBeInTheDocument();
+  });
+
+  // The space is the permission decision, so it is made here rather than on a page in between.
+  it('starts the authorization from the list, with the space the reader chose', async () => {
+    const actions = getActions();
+    render(
+      <ConnectionList
+        listings={[getListing({ slug: 'slack', displayName: 'Slack', connections: [] })]}
+        {...actions}
+      />,
     );
+
+    await userEvent.click(screen.getByRole('button', { name: /connect slack/i }));
+
+    expect(actions.onBegin).toHaveBeenCalledWith('slack', 'space-1');
   });
 
   it('says which space a connection is bound to and what it reads', () => {

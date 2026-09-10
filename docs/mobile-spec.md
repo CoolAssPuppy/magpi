@@ -327,7 +327,8 @@ one line for line, so the transport is spelled out.
 - **Content.** Provider rows with status, last sync, and the reconnect or
   disconnect action.
 - **Navigation.** Tab 4.
-- **Components.** Web `components/connections/*`. iOS `List` with
+- **Components.** Web `components/connections/*`, including the space selector on
+  each provider row and `scope-picker.tsx` under each connection. iOS `List` with
   `ASWebAuthenticationSession` for the OAuth leg. Android `LazyColumn` with
   Chrome Custom Tabs.
 - **Proposed string keys.** `connections.title`, `connections.status.active`,
@@ -341,29 +342,6 @@ one line for line, so the transport is spelled out.
   Pull-to-refresh refetches status without triggering a sync.
 - **Proposed analytics events.** `connection_started`, `connection_claimed`,
   `connection_failed`, `resync_requested`.
-
-### Connect a provider
-
-- **Screen name.** Connect
-- **Web route.** `/connections/[provider]`
-- **Deep link.** `magpi://connections/{providerSlug}`
-- **Data contract.** `providers` by slug, plus `connections.scope_selection`
-  once the connection exists. `providers.scope_selection_kind` says whether the
-  picker lists channels, folders, or a whole workspace.
-- **Loading.** Skeleton for the space selector and the scope list.
-- **Empty.** A provider with no selectable scopes says the whole account will
-  be read.
-- **Error.** OAuth failure text from `connections.status_detail`.
-- **Content.** The space selector and the scope picker on one screen, because
-  the connection is bound to one space.
-- **Navigation.** Pushed from Connections.
-- **Components.** Web `components/connections/scope-picker.tsx`. iOS a `Form`
-  with a multi-select `List`. Android a `LazyColumn` of checkboxes.
-- **Proposed string keys.** `connect.space.label`, `connect.scope.channels`,
-  `connect.scope.folders`, `connect.scope.workspace`, `connect.begin`.
-- **Permissions.** None.
-- **Offline and refresh.** Not usable offline.
-- **Proposed analytics events.** `scope_selected`.
 
 ### Dreams
 
