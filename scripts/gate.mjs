@@ -1,7 +1,10 @@
 #!/usr/bin/env node
-/** Runs the light gate with --light, otherwise the full gate. --strict fails on a skipped step. */
+/**
+ * Runs the light gate with --light, otherwise the full gate. --strict fails on a skipped step.
+ * --verbose streams every step's output; without it only a failing step's output is shown.
+ */
 
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,6 +14,8 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const args = new Set(process.argv.slice(2));
 const isLight = args.has('--light');
 const isStrict = args.has('--strict');
+/** Show every step's output, the way this used to behave, for when a failure needs context. */
+const isVerbose = args.has('--verbose');
 
 const LIGHT_STEPS = [
   { name: 'format check (web)', cmd: 'pnpm', argv: ['format:check'] },
@@ -31,6 +36,7 @@ const LIGHT_STEPS = [
   { name: 'scheduled workers', cmd: 'node', argv: ['scripts/check-scheduled-workers.mjs'] },
   { name: 'upload types', cmd: 'node', argv: ['scripts/check-upload-types.mjs'] },
   { name: 'compat tokens', cmd: 'node', argv: ['scripts/check-compat-tokens.mjs'] },
+  { name: 'corpus', cmd: 'node', argv: ['scripts/check-corpus.mjs'] },
   { name: 'web build', cmd: 'pnpm', argv: ['build'] },
 ];
 
@@ -41,6 +47,25 @@ const FULL_STEPS = [
   { name: 'integration', cmd: 'node', argv: ['scripts/integration-test.mjs'], needs: 'supabase' },
   { name: 'e2e and lifecycle', cmd: 'pnpm', argv: ['test:e2e'], needs: 'playwright' },
 ];
+
+/** Redrawing needs a terminal. A log file or CI gets plain lines in the same order. */
+const isTty = Boolean(process.stdout.isTTY) && !process.env.CI;
+
+const paint = (code, text) => (isTty ? `\u001b[${code}m${text}\u001b[0m` : text);
+const dim = (text) => paint('2', text);
+const green = (text) => paint('32', text);
+const red = (text) => paint('31', text);
+const yellow = (text) => paint('33', text);
+
+const SPINNER = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+const BAR_WIDTH = 24;
+
+function bar(done, total) {
+  const filled = Math.round((done / total) * BAR_WIDTH);
+  return `${'█'.repeat(filled)}${dim('░'.repeat(BAR_WIDTH - filled))}`;
+}
+
+const NAME_WIDTH = Math.max(...[...LIGHT_STEPS, ...FULL_STEPS].map((s) => s.name.length));
 
 function hasBinary(bin) {
   return spawnSync('which', [bin], { encoding: 'utf8' }).status === 0;
@@ -54,66 +79,123 @@ function isAvailable(need) {
   return true;
 }
 
+/** Runs one step, holding its output until it is known whether anyone needs to read it. */
 function run(step) {
-  const started = Date.now();
-  const child = spawnSync(step.cmd, step.argv, {
-    cwd: ROOT,
-    stdio: 'inherit',
-    env: process.env,
+  return new Promise((resolveRun) => {
+    const started = Date.now();
+    const child = spawn(step.cmd, step.argv, {
+      cwd: ROOT,
+      stdio: isVerbose ? 'inherit' : ['ignore', 'pipe', 'pipe'],
+      env: process.env,
+    });
+
+    let output = '';
+    child.stdout?.on('data', (chunk) => {
+      output += chunk;
+    });
+    child.stderr?.on('data', (chunk) => {
+      output += chunk;
+    });
+
+    child.on('close', (code) => {
+      resolveRun({
+        ok: code === 0,
+        seconds: ((Date.now() - started) / 1000).toFixed(1),
+        output,
+      });
+    });
   });
-  const seconds = ((Date.now() - started) / 1000).toFixed(1);
-  return { ok: child.status === 0, seconds, code: child.status };
 }
 
-function main() {
-  const steps = isLight ? LIGHT_STEPS : [...LIGHT_STEPS, ...FULL_STEPS];
+function line(marker, name, trailer) {
+  return `  ${marker}  ${name.padEnd(NAME_WIDTH)}  ${trailer}`;
+}
+
+/** Holds one redrawing line while a step runs, and leaves nothing behind when it stops. */
+function liveLine() {
+  if (!isTty) return { update() {}, clear() {} };
+
+  return {
+    update(text) {
+      process.stdout.write(`\r\u001b[2K${text}`);
+    },
+    clear() {
+      process.stdout.write('\r\u001b[2K');
+    },
+  };
+}
+
+async function main() {
+  const steps = isLight ? [...LIGHT_STEPS] : [...LIGHT_STEPS, ...FULL_STEPS];
   const label = isLight ? 'light gate' : 'full gate';
 
-  console.log(`\n${label}: ${steps.length} steps${isStrict ? ', strict' : ''}\n`);
+  console.log(`\n${label}, ${steps.length} steps${isStrict ? ', strict' : ''}\n`);
 
   const results = [];
-  for (const step of steps) {
+  let failure = null;
+
+  for (const [index, step] of steps.entries()) {
     if (!isAvailable(step.needs)) {
       if (isStrict) {
-        console.error(`\n${label} FAILED: ${step.name} needs ${step.needs}, which is not here`);
+        console.error(
+          red(`\n${label} FAILED: ${step.name} needs ${step.needs}, which is not here`),
+        );
         process.exit(1);
       }
-      results.push({ name: step.name, state: 'skipped', reason: `${step.needs} not available` });
+      console.log(line(dim('skip'), step.name, dim(`${step.needs} is not here`)));
+      results.push({ name: step.name, state: 'skipped' });
       continue;
     }
 
-    console.log(`\n--- ${step.name}`);
-    const outcome = run(step);
-    results.push({
-      name: step.name,
-      state: outcome.ok ? 'passed' : 'failed',
-      seconds: outcome.seconds,
-    });
+    const live = liveLine();
+    let frame = 0;
+    const started = Date.now();
+    const tick = setInterval(() => {
+      frame += 1;
+      const elapsed = ((Date.now() - started) / 1000).toFixed(0);
+      live.update(
+        line(
+          yellow(SPINNER[frame % SPINNER.length]),
+          step.name,
+          `${bar(index, steps.length)} ${dim(`${index + 1}/${steps.length}`)}  ${dim(`${elapsed}s`)}`,
+        ),
+      );
+    }, 80);
 
-    if (!outcome.ok) break;
+    const outcome = await run(step);
+    clearInterval(tick);
+    live.clear();
+
+    if (outcome.ok) {
+      console.log(line(green('ok  '), step.name, dim(`${outcome.seconds}s`)));
+      results.push({ name: step.name, state: 'passed' });
+      continue;
+    }
+
+    console.log(line(red('FAIL'), step.name, dim(`${outcome.seconds}s`)));
+    results.push({ name: step.name, state: 'failed' });
+    failure = { step, output: outcome.output };
+    break;
   }
 
-  const failed = results.filter((r) => r.state === 'failed');
-  const skipped = results.filter((r) => r.state === 'skipped');
+  const skipped = results.filter((r) => r.state === 'skipped').length;
   const notRun = steps.length - results.length;
 
-  console.log(`\n${label} summary`);
-  for (const r of results) {
-    const suffix = r.state === 'skipped' ? `  (${r.reason})` : `  ${r.seconds}s`;
-    console.log(`  ${r.state.padEnd(8)} ${r.name}${suffix}`);
-  }
-  if (notRun > 0) console.log(`  ${'not run'.padEnd(8)} ${notRun} step(s) after the first failure`);
-
-  if (failed.length > 0) {
-    console.error(`\n${label} FAILED at ${failed[0].name}`);
+  if (failure) {
+    // The only output anyone reads is the output of the thing that broke.
+    if (!isVerbose) {
+      const rule = '─'.repeat(Math.min(process.stdout.columns ?? 80, 100));
+      console.error(`\n${rule}\n${failure.step.name}\n${rule}`);
+      console.error(failure.output.trimEnd() || '(the step wrote nothing before it failed)');
+      console.error(rule);
+    }
+    console.error(red(`\n${label} FAILED at ${failure.step.name}`));
+    if (notRun > 0) console.error(dim(`${notRun} step(s) after it did not run`));
     process.exit(1);
   }
 
-  if (skipped.length > 0) {
-    console.log(`\n${label} passed, ${skipped.length} step(s) skipped by name above`);
-  } else {
-    console.log(`\n${label} passed, nothing skipped`);
-  }
+  const tail = skipped > 0 ? `, ${skipped} skipped` : ', nothing skipped';
+  console.log(green(`\n${label} passed${tail}\n`));
 }
 
-main();
+await main();
