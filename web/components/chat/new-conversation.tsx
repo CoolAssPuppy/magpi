@@ -41,7 +41,7 @@ export function NewConversation({ spaces }: NewConversationProps) {
       <Composer
         onAsk={(question) => void open(question)}
         busy={opening}
-        placeholder="Ask anything in your knowledge base"
+        placeholder="What do you want to know?"
         autoFocus
       />
 
