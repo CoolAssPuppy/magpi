@@ -39,13 +39,18 @@ function sourceOf(document: SpaceDocumentRow): string {
   return document.connection_id ?? 'upload';
 }
 
-async function searchNeighbours(pass: Pass, embedding: number[], text: string): Promise<
+/**
+ * Semantic neighbours only. `search` builds its lexical arm with websearch_to_tsquery, which ANDs
+ * every term, so a whole chunk as query text matches only the chunk itself and raises "tsquery
+ * stack too small" once the chunk is dense enough. The embedding is what finds a neighbour here.
+ */
+async function searchNeighbours(pass: Pass, embedding: number[]): Promise<
   { document_id: string; score: number }[]
 > {
   // The service role bypasses RLS, so this filter is what keeps the pass inside its own space.
   const { data, error } = await pass.deps.db.rpc('search', {
     query_embedding: embedding,
-    query_text: text,
+    query_text: '',
     space_filter: [pass.run.space_id],
     match_count: SEARCH_MATCH_COUNT,
   }).returns<unknown>();
@@ -79,13 +84,14 @@ async function candidatePairs(pass: Pass, documents: SpaceDocumentRow[]): Promis
   });
 
   // The whole scan is one stage, however many searches it takes.
-  for (const [index, { document, chunk }] of readable.entries()) {
-    if (found.size >= MAX_LINKS) break;
+  // Every document is searched. Pairs are only capped once the same-source ones are gone, because
+  // a document's nearest neighbours are mostly its own source and all of those get dropped.
+  for (const [index, { document }] of readable.entries()) {
     const embedding = embeddings[index];
     if (!embedding) continue;
 
     enter(pass, 'extract');
-    for (const hit of await searchNeighbours(pass, embedding, chunk.content)) {
+    for (const hit of await searchNeighbours(pass, embedding)) {
       if (hit.document_id === document.id) continue;
       const key = [document.id, hit.document_id].sort().join(':');
       if (found.has(key)) continue;
@@ -93,7 +99,7 @@ async function candidatePairs(pass: Pass, documents: SpaceDocumentRow[]): Promis
       found.set(key, { sourceId: document.id, otherId: hit.document_id, similarity: hit.score });
     }
   }
-  return [...found.values()].slice(0, MAX_LINKS);
+  return [...found.values()];
 }
 
 export async function dreamConnections(pass: Pass): Promise<DreamOutcome> {
@@ -109,13 +115,16 @@ export async function dreamConnections(pass: Pass): Promise<DreamOutcome> {
   const known = new Map([...documents, ...others].map((doc) => [doc.id, doc]));
   const outcome = { ...NOTHING, inputDocumentCount: documents.length };
 
-  // Drop pairs the read could not return and pairs whose halves share a connection.
-  const pairs = candidates.flatMap((candidate) => {
-    const source = known.get(candidate.sourceId);
-    const other = known.get(candidate.otherId);
-    if (!source || !other || sourceOf(source) === sourceOf(other)) return [];
-    return [{ candidate, title: `${source.title} and ${other.title}` }];
-  });
+  // Drop pairs the read could not return and pairs whose halves share a connection, then cap.
+  const pairs = candidates
+    .flatMap((candidate) => {
+      const source = known.get(candidate.sourceId);
+      const other = known.get(candidate.otherId);
+      if (!source || !other || sourceOf(source) === sourceOf(other)) return [];
+      return [{ candidate, title: `${source.title} and ${other.title}` }];
+    })
+    .sort((a, b) => b.candidate.similarity - a.candidate.similarity)
+    .slice(0, MAX_LINKS);
   if (pairs.length === 0) return outcome;
 
   enter(pass, 'synthesize');

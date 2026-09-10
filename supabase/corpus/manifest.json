@@ -20,6 +20,26 @@
     "author": null
   },
   {
+    "path": "company/drive-board-update-september-markets.md",
+    "title": "Board update, September, the markets section",
+    "space": "company",
+    "source": "drive",
+    "externalId": "company/drive-board-update-september-markets",
+    "url": "https://docs.google.com/document/d/drive-board-update-september-markets",
+    "updatedAt": "2026-09-07T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "company/drive-colourway-decision-note.md",
+    "title": "Four colours, and why there are four",
+    "space": "company",
+    "source": "drive",
+    "externalId": "company/drive-colourway-decision-note",
+    "url": "https://docs.google.com/document/d/drive-colourway-decision-note",
+    "updatedAt": "2026-09-09T09:00:00.000Z",
+    "author": null
+  },
+  {
     "path": "company/drive-offsite-notes-day-one.md",
     "title": "Offsite notes, day one",
     "space": "company",
@@ -37,6 +57,16 @@
     "externalId": "company/drive-offsite-notes-day-two",
     "url": "https://docs.google.com/document/d/drive-offsite-notes-day-two",
     "updatedAt": "2026-08-20T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "company/drive-packaging-and-accessories-note.md",
+    "title": "Packaging and accessories, a note from supply chain",
+    "space": "company",
+    "source": "drive",
+    "externalId": "company/drive-packaging-and-accessories-note",
+    "url": "https://docs.google.com/document/d/drive-packaging-and-accessories-note",
+    "updatedAt": "2026-09-06T09:00:00.000Z",
     "author": null
   },
   {
@@ -70,6 +100,16 @@
     "author": null
   },
   {
+    "path": "company/notion-accessory-lineup.md",
+    "title": "Accessory lineup",
+    "space": "company",
+    "source": "notion",
+    "externalId": "company/notion-accessory-lineup",
+    "url": "https://www.notion.so/supaphone/notion-accessory-lineup",
+    "updatedAt": "2026-09-08T09:00:00.000Z",
+    "author": null
+  },
+  {
     "path": "company/notion-all-hands-2026-08-14.md",
     "title": "All hands, 14 August 2026",
     "space": "company",
@@ -86,7 +126,7 @@
     "source": "notion",
     "externalId": "company/notion-all-hands-2026-08-28",
     "url": "https://www.notion.so/supaphone/notion-all-hands-2026-08-28",
-    "updatedAt": "2026-08-31T09:00:00.000Z",
+    "updatedAt": "2026-08-28T09:00:00.000Z",
     "author": null
   },
   {
@@ -107,6 +147,16 @@
     "externalId": "company/notion-company-handbook",
     "url": "https://www.notion.so/supaphone/notion-company-handbook",
     "updatedAt": "2026-09-02T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "company/notion-first-quarter-build-plan.md",
+    "title": "First quarter build plan",
+    "space": "company",
+    "source": "notion",
+    "externalId": "company/notion-first-quarter-build-plan",
+    "url": "https://www.notion.so/supaphone/notion-first-quarter-build-plan",
+    "updatedAt": "2026-09-09T09:00:00.000Z",
     "author": null
   },
   {
@@ -140,6 +190,16 @@
     "author": null
   },
   {
+    "path": "company/notion-launch-market-summary.md",
+    "title": "Launch markets, the company summary",
+    "space": "company",
+    "source": "notion",
+    "externalId": "company/notion-launch-market-summary",
+    "url": "https://www.notion.so/supaphone/notion-launch-market-summary",
+    "updatedAt": "2026-09-09T09:00:00.000Z",
+    "author": null
+  },
+  {
     "path": "company/notion-onboarding-first-week.md",
     "title": "Onboarding: your first week",
     "space": "company",
@@ -166,7 +226,7 @@
     "source": "notion",
     "externalId": "company/notion-weekly-cadence",
     "url": "https://www.notion.so/supaphone/notion-weekly-cadence",
-    "updatedAt": "2026-09-11T09:00:00.000Z",
+    "updatedAt": "2026-08-31T09:00:00.000Z",
     "author": null
   },
   {
@@ -220,6 +280,16 @@
     "author": null
   },
   {
+    "path": "company/slack-general-2026-08-27-what-the-panel-said.md",
+    "title": "#general — 27 August 2026",
+    "space": "company",
+    "source": "slack",
+    "externalId": "company/slack-general-2026-08-27-what-the-panel-said",
+    "url": "https://supaphone.slack.com/archives/slack-general-2026-08-27-what-the-panel-said",
+    "updatedAt": "2026-08-27T09:00:00.000Z",
+    "author": null
+  },
+  {
     "path": "company/slack-general-2026-09-01-september-priorities.md",
     "title": "#general — 1 September 2026",
     "space": "company",
@@ -227,6 +297,16 @@
     "externalId": "company/slack-general-2026-09-01-september-priorities",
     "url": "https://supaphone.slack.com/archives/slack-general-2026-09-01-september-priorities",
     "updatedAt": "2026-09-01T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "company/slack-general-2026-09-02-eleven-markets.md",
+    "title": "#general — 2 September 2026",
+    "space": "company",
+    "source": "slack",
+    "externalId": "company/slack-general-2026-09-02-eleven-markets",
+    "url": "https://supaphone.slack.com/archives/slack-general-2026-09-02-eleven-markets",
+    "updatedAt": "2026-09-02T09:00:00.000Z",
     "author": null
   },
   {
@@ -300,13 +380,33 @@
     "author": null
   },
   {
+    "path": "marketing/drive-colourway-review-memo.md",
+    "title": "Colourway review, the six finishes and what the panel says about them",
+    "space": "marketing",
+    "source": "drive",
+    "externalId": "marketing/drive-colourway-review-memo",
+    "url": "https://docs.google.com/document/d/drive-colourway-review-memo",
+    "updatedAt": "2026-08-26T09:00:00.000Z",
+    "author": null
+  },
+  {
     "path": "marketing/drive-launch-narrative.md",
     "title": "Fold S1 launch narrative",
     "space": "marketing",
     "source": "drive",
     "externalId": "marketing/drive-launch-narrative",
     "url": "https://docs.google.com/document/d/drive-launch-narrative",
-    "updatedAt": "2026-09-02T09:00:00.000Z",
+    "updatedAt": "2026-08-21T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "marketing/drive-panel-research-readout.md",
+    "title": "Panel readout, what 1,800 people told us",
+    "space": "marketing",
+    "source": "drive",
+    "externalId": "marketing/drive-panel-research-readout",
+    "url": "https://docs.google.com/document/d/drive-panel-research-readout",
+    "updatedAt": "2026-08-26T09:00:00.000Z",
     "author": null
   },
   {
@@ -317,6 +417,46 @@
     "externalId": "marketing/drive-press-briefing-draft",
     "url": "https://docs.google.com/document/d/drive-press-briefing-draft",
     "updatedAt": "2026-09-01T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "marketing/drive-regional-demand-model.md",
+    "title": "Regional demand model, first quarter, build 4",
+    "space": "marketing",
+    "source": "drive",
+    "externalId": "marketing/drive-regional-demand-model",
+    "url": "https://docs.google.com/document/d/drive-regional-demand-model",
+    "updatedAt": "2026-09-09T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "marketing/drive-retail-readiness-memo.md",
+    "title": "Retail readiness, where we actually are",
+    "space": "marketing",
+    "source": "drive",
+    "externalId": "marketing/drive-retail-readiness-memo",
+    "url": "https://docs.google.com/document/d/drive-retail-readiness-memo",
+    "updatedAt": "2026-09-04T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "marketing/drive-segment-and-colourway-crosstab.md",
+    "title": "What the colourway crosstab is actually telling us",
+    "space": "marketing",
+    "source": "drive",
+    "externalId": "marketing/drive-segment-and-colourway-crosstab",
+    "url": "https://docs.google.com/document/d/drive-segment-and-colourway-crosstab",
+    "updatedAt": "2026-09-05T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "marketing/drive-tier-one-readiness-memo.md",
+    "title": "Tier one readiness, five markets, eight weeks out",
+    "space": "marketing",
+    "source": "drive",
+    "externalId": "marketing/drive-tier-one-readiness-memo",
+    "url": "https://docs.google.com/document/d/drive-tier-one-readiness-memo",
+    "updatedAt": "2026-09-08T09:00:00.000Z",
     "author": null
   },
   {
@@ -360,13 +500,73 @@
     "author": null
   },
   {
+    "path": "marketing/linear-GTM-24-tier-two-market-list.md",
+    "title": "GTM-24 · Lock the tier two market list",
+    "space": "marketing",
+    "source": "linear",
+    "externalId": "marketing/linear-GTM-24-tier-two-market-list",
+    "url": "https://linear.app/supaphone/issue/LINEAR-GTM-24-TIER-TWO-MARKET-LIST",
+    "updatedAt": "2026-09-04T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "marketing/linear-GTM-27-packaging-art-deadline.md",
+    "title": "GTM-27 · Packaging art cannot release until colourway names are signed",
+    "space": "marketing",
+    "source": "linear",
+    "externalId": "marketing/linear-GTM-27-packaging-art-deadline",
+    "url": "https://linear.app/supaphone/issue/LINEAR-GTM-27-PACKAGING-ART-DEADLINE",
+    "updatedAt": "2026-09-09T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "marketing/linear-GTM-29-carrier-sell-in-commitments.md",
+    "title": "GTM-29 · Carrier sell-in commitments, both carriers",
+    "space": "marketing",
+    "source": "linear",
+    "externalId": "marketing/linear-GTM-29-carrier-sell-in-commitments",
+    "url": "https://linear.app/supaphone/issue/LINEAR-GTM-29-CARRIER-SELL-IN-COMMITMENTS",
+    "updatedAt": "2026-09-09T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "marketing/linear-GTM-31-lock-colourway-names.md",
+    "title": "GTM-31 · Lock the four colourway names before packaging art",
+    "space": "marketing",
+    "source": "linear",
+    "externalId": "marketing/linear-GTM-31-lock-colourway-names",
+    "url": "https://linear.app/supaphone/issue/LINEAR-GTM-31-LOCK-COLOURWAY-NAMES",
+    "updatedAt": "2026-09-09T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "marketing/linear-GTM-33-creator-desk-state-video.md",
+    "title": "GTM-33 · The desk state film is a Creator film, cast it that way",
+    "space": "marketing",
+    "source": "linear",
+    "externalId": "marketing/linear-GTM-33-creator-desk-state-video",
+    "url": "https://linear.app/supaphone/issue/LINEAR-GTM-33-CREATOR-DESK-STATE-VIDEO",
+    "updatedAt": "2026-09-09T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "marketing/linear-GTM-36-segment-messaging-matrix.md",
+    "title": "GTM-36 · Segment messaging matrix, one entry point per segment",
+    "space": "marketing",
+    "source": "linear",
+    "externalId": "marketing/linear-GTM-36-segment-messaging-matrix",
+    "url": "https://linear.app/supaphone/issue/LINEAR-GTM-36-SEGMENT-MESSAGING-MATRIX",
+    "updatedAt": "2026-09-03T09:00:00.000Z",
+    "author": null
+  },
+  {
     "path": "marketing/linear-GTM-7-launch-date-lock.md",
     "title": "GTM-7 · Lock the launch date and work backwards from it",
     "space": "marketing",
     "source": "linear",
     "externalId": "marketing/linear-GTM-7-launch-date-lock",
     "url": "https://linear.app/supaphone/issue/LINEAR-GTM-7-LAUNCH-DATE-LOCK",
-    "updatedAt": "2026-11-04T09:00:00.000Z",
+    "updatedAt": "2026-08-20T09:00:00.000Z",
     "author": null
   },
   {
@@ -380,6 +580,26 @@
     "author": null
   },
   {
+    "path": "marketing/notion-colourway-lineup-decision.md",
+    "title": "Colourway lineup, how many and which",
+    "space": "marketing",
+    "source": "notion",
+    "externalId": "marketing/notion-colourway-lineup-decision",
+    "url": "https://www.notion.so/supaphone/notion-colourway-lineup-decision",
+    "updatedAt": "2026-08-26T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "marketing/notion-colourway-names-and-copy.md",
+    "title": "Colourway names and the copy for each one",
+    "space": "marketing",
+    "source": "notion",
+    "externalId": "marketing/notion-colourway-names-and-copy",
+    "url": "https://www.notion.so/supaphone/notion-colourway-names-and-copy",
+    "updatedAt": "2026-09-09T09:00:00.000Z",
+    "author": null
+  },
+  {
     "path": "marketing/notion-demo-script.md",
     "title": "Launch demo script",
     "space": "marketing",
@@ -390,13 +610,43 @@
     "author": null
   },
   {
+    "path": "marketing/notion-field-segment-durability-claims.md",
+    "title": "Field segment, durability claims",
+    "space": "marketing",
+    "source": "notion",
+    "externalId": "marketing/notion-field-segment-durability-claims",
+    "url": "https://www.notion.so/supaphone/notion-field-segment-durability-claims",
+    "updatedAt": "2026-09-06T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "marketing/notion-korea-japan-weighting.md",
+    "title": "Why Korea and Japan are forty percent",
+    "space": "marketing",
+    "source": "notion",
+    "externalId": "marketing/notion-korea-japan-weighting",
+    "url": "https://www.notion.so/supaphone/notion-korea-japan-weighting",
+    "updatedAt": "2026-09-05T09:00:00.000Z",
+    "author": null
+  },
+  {
     "path": "marketing/notion-launch-plan.md",
     "title": "Launch plan",
     "space": "marketing",
     "source": "notion",
     "externalId": "marketing/notion-launch-plan",
     "url": "https://www.notion.so/supaphone/notion-launch-plan",
-    "updatedAt": "2026-11-04T09:00:00.000Z",
+    "updatedAt": "2026-09-07T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "marketing/notion-market-tiers.md",
+    "title": "Market tiers",
+    "space": "marketing",
+    "source": "notion",
+    "externalId": "marketing/notion-market-tiers",
+    "url": "https://www.notion.so/supaphone/notion-market-tiers",
+    "updatedAt": "2026-08-31T09:00:00.000Z",
     "author": null
   },
   {
@@ -420,6 +670,26 @@
     "author": null
   },
   {
+    "path": "marketing/notion-packaging-plan.md",
+    "title": "Packaging plan",
+    "space": "marketing",
+    "source": "notion",
+    "externalId": "marketing/notion-packaging-plan",
+    "url": "https://www.notion.so/supaphone/notion-packaging-plan",
+    "updatedAt": "2026-09-01T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "marketing/notion-positioning-by-segment.md",
+    "title": "Positioning by segment",
+    "space": "marketing",
+    "source": "notion",
+    "externalId": "marketing/notion-positioning-by-segment",
+    "url": "https://www.notion.so/supaphone/notion-positioning-by-segment",
+    "updatedAt": "2026-09-09T09:00:00.000Z",
+    "author": null
+  },
+  {
     "path": "marketing/notion-positioning-fold-s1.md",
     "title": "Fold S1 positioning",
     "space": "marketing",
@@ -440,6 +710,26 @@
     "author": null
   },
   {
+    "path": "marketing/notion-retail-display-units.md",
+    "title": "Retail display units",
+    "space": "marketing",
+    "source": "notion",
+    "externalId": "marketing/notion-retail-display-units",
+    "url": "https://www.notion.so/supaphone/notion-retail-display-units",
+    "updatedAt": "2026-09-07T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "marketing/notion-segment-definitions.md",
+    "title": "Buyer segments, definitions",
+    "space": "marketing",
+    "source": "notion",
+    "externalId": "marketing/notion-segment-definitions",
+    "url": "https://www.notion.so/supaphone/notion-segment-definitions",
+    "updatedAt": "2026-08-25T09:00:00.000Z",
+    "author": null
+  },
+  {
     "path": "marketing/slack-design-2026-08-18-hero-render.md",
     "title": "#design — 18 August 2026",
     "space": "marketing",
@@ -450,6 +740,16 @@
     "author": null
   },
   {
+    "path": "marketing/slack-design-2026-08-25-six-finishes-review.md",
+    "title": "#design — 25 August 2026",
+    "space": "marketing",
+    "source": "slack",
+    "externalId": "marketing/slack-design-2026-08-25-six-finishes-review",
+    "url": "https://supaphone.slack.com/archives/slack-design-2026-08-25-six-finishes-review",
+    "updatedAt": "2026-08-25T09:00:00.000Z",
+    "author": null
+  },
+  {
     "path": "marketing/slack-design-2026-09-01-glass-in-nine-places.md",
     "title": "#design — 1 September 2026",
     "space": "marketing",
@@ -457,6 +757,16 @@
     "externalId": "marketing/slack-design-2026-09-01-glass-in-nine-places",
     "url": "https://supaphone.slack.com/archives/slack-design-2026-09-01-glass-in-nine-places",
     "updatedAt": "2026-09-01T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "marketing/slack-design-2026-09-09-commuter-hero-shot.md",
+    "title": "#design — 9 September 2026",
+    "space": "marketing",
+    "source": "slack",
+    "externalId": "marketing/slack-design-2026-09-09-commuter-hero-shot",
+    "url": "https://supaphone.slack.com/archives/slack-design-2026-09-09-commuter-hero-shot",
+    "updatedAt": "2026-09-09T09:00:00.000Z",
     "author": null
   },
   {
@@ -480,6 +790,16 @@
     "author": null
   },
   {
+    "path": "marketing/slack-gtm-2026-08-24-panel-first-numbers.md",
+    "title": "#gtm — 24 August 2026",
+    "space": "marketing",
+    "source": "slack",
+    "externalId": "marketing/slack-gtm-2026-08-24-panel-first-numbers",
+    "url": "https://supaphone.slack.com/archives/slack-gtm-2026-08-24-panel-first-numbers",
+    "updatedAt": "2026-08-24T09:00:00.000Z",
+    "author": null
+  },
+  {
     "path": "marketing/slack-gtm-2026-08-26-carrier-language.md",
     "title": "#gtm — 26 August 2026",
     "space": "marketing",
@@ -487,6 +807,16 @@
     "externalId": "marketing/slack-gtm-2026-08-26-carrier-language",
     "url": "https://supaphone.slack.com/archives/slack-gtm-2026-08-26-carrier-language",
     "updatedAt": "2026-08-26T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "marketing/slack-gtm-2026-09-01-tier-three-pushback.md",
+    "title": "#gtm — 1 September 2026",
+    "space": "marketing",
+    "source": "slack",
+    "externalId": "marketing/slack-gtm-2026-09-01-tier-three-pushback",
+    "url": "https://supaphone.slack.com/archives/slack-gtm-2026-09-01-tier-three-pushback",
+    "updatedAt": "2026-09-01T09:00:00.000Z",
     "author": null
   },
   {
@@ -500,6 +830,26 @@
     "author": null
   },
   {
+    "path": "marketing/slack-gtm-2026-09-08-packaging-print-slot.md",
+    "title": "#gtm — 8 September 2026",
+    "space": "marketing",
+    "source": "slack",
+    "externalId": "marketing/slack-gtm-2026-09-08-packaging-print-slot",
+    "url": "https://supaphone.slack.com/archives/slack-gtm-2026-09-08-packaging-print-slot",
+    "updatedAt": "2026-09-08T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "marketing/slack-gtm-2026-09-09-ink-or-moss-leads.md",
+    "title": "#gtm — 9 September 2026",
+    "space": "marketing",
+    "source": "slack",
+    "externalId": "marketing/slack-gtm-2026-09-09-ink-or-moss-leads",
+    "url": "https://supaphone.slack.com/archives/slack-gtm-2026-09-09-ink-or-moss-leads",
+    "updatedAt": "2026-09-09T09:00:00.000Z",
+    "author": null
+  },
+  {
     "path": "marketing/upload-agency-deck-b.md",
     "title": "Agency deck b",
     "space": "marketing",
@@ -507,6 +857,46 @@
     "externalId": "marketing/upload-agency-deck-b",
     "url": null,
     "updatedAt": "2026-09-02T09:00:00.000Z",
+    "author": "maya@example.com"
+  },
+  {
+    "path": "marketing/upload-carrier-alder-sell-in-sheet.md",
+    "title": "Carrier alder sell in sheet",
+    "space": "marketing",
+    "source": "upload",
+    "externalId": "marketing/upload-carrier-alder-sell-in-sheet",
+    "url": null,
+    "updatedAt": "2026-09-08T09:00:00.000Z",
+    "author": "maya@example.com"
+  },
+  {
+    "path": "marketing/upload-carrier-birch-sell-in-sheet.md",
+    "title": "Carrier birch sell in sheet",
+    "space": "marketing",
+    "source": "upload",
+    "externalId": "marketing/upload-carrier-birch-sell-in-sheet",
+    "url": null,
+    "updatedAt": "2026-09-09T09:00:00.000Z",
+    "author": "maya@example.com"
+  },
+  {
+    "path": "marketing/upload-panel-research-segment-tables.md",
+    "title": "Panel research segment tables",
+    "space": "marketing",
+    "source": "upload",
+    "externalId": "marketing/upload-panel-research-segment-tables",
+    "url": null,
+    "updatedAt": "2026-09-09T09:00:00.000Z",
+    "author": "maya@example.com"
+  },
+  {
+    "path": "marketing/upload-panel-research-topline.md",
+    "title": "Panel research topline",
+    "space": "marketing",
+    "source": "upload",
+    "externalId": "marketing/upload-panel-research-topline",
+    "url": null,
+    "updatedAt": "2026-08-24T09:00:00.000Z",
     "author": "maya@example.com"
   },
   {
@@ -730,6 +1120,16 @@
     "author": null
   },
   {
+    "path": "engineering/linear-HW-142-folio-case-hinge-clearance.md",
+    "title": "HW-142 · Folio case binds at hinge 3 before flat",
+    "space": "engineering",
+    "source": "linear",
+    "externalId": "engineering/linear-HW-142-folio-case-hinge-clearance",
+    "url": "https://linear.app/supaphone/issue/LINEAR-HW-142-FOLIO-CASE-HINGE-CLEARANCE",
+    "updatedAt": "2026-09-09T09:00:00.000Z",
+    "author": null
+  },
+  {
     "path": "engineering/linear-HW-88-bellows-cycle-rig.md",
     "title": "HW-88 · Bellows cycle test rig to 200k on four units",
     "space": "engineering",
@@ -757,6 +1157,26 @@
     "externalId": "engineering/linear-HW-95-hinge2-torque-drift",
     "url": "https://linear.app/supaphone/issue/LINEAR-HW-95-HINGE2-TORQUE-DRIFT",
     "updatedAt": "2026-09-07T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "engineering/linear-HW-97-tide-tint-shift.md",
+    "title": "HW-97 · Tide reads yellow under the Meniscus-C coating",
+    "space": "engineering",
+    "source": "linear",
+    "externalId": "engineering/linear-HW-97-tide-tint-shift",
+    "url": "https://linear.app/supaphone/issue/LINEAR-HW-97-TIDE-TINT-SHIFT",
+    "updatedAt": "2026-08-28T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "engineering/linear-HW-99-rust-anodising-second-pass.md",
+    "title": "HW-99 · Rust needs a second anodising pass and there is no slot",
+    "space": "engineering",
+    "source": "linear",
+    "externalId": "engineering/linear-HW-99-rust-anodising-second-pass",
+    "url": "https://linear.app/supaphone/issue/LINEAR-HW-99-RUST-ANODISING-SECOND-PASS",
+    "updatedAt": "2026-08-29T09:00:00.000Z",
     "author": null
   },
   {
@@ -820,6 +1240,16 @@
     "author": null
   },
   {
+    "path": "engineering/linear-ORI-44-desk-stand-detection.md",
+    "title": "ORI-44 · Detect the desk stand and switch to desk state",
+    "space": "engineering",
+    "source": "linear",
+    "externalId": "engineering/linear-ORI-44-desk-stand-detection",
+    "url": "https://linear.app/supaphone/issue/LINEAR-ORI-44-DESK-STAND-DETECTION",
+    "updatedAt": "2026-09-05T09:00:00.000Z",
+    "author": null
+  },
+  {
     "path": "engineering/linear-ORI-45-sdk-naming.md",
     "title": "ORI-45 · SDK naming: panes, displays or screens",
     "space": "engineering",
@@ -850,6 +1280,16 @@
     "author": null
   },
   {
+    "path": "engineering/notion-accessory-fit-spec.md",
+    "title": "Accessory fit spec",
+    "space": "engineering",
+    "source": "notion",
+    "externalId": "engineering/notion-accessory-fit-spec",
+    "url": "https://www.notion.so/supaphone/notion-accessory-fit-spec",
+    "updatedAt": "2026-09-03T09:00:00.000Z",
+    "author": null
+  },
+  {
     "path": "engineering/notion-b7-cycle-failure-analysis.md",
     "title": "B7 cycle failure analysis",
     "space": "engineering",
@@ -876,7 +1316,17 @@
     "source": "notion",
     "externalId": "engineering/notion-engineering-review-process",
     "url": "https://www.notion.so/supaphone/notion-engineering-review-process",
-    "updatedAt": "2026-09-04T09:00:00.000Z",
+    "updatedAt": "2026-08-19T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "engineering/notion-finish-durability-results.md",
+    "title": "Finish durability and colour stability under Meniscus-C",
+    "space": "engineering",
+    "source": "notion",
+    "externalId": "engineering/notion-finish-durability-results",
+    "url": "https://www.notion.so/supaphone/notion-finish-durability-results",
+    "updatedAt": "2026-09-02T09:00:00.000Z",
     "author": null
   },
   {
@@ -946,7 +1396,7 @@
     "source": "notion",
     "externalId": "engineering/notion-thermal-and-rf-test-plan",
     "url": "https://www.notion.so/supaphone/notion-thermal-and-rf-test-plan",
-    "updatedAt": "2026-09-14T09:00:00.000Z",
+    "updatedAt": "2026-09-04T09:00:00.000Z",
     "author": null
   },
   {
@@ -987,6 +1437,16 @@
     "externalId": "engineering/slack-display-2026-08-27-reversal",
     "url": "https://supaphone.slack.com/archives/slack-display-2026-08-27-reversal",
     "updatedAt": "2026-08-27T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "engineering/slack-display-2026-08-28-tide-goes-yellow.md",
+    "title": "#display — 28 August 2026",
+    "space": "engineering",
+    "source": "slack",
+    "externalId": "engineering/slack-display-2026-08-28-tide-goes-yellow",
+    "url": "https://supaphone.slack.com/archives/slack-display-2026-08-28-tide-goes-yellow",
+    "updatedAt": "2026-08-28T09:00:00.000Z",
     "author": null
   },
   {
@@ -1050,6 +1510,16 @@
     "author": null
   },
   {
+    "path": "engineering/slack-hardware-2026-09-09-desk-stand-magnet.md",
+    "title": "#hardware — 9 September 2026",
+    "space": "engineering",
+    "source": "slack",
+    "externalId": "engineering/slack-hardware-2026-09-09-desk-stand-magnet",
+    "url": "https://supaphone.slack.com/archives/slack-hardware-2026-09-09-desk-stand-magnet",
+    "updatedAt": "2026-09-09T09:00:00.000Z",
+    "author": null
+  },
+  {
     "path": "engineering/slack-incidents-2026-08-17-rig-halt.md",
     "title": "#incidents — 17 August 2026",
     "space": "engineering",
@@ -1070,13 +1540,33 @@
     "author": null
   },
   {
+    "path": "engineering/upload-accessory-drop-test-report.md",
+    "title": "Accessory drop test report",
+    "space": "engineering",
+    "source": "upload",
+    "externalId": "engineering/upload-accessory-drop-test-report",
+    "url": null,
+    "updatedAt": "2026-09-09T09:00:00.000Z",
+    "author": "sam@example.com"
+  },
+  {
+    "path": "engineering/upload-finish-gloss-panel-results.md",
+    "title": "Finish gloss panel results",
+    "space": "engineering",
+    "source": "upload",
+    "externalId": "engineering/upload-finish-gloss-panel-results",
+    "url": null,
+    "updatedAt": "2026-09-09T09:00:00.000Z",
+    "author": "sam@example.com"
+  },
+  {
     "path": "engineering/upload-lab-report-utg3-bend-fatigue.md",
     "title": "Lab report utg3 bend fatigue",
     "space": "engineering",
     "source": "upload",
     "externalId": "engineering/upload-lab-report-utg3-bend-fatigue",
     "url": null,
-    "updatedAt": "2026-08-18T09:00:00.000Z",
+    "updatedAt": "2026-08-17T09:00:00.000Z",
     "author": "sam@example.com"
   },
   {
@@ -1096,7 +1586,7 @@
     "source": "upload",
     "externalId": "engineering/upload-test-house-readiness-checklist",
     "url": null,
-    "updatedAt": "2026-09-14T09:00:00.000Z",
+    "updatedAt": "2026-09-09T09:00:00.000Z",
     "author": "sam@example.com"
   },
   {
@@ -1107,6 +1597,26 @@
     "externalId": "finance/drive-board-financials-commentary",
     "url": "https://docs.google.com/document/d/drive-board-financials-commentary",
     "updatedAt": "2026-09-07T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "finance/drive-forecast-revenue-model.md",
+    "title": "First quarter revenue model, 180,000 units",
+    "space": "finance",
+    "source": "drive",
+    "externalId": "finance/drive-forecast-revenue-model",
+    "url": "https://docs.google.com/document/d/drive-forecast-revenue-model",
+    "updatedAt": "2026-09-09T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "finance/drive-panel-supply-by-colourway.md",
+    "title": "What actually forks by colour, and what does not",
+    "space": "finance",
+    "source": "drive",
+    "externalId": "finance/drive-panel-supply-by-colourway",
+    "url": "https://docs.google.com/document/d/drive-panel-supply-by-colourway",
+    "updatedAt": "2026-09-02T09:00:00.000Z",
     "author": null
   },
   {
@@ -1170,6 +1680,36 @@
     "author": null
   },
   {
+    "path": "finance/linear-OPS-71-colour-mix-tooling-order.md",
+    "title": "OPS-71 · Re-cut the tooling order at four finishes instead of six",
+    "space": "finance",
+    "source": "linear",
+    "externalId": "finance/linear-OPS-71-colour-mix-tooling-order",
+    "url": "https://linear.app/supaphone/issue/LINEAR-OPS-71-COLOUR-MIX-TOOLING-ORDER",
+    "updatedAt": "2026-09-04T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "finance/linear-OPS-74-suwon-colour-run-slots.md",
+    "title": "OPS-74 · Book the Suwon colour run slots for the first quarter build",
+    "space": "finance",
+    "source": "linear",
+    "externalId": "finance/linear-OPS-74-suwon-colour-run-slots",
+    "url": "https://linear.app/supaphone/issue/LINEAR-OPS-74-SUWON-COLOUR-RUN-SLOTS",
+    "updatedAt": "2026-09-09T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "finance/notion-accessory-margin.md",
+    "title": "Accessory margin",
+    "space": "finance",
+    "source": "notion",
+    "externalId": "finance/notion-accessory-margin",
+    "url": "https://www.notion.so/supaphone/notion-accessory-margin",
+    "updatedAt": "2026-09-05T09:00:00.000Z",
+    "author": null
+  },
+  {
     "path": "finance/notion-board-pack-notes.md",
     "title": "Board pack notes, September",
     "space": "finance",
@@ -1180,6 +1720,16 @@
     "author": null
   },
   {
+    "path": "finance/notion-demand-to-tooling-plan.md",
+    "title": "From the forecast to the tooling order",
+    "space": "finance",
+    "source": "notion",
+    "externalId": "finance/notion-demand-to-tooling-plan",
+    "url": "https://www.notion.so/supaphone/notion-demand-to-tooling-plan",
+    "updatedAt": "2026-09-09T09:00:00.000Z",
+    "author": null
+  },
+  {
     "path": "finance/notion-fy27-budget.md",
     "title": "FY27 budget",
     "space": "finance",
@@ -1187,6 +1737,16 @@
     "externalId": "finance/notion-fy27-budget",
     "url": "https://www.notion.so/supaphone/notion-fy27-budget",
     "updatedAt": "2026-09-03T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "finance/notion-tier-two-inventory-split.md",
+    "title": "Inventory split, tier 1 and tier 2",
+    "space": "finance",
+    "source": "notion",
+    "externalId": "finance/notion-tier-two-inventory-split",
+    "url": "https://www.notion.so/supaphone/notion-tier-two-inventory-split",
+    "updatedAt": "2026-09-06T09:00:00.000Z",
     "author": null
   },
   {
@@ -1230,6 +1790,16 @@
     "author": null
   },
   {
+    "path": "finance/slack-finance-2026-09-09-four-colours-cost.md",
+    "title": "#finance — 9 September 2026",
+    "space": "finance",
+    "source": "slack",
+    "externalId": "finance/slack-finance-2026-09-09-four-colours-cost",
+    "url": "https://supaphone.slack.com/archives/slack-finance-2026-09-09-four-colours-cost",
+    "updatedAt": "2026-09-09T09:00:00.000Z",
+    "author": null
+  },
+  {
     "path": "finance/slack-supply-chain-2026-08-28-polymer-quote.md",
     "title": "#supply-chain — 28 August 2026",
     "space": "finance",
@@ -1237,6 +1807,16 @@
     "externalId": "finance/slack-supply-chain-2026-08-28-polymer-quote",
     "url": "https://supaphone.slack.com/archives/slack-supply-chain-2026-08-28-polymer-quote",
     "updatedAt": "2026-08-28T09:00:00.000Z",
+    "author": null
+  },
+  {
+    "path": "finance/slack-supply-chain-2026-09-03-anodising-slots.md",
+    "title": "#supply-chain — 3 September 2026",
+    "space": "finance",
+    "source": "slack",
+    "externalId": "finance/slack-supply-chain-2026-09-03-anodising-slots",
+    "url": "https://supaphone.slack.com/archives/slack-supply-chain-2026-09-03-anodising-slots",
+    "updatedAt": "2026-09-03T09:00:00.000Z",
     "author": null
   },
   {
@@ -1260,13 +1840,33 @@
     "author": "john@example.com"
   },
   {
+    "path": "finance/upload-colourway-cost-delta-sheet.md",
+    "title": "Colourway cost delta sheet",
+    "space": "finance",
+    "source": "upload",
+    "externalId": "finance/upload-colourway-cost-delta-sheet",
+    "url": null,
+    "updatedAt": "2026-09-08T09:00:00.000Z",
+    "author": "john@example.com"
+  },
+  {
     "path": "finance/upload-supplier-quote-scan-outer-layer.md",
     "title": "Supplier quote scan outer layer",
     "space": "finance",
     "source": "upload",
     "externalId": "finance/upload-supplier-quote-scan-outer-layer",
     "url": null,
-    "updatedAt": "2026-10-15T09:00:00.000Z",
+    "updatedAt": "2026-09-09T09:00:00.000Z",
+    "author": "john@example.com"
+  },
+  {
+    "path": "finance/upload-suwon-colour-run-quote.md",
+    "title": "Suwon colour run quote",
+    "space": "finance",
+    "source": "upload",
+    "externalId": "finance/upload-suwon-colour-run-quote",
+    "url": null,
+    "updatedAt": "2026-09-09T09:00:00.000Z",
     "author": "john@example.com"
   },
   {

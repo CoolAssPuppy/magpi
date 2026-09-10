@@ -110,6 +110,31 @@ function main() {
     if (!found) failures.push(`no document in ${wall.space}/ names ${wall.what}`);
   }
 
+  // Two documents under one issue number are two different tickets with the same name.
+  const issues = new Map();
+  for (const space of Object.keys(MEMBERS)) {
+    for (const name of readdirSync(join(CORPUS, space))) {
+      const issue = /^linear-([A-Z]+-\d+)-/.exec(name);
+      if (!issue) continue;
+      const seen = issues.get(issue[1]);
+      if (seen) failures.push(`${space}/${name}: reuses ${issue[1]}, already ${seen}`);
+      else issues.set(issue[1], `${space}/${name}`);
+    }
+  }
+
+  // A document that names a future launch or booking must not inherit that date as its own.
+  try {
+    const manifest = JSON.parse(readFileSync(join(CORPUS, 'manifest.json'), 'utf8'));
+    for (const entry of manifest) {
+      const day = entry.updatedAt.slice(0, 10);
+      if (day > LAST_DAY || day < FIRST_DAY) {
+        failures.push(`${entry.path}: manifest date ${day} falls outside the corpus`);
+      }
+    }
+  } catch {
+    failures.push('manifest.json is missing or unreadable, run pnpm corpus:manifest');
+  }
+
   if (failures.length > 0) {
     console.error(`corpus FAILED: ${failures.length} problem(s)\n`);
     for (const failure of failures.slice(0, 40)) console.error(`  ${failure}`);

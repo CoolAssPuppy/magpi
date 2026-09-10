@@ -148,6 +148,112 @@ one that disagrees would be the inconsistency this file exists to prevent.
   November, two carriers signed on commercial terms. Carriers are A and B in
   Marketing, and Alder and Birch where a codename is needed.
 
+## The commercial detail
+
+The device is pre-production, so nothing has sold. Every number about demand is a
+forecast, a commitment or a research result, and no document reports units sold.
+A document that describes actual sell-through is a bug in the corpus.
+
+### Colourways
+
+Six finishes went into review on 24 August. Four ship, two were cut.
+
+| Finish | Shade | Status | Why |
+| --- | --- | --- | --- |
+| Ink | near black | ships | lead finish, the one in every render |
+| Chalk | warm off-white | ships | shows the crease least of the four |
+| Moss | deep green | ships | best panel result in Korea and Japan |
+| Ember | burnt copper | ships | narrow appeal, high intent where it lands |
+| Tide | pale blue | cut | tint shifted yellow under the Meniscus-C coating |
+| Rust | oxide red | cut | needed a second anodising pass and there was no tooling slot |
+
+Both cuts trace to the polymer reversal on 27 August. Tide is a coating problem
+and Rust is a schedule problem, and neither was a taste decision. Anyone asking
+why there are four colours should be able to find that.
+
+The Suwon hard coat and anti-fingerprint stack covers the whole outer face and
+the rear cover, not only the active display area, so it sits over the colour
+layer everywhere. That is why a display material change was able to kill a frame
+colour. Its cast is b* +1.9 against +0.2 for the Kyoto glass stack, which is
+nothing on a near black, a warm white, a deep green or a copper, and is the
+whole shade on a pale blue. Tide measured delta E 2000 of 4.6 against its master
+swatch, 3.1 of it in b*, against a 1.5 gate. The cast is inherent to the
+anti-fingerprint chemistry and is not a process fault.
+
+### The first-quarter forecast
+
+The 180,000 splits like this, and every table in the corpus agrees with it.
+
+| Tier | Market | Units |
+| --- | --- | --- |
+| 1 | United States | 42,000 |
+| 1 | Korea | 41,000 |
+| 1 | Japan | 31,000 |
+| 1 | Germany | 20,500 |
+| 1 | United Kingdom | 14,000 |
+| 2 | France | 9,500 |
+| 2 | Canada | 9,000 |
+| 2 | Australia | 8,000 |
+| 2 | Netherlands | 5,000 |
+
+Tier 1 is 148,500 and tier 2 is 31,500. Korea and Japan are 72,000, which is
+40.0 percent. By finish: Ink 68,245, Chalk 48,125, Moss 40,195, Ember 23,435.
+
+Carrier sell-in is Alder 46,000 across Korea, the United States, Germany and
+Canada, and Birch 25,000 across Japan, the United Kingdom, Australia and France.
+The Netherlands has no carrier, which is an open gap several documents raise and
+none of them closes.
+
+### Markets
+
+Eleven markets in three tiers. Tier 1 is launch day, tier 2 is six weeks later,
+tier 3 is 2027 and has no committed date.
+
+- **Tier 1.** Korea, Japan, United States, Germany, United Kingdom.
+- **Tier 2.** France, Netherlands, Canada, Australia.
+- **Tier 3.** Singapore, United Arab Emirates.
+
+The first-quarter forecast is 180,000 units across tier 1 and tier 2. Korea and
+Japan together are about 40 percent of it, which is why the panel work weights
+those two.
+
+### Segments
+
+The panel ran 1,800 respondents across the five tier 1 markets in the week of
+17 August. Six segments, and the corpus refers to them by these names.
+
+| Segment | Who | Share of intent |
+| --- | --- | --- |
+| Commuter | 25 to 34, urban, high screen hours | 24% |
+| Desk | 35 to 54, wants the tablet state for documents | 21% |
+| Creator | 18 to 29, wants the desk state for editing | 18% |
+| Traveller | 30 to 44, dual SIM, frequent flights | 15% |
+| Field | 30 to 49, buys on durability | 13% |
+| First-in-line | 22 to 40, buys because it is new | 9% |
+
+### Packaging, accessories and carriers
+
+- **Packaging** is a moulded fibre tray with no plastic. Colourway names have to
+  be locked before the packaging art goes to print.
+- **Accessories** are a folio case in each of the four shipping finishes and a
+  desk stand that is Chalk only.
+- **Carriers** are A and B everywhere except Marketing, where they are Alder and
+  Birch. Sell-in commitments are counted in units and belong to Marketing.
+
+### Which space holds which number
+
+The two walls still hold, and the commercial documents make them easier to break
+by accident than the engineering ones did.
+
+- **Unit counts** are forecasts, commitments and panel results. They live in
+  Marketing and Company and may be named anywhere.
+- **Money** is Finance. Any document that multiplies units by a price, or names
+  the unit cost, the launch price, margin or tooling spend, is a Finance
+  document.
+- **The launch date, the embargo hour and the retail dates** are Marketing, as
+  before. Tier timing outside Marketing says "launch" or "November" and never a
+  day. The word embargo appears nowhere but Marketing.
+
 ## Rules for adding a document
 
 - Every fact must agree with this file. If it cannot, change this file first.

@@ -28,7 +28,7 @@ export function FoldedMagpie({ className }: { className?: string }) {
       aria-hidden="true"
       role="presentation"
     >
-      <g>
+      <g className="magpie-underwing">
         <path d="M198 214 L286 402 L372 224 Z" fill="var(--paper-underwing)" />
         <path d="M286 402 L372 224 L344 262 Z" fill="var(--paper-underwing-dark)" />
       </g>
@@ -42,10 +42,14 @@ export function FoldedMagpie({ className }: { className?: string }) {
         <path d="M46 190 L196 232 L214 268 Z" fill="var(--paper-body-shade)" />
         <path d="M196 232 L392 236 L268 292 Z" fill="var(--paper-body-mid)" />
       </g>
-      <g>
+      <g className="magpie-wing">
         <path d="M206 128 L318 12 L400 210 Z" fill="var(--paper-wing)" />
         <path d="M318 12 L400 210 L352 116 Z" fill="var(--paper-body-shade)" />
         <path d="M382 162 L400 210 L352 116 Z" fill="var(--paper-sheen)" />
+        <g stroke="var(--paper-crease)" strokeWidth="1">
+          <path d="M206 128 L400 210" />
+          <path d="M318 12 L352 116" />
+        </g>
       </g>
       <g>
         <path d="M46 190 L142 148 L138 206 Z" fill="var(--paper-head)" />
@@ -55,8 +59,6 @@ export function FoldedMagpie({ className }: { className?: string }) {
       <g stroke="var(--paper-crease)" strokeWidth="1">
         <path d="M46 190 L196 232" />
         <path d="M196 232 L392 236" />
-        <path d="M206 128 L400 210" />
-        <path d="M318 12 L352 116" />
         <path d="M356 232 L604 372" />
       </g>
     </svg>

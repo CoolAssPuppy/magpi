@@ -64,7 +64,7 @@ export default function LandingPage() {
       <section className="grid gap-10 md:grid-cols-3">
         <div>
           <h3 className="font-heading text-base font-medium text-foreground">
-            Document access is controlled by spaces
+            Control who sees your data
           </h3>
           <p className="mt-2 text-sm text-tertiary-foreground">
             Create spaces with personal, team, or public scopes. Store your documents and
@@ -73,17 +73,19 @@ export default function LandingPage() {
         </div>
         <div>
           <h3 className="font-heading text-base font-medium text-foreground">
-            Answers always tell you where they came from
+            Answer your most pressing questions
           </h3>
           <p className="mt-2 text-sm text-tertiary-foreground">
             Get answers with full context and citations for how they were reasoned.
           </p>
         </div>
         <div>
-          <h3 className="font-heading text-base font-medium text-foreground">Dare to dream</h3>
+          <h3 className="font-heading text-base font-medium text-foreground">
+            Find connections across your work
+          </h3>
           <p className="mt-2 text-sm text-tertiary-foreground">
-            Digital brains run overnight to ingest your work from the day. Processing during dreams
-            helps build better answers.
+            Every night your digital brain reads the day&rsquo;s work and links it to everything it
+            already knows. Ask in the morning and the connections are already there.
           </p>
         </div>
       </section>

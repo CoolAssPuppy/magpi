@@ -58,13 +58,29 @@ const titleOf = (body, slug) => {
   return heading ? heading[1].trim() : fromSlug(slug);
 };
 
-/** The last date the document mentions, so ordering in the app matches the story. */
+/** The corpus ends here, so no document is edited after it. Matches LAST_DAY in check-corpus.mjs. */
+const LAST_DAY = '2026-09-09';
+
+/** Rows and lines that state when a document was last touched. */
+const STAMP = /^\|?\s*(?:Updated|Last edited|Created|Signed|Date issued)\s*\|?\s*(\d{4}-\d{2}-\d{2})/gim;
+
+/** A date alone on a line near the top, which is how the Drive exports carry their byline. */
+const BYLINE = /^(\d{4}-\d{2}-\d{2})\s*$/m;
+
+/**
+ * When the document was last touched. A document that names a future booking, launch or delivery
+ * is still edited on the day it was written, so a mentioned date is the last resort.
+ */
 const updatedAtOf = (body, name) => {
   const fromName = /(\d{4}-\d{2}-\d{2})/.exec(name);
-  const dates = [...body.matchAll(/(\d{4}-\d{2}-\d{2})/g)].map((m) => m[1]);
-  if (fromName) dates.push(fromName[1]);
-  const latest = dates.sort().at(-1) ?? '2026-09-01';
-  return `${latest}T09:00:00.000Z`;
+  const stamps = [...body.matchAll(STAMP)].map((match) => match[1]).sort();
+  const byline = BYLINE.exec(body.split('\n').slice(0, 10).join('\n'));
+  const mentioned = [...body.matchAll(/(\d{4}-\d{2}-\d{2})/g)].map((match) => match[1]).sort();
+
+  const edited =
+    fromName?.[1] ?? stamps.at(-1) ?? byline?.[1] ?? mentioned.at(-1) ?? '2026-09-01';
+
+  return `${(edited > LAST_DAY ? LAST_DAY : edited)}T09:00:00.000Z`;
 };
 
 function main() {

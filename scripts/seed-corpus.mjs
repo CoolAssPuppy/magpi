@@ -27,8 +27,13 @@ const PERSONAL_FOLDERS = {
   'personal-john': 'john@example.com',
 };
 
-/** Sources that arrive through a connection rather than a person's browser. */
-const SYNCED_SOURCES = new Set(['notion', 'linear', 'slack', 'drive']);
+/** Manifest sources that arrive through a connection, and the provider each one connects to. */
+const PROVIDER_BY_SOURCE = {
+  notion: 'notion',
+  linear: 'linear',
+  slack: 'slack',
+  drive: 'google_drive',
+};
 
 class SeedError extends Error {}
 
@@ -211,8 +216,58 @@ async function uploadBody(db, storagePath, body) {
   }
 }
 
+/** One connection per space and provider, so every synced document belongs to a named source. */
+async function ensureConnections(db, { orgId, spaces, manifest, ownerUserId }) {
+  const wanted = new Map();
+  for (const entry of manifest) {
+    const provider = PROVIDER_BY_SOURCE[entry.source];
+    if (provider) wanted.set(`${entry.space}:${entry.source}`, { spaceKey: entry.space, provider });
+  }
+
+  const connections = new Map();
+  for (const [key, { spaceKey, provider }] of wanted) {
+    const spaceId = spaces[spaceKey];
+    if (!spaceId) throw new SeedError(`manifest names unknown space ${spaceKey}`);
+
+    const existing = unwrap(
+      await db
+        .from('connections')
+        .select('id')
+        .eq('space_id', spaceId)
+        .eq('user_id', ownerUserId)
+        .eq('provider', provider)
+        .limit(1),
+      `reading the ${provider} connection for ${spaceKey}`,
+    );
+
+    if (existing.length > 0) {
+      connections.set(key, existing[0].id);
+      continue;
+    }
+
+    const created = unwrap(
+      await db
+        .from('connections')
+        .insert({
+          org_id: orgId,
+          space_id: spaceId,
+          user_id: ownerUserId,
+          provider,
+          status: 'active',
+          last_synced_at: new Date().toISOString(),
+        })
+        .select('id')
+        .single(),
+      `creating the ${provider} connection for ${spaceKey}`,
+    );
+    connections.set(key, created.id);
+  }
+
+  return connections;
+}
+
 /** Writes one manifest entry. Returns 'created' or 'skipped'. */
-async function loadEntry(db, { entry, orgId, spaceId, authorId }) {
+async function loadEntry(db, { entry, orgId, spaceId, authorId, connectionId }) {
   const existing = unwrap(
     await db
       .from('documents')
@@ -241,9 +296,10 @@ async function loadEntry(db, { entry, orgId, spaceId, authorId }) {
         mime_type: 'text/markdown',
         storage_path: storagePath,
         content_hash: createHash('sha256').update(body).digest('hex'),
-        origin: SYNCED_SOURCES.has(entry.source) ? 'sync' : 'upload',
+        connection_id: connectionId,
+        origin: connectionId ? 'sync' : 'upload',
         // Who added it. A synced document has no uploader, the same as in the real ingest path.
-        created_by: SYNCED_SOURCES.has(entry.source) ? null : (authorId ?? null),
+        created_by: connectionId ? null : (authorId ?? null),
         updated_at: entry.updatedAt,
       })
       .select('id')
@@ -283,8 +339,18 @@ async function main() {
   const { rows: members, byEmail } = await resolveMembers(db, org.id);
   const spaces = await resolveSpaces(db, org.id, byEmail);
 
+  const ownerUserId = (members.find((member) => member.role === 'owner') ?? members[0]).user_id;
+  const connections = await ensureConnections(db, {
+    orgId: org.id,
+    spaces,
+    manifest,
+    ownerUserId,
+  });
+
   console.log(`org ${org.name} (${org.slug})`);
-  console.log(`members ${members.length}, spaces ${Object.keys(spaces).length}`);
+  console.log(
+    `members ${members.length}, spaces ${Object.keys(spaces).length}, connections ${connections.size}`,
+  );
 
   const counts = { created: 0, skipped: 0 };
   const perSpace = {};
@@ -296,7 +362,14 @@ async function main() {
     if (entry.author && !authorId) {
       throw new SeedError(`manifest entry ${entry.path} names unknown author ${entry.author}`);
     }
-    const outcome = await loadEntry(db, { entry, orgId: org.id, spaceId, authorId });
+    const connectionId = connections.get(`${entry.space}:${entry.source}`) ?? null;
+    const outcome = await loadEntry(db, {
+      entry,
+      orgId: org.id,
+      spaceId,
+      authorId,
+      connectionId,
+    });
     counts[outcome] += 1;
     perSpace[entry.space] = (perSpace[entry.space] ?? 0) + 1;
   }
