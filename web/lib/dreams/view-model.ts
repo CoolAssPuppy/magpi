@@ -37,7 +37,6 @@ export type DreamRunSummary = {
   readonly spaceId: string;
   readonly spaceName: string;
   readonly kindLabel: string;
-  readonly kindSummary: string;
   readonly inputSummary: string;
   readonly inputDocumentCount: number;
   readonly outputDocumentId: string | null;
@@ -73,7 +72,6 @@ export function buildRunSummaries({
         spaceId: run.space_id,
         spaceName,
         kindLabel: kind.label,
-        kindSummary: kind.summary,
         inputSummary: summarizeInputs(run.input_document_count),
         inputDocumentCount: run.input_document_count,
         outputDocumentId: run.output_document_id,

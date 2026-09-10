@@ -117,10 +117,6 @@ function SpaceRow({
         </div>
       </div>
 
-      <p className="max-w-[var(--measure-prose)] text-xs text-tertiary-foreground">
-        {describeDreamKind(kind).summary}
-      </p>
-
       {outcome ? (
         <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           {describeOutcome(outcome)}

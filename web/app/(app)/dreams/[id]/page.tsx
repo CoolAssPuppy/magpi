@@ -35,9 +35,6 @@ export default async function DreamRunPage({ params }: { params: Promise<{ id: s
         <p className="max-w-[var(--measure-prose)] text-sm text-muted-foreground">
           {run.status.detail}
         </p>
-        <p className="max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">
-          {run.kindSummary}
-        </p>
         <p className="text-xs text-tertiary-foreground">
           {run.inputSummary} read &middot; {run.duration}
         </p>

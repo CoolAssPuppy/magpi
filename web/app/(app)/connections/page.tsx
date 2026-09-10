@@ -29,20 +29,6 @@ export default async function ConnectionsPage() {
 
       <SyncActivity spaceIds={spaceIds} />
 
-      {connected === 0 ? (
-        <EmptyState
-          title="Nothing is connected yet"
-          description="Choose a source and the space it imports into. The first import starts right away."
-          action={
-            first ? (
-              <Button asChild>
-                <Link href={`/connections/${first.slug}`}>Connect {first.displayName}</Link>
-              </Button>
-            ) : undefined
-          }
-        />
-      ) : null}
-
       {listings.length > 0 ? (
         <ConnectionList
           listings={listings}

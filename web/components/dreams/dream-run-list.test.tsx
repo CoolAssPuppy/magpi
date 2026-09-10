@@ -12,7 +12,6 @@ const getSummary = (overrides?: Partial<DreamRunSummary>): DreamRunSummary => ({
   spaceId: 'space-1',
   spaceName: 'Engineering',
   kindLabel: 'Digest',
-  kindSummary: 'Writes one document back into the space.',
   inputSummary: '42 documents',
   outputDocumentId: 'doc-1',
   duration: '1m 30s',

@@ -124,14 +124,15 @@ describe('dreaming, per space', () => {
     expect(await screen.findByText(/produced nothing/i)).toBeInTheDocument();
   });
 
-  it('says what the chosen kind does, so the button is not a mystery', async () => {
+  it('offers each kind by name and keeps the one the reader picks', async () => {
     render(<SpaceDreaming spaces={[getSpace()]} {...getActions()} />);
+    const kind = screen.getByLabelText(/kind/i);
 
-    expect(screen.getByText(/writes one document back into the space/i)).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Document links' })).toBeInTheDocument();
 
-    await userEvent.selectOptions(screen.getByLabelText(/kind/i), 'connections');
+    await userEvent.selectOptions(kind, 'connections');
 
-    expect(screen.getByText(/pairs of documents from different sources/i)).toBeInTheDocument();
+    expect(kind).toHaveValue('connections');
   });
 
   it('reports a refused run', async () => {

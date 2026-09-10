@@ -110,28 +110,12 @@ export function describeDreamStatus(input: DreamStatusInput): DreamStatusView {
 export type DreamKindDescription = {
   readonly kind: DreamKind;
   readonly label: string;
-  readonly summary: string;
 };
 
 const KIND_DESCRIPTIONS: Record<DreamKind, DreamKindDescription> = {
-  entities: {
-    kind: 'entities',
-    label: 'Entities',
-    summary:
-      'Reads recent documents and extracts the people, projects, customers and decisions they are about.',
-  },
-  digest: {
-    kind: 'digest',
-    label: 'Digest',
-    summary:
-      'Writes one document back into the space covering what changed, what was decided and what is unresolved.',
-  },
-  connections: {
-    kind: 'connections',
-    label: 'Document links',
-    summary:
-      'Finds pairs of documents from different sources that look like they are about the same thing, for a person to confirm.',
-  },
+  entities: { kind: 'entities', label: 'Entities' },
+  digest: { kind: 'digest', label: 'Digest' },
+  connections: { kind: 'connections', label: 'Document links' },
 };
 
 export function describeDreamKind(kind: DreamKind): DreamKindDescription {

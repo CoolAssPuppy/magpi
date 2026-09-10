@@ -24,10 +24,7 @@ export default async function EntitiesPage({
       </p>
 
       {groups.length === 0 ? (
-        <EmptyState
-          title="No entities yet"
-          description="An entities run reads the documents that arrived recently and pulls out what they are about. Run one from the Runs tab, or wait for tonight."
-        />
+        <EmptyState title="No entities yet" />
       ) : (
         <EntityGroups groups={groups} />
       )}

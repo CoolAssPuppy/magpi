@@ -113,11 +113,9 @@ describe('parsing a failure', () => {
 });
 
 describe('dream kinds', () => {
-  it('says what each kind does, because a kind name alone is not an explanation', () => {
+  it('gives every kind a label to pick it by', () => {
     for (const kind of ['entities', 'digest', 'connections'] as const) {
-      const described = describeDreamKind(kind);
-      expect(described.label.length).toBeGreaterThan(0);
-      expect(described.summary.length).toBeGreaterThan(20);
+      expect(describeDreamKind(kind).label.length).toBeGreaterThan(0);
     }
   });
 
