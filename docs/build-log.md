@@ -144,3 +144,65 @@ useful thing in this repository: an assertion that cannot run and an assertion
 that cannot fail look identical from the outside. Knowing what the passing
 number should be catches the first. Breaking the thing underneath catches the
 second. Neither catches both.
+
+## Phase 15: The corpus grows, and three bugs it exposed
+
+**Shipped.** The corpus went from 136 documents to 196. Colourways, eleven
+markets in three tiers, six buyer segments from an 1,800 respondent panel,
+packaging, accessories and the finance model behind all of it. `COMPANY.md`
+gained a commercial section so the new facts have a reference to agree with,
+including the first-quarter split of 180,000 units that every table in the
+corpus reconciles to.
+
+Three real bugs came out of writing it, none of which was visible at 136
+documents because every document then looked like it came from one source.
+
+`scripts/seed-corpus.mjs` never created connection rows, so every document had
+a null `connection_id`. The dream's connections pass drops any pair whose halves
+share a source, and with one source it dropped every pair. Zero links, and the
+run reported success in under a second because it never reached the model. The
+seed now creates one connection per space and provider and stamps
+`connection_id` on each synced document.
+
+`scripts/build-corpus-manifest.mjs` set a document's edit date to the latest
+date mentioned anywhere in its body. A test plan saying "booked from
+2026-09-14" was stamped as edited that day. Six documents sat past the end of
+the corpus and sorted to the top of every recency window. It now reads the
+document's own `Updated`, `Last edited` or `Created` stamp and clamps to the
+corpus end date.
+
+`dream_connections.ts` had two. It passed a whole chunk as the full-text query
+to `public.search`, and `websearch_to_tsquery` ANDs every term, so a 1,279 token
+chunk matched only itself, which the pass then skips. It contributed nothing and
+raised `tsquery stack too small` on dense uploads, which is what killed the
+Marketing run. It also capped candidate pairs at 20 before dropping same-source
+ones, and a document's nearest neighbours are mostly its own source, so most of
+the budget went on pairs headed for the bin. Company produced zero links from 20
+candidates. Now it searches by embedding only, searches every document, filters,
+ranks by similarity, then caps. Links went from 0 to 80 across four spaces, and
+every source pairs with every other.
+
+The connections page was rendering each connection twice, because
+`ConnectionRow` draws the status, space, account and reason and then nests
+`ScopeEditor`, which drew all four again. The channel and folder pickers were
+also always open, 56 checkboxes on screen at once. The page went from 6893px to
+3385px.
+
+**Did not ship.** The connections model change. `connections.space_id` is still
+being removed as this is written, so `docs/mobile-spec.md` still describes the
+space selector on each provider row.
+
+**Needs a human.** `public.search` still raises `tsquery stack too small` for a
+long enough `query_text`. The dream no longer sends one, but a user pasting a
+wall of text into chat can. The fix is a guard inside the function, which means
+a migration and a change to the live query path.
+
+**Notes.** Two guards went into `scripts/check-corpus.mjs`, both because the
+class of bug they catch had already happened. Manifest dates must fall inside
+the corpus window, tested against the old code so it catches exactly the six
+broken files. And no two documents may claim the same Linear issue id, which
+happened three times in one afternoon and which nothing else would have caught.
+
+The corpus was written by five agents in parallel off one file list. Two of them
+stopped and asked rather than write the colliding issue numbers they had been
+handed, which is the only reason the collisions were caught before the seed ran.
