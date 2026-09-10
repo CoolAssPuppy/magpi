@@ -1,12 +1,12 @@
 import { cn } from '@/lib/utils';
 
-import { SOURCE_PATHS, type SourceSlug } from './source-icons';
+import { SOURCE_FILES, SOURCE_PATHS, type SourceSlug } from './source-icons';
 
 /** What each source is called, and the token holding its identity colour. */
 const MARKS: Record<SourceSlug, { readonly label: string; readonly color: string }> = {
   notion: { label: 'Notion', color: 'var(--icon-notion)' },
   linear: { label: 'Linear', color: 'var(--icon-linear)' },
-  slack: { label: 'Slack', color: 'var(--icon-slack)' },
+  slack: { label: 'Slack', color: 'transparent' },
   google_drive: { label: 'Google Drive', color: 'var(--icon-google-drive)' },
   upload: { label: 'Uploaded', color: 'var(--icon-upload)' },
 };
@@ -58,6 +58,20 @@ export function SourceMark({
   if (!slug) return null;
 
   const mark = MARKS[slug];
+  const file = SOURCE_FILES[slug];
+
+  if (file) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- a fixed 16px mark needs no loader
+      <img
+        src={file}
+        alt={title ? mark.label : ''}
+        width={16}
+        height={16}
+        className={cn('size-4 shrink-0', className)}
+      />
+    );
+  }
 
   return (
     <svg

@@ -38,18 +38,17 @@
 }
 
 /* Source marks. Brand identity colors, so they are fixed rather than derived like the palette.
-   Notion's mark is pure black and Slack's stand-in follows the foreground, so both flip in dark. */
+   Notion's mark is pure black, so it is the one that flips in dark. Slack is not here: it carries
+   its own four colours and is served from web/public/brand/slack.svg. */
 :root {
   --icon-notion: #000000;
   --icon-linear: #5e6ad2;
   --icon-google-drive: #4285f4;
-  --icon-slack: #4a154b;
   --icon-upload: var(--foreground-muted);
 }
 
 [data-theme*='dark'] {
   --icon-notion: #ffffff;
-  --icon-slack: #d9a4da;
 }
 
 /* The folded magpie. Fixed identity colors, light theme first and then the dark override. */
