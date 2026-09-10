@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/app/page-header';
 import { ConnectionClaim } from '@/components/connections/connection-claim';
 import { ConnectionList } from '@/components/connections/connection-list';
 import { SyncActivity } from '@/components/connections/sync-activity';
+import { UploadDialog } from '@/components/documents/upload-dialog';
 import { loadConnectionsPage } from '@/lib/connections/queries';
 import { getSessionContext } from '@/lib/supabase/context';
 
@@ -33,7 +34,7 @@ export default async function ConnectionsPage({
     <>
       <PageHeader
         title="Connections"
-        description="A connection imports one account of one source into one space."
+        description="Ingest data automatically from your systems of record"
       />
 
       {query.ticket && query.provider ? (
@@ -62,6 +63,19 @@ export default async function ConnectionsPage({
           description="No providers are enabled on this deployment."
         />
       )}
+
+      <section className="flex flex-wrap items-center justify-between gap-4 rounded-[var(--radius-panel)] border border-border px-4 py-4">
+        <div className="min-w-0">
+          <h2 className="font-heading text-sm font-medium text-foreground">
+            Upload documents manually
+          </h2>
+          <p className="mt-0.5 max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">
+            Ingest documents in bulk from your machine.
+          </p>
+        </div>
+
+        <UploadDialog spaces={spaces} />
+      </section>
     </>
   );
 }

@@ -44,11 +44,20 @@
   --icon-notion: #000000;
   --icon-linear: #5e6ad2;
   --icon-google-drive: #4285f4;
+  --icon-hubspot: #ff7a59;
+  --icon-salesforce: #00a1e0;
+  --icon-jira: #0052cc;
+  --icon-confluence: #172b4d;
+  --icon-github: #181717;
+  --icon-zendesk: #03363d;
   --icon-upload: var(--foreground-muted);
 }
 
 [data-theme*='dark'] {
   --icon-notion: #ffffff;
+  --icon-github: #ffffff;
+  --icon-confluence: #7aa2e0;
+  --icon-zendesk: #7ac6c0;
 }
 
 /* The folded magpie. Fixed identity colors, light theme first and then the dark override. */

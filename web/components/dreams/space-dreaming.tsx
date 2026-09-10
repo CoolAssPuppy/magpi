@@ -149,7 +149,7 @@ export function SpaceDreaming({
     <section className="flex flex-col gap-3">
       <h2 className="font-heading text-sm font-medium text-foreground">Dreaming by space</h2>
       <p className="max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">
-        Switch it off for a space and nothing in that space is read overnight.
+        Switch off to suspend dreaming for a space.
       </p>
       <div className="divide-y divide-border rounded-[var(--radius-panel)] border border-border">
         {spaces.map((space) => (

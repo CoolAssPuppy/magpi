@@ -75,20 +75,26 @@ export function ConnectionList({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <h2 className="flex items-center gap-2 font-heading text-sm font-medium text-foreground">
-                <SourceMark source={listing.slug} className="size-5" />
+                <SourceMark source={listing.slug} className="size-5" fallback />
                 {listing.displayName}
               </h2>
               <p className="mt-0.5 max-w-[var(--measure-prose)] text-sm text-tertiary-foreground">
                 {listing.description}
               </p>
             </div>
-            <ConnectButton
-              providerSlug={listing.slug}
-              displayName={listing.displayName}
-              spaces={spaces}
-              hasConnection={listing.connections.length > 0}
-              onBegin={onBegin}
-            />
+            {listing.enabled ? (
+              <ConnectButton
+                providerSlug={listing.slug}
+                displayName={listing.displayName}
+                spaces={spaces}
+                hasConnection={listing.connections.length > 0}
+                onBegin={onBegin}
+              />
+            ) : (
+              <span className="shrink-0 rounded-[var(--radius-panel)] border border-border px-2.5 py-1 text-xs text-tertiary-foreground">
+                Coming soon
+              </span>
+            )}
           </div>
 
           {listing.connections.length > 0 ? (

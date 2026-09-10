@@ -9,6 +9,7 @@ const citation = (overrides: Partial<Citation> = {}): Citation => ({
   chunkId: '11111111-1111-4111-8111-111111111111',
   documentId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
   documentTitle: 'Q3 platform notes',
+  documentSource: null,
   excerpt: 'The SSO rollout is blocked on ENG-4417.',
   label: 1,
   ...overrides,
@@ -37,6 +38,7 @@ describe('AssistantTurn', () => {
           citation({
             chunkId: '22222222-2222-4222-8222-222222222222',
             documentTitle: 'Never cited',
+            documentSource: null,
             label: 2,
           }),
         ]}

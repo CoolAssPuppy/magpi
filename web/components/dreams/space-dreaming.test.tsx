@@ -30,7 +30,7 @@ describe('dreaming, per space', () => {
   it('says what the switch controls before asking anyone to use it', () => {
     render(<SpaceDreaming spaces={[getSpace()]} {...getActions()} />);
 
-    expect(screen.getByText(/nothing in that space is read overnight/i)).toBeInTheDocument();
+    expect(screen.getByText(/suspend dreaming for a space/i)).toBeInTheDocument();
   });
 
   it('turns dreaming off for one space', async () => {

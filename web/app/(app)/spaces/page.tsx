@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 
 import { EmptyState } from '@/components/app/empty-state';
 import { PageHeader } from '@/components/app/page-header';
-import { CreateSpaceForm } from '@/components/spaces/create-space-form';
+import { CreateSpaceDialog } from '@/components/spaces/create-space-dialog';
 import { SpaceList } from '@/components/spaces/space-list';
 import { listVisibleSpaces } from '@/lib/spaces/spaces';
 import { getSessionContext } from '@/lib/supabase/context';
@@ -20,11 +20,8 @@ export default async function SpacesPage() {
       <PageHeader
         title="Spaces"
         description="Every document lives in exactly one space. You choose the space when you add the document."
+        actions={<CreateSpaceDialog />}
       />
-
-      <div className="max-w-md">
-        <CreateSpaceForm />
-      </div>
 
       {spaces.length === 0 ? (
         <EmptyState

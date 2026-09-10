@@ -5,6 +5,7 @@ create table public.spaces (
   org_id uuid not null references public.organizations (id) on delete cascade,
   kind public.space_kind not null,
   name text not null check (char_length(name) between 1 and 120),
+  description text check (description is null or char_length(description) <= 400),
   created_at timestamptz not null default now(),
   dreaming_enabled boolean not null default true,
   owner_user_id uuid references auth.users (id) on delete cascade

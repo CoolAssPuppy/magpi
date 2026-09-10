@@ -13,7 +13,7 @@ grant select, insert, delete on public.org_invites to authenticated;
 
 -- update is a column list: a table grant would let a member move a space to another org.
 grant select, insert, delete on public.spaces to authenticated;
-grant update (name, dreaming_enabled) on public.spaces to authenticated;
+grant update (name, description, dreaming_enabled) on public.spaces to authenticated;
 grant select, insert, delete on public.space_members to authenticated;
 
 grant select on public.providers to authenticated;

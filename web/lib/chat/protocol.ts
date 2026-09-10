@@ -11,6 +11,8 @@ export const citationSchema = z.object({
   chunkId: z.uuid(),
   documentId: z.uuid(),
   documentTitle: z.string(),
+  /** The tool it came from, so a citation shows its mark. Null for an upload and a dream. */
+  documentSource: z.string().nullable(),
   excerpt: z.string(),
   /** The position this passage held in the prompt, which is the number the answer cites. */
   label: z.number().int().positive(),

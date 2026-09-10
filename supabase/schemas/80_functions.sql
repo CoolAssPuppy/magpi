@@ -64,7 +64,11 @@ revoke all on function public.is_space_member(uuid) from public, anon;
 grant execute on function public.is_space_member(uuid) to authenticated, service_role;
 
 -- Creates a team space and enrols the caller, so the space is never invisible to its own author.
-create or replace function public.create_team_space(p_org_id uuid, p_name text)
+create or replace function public.create_team_space(
+  p_org_id uuid,
+  p_name text,
+  p_description text default null
+)
 returns uuid
 language plpgsql
 security definer
@@ -77,8 +81,8 @@ begin
     raise exception 'not a member of that organization' using errcode = '42501';
   end if;
 
-  insert into public.spaces (org_id, kind, name)
-  values (p_org_id, 'team', p_name)
+  insert into public.spaces (org_id, kind, name, description)
+  values (p_org_id, 'team', p_name, nullif(btrim(coalesce(p_description, '')), ''))
   returning id into v_space_id;
 
   insert into public.space_members (space_id, user_id)
@@ -88,8 +92,8 @@ begin
 end;
 $$;
 
-revoke all on function public.create_team_space(uuid, text) from public, anon;
-grant execute on function public.create_team_space(uuid, text) to authenticated, service_role;
+revoke all on function public.create_team_space(uuid, text, text) from public, anon;
+grant execute on function public.create_team_space(uuid, text, text) to authenticated, service_role;
 
 -- Hybrid retrieval: pgvector and full text search merged with RRF. security invoker, so RLS holds.
 create or replace function public.search(

@@ -33,6 +33,7 @@ const getListing = (overrides?: Partial<ProviderListing>): ProviderListing => ({
   description: 'Pages and databases.',
   docsUrl: 'https://developers.notion.com',
   scopeSelectionKind: 'workspace',
+  enabled: true,
   connections: [getConnectionSummary()],
   ...overrides,
 });
@@ -52,6 +53,20 @@ const getActions = () => ({
 });
 
 describe('the connections list', () => {
+  it('marks a provider that is not wired up rather than offering a button that would fail', () => {
+    render(
+      <ConnectionList
+        listings={[
+          getListing({ slug: 'hubspot', displayName: 'HubSpot', enabled: false, connections: [] }),
+        ]}
+        {...getActions()}
+      />,
+    );
+
+    expect(screen.getByText('Coming soon')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /connect hubspot/i })).not.toBeInTheDocument();
+  });
+
   it('names every provider and offers a way in', () => {
     render(
       <ConnectionList

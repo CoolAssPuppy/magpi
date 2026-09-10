@@ -9,6 +9,7 @@ import { setSpaceDreaming } from '@/lib/spaces/dreaming';
 
 const createSpaceSchema = z.object({
   name: z.string().trim().min(1, 'A space needs a name.').max(120),
+  description: z.string().trim().max(400).optional(),
 });
 
 const spaceIdSchema = z.object({ spaceId: z.uuid() });
@@ -19,7 +20,10 @@ const dreamingSchema = spaceIdSchema.extend({ enabled: z.boolean() });
 
 export async function createTeamSpace(formData: FormData): Promise<ActionState<{ id: string }>> {
   return withSession(async ({ supabase, orgId }) => {
-    const parsed = createSpaceSchema.safeParse({ name: formData.get('name') });
+    const parsed = createSpaceSchema.safeParse({
+      name: formData.get('name'),
+      description: formData.get('description') ?? undefined,
+    });
     if (!parsed.success) return errorState(parsed.error.issues[0].message);
 
     // One statement, because the SELECT policy applies to a RETURNING clause and the
@@ -27,6 +31,7 @@ export async function createTeamSpace(formData: FormData): Promise<ActionState<{
     const { data, error } = await supabase.rpc('create_team_space', {
       p_org_id: orgId,
       p_name: parsed.data.name,
+      p_description: parsed.data.description ?? undefined,
     });
 
     if (error) {

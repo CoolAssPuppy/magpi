@@ -44,6 +44,7 @@ export type ProviderListing = {
   readonly description: string;
   readonly docsUrl: string | null;
   readonly scopeSelectionKind: string | null;
+  readonly enabled: boolean;
   readonly connections: readonly ConnectionSummary[];
 };
 
@@ -82,26 +83,28 @@ export function buildProviderListings({
   readonly now: Date;
 }): readonly ProviderListing[] {
   const spaceNames = new Map(spaces.map((space) => [space.id, space.name]));
-  const connectedProviders = new Set(connections.map((connection) => connection.provider));
 
-  return providers
-    .filter((provider) => provider.enabled || connectedProviders.has(provider.slug))
-    .slice()
-    .sort((a, b) => a.position - b.position || a.display_name.localeCompare(b.display_name))
-    .map((provider) => ({
-      slug: provider.slug,
-      displayName: provider.display_name,
-      description: provider.description,
-      docsUrl: provider.docs_url,
-      scopeSelectionKind: provider.scope_selection_kind,
-      connections: connections
-        .filter((connection) => connection.provider === provider.slug)
-        // Not a permission check. It drops a row from a torn read where the space name is missing.
-        .flatMap((connection) => {
-          const spaceName = spaceNames.get(connection.space_id);
-          return spaceName ? [toSummary(connection, spaceName, now)] : [];
-        }),
-    }));
+  return (
+    providers
+      // A disabled provider stays in the list. The page marks it rather than offering a button.
+      .slice()
+      .sort((a, b) => a.position - b.position || a.display_name.localeCompare(b.display_name))
+      .map((provider) => ({
+        slug: provider.slug,
+        displayName: provider.display_name,
+        description: provider.description,
+        docsUrl: provider.docs_url,
+        scopeSelectionKind: provider.scope_selection_kind,
+        enabled: provider.enabled,
+        connections: connections
+          .filter((connection) => connection.provider === provider.slug)
+          // Not a permission check. It drops a row from a torn read where the space name is missing.
+          .flatMap((connection) => {
+            const spaceName = spaceNames.get(connection.space_id);
+            return spaceName ? [toSummary(connection, spaceName, now)] : [];
+          }),
+      }))
+  );
 }
 
 export function countConnections(listings: readonly ProviderListing[]): number {

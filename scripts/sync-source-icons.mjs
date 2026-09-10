@@ -17,12 +17,23 @@ const FROM_SIMPLE_ICONS = {
   notion: 'siNotion',
   linear: 'siLinear',
   google_drive: 'siGoogledrive',
+  hubspot: 'siHubspot',
+  jira: 'siJira',
+  confluence: 'siConfluence',
+  github: 'siGithub',
+  zendesk: 'siZendesk',
 };
 
-/** Ours, for a document somebody dragged in rather than one a tool sent. */
+/**
+ * Ours. `upload` is a document somebody dragged in. `source` is the fallback for a provider whose
+ * mark is not freely licensed, so a row shows something deliberate rather than a gap.
+ */
 const HAND_DRAWN = {
   upload:
     'M12 2.6 5.6 9h4v6.8h4.8V9h4zM3.6 17.4v2.6c0 .8.6 1.4 1.4 1.4h14c.8 0 1.4-.6 1.4-1.4v-2.6h-2.4v1.6H6v-1.6z',
+  salesforce:
+    'M12 3.4a4.3 4.3 0 0 1 3.1 1.3 5.2 5.2 0 0 1 2.3-.5 5.2 5.2 0 0 1 0 10.4h-.4a3.8 3.8 0 0 1-5.6 1.8 4.3 4.3 0 0 1-8-1.5A3.9 3.9 0 0 1 4.6 7a4.3 4.3 0 0 1 7.4-3.6z',
+  source: 'M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 0h7v7h-7z',
 };
 
 /**
@@ -32,7 +43,20 @@ const HAND_DRAWN = {
  */
 const VENDORED = { slack: '/brand/slack.svg' };
 
-const ORDER = ['notion', 'linear', 'slack', 'google_drive', 'upload'];
+const ORDER = [
+  'notion',
+  'linear',
+  'slack',
+  'google_drive',
+  'hubspot',
+  'salesforce',
+  'jira',
+  'confluence',
+  'github',
+  'zendesk',
+  'upload',
+  'source',
+];
 
 function pathFor(slug) {
   const key = FROM_SIMPLE_ICONS[slug];

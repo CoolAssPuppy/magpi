@@ -64,7 +64,9 @@ describe('provider listings', () => {
     expect(listings.map((listing) => listing.slug)).toEqual(['drive', 'slack']);
   });
 
-  it('leaves out a provider that is not enabled yet', () => {
+  // It used to be dropped. A demo needs to show what a knowledge base can read from, and the page
+  // marks a provider nobody has wired up rather than offering a button that would fail.
+  it('keeps a provider that is not enabled yet, and says so', () => {
     const listings = buildProviderListings({
       providers: [getProvider({ slug: 'drive', enabled: false })],
       connections: [],
@@ -72,7 +74,8 @@ describe('provider listings', () => {
       now: NOW,
     });
 
-    expect(listings).toEqual([]);
+    expect(listings).toHaveLength(1);
+    expect(listings[0].enabled).toBe(false);
   });
 
   it('keeps a disabled provider a user is already connected to, so the connection is not stranded', () => {

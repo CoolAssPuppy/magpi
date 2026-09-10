@@ -25,6 +25,7 @@ const citation = (overrides: Partial<Citation> = {}): Citation => ({
   chunkId: CHUNK_ID,
   documentId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
   documentTitle: 'Q3 platform notes',
+  documentSource: null,
   excerpt: 'The SSO rollout is blocked on ENG-4417.',
   label: 1,
   ...overrides,

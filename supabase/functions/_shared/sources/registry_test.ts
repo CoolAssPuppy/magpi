@@ -11,9 +11,13 @@ async function seededProviderSlugs(): Promise<string[]> {
   const insert = /insert\s+into\s+public\.providers[\s\S]*?;/i.exec(sql);
   assert(insert, 'seed.sql no longer inserts into public.providers');
 
-  // The slug is the first column of each values tuple.
-  const slugs = [...insert[0].matchAll(/\(\s*'([a-z0-9_-]+)'\s*,/gi)].map((match) => match[1]);
-  assert(slugs.length > 0, 'no provider slugs were parsed out of seed.sql');
+  // One tuple per provider. The slug is its first column and enabled is its only boolean, so a
+  // row seeded as a placeholder is skipped: it is in the table to be listed, not to be read from.
+  const tuples = [...insert[0].matchAll(/\(\s*'([a-z0-9_-]+)'[\s\S]*?\n {2}\)/g)];
+  const slugs = tuples.filter((tuple) => /\btrue\b/.test(tuple[0])).map((tuple) => tuple[1]);
+
+  assert(tuples.length > 0, 'no provider tuples were parsed out of seed.sql');
+  assert(slugs.length > 0, 'no enabled provider slugs were parsed out of seed.sql');
   return slugs;
 }
 

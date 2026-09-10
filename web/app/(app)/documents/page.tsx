@@ -3,9 +3,7 @@ import { redirect } from 'next/navigation';
 import { EmptyState } from '@/components/app/empty-state';
 import { PageHeader } from '@/components/app/page-header';
 import { DocumentList } from '@/components/documents/document-list';
-import { UploadPanel } from '@/components/documents/upload-panel';
 import { listDocuments } from '@/lib/documents/documents';
-import { listSpaceOptions } from '@/lib/spaces/spaces';
 import { getSessionContext } from '@/lib/supabase/context';
 
 export const metadata = { title: 'Documents' };
@@ -14,21 +12,16 @@ export default async function DocumentsPage() {
   const context = await getSessionContext();
   if (!context) redirect('/sign-in');
 
-  const [documents, spaces] = await Promise.all([
-    listDocuments(context.supabase),
-    listSpaceOptions(context.supabase),
-  ]);
+  const documents = await listDocuments(context.supabase);
 
   return (
     <>
-      <PageHeader title="Documents" description="Upload files, or connect a source." />
-
-      <UploadPanel spaces={spaces} />
+      <PageHeader title="Documents" description="All documents stored in your digital brain" />
 
       {documents.length === 0 ? (
         <EmptyState
           title="Nothing in here yet"
-          description="Upload a file, or connect a source to import on a schedule."
+          description="Connect a source, or upload documents from Connections."
         />
       ) : (
         <DocumentList documents={documents} />

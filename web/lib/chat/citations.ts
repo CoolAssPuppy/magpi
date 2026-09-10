@@ -15,7 +15,11 @@ type ChunkRow = {
   readonly id: string;
   readonly content: string;
   readonly document_id: string;
-  readonly documents: { readonly title: string } | null;
+  readonly documents: {
+    readonly title: string;
+    readonly url: string | null;
+    readonly connections: { readonly provider: string } | null;
+  } | null;
 };
 
 /** messages.citations holds chunk ids and nothing else, so any other shape throws. */
@@ -60,6 +64,7 @@ export async function resolveCitationSets(
           chunkId: row.id,
           documentId: row.document_id,
           documentTitle: row.documents?.title ?? 'Untitled',
+          documentSource: row.documents?.connections?.provider ?? row.documents?.url ?? null,
           excerpt: excerptOf(row.content),
           label: index + 1,
         },
@@ -76,7 +81,7 @@ async function fetchChunks(
 
   const { data, error } = await supabase
     .from('chunks')
-    .select('id, content, document_id, documents(title)')
+    .select('id, content, document_id, documents(title, url, connections(provider))')
     .in('id', [...ids]);
 
   if (error) throw new Error(error.message);

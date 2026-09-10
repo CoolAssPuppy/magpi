@@ -8,7 +8,14 @@ const MARKS: Record<SourceSlug, { readonly label: string; readonly color: string
   linear: { label: 'Linear', color: 'var(--icon-linear)' },
   slack: { label: 'Slack', color: 'transparent' },
   google_drive: { label: 'Google Drive', color: 'var(--icon-google-drive)' },
+  hubspot: { label: 'HubSpot', color: 'var(--icon-hubspot)' },
+  salesforce: { label: 'Salesforce', color: 'var(--icon-salesforce)' },
+  jira: { label: 'Jira', color: 'var(--icon-jira)' },
+  confluence: { label: 'Confluence', color: 'var(--icon-confluence)' },
+  github: { label: 'GitHub', color: 'var(--icon-github)' },
+  zendesk: { label: 'Zendesk', color: 'var(--icon-zendesk)' },
   upload: { label: 'Uploaded', color: 'var(--icon-upload)' },
+  source: { label: 'Source', color: 'var(--icon-upload)' },
 };
 
 /** `drive` in the corpus manifest is the same source the providers table calls `google_drive`. */
@@ -49,12 +56,15 @@ export function SourceMark({
   source,
   className,
   title,
+  fallback = false,
 }: {
   source: string | null | undefined;
   className?: string;
   title?: boolean;
+  /** Show the neutral mark rather than nothing when the source has none of its own. */
+  fallback?: boolean;
 }) {
-  const slug = toSourceSlug(source);
+  const slug = toSourceSlug(source) ?? (fallback ? 'source' : null);
   if (!slug) return null;
 
   const mark = MARKS[slug];

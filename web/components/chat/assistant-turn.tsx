@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { SourceMark } from '@/components/brand/source-mark';
 import { splitAnswer } from '@/lib/chat/inline-citations';
 import type { Citation } from '@/lib/chat/protocol';
 
@@ -61,7 +62,10 @@ function Sources({ citations }: { citations: readonly Citation[] }) {
               href={`/documents/${citation.documentId}`}
               className="block rounded-[var(--radius-panel)] px-2 py-1.5 transition-colors hover:bg-muted motion-reduce:transition-none"
             >
-              <span className="block text-sm text-foreground">{citation.documentTitle}</span>
+              <span className="flex items-center gap-2 text-sm text-foreground">
+                <SourceMark source={citation.documentSource} title />
+                <span className="min-w-0 truncate">{citation.documentTitle}</span>
+              </span>
               <span className="mt-0.5 block text-xs leading-relaxed text-tertiary-foreground">
                 {citation.excerpt}
               </span>
