@@ -528,3 +528,43 @@ clients to it. Supabase supports DCR and not CIMD; there is an open discussion
 asking for it, filed in January, still unanswered. DCR stays available for
 backwards compatibility, so this works today. It is worth knowing which way that
 goes before anyone depends on it.
+
+## Phase 22: Magpi sends its own email
+
+**Shipped.** Every account email is Magpi's: its words, its design, its
+delivery. The auth server sends none. That is one setting, `[auth.hook.send_email]`
+pointing at `supabase/functions/auth-email/`, and after it there is nothing
+about a Magpi email in anybody's dashboard.
+
+Six templates in React Email, rendered in the edge function: confirm your
+address, reset your password, a sign-in link, the two halves of an email change,
+a confirmation code, and an organization invitation. Dark, always, because an
+email cannot read a colour scheme reliably and one that tries looks broken in
+half the clients that matter. The palette is `web/styles/tokens.css` flattened
+into literals, since an email has no stylesheet and no cascade. The mark is a
+PNG, because Gmail strips inline SVG.
+
+Local delivery is Mailpit and is the default rather than the exception: with no
+Resend key there is nothing to leak and nothing to configure. Mailpit takes a
+message with no auth and no TLS, so the SMTP client is a socket and eight lines
+of conversation rather than a dependency. A deployed project has a key and goes
+over Resend's HTTP API instead.
+
+Verified end to end rather than by inspection: a password reset through the auth
+API arrived in Mailpit two seconds later, from Magpi's address, with Magpi's
+subject, carrying the ground colour, the sheen, the mark and a link into the
+confirm route.
+
+**Notes.** The hook is the whole security boundary and it is the reason to be
+careful: it takes a token and an address and will happily mail one to the other.
+An unsigned call is refused before anything renders, and a missing secret
+refuses everything rather than trusting the caller. Three mutations prove it:
+trusting a call with no secret, accepting any signature, and mailing the new
+address the old address's token each turn a test red. That last one matters
+because the two halves of an email change are supposed to need two clicks, and
+one wrong token would collapse it to one.
+
+**Did not ship.** The invitation email has its words and no sender: organization
+invites are Magpi's own table rather than a GoTrue flow, so that one does not
+come through the hook and still needs wiring to the members screen, which today
+hands the raw token back to the browser and emails nobody.

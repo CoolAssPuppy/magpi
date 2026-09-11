@@ -132,8 +132,9 @@ openai_api_key = ""
 enabled = true
 # Port to use for the email testing server web interface.
 port = 55324
-# Uncomment to expose additional ports for testing user applications that send emails.
-# smtp_port = 55325
+# Magpi sends its own account emails through the auth-email hook rather than letting the auth
+# server do it, so the hook needs somewhere to deliver locally. This is that.
+smtp_port = 55325
 # pop3_port = 55326
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
@@ -327,6 +328,14 @@ max_frequency = "5s"
 # enabled = true
 # uri = "pg-functions://<database>/<schema>/<hook_name>"
 
+# Every account email goes to Magpi instead of being sent by the auth server, so the words, the
+# design and the delivery are all in this repository. The templates live in
+# supabase/functions/_shared/email/ and the hook is supabase/functions/auth-email/.
+[auth.hook.send_email]
+enabled = true
+uri = "http://host.docker.internal:55321/functions/v1/auth-email"
+secrets = "env(SB_AUTH_HOOK_SECRET)"
+
 # Configure one of the supported SMS providers: `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
 [auth.sms.twilio]
 enabled = false
@@ -467,6 +476,11 @@ enabled = true
 # The flow is protected by the PKCE verifier held server-side in oauth_states
 # and by connections-claim, which runs with the caller's verified JWT and
 # commits only when the session matches.
+verify_jwt = false
+
+[functions.auth-email]
+# The auth server calls this with a webhook signature rather than a JWT, which the function
+# verifies itself. The gateway's check would refuse it before it could.
 verify_jwt = false
 
 [functions.mcp-server]
