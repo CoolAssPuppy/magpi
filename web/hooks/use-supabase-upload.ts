@@ -143,9 +143,17 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
     setLoading(false);
   }, [files, path, bucketName, errors, successes]);
 
+  /** Puts the hook back to how it opened, so the same file can be uploaded somewhere else. */
+  const reset = useCallback(() => {
+    setFiles([]);
+    setSuccesses([]);
+    setErrors([]);
+  }, []);
+
   return {
     files,
     setFiles,
+    reset,
     successes,
     isSuccess,
     loading,

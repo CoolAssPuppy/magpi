@@ -55,7 +55,17 @@ export function UploadDialog({ spaces }: { spaces: readonly SpaceChoice[] }) {
     maxFiles: MAX_FILES,
   });
 
-  const { files, setFiles, successes, loading, onUpload, getRootProps, getInputProps } = upload;
+  const {
+    files,
+    setFiles,
+    reset,
+    successes,
+    errors,
+    loading,
+    onUpload,
+    getRootProps,
+    getInputProps,
+  } = upload;
 
   const startUpload = useCallback(async () => {
     setError(null);
@@ -92,7 +102,11 @@ export function UploadDialog({ spaces }: { spaces: readonly SpaceChoice[] }) {
 
   const close = () => {
     setOpen(false);
-    setFiles([]);
+    // Everything the last upload left behind. Without the successes a file already sent reads as
+    // Uploaded when it is picked again, so it cannot go into a second space without a reload, and
+    // without the recorded keys the same file in the same space would enqueue twice.
+    reset();
+    recorded.current.clear();
     setError(null);
   };
 
@@ -158,13 +172,20 @@ export function UploadDialog({ spaces }: { spaces: readonly SpaceChoice[] }) {
           >
             {files.map((file) => {
               const uploaded = successes.includes(file.name);
+              // Storage answers per file, so its refusal belongs on that file's row.
+              const refusal = errors.find((entry) => entry.name === file.name)?.message;
               return (
                 <li key={file.name} className="flex items-center gap-3 px-3 py-2">
                   <span className="min-w-0 flex-1 truncate text-sm text-foreground">
                     {file.name}
                   </span>
-                  <span className="shrink-0 text-xs text-tertiary-foreground">
-                    {uploaded ? 'Uploaded' : formatSize(file.size)}
+                  <span
+                    className={cn(
+                      'shrink-0 text-xs',
+                      refusal ? 'text-destructive-600' : 'text-tertiary-foreground',
+                    )}
+                  >
+                    {refusal ?? (uploaded ? 'Uploaded' : formatSize(file.size))}
                   </span>
                   <button
                     type="button"

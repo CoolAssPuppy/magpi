@@ -125,10 +125,23 @@ Statements 96.86 percent against a 95 threshold, branches 92.72 against 90, line
 the 143 uncovered statements between them, which is what held the gate red. Both
 are covered now, mutation-tested rather than written to a number.
 
-Writing them turned up one real bug: the create-space form used uncontrolled
-inputs with a form action, and React empties those once the action settles, so a
-refusal threw away the name and the description at the moment a person needs them
-back. The fields are controlled now.
+Writing them turned up three real bugs, all silent and all fixed.
+
+The create-space form used uncontrolled inputs with a form action, and React
+empties those once the action settles, so a refusal threw away the name and the
+description at the moment a person needs them back.
+
+The upload dialog never cleared the hook's `successes` on close, so a file
+already sent read as Uploaded when picked again and could not go into a second
+space, or be re-sent after being corrected, until the page was reloaded. The
+`recorded` key is `space/name` precisely so one file can go into two spaces, and
+that was unreachable. A `reset()` on the hook clears it on close.
+
+The dialog destructured everything from the hook except `errors`, so a storage
+refusal showed nothing at all: the button flickered through Uploading and came
+back to Upload. Uploading a file whose name already exists in a space is the
+common way in, because the dialog does not pass `upsert`. The reason now sits on
+that file's row.
 
 The Deno tier still carries no coverage floor at all. `test:functions` runs
 without `--coverage`, and that tier holds the routing, the sync path and the four

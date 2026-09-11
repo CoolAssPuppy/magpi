@@ -38,6 +38,7 @@ const droppedFile = (overrides: Partial<FileSpec> = {}): UploadFile => {
 const uploadState = (overrides: Partial<UploadState> = {}): UploadState => ({
   files: [],
   setFiles: () => {},
+  reset: () => {},
   successes: [],
   isSuccess: false,
   loading: false,

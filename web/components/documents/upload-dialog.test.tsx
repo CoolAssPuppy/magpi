@@ -251,7 +251,17 @@ describe('uploading into a space', () => {
     expect(enqueue.inputs.map((input) => input.objectName)).toEqual(['one.txt', 'two.txt']);
   });
 
-  it('shows a file that is already up as up, and offers no second upload of it', async () => {
+  it('marks a file as uploaded once it is up', async () => {
+    await openDialog();
+    await choose([getFile('notes.txt')]);
+    await startUpload();
+
+    expect(screen.getByText('Uploaded')).toBeInTheDocument();
+    expect(uploadButton()).toBeDisabled();
+  });
+
+  // The same document belongs in two spaces often enough, and a corrected file keeps its name.
+  it('offers the same file again after the dialog has been closed', async () => {
     await openDialog();
     await choose([getFile('notes.txt')]);
     await startUpload();
@@ -260,9 +270,11 @@ describe('uploading into a space', () => {
     await user.click(screen.getByRole('button', { name: 'Upload documents now' }));
     await choose([getFile('notes.txt')]);
 
-    expect(screen.getByText('Uploaded')).toBeInTheDocument();
-    expect(uploadButton()).toBeDisabled();
-    expect(storage.paths).toEqual([`${ENGINEERING}/notes.txt`]);
+    expect(screen.queryByText('Uploaded')).not.toBeInTheDocument();
+    expect(uploadButton()).toBeEnabled();
+
+    await startUpload();
+    expect(storage.paths).toEqual([`${ENGINEERING}/notes.txt`, `${ENGINEERING}/notes.txt`]);
   });
 });
 
@@ -308,5 +320,19 @@ describe('what the dialog says while it works', () => {
     expect(screen.queryByText('Uploaded')).toBeNull();
     expect(uploadButton()).toBeEnabled();
     expect(enqueue.inputs).toEqual([]);
+  });
+
+  // Pressing Upload and being told nothing is the worst version of this. Storage answers per file,
+  // so the reason goes on that file's row.
+  it('says on the row why storage refused a file', async () => {
+    storage.refused = ['notes.txt'];
+    await openDialog();
+    await choose([getFile('notes.txt'), getFile('plan.md')]);
+
+    await startUpload();
+
+    expect(screen.getByText('notes.txt already exists')).toBeInTheDocument();
+    // The one that went up is unaffected and still reads as done.
+    expect(screen.getByText('Uploaded')).toBeInTheDocument();
   });
 });
