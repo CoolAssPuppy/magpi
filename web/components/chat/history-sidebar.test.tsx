@@ -20,6 +20,7 @@ type QueryState = {
 const query: QueryState = { data: [], isLoading: false, error: null, hasMore: false };
 const fetchNextPage = vi.fn();
 const queryKeys: unknown[] = [];
+const sorts: string[] = [];
 
 const folderQuery = {
   folders: [] as ConversationFolder[],
@@ -27,11 +28,19 @@ const folderQuery = {
   keys: [] as number[],
 };
 
-vi.mock('next/navigation', () => ({ usePathname: () => '/chat' }));
+const page = { pathname: '/chat' };
+
+vi.mock('next/navigation', () => ({ usePathname: () => page.pathname }));
+
+type QueryArgs = {
+  trailingQueryKey: unknown;
+  trailingQuery: (builder: { order: (column: string) => string }) => string;
+};
 
 vi.mock('@/hooks/use-infinite-query', () => ({
-  useInfiniteQuery: ({ trailingQueryKey }: { trailingQueryKey: unknown }) => {
+  useInfiniteQuery: ({ trailingQueryKey, trailingQuery }: QueryArgs) => {
     queryKeys.push(trailingQueryKey);
+    sorts.push(trailingQuery({ order: (column) => column }));
     return { ...query, fetchNextPage };
   },
 }));
@@ -80,6 +89,8 @@ beforeEach(() => {
   folderQuery.error = null;
   folderQuery.keys = [];
   queryKeys.length = 0;
+  sorts.length = 0;
+  page.pathname = '/chat';
   fetchNextPage.mockClear();
 });
 
@@ -90,6 +101,22 @@ describe('HistorySidebar', () => {
     expect(screen.getByRole('link', { name: 'SSO blockers' })).toHaveAttribute(
       'href',
       `/chat/${CONVERSATION_ID}`,
+    );
+  });
+
+  it('puts the newest conversation first', () => {
+    render(<HistorySidebar />);
+
+    expect(sorts).toContain('updated_at');
+  });
+
+  it('marks the conversation that is open', () => {
+    page.pathname = `/chat/${CONVERSATION_ID}`;
+    render(<HistorySidebar />);
+
+    expect(screen.getByRole('link', { name: 'SSO blockers' })).toHaveAttribute(
+      'aria-current',
+      'page',
     );
   });
 

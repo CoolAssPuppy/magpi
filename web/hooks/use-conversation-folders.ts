@@ -15,10 +15,7 @@ type FolderState = {
 
 const NOTHING_READ_YET: FolderState = { folders: [], isLoading: true, error: null };
 
-/**
- * Reads the folders a person made, in the order the sidebar shows them. Raising reloadKey reads
- * them again, which is how the sidebar catches up after a folder is made, renamed or deleted.
- */
+/** Reads a person's own folders in sidebar order. A raised reloadKey reads them again. */
 export function useConversationFolders(reloadKey: number): FolderState {
   const [state, setState] = useState<FolderState>(NOTHING_READ_YET);
 

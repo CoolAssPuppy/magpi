@@ -13,8 +13,13 @@ const OAUTH_TOKEN = 'lin_oauth_9f31c07a4b6d48e2b5c1';
 const KNOWLEDGE_BASE_TEAM = '8d1f6c40-3b72-4e95-9a08-51cd7e2b6a37';
 const PLATFORM_TEAM = 'a5e2b719-6c84-4f13-8d70-2b96e0af4c58';
 
+// Both teams the fixtures use, because a connection with none routed now reads nothing at all.
 function creds(overrides: Partial<SourceCredentials> = {}): SourceCredentials {
-  return { accessToken: API_KEY, scopeSelection: { ids: [] }, ...overrides };
+  return {
+    accessToken: API_KEY,
+    scopeSelection: { ids: [KNOWLEDGE_BASE_TEAM, PLATFORM_TEAM] },
+    ...overrides,
+  };
 }
 
 /** Reads the outgoing request the way the driver reads an incoming one. */
@@ -57,14 +62,16 @@ async function backlogRoutes(): Promise<StubRoute[]> {
   }));
 }
 
-Deno.test('a first pass asks for everything, with no updatedAt clause', async () => {
+Deno.test('a first pass asks for every routed team, with no updatedAt clause', async () => {
   const deps = await answering(await loadFixture('linear', 'changes_first'));
 
   const page = await linearDriver.listChanges(creds(), deps, { cursor: null });
 
   assertEquals(deps.calls[0].url, ENDPOINT);
   assertEquals(deps.calls[0].method, 'POST');
-  assertEquals(variablesOf(deps.calls[0]).filter, null);
+  // The teams are filtered from the first request. The point here is that the date is not.
+  assertEquals(asRecord(variablesOf(deps.calls[0]).filter).updatedAt, undefined);
+  assertEquals(asArray(asRecord(asRecord(filterOf(deps.calls[0]).team).id).in).length, 2);
   assertEquals(variablesOf(deps.calls[0]).first, 50);
   assertEquals(variablesOf(deps.calls[0]).after, null);
   // The pass walks on from the page it was given rather than stopping there.
@@ -182,9 +189,16 @@ Deno.test('a connection reads only the teams it selected', async () => {
     KNOWLEDGE_BASE_TEAM,
   ]);
 
+  // Nothing routed is not a licence to read the workspace, so no request is made at all.
   const unselected = await answering(await loadFixture('linear', 'changes_first'));
-  await linearDriver.listChanges(creds(), unselected, { cursor: '2026-09-01T00:00:00.000Z' });
-  assertEquals(filterOf(unselected.calls[0]).team, undefined);
+  const page = await linearDriver.listChanges(
+    creds({ scopeSelection: { ids: [] } }),
+    unselected,
+    { cursor: '2026-09-01T00:00:00.000Z' },
+  );
+  assertEquals(unselected.calls.length, 0);
+  assertEquals(page.documents, []);
+  assertEquals(page.cursor, '2026-09-01T00:00:00.000Z');
 });
 
 Deno.test('a personal api key is sent as the whole authorization header', async () => {
@@ -296,4 +310,28 @@ Deno.test('a refresh goes to the token endpoint it was handed', async () => {
 Deno.test('the driver names itself for the registry', () => {
   assertEquals(linearDriver.provider, 'linear');
   assertEquals(linearDriver.scopeSelectionKind, 'workspace');
+});
+
+Deno.test('a connection with no team routed reads nothing and keeps its place', async () => {
+  // Reading the workspace and dropping it all would advance the cursor past issues that a team
+  // routed tomorrow would then never see.
+  const calls: string[] = [];
+  const deps = {
+    fetch: (input: string | URL | Request) => {
+      calls.push(String(input));
+      return Promise.resolve(new Response('{}', { status: 200 }));
+    },
+    now: () => new Date('2026-09-09T00:00:00.000Z'),
+  };
+
+  const page = await linearDriver.listChanges(
+    { accessToken: 'lin_oauth', scopeSelection: { ids: [] } },
+    deps,
+    { cursor: '2026-09-01T00:00:00.000Z' },
+  );
+
+  assertEquals(page.documents, []);
+  assertEquals(page.cursor, '2026-09-01T00:00:00.000Z');
+  assertEquals(page.hasMore, false);
+  assertEquals(calls.length, 0, 'it asked Linear for a workspace it cannot file');
 });

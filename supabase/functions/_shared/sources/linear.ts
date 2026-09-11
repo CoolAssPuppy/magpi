@@ -163,6 +163,13 @@ export const linearDriver: SourceDriver = {
     deps: SourceDeps,
     input: { cursor: string | null },
   ): Promise<ChangePage> {
+    // No team routed means nothing has anywhere to land. Reading the workspace anyway would drop
+    // every issue and still advance the cursor past them, losing the backlog for the team routed
+    // next. The cursor comes back untouched, the way Slack answers for no channels picked.
+    if (creds.scopeSelection.ids.length === 0) {
+      return { documents: [], cursor: input.cursor, hasMore: false };
+    }
+
     const position = parseCursor(input.cursor);
     const filter = changeFilter(position.since, creds.scopeSelection.ids);
     const documents: SourceDocumentRef[] = [];

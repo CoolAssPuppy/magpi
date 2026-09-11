@@ -34,7 +34,13 @@ async function connection(overrides: Partial<ConnectionRow> = {}): Promise<Conne
     access_token_enc: await encryptProviderToken('lin_oauth', { userId: USER, provider }, ENV),
     refresh_token_enc: null,
     scopes: [],
-    scope_selection: { routes: { [TEAM]: SPACE } },
+    // A whole selection, not just routes: selectedIdsOf refuses a partial one and hands the
+    // driver nothing, which now means the driver reads nothing.
+    scope_selection: {
+      kind: 'workspace',
+      available: [{ id: TEAM, name: 'Engineering' }],
+      routes: { [TEAM]: SPACE },
+    },
     status: 'active',
     status_detail: null,
     cursor: null,

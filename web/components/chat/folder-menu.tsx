@@ -90,14 +90,11 @@ export function FolderMenu({ folder, onChanged }: FolderMenuProps) {
         initial={{ name: folder.name, color: folder.color }}
         failure={failure}
         pending={pending}
-        onOpenChange={(next) => setDialog(next ? 'rename' : 'closed')}
+        onOpenChange={() => setDialog('closed')}
         onSubmit={rename}
       />
 
-      <Dialog
-        open={dialog === 'delete'}
-        onOpenChange={(next) => setDialog(next ? 'delete' : 'closed')}
-      >
+      <Dialog open={dialog === 'delete'} onOpenChange={() => setDialog('closed')}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete this folder</DialogTitle>

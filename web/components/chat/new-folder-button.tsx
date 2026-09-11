@@ -12,7 +12,7 @@ type NewFolderButtonProps = {
   readonly onCreated: () => void;
 };
 
-/** Gray leads the picker, so a folder made without a thought still has a colour. */
+/** Makes a folder from a name and a colour, starting on gray. */
 export function NewFolderButton({ onCreated }: NewFolderButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);

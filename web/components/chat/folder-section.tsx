@@ -13,7 +13,7 @@ type FolderSectionProps = {
   readonly onChanged: () => void;
 };
 
-/** One folder and what is filed in it. An empty one still shows, because someone made it. */
+/** One folder and what is filed in it. A folder holding nothing still shows. */
 export function FolderSection({ folder, folders, conversations, onChanged }: FolderSectionProps) {
   return (
     <section aria-label={folder.name} className="flex flex-col">

@@ -145,10 +145,7 @@ export function ConversationMenu({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog
-        open={dialog !== 'closed'}
-        onOpenChange={(next) => setDialog(next ? dialog : 'closed')}
-      >
+      <Dialog open={dialog !== 'closed'} onOpenChange={() => setDialog('closed')}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{headingFor(dialog)}</DialogTitle>

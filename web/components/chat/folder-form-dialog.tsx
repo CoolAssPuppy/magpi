@@ -47,7 +47,7 @@ type FolderFormProps = Omit<FolderFormDialogProps, 'open' | 'onOpenChange'> & {
   readonly onCancel: () => void;
 };
 
-// The dialog drops its content when it closes, so the draft starts from what is stored each time.
+// Mounted fresh on each open, so the draft starts from what is stored.
 function FolderForm({
   heading,
   submitLabel,

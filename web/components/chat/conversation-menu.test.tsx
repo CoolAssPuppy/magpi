@@ -121,6 +121,33 @@ describe('ConversationMenu', () => {
     expect(actions.removeInput).toBeNull();
   });
 
+  it('says why a delete was refused, and deletes nothing', async () => {
+    actions.remove = { status: 'error', message: 'You need to sign in to do that.' };
+    await openMenuItem('Delete');
+
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('You need to sign in to do that.');
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it('leaves the conversation alone when the dialog is cancelled', async () => {
+    await openMenuItem('Rename');
+
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.queryByLabelText('Name')).toBeNull();
+    expect(actions.renameInput).toBeNull();
+  });
+
+  it('closes the dialog on Escape', async () => {
+    await openMenuItem('Rename');
+
+    await user.keyboard('{Escape}');
+
+    expect(screen.queryByLabelText('Name')).toBeNull();
+  });
+
   it('deletes on confirmation and leaves for the chat screen', async () => {
     await openMenuItem('Delete');
 

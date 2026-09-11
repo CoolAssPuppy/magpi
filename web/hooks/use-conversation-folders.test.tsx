@@ -12,6 +12,8 @@ const server = {
   rows: [] as ConversationFolder[],
   failure: null as { message: string } | null,
   reads: [] as string[],
+  /** Set to hold the read open, so a sidebar can be torn down mid-answer. */
+  gate: null as Promise<void> | null,
 };
 
 /** Enough of a PostgREST builder to record what the hook asked for, chained as the real one is. */
@@ -22,12 +24,10 @@ function getBuilder(table: string, columns: string) {
       shaping.push(column);
       return builder;
     },
-    then: (resolve: (answer: Answer) => void) => {
+    then: async (resolve: (answer: Answer) => void) => {
       server.reads.push(`${table}(${columns}) by ${shaping.join(', ')}`);
-      return Promise.resolve({
-        data: server.failure ? null : server.rows,
-        error: server.failure,
-      }).then(resolve);
+      if (server.gate) await server.gate;
+      resolve({ data: server.failure ? null : server.rows, error: server.failure });
     },
   };
   return builder;
@@ -67,6 +67,7 @@ beforeEach(() => {
   server.rows = [getFolder()];
   server.failure = null;
   server.reads = [];
+  server.gate = null;
 });
 
 describe('the folders a person made', () => {
@@ -84,6 +85,19 @@ describe('the folders a person made', () => {
 
     await waitFor(() => expect(status()).toBe('permission denied'));
     expect(screen.queryByText('Pricing')).toBeNull();
+  });
+
+  it('drops an answer that lands after the sidebar is gone', async () => {
+    let openTheGate = () => {};
+    server.gate = new Promise((resolve) => {
+      openTheGate = resolve;
+    });
+
+    const { unmount } = render(<Probe reloadKey={0} />);
+    unmount();
+    openTheGate();
+
+    await waitFor(() => expect(server.reads).toHaveLength(1));
   });
 
   it('reads them again once the sidebar says a folder changed', async () => {

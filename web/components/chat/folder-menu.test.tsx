@@ -128,6 +128,24 @@ describe('FolderMenu', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('You need to sign in to do that.');
   });
 
+  it('closes the rename dialog on Escape', async () => {
+    await openMenuItem('Rename');
+
+    await user.keyboard('{Escape}');
+
+    expect(screen.queryByLabelText('Name')).toBeNull();
+    expect(actions.renameInput).toBeNull();
+  });
+
+  it('closes the delete dialog on Escape', async () => {
+    await openMenuItem('Delete');
+
+    await user.keyboard('{Escape}');
+
+    expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
+    expect(actions.removeInput).toBeNull();
+  });
+
   it('closes the delete dialog on cancel', async () => {
     await openMenuItem('Delete');
 
