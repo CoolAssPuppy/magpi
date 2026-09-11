@@ -91,6 +91,31 @@ describe('creating a team space', () => {
     expect(screen.getByLabelText('Name your space')).toBeInTheDocument();
   });
 
+  // React empties an uncontrolled form once its action settles, which would throw away what
+  // somebody typed at the exact moment they need it back to fix the refusal.
+  it('keeps what was typed when the space is refused', async () => {
+    action.answer = { status: 'error', message: 'That name is taken.' };
+    await openDialog();
+
+    await user.type(screen.getByLabelText('Name your space'), 'Growth');
+    await user.type(screen.getByLabelText('Give it a description'), 'Where growth work goes');
+    await create();
+
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByLabelText('Name your space')).toHaveValue('Growth');
+    expect(screen.getByLabelText('Give it a description')).toHaveValue('Where growth work goes');
+  });
+
+  it('clears the form once a space is actually created', async () => {
+    await openDialog();
+    await user.type(screen.getByLabelText('Name your space'), 'Growth');
+    await create();
+
+    // The same dialog reopened, not a second one: a created space must not leave its name behind.
+    await user.click(screen.getByRole('button', { name: 'Create' }));
+    expect(screen.getByLabelText('Name your space')).toHaveValue('');
+  });
+
   it('shows no error before anything has been asked for', async () => {
     await openDialog();
 

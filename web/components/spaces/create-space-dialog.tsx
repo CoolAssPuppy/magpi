@@ -23,13 +23,21 @@ async function submit(_previous: ActionState<{ id: string }>, formData: FormData
 
 export function CreateSpaceDialog() {
   const [open, setOpen] = useState(false);
+  // Controlled, because React resets an uncontrolled form once its action settles. Uncontrolled
+  // fields would empty on a refusal and take what somebody typed with them.
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
 
   // Closing here rather than in an effect watching the result, which lints as a cascading render.
   // The space exists once the action succeeds, so the dialog has nothing left to show.
   const [state, formAction, isPending] = useActionState(
     async (previous: ActionState<{ id: string }>, formData: FormData) => {
       const next = await submit(previous, formData);
-      if (next.status === 'success') setOpen(false);
+      if (next.status === 'success') {
+        setName('');
+        setDescription('');
+        setOpen(false);
+      }
       return next;
     },
     idleState,
@@ -58,6 +66,8 @@ export function CreateSpaceDialog() {
               required
               maxLength={120}
               autoFocus
+              value={name}
+              onChange={(event) => setName(event.target.value)}
             />
           </div>
 
@@ -69,6 +79,8 @@ export function CreateSpaceDialog() {
               placeholder="What belongs in here, and what does not."
               maxLength={400}
               rows={3}
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
             />
           </div>
 
