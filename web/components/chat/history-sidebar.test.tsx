@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -52,10 +52,16 @@ vi.mock('@/hooks/use-conversation-folders', () => ({
   },
 }));
 
+const moves: { conversationId: string; folderId: string | null }[] = [];
+
 vi.mock('@/app/(app)/chat/actions', () => ({
   createFolderAction: async () => ({ status: 'success', data: FOLDER_ID }) as ActionState<string>,
   renameFolderAction: async () => ({ status: 'success', data: 'Pricing' }) as ActionState<string>,
   deleteFolderAction: async () => ({ status: 'success', data: FOLDER_ID }) as ActionState<string>,
+  moveConversationAction: async (input: { conversationId: string; folderId: string | null }) => {
+    moves.push(input);
+    return { status: 'success', data: input.folderId } as ActionState<string | null>;
+  },
 }));
 
 vi.mock('./conversation-menu', () => ({
@@ -92,7 +98,28 @@ beforeEach(() => {
   sorts.length = 0;
   page.pathname = '/chat';
   fetchNextPage.mockClear();
+  moves.length = 0;
 });
+
+/** jsdom has no DataTransfer, and the drag carries everything the drop needs to know. */
+function dataTransfer() {
+  const held = new Map<string, string>();
+  return {
+    effectAllowed: 'none',
+    dropEffect: 'none',
+    setData: (type: string, value: string) => held.set(type, value),
+    getData: (type: string) => held.get(type) ?? '',
+  };
+}
+
+/** Picks a conversation row up and drops it on a target, the way a mouse would. */
+function drag(row: HTMLElement, onto: HTMLElement) {
+  const transfer = dataTransfer();
+  fireEvent.dragStart(row, { dataTransfer: transfer });
+  fireEvent.dragOver(onto, { dataTransfer: transfer });
+  fireEvent.drop(onto, { dataTransfer: transfer });
+  return transfer;
+}
 
 describe('HistorySidebar', () => {
   it('links each conversation to itself', () => {
@@ -213,5 +240,74 @@ describe('HistorySidebar', () => {
 
     expect(folderQuery.keys.at(-1)).toBe(1);
     expect(queryKeys.at(-1)).toBe(1);
+  });
+});
+
+describe('filing a conversation by dragging it', () => {
+  it('drops a loose conversation into the folder it was dragged onto', async () => {
+    folderQuery.folders = [folder()];
+    query.data = [conversation()];
+    render(<HistorySidebar />);
+
+    drag(screen.getByRole('link', { name: 'SSO blockers' }), screen.getByLabelText('Pricing'));
+
+    await vi.waitFor(() =>
+      expect(moves).toEqual([{ conversationId: CONVERSATION_ID, folderId: FOLDER_ID }]),
+    );
+  });
+
+  // The way back out. Without a target for it, a conversation filed once is filed forever.
+  it('drops a filed conversation onto the list itself to unfile it', async () => {
+    folderQuery.folders = [folder()];
+    query.data = [conversation({ folder_id: FOLDER_ID })];
+    render(<HistorySidebar />);
+
+    const row = within(screen.getByLabelText('Pricing')).getByRole('link', {
+      name: 'SSO blockers',
+    });
+    drag(row, screen.getByLabelText('Conversations'));
+
+    await vi.waitFor(() =>
+      expect(moves).toEqual([{ conversationId: CONVERSATION_ID, folderId: null }]),
+    );
+  });
+
+  it('writes nothing when a conversation is dropped where it already is', async () => {
+    folderQuery.folders = [folder()];
+    query.data = [conversation({ folder_id: FOLDER_ID })];
+    render(<HistorySidebar />);
+
+    const section = screen.getByLabelText('Pricing');
+    drag(within(section).getByRole('link', { name: 'SSO blockers' }), section);
+
+    await Promise.resolve();
+    expect(moves).toEqual([]);
+  });
+
+  it('ignores anything dragged in that is not one of our conversations', async () => {
+    folderQuery.folders = [folder()];
+    render(<HistorySidebar />);
+
+    const transfer = dataTransfer();
+    transfer.setData('text/uri-list', 'https://example.test/somewhere');
+    fireEvent.drop(screen.getByLabelText('Pricing'), { dataTransfer: transfer });
+
+    await Promise.resolve();
+    expect(moves).toEqual([]);
+  });
+});
+
+describe('where the new folder button sits', () => {
+  // It is anchored below the list rather than scrolling away at the top of it, so it stays
+  // reachable however many conversations there are.
+  it('sits outside the scrolling list, not inside it', () => {
+    folderQuery.folders = [folder()];
+    render(<HistorySidebar />);
+
+    const list = screen.getByLabelText('Conversations');
+    const button = screen.getByRole('button', { name: 'New folder' });
+
+    expect(list.contains(button)).toBe(false);
+    expect(list.className).toContain('overflow-y-auto');
   });
 });

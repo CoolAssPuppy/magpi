@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import type { ConversationFolder } from '@/hooks/use-conversation-folders';
+import { startConversationDrag } from '@/lib/chat/drag';
 import type { Tables } from '@/lib/database.types';
 import { cn } from '@/lib/utils';
 
@@ -29,7 +30,19 @@ export function ConversationList({ conversations, folders, onMoved }: Conversati
         const title = conversation.title ?? 'Untitled conversation';
 
         return (
-          <li key={conversation.id} className="group flex items-center gap-1">
+          <li
+            key={conversation.id}
+            // Dragging moves a chat between folders. The menu beside it does the same by
+            // keyboard, because a drag is reachable by mouse and nothing else.
+            draggable
+            onDragStart={(event) =>
+              startConversationDrag(event.dataTransfer, {
+                id: conversation.id,
+                folderId: conversation.folder_id,
+              })
+            }
+            className="group flex items-center gap-1"
+          >
             <Link
               href={href}
               aria-current={isOpen ? 'page' : undefined}

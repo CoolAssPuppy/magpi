@@ -2,9 +2,11 @@
 
 import type { ConversationFolder } from '@/hooks/use-conversation-folders';
 import { swatchFor } from '@/lib/chat/folder-colors';
+import { cn } from '@/lib/utils';
 
 import { ConversationList, type SidebarConversation } from './conversation-list';
 import { FolderMenu } from './folder-menu';
+import { useFolderDrop } from './use-folder-drop';
 
 type FolderSectionProps = {
   readonly folder: ConversationFolder;
@@ -15,8 +17,17 @@ type FolderSectionProps = {
 
 /** One folder and what is filed in it. A folder holding nothing still shows. */
 export function FolderSection({ folder, folders, conversations, onChanged }: FolderSectionProps) {
+  const { isOver, dropProps } = useFolderDrop(folder.id, onChanged);
+
   return (
-    <section aria-label={folder.name} className="flex flex-col">
+    <section
+      aria-label={folder.name}
+      {...dropProps}
+      className={cn(
+        'flex flex-col rounded-[var(--radius-panel)] transition-colors motion-reduce:transition-none',
+        isOver && 'bg-muted ring-1 ring-brand',
+      )}
+    >
       <div className="group flex items-center gap-2 px-2 py-1">
         <span
           className="size-2 shrink-0 rounded-full"

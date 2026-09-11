@@ -120,7 +120,12 @@ or tapped a citation.
   ungrouped list. A folder with no conversations still shows, because somebody
   made it deliberately. Deleting a folder keeps its conversations and moves them
   to the top level.
-- **Navigation.** Tab 1. Root of its own stack.
+- **Navigation.** Tab 1. A conversation can be dragged onto a folder to file it,
+  or onto the list itself to take it out of one. The menu on each row does the
+  same move, because a drag is reachable by mouse and nothing else: on iOS use
+  `onDrag`/`dropDestination`, on Android `dragAndDropSource`, and keep the menu.
+  The button that makes a folder is anchored below the list rather than at the
+  top of it, so it does not scroll away. Root of its own stack.
 - **Components.** Web uses `components/chat/*` over the Library
   `realtime-chat-nextjs` block, adapted for assistant turns. iOS is a
   `List` in a `NavigationStack`. Android is a `LazyColumn` in a `Scaffold`.
