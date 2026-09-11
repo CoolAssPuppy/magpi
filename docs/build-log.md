@@ -457,3 +457,66 @@ enforceRateLimits prunes on one call in two hundred and does not wait for it, so
 a run where that fired ended with a request in flight and Deno's leak sanitizer
 failed the test. It has nothing to do with rate limiting and took a forced prune
 to see.
+
+## Phase 21: The MCP server, on what Supabase shipped
+
+**Shipped.** Magpi has an MCP server. Five tools: `search`, `get_document`,
+`list_spaces`, `add_note` and `whoami`, hand-written, one file each. Claude can
+be handed a URL and end up reading this knowledge base with its owner's own
+permissions.
+
+It is built on what the BYO MCP project actually shipped rather than around it.
+`withOAuthProtectedResource` and `withSupabase` from `@supabase/server` 1.6.0,
+and `@modelcontextprotocol/server` 2.0.0 for the protocol, which is the
+2026-07-28 revision. The Library's `mcp-server` block is the skeleton and its
+consent block is the shape of the consent screen, rewritten in Magpi's own
+design rather than installed.
+
+The public guide for this still says authenticated MCP is coming soon. It is
+wrong, or at least behind: the middleware landed in `@supabase/server` in
+August, marked alpha in September, and it works. What did slip is tool
+generation from the PostgREST schema, which was pulled from the Select roadmap
+on the tenth. Magpi does not want it anyway. Generated tools would offer
+`delete_documents` to anything that connected; these five are curated, which is
+what that project's own PRFAQ says a real deployment should do.
+
+Every tool runs as the caller. `withSupabase({ auth: 'user' })` hands back a
+client scoped to whoever sent the token, so row level security is the whole
+permission model and the server has none of its own to keep in sync. Proven
+against the running stack: a document in a space the caller is not in answers
+`no document <id>`, the same words an id that never existed gets.
+
+`add_note` is the exception and the reason it is the exception is worth keeping.
+Documents and chunks carry select policies and no insert policy, so the write
+runs as the service role. The membership check is therefore explicit, made
+through the caller's own client, before the role changes. A note into a space
+the caller is not in writes nothing: no storage object, no document, no job.
+
+Three things had to become true of the project, all in `config.toml`: the OAuth
+2.1 server on, dynamic client registration on, and JWTs signed with an
+asymmetric key. The last one has a consequence nobody warns you about. Switching
+off the legacy HS256 secret invalidates every JWT-format key the local stack had
+issued, so `SB_SERVICE_ROLE_KEY` and the anon key in two `.env` files stopped
+working at once. `local-function-secrets.mjs` now takes those from the running
+stack rather than from Doppler, because they are local facts rather than shared
+secrets.
+
+**Verified against the running stack.** The discovery route answers RFC 9728
+metadata naming Supabase Auth. An unauthenticated call comes back 401 with
+`WWW-Authenticate: Bearer resource_metadata="…"`, which is what an MCP client
+follows to find out where to sign in. `tools/list` returns all five with their
+schemas and annotations. `whoami`, `list_spaces`, `get_document` and `add_note`
+all answer correctly, and the note's 28 bytes landed in the bucket under the
+space with the document row pointing at them.
+
+**Did not ship.** `search` is written and unit tested, and its happy path is
+unproven against the real thing: the OpenAI account ran out of credits partway
+through the evening, so every embedding call answers 429 and the tool reports a
+model failure. It is a billing state, not a code path. The failure is clean.
+
+**Notes.** The MCP spec deprecated Dynamic Client Registration in July in favour
+of Client ID Metadata Documents, and Anthropic and OpenAI are moving their
+clients to it. Supabase supports DCR and not CIMD; there is an open discussion
+asking for it, filed in January, still unanswered. DCR stays available for
+backwards compatibility, so this works today. It is worth knowing which way that
+goes before anyone depends on it.

@@ -32,6 +32,20 @@ Open http://127.0.0.1:3000, create an account, drop a file into Documents, and a
 
 The local stack binds to 55321 through 55329 rather than the usual 543xx, so a Supabase project you already have running does not collide with this one.
 
+It signs JWTs with the ES256 key in `supabase/signing_keys.json`, rather than
+the legacy shared secret, because the MCP server verifies tokens against JWKS
+and a project on the old secret publishes no keys there. That file is committed
+on purpose: it signs nothing but this local stack, which already ships with
+well-known credentials. A hosted project uses its own key from the dashboard.
+`node scripts/local-function-secrets.mjs` takes the anon and service keys from
+the running stack, since changing the signing key changes both.
+
+## Connecting an agent
+
+The MCP server is `supabase/functions/mcp-server/`. Point an MCP client at
+`http://127.0.0.1:55321/functions/v1/mcp-server` and it will find its own way to
+the sign-in page. `docs/mcp.md` covers the five tools and how a caller gets in.
+
 ## The demo company
 
 `supabase/corpus/` is a fictional company called Supaphone, which makes a

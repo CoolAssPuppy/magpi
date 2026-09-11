@@ -25,6 +25,27 @@ function localEncryptionKey() {
   return randomBytes(32).toString('base64');
 }
 
+/**
+ * The running stack's own keys. Since the project signs JWTs with an asymmetric key, these are
+ * regenerated whenever the key is, and the ones in Doppler are for a hosted project rather than
+ * this machine. Local facts beat shared secrets here, so these are applied last.
+ */
+function fromLocalStack() {
+  const child = spawnSync('supabase', ['status', '-o', 'json'], { cwd: ROOT, encoding: 'utf8' });
+  if (child.status !== 0) return null;
+  try {
+    const status = JSON.parse(child.stdout);
+    return {
+      SB_SUPABASE_URL: status.API_URL,
+      SB_SERVICE_ROLE_KEY: status.SERVICE_ROLE_KEY,
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: status.ANON_KEY,
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: status.PUBLISHABLE_KEY,
+    };
+  } catch {
+    return null;
+  }
+}
+
 function fromDoppler() {
   const child = spawnSync('doppler', ['secrets', 'download', '--no-file', '--format', 'json'], {
     cwd: ROOT,
@@ -45,10 +66,14 @@ function main() {
     console.warn('the token encryption key is generated for this machine, not shared with anyone');
   }
 
+  const local = fromLocalStack();
+  if (!local) console.warn('the local stack is not running, keeping whatever keys were there');
+
   const merged = {
     ...LOCAL_DEFAULTS,
     SB_TOKEN_ENC_KEY: localEncryptionKey(),
     ...(doppler ?? {}),
+    ...(local ?? {}),
   };
   const lines = Object.entries(merged)
     .filter(([key]) => !key.startsWith('DOPPLER_'))

@@ -203,7 +203,10 @@ jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to auth.external_url.
 # jwt_issuer = ""
 # Path to JWT signing key. DO NOT commit your signing keys file to git.
-# signing_keys_path = "./signing_keys.json"
+# This one is the exception and it is committed on purpose: it signs nothing but the local stack,
+# which already ships with well-known keys, and the MCP server cannot verify a token without it.
+# A hosted project uses its own key from the dashboard and must never use this one.
+signing_keys_path = "./signing_keys.json"
 # If disabled, the refresh token will never expire.
 enable_refresh_token_rotation = true
 # Allows refresh tokens to be reused after expiry, up to the specified interval in seconds.
@@ -399,14 +402,14 @@ enabled = false
 # Obtain from https://clerk.com/setup/supabase
 # domain = "example.clerk.accounts.dev"
 
-# OAuth server configuration
+# OAuth server configuration. This is how an MCP client signs a person in: it registers itself,
+# sends them to the consent page below, and gets a token that is theirs, not the app's.
 [auth.oauth_server]
-# Enable OAuth server functionality
-enabled = false
-# Path for OAuth consent flow UI
+enabled = true
+# The page in the web app that asks the person whether to allow this client.
 authorization_url_path = "/oauth/consent"
-# Allow dynamic client registration
-allow_dynamic_registration = false
+# Claude and ChatGPT register themselves rather than being registered by hand.
+allow_dynamic_registration = true
 
 [edge_runtime]
 enabled = true
@@ -462,6 +465,12 @@ enabled = true
 # The flow is protected by the PKCE verifier held server-side in oauth_states
 # and by connections-claim, which runs with the caller's verified JWT and
 # commits only when the session matches.
+verify_jwt = false
+
+[functions.mcp-server]
+# MCP does its own authentication: an unauthenticated call has to come back with a pointer to the
+# authorization server rather than a bare 401, and the OAuth discovery route carries no token at
+# all. withOAuthProtectedResource answers those and withSupabase verifies everything else.
 verify_jwt = false
 
 [functions.stripe-webhook]

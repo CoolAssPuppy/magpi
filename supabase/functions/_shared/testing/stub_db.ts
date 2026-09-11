@@ -16,6 +16,8 @@ export interface StubReply {
   /** What PostgREST would return. An array for a select, or anything else. */
   body?: unknown;
   status?: number;
+  /** The total a counting read asks for. PostgREST sends it in Content-Range, not the body. */
+  count?: number;
 }
 
 export interface StubDb {
@@ -43,9 +45,13 @@ export function stubDb(reply: (request: StubRequest) => StubReply | undefined): 
     requests.push(record);
 
     const answer = reply(record) ?? {};
+    const headers: Record<string, string> = { 'content-type': 'application/json' };
+    if (answer.count !== undefined) {
+      headers['content-range'] = `0-${Math.max(answer.count - 1, 0)}/${answer.count}`;
+    }
     return new Response(JSON.stringify(answer.body ?? []), {
       status: answer.status ?? 200,
-      headers: { 'content-type': 'application/json' },
+      headers,
     });
   });
 
