@@ -99,10 +99,11 @@ begin
     $job$select public.queue_nightly_dreams()$job$
   );
 
-  -- 02:00 UTC. The dream job staggers by organization id itself.
+  -- Every five minutes through the 02:00 hour. One firing drains a batch, and a fleet with more
+  -- spaces than that has the rest of the hour. An empty queue costs one select.
   perform cron.schedule(
-    'dream-worker', '0 2 * * *',
-    $job$select public.invoke_worker('dream-worker', 5)$job$
+    'dream-worker', '*/5 2 * * *',
+    $job$select public.invoke_worker('dream-worker', 8)$job$
   );
 end;
 $$;

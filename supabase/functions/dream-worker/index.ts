@@ -3,12 +3,13 @@
 import { jsonResponse } from '../_shared/errors.ts';
 import { serveFunction } from '../_shared/http.ts';
 import { parseBody, workerBatchSchema } from '../_shared/validate.ts';
-import { type DreamResult, type DreamRunRecord, runDreamJob } from '../_shared/jobs/dream.ts';
-import { claimQueuedRow, retireAbandoned } from '../_shared/jobs/claim.ts';
+import { type DreamRunRecord, runDreamJob } from '../_shared/jobs/dream.ts';
+import { runDreamBatch } from '../_shared/jobs/dream_batch.ts';
+import { retireAbandoned } from '../_shared/jobs/claim.ts';
 import { jobDepsFromEnv, requireWorkerCaller } from '../_shared/jobs/runtime.ts';
 
-// One run per invocation, so one space's failure does not take the others with it.
-const DEFAULT_BATCH = 1;
+// A night's runs go together. A failure is recorded on its own row and leaves the others alone.
+const DEFAULT_BATCH = 8;
 
 serveFunction('dream-worker', async (core) => {
   requireWorkerCaller(core.headers);
@@ -32,20 +33,7 @@ serveFunction('dream-worker', async (core) => {
     .returns<DreamRunRecord[]>();
   if (error) throw error;
 
-  const results: (DreamResult & { run_id: string })[] = [];
-  let contended = 0;
-  for (const run of data ?? []) {
-    // A select says the run was queued a moment ago, not that this caller owns it.
-    const claimed = await claimQueuedRow(deps.db, 'dream_runs', run.id, {
-      status: 'running',
-      started_at: deps.http.now().toISOString(),
-    });
-    if (!claimed) {
-      contended += 1;
-      continue;
-    }
-    results.push({ run_id: run.id, ...(await runDreamJob(run, deps)) });
-  }
+  const { results, contended } = await runDreamBatch(data ?? [], deps, runDreamJob);
 
   return jsonResponse({ claimed: results.length, contended, retired, results });
 });

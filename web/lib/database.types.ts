@@ -216,11 +216,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "conversations_folder_id_fkey"
-            columns: ["folder_id"]
+            foreignKeyName: "conversations_folder_of_owner"
+            columns: ["folder_id", "user_id"]
             isOneToOne: false
             referencedRelation: "conversation_folders"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "user_id"]
           },
           {
             foreignKeyName: "conversations_org_id_fkey"
@@ -1184,6 +1184,13 @@ export type Database = {
         Args: { p_description?: string; p_name: string; p_org_id: string }
         Returns: string
       }
+      entity_mention_counts: {
+        Args: { p_entity_ids: string[]; p_space_id: string }
+        Returns: {
+          entity_id: string
+          mentions: number
+        }[]
+      }
       invoke_worker: {
         Args: { p_batch: number; p_worker: string }
         Returns: undefined
@@ -1217,6 +1224,7 @@ export type Database = {
       prune_oauth_states: { Args: never; Returns: undefined }
       prune_pending_connections: { Args: never; Returns: undefined }
       prune_rate_limits: { Args: never; Returns: undefined }
+      queue_nightly_dreams: { Args: never; Returns: number }
       record_retrieval: {
         Args: { p_document_ids: string[] }
         Returns: undefined
@@ -1241,6 +1249,7 @@ export type Database = {
           space_id: string
         }[]
       }
+      text_search_query: { Args: { p_text: string }; Returns: unknown }
       visible_space_ids: { Args: never; Returns: string[] }
     }
     Enums: {

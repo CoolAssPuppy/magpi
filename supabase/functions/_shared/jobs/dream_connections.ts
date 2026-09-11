@@ -15,11 +15,16 @@ import {
 } from './dream_pass.ts';
 import type { LinkDraft, SpaceDocumentRow } from './space_writer.ts';
 
-// One embedding and one search per document, so twenty keeps a pass inside its time budget.
-const MAX_COMPARED_DOCUMENTS = 20;
+// One embedding and one search per document. The searches run together, so this is bounded by
+// what one embedding call and forty concurrent searches cost, not by forty round trips in a row.
+const MAX_COMPARED_DOCUMENTS = 40;
 
 // A page of candidate links a person will actually read.
-const MAX_LINKS = 20;
+const MAX_LINKS = 30;
+
+// Room for every link to be explained to the length the schema allows. An answer that runs out
+// of room reads as malformed JSON, so the cap is derived from the count rather than guessed at.
+const RATIONALE_OUTPUT_TOKENS = MAX_LINKS * 120;
 
 const SEARCH_MATCH_COUNT = 10;
 
@@ -86,15 +91,20 @@ async function candidatePairs(pass: Pass, documents: SpaceDocumentRow[]): Promis
     texts: readable.map(({ chunk }) => chunk.content),
   });
 
-  // The whole scan is one stage, however many searches it takes.
-  // Every document is searched. Pairs are only capped once the same-source ones are gone, because
-  // a document's nearest neighbours are mostly its own source and all of those get dropped.
-  for (const [index, { document }] of readable.entries()) {
-    const embedding = embeddings[index];
-    if (!embedding) continue;
+  // The whole scan is one stage, however many searches it takes. Each search waits on Postgres
+  // and on nothing the next one needs, so twenty in a row spent nineteen round trips idle.
+  enter(pass, 'extract');
+  const searched = await Promise.all(
+    readable.map(({ document }, index) => {
+      const embedding = embeddings[index];
+      if (!embedding) return Promise.resolve({ document, hits: [] });
+      return searchNeighbours(pass, embedding).then((hits) => ({ document, hits }));
+    }),
+  );
 
-    enter(pass, 'extract');
-    for (const hit of await searchNeighbours(pass, embedding)) {
+  // Collected in order afterwards, so which of two equal pairs wins does not depend on timing.
+  for (const { document, hits } of searched) {
+    for (const hit of hits) {
       if (hit.document_id === document.id) continue;
       const key = [document.id, hit.document_id].sort().join(':');
       if (found.has(key)) continue;
@@ -132,7 +142,12 @@ export async function dreamConnections(pass: Pass): Promise<DreamOutcome> {
 
   enter(pass, 'synthesize');
   const prompt = pairs.map((pair, index) => `${index}: ${pair.title}`).join('\n');
-  const answer = await ask(pass, RATIONALE_SYSTEM, `CANDIDATE PAIRS\n${prompt}`, 800, true);
+  const answer = await ask(pass, {
+    system: RATIONALE_SYSTEM,
+    user: `CANDIDATE PAIRS\n${prompt}`,
+    maxOutputTokens: RATIONALE_OUTPUT_TOKENS,
+    json: true,
+  });
   const rationales = new Map(
     readAnswer(rationaleAnswerSchema, answer, 'link rationales').rationales.map((
       row,

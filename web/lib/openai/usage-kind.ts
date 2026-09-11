@@ -14,6 +14,7 @@ export function usageKindFor(
     case 'condense':
     case 'title':
     case 'dream':
+    case 'extract':
       return 'chat_tokens';
     default: {
       const unhandled: never = purpose;

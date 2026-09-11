@@ -84,11 +84,24 @@ being truncated at the 2000 token cap, which reads as malformed JSON and is not:
 `readCompletion` now raises `model_answer_truncated` when `finish_reason` is
 `length`, and the entity cap is 6000. Twenty-one of twenty-one now succeed.
 
-**The dream cannot digest a backfill.** Read, with arithmetic. `MAX_INPUT_CHUNKS`
-is 120 and the lookback is 24 hours, so a dream covers 120 chunks per space per
-night whatever arrives. Importing a 4,295 file repository costs about 18 cents
-in embeddings and then roughly 92 nights before the brain has considered it. The
-caps are right for a daily trickle and wrong for an import.
+**The dream cannot digest a backfill.** Read, with arithmetic. Partly addressed:
+the entities pass now reads 400 chunks over a week rather than 120 over a night,
+and the linking inside it is free, so the ceiling is what one model call can be
+given rather than what it costs. The digest still reads 120 chunks of one day,
+which is right for a digest.
+
+What is still open is the shape, not the size. Both passes select by date, so a
+chunk older than the window is never considered at all, however quiet the space
+is. A 4,295 file import would be read for a week and then forgotten. The dream
+wants to read what it has not read, which is a column nothing writes yet.
+
+**The nightly queue drained five runs of twenty-one.** Reproduced, and fixed.
+`queue_nightly_dreams()` queues one run per space per kind, which is 21 on the
+demo corpus, and the 02:00 cron invoked `dream-worker` once with a batch of five.
+The other sixteen sat at `queued` until somebody pressed a button. Nothing said
+so, because the worker reported exactly what it claimed and every run it claimed
+succeeded. The batch is eight and the cron fires every five minutes through the
+hour, so the queue drains in the hour it was filled for.
 
 ~~**`public.search` raises on a long enough question.**~~ Fixed, and the cause
 was not length. Bisecting the chunk that failed found the trigger is a run of

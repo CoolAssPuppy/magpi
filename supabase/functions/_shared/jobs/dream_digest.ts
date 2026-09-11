@@ -40,7 +40,11 @@ export async function dreamDigest(pass: Pass): Promise<DreamOutcome> {
   if (chunks.length === 0) return NOTHING;
 
   enter(pass, 'synthesize');
-  const summary = await ask(pass, DIGEST_SYSTEM, chunkPrompt(chunks), 1500);
+  const summary = await ask(pass, {
+    system: DIGEST_SYSTEM,
+    user: chunkPrompt(chunks),
+    maxOutputTokens: 1500,
+  });
 
   enter(pass, 'write');
   const body = prose(summary);

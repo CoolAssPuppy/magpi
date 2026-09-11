@@ -1,6 +1,7 @@
 // Every read and every write a dream run makes, fixed to one space when the writer is built.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { z } from 'zod';
 
 import { ApiError } from '../errors.ts';
 
@@ -39,6 +40,15 @@ export interface EntityDraft {
   summary: string | null;
 }
 
+/** An entity the space has already filed, as the matcher and the enrichment step read it. */
+export interface KnownEntity {
+  id: string;
+  kind: EntityDraft['kind'];
+  name: string;
+  canonicalName: string;
+  hasSummary: boolean;
+}
+
 export interface MentionDraft {
   entityId: string;
   documentId: string;
@@ -73,11 +83,18 @@ export interface SpaceScopedDb {
     documentId: string,
     chunks: { ordinal: number; content: string; tokenCount: number; embedding: number[] }[],
   ): Promise<void>;
+  /** Every entity the space knows, which is what the matcher looks for in tonight's text. */
+  knownEntities(limit: number): Promise<KnownEntity[]>;
   /** Files a batch of entities and answers with an id per draft, in draft order. */
   upsertEntities(drafts: EntityDraft[]): Promise<string[]>;
   insertMentions(drafts: MentionDraft[]): Promise<void>;
+  /** How many mentions each of these entities has, all told, not only tonight's. */
+  mentionCounts(entityIds: string[]): Promise<Map<string, number>>;
+  writeSummaries(summaries: { entityId: string; summary: string }[]): Promise<void>;
   insertLinks(drafts: LinkDraft[]): Promise<void>;
 }
+
+const countsSchema = z.array(z.object({ entity_id: z.string(), mentions: z.coerce.number() }));
 
 /** The conflict key entities are filed under, within one space. */
 function entityKey(kind: string, canonicalName: string): string {
@@ -192,6 +209,32 @@ export function spaceScoped(db: SupabaseClient, scope: SpaceScope): SpaceScopedD
       if (error) throw failed('writing chunks', error.message);
     },
 
+    async knownEntities(limit) {
+      const { data, error } = await db
+        .from('entities')
+        .select('id, kind, name, canonical_name, summary')
+        .eq('space_id', scope.spaceId)
+        .order('updated_at', { ascending: false })
+        .limit(limit)
+        .returns<
+          {
+            id: string;
+            kind: EntityDraft['kind'];
+            name: string;
+            canonical_name: string;
+            summary: string | null;
+          }[]
+        >();
+      if (error) throw failed('reading entities', error.message);
+      return (data ?? []).map((row) => ({
+        id: row.id,
+        kind: row.kind,
+        name: row.name,
+        canonicalName: row.canonical_name,
+        hasSummary: row.summary !== null,
+      }));
+    },
+
     async upsertEntities(drafts) {
       if (drafts.length === 0) return [];
 
@@ -239,6 +282,31 @@ export function spaceScoped(db: SupabaseClient, scope: SpaceScope): SpaceScopedD
         { onConflict: 'entity_id,chunk_id', ignoreDuplicates: true },
       );
       if (error) throw failed('writing entity mentions', error.message);
+    },
+
+    async mentionCounts(entityIds) {
+      if (entityIds.length === 0) return new Map();
+      const { data, error } = await db
+        .rpc('entity_mention_counts', { p_space_id: scope.spaceId, p_entity_ids: entityIds })
+        .returns<unknown>();
+      if (error) throw failed('counting entity mentions', error.message);
+
+      // count() is a bigint, which arrives as a string once it is past what a JSON number holds.
+      const rows = countsSchema.safeParse(data ?? []);
+      if (!rows.success) throw failed('counting entity mentions', rows.error.message);
+      return new Map(rows.data.map((row) => [row.entity_id, row.mentions]));
+    },
+
+    async writeSummaries(summaries) {
+      if (summaries.length === 0) return;
+      // One statement per summary: an upsert would need every not-null column to write one field.
+      const written = await Promise.all(
+        summaries.map(({ entityId, summary }) =>
+          db.from('entities').update({ summary }).eq('id', entityId).eq('space_id', scope.spaceId)
+        ),
+      );
+      const fault = written.find((result) => result.error);
+      if (fault?.error) throw failed('writing entity summaries', fault.error.message);
     },
 
     async insertLinks(drafts) {

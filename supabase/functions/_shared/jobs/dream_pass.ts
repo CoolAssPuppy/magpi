@@ -3,6 +3,7 @@
 import { z } from 'zod';
 
 import { ApiError } from '../errors.ts';
+import type { CompletionPurpose } from '../models.ts';
 import type { Budget } from './budget.ts';
 import type { SpaceChunkRow, SpaceScopedDb } from './space_writer.ts';
 import type { JobDeps } from './types.ts';
@@ -51,7 +52,10 @@ export function enter(pass: Pass, stage: DreamStage): void {
 /** How far back a run reads. One day covers everything since the nightly run before it. */
 const LOOKBACK_MS = 24 * 60 * 60 * 1000;
 
-/** About one model call's worth of space content. */
+/** What the entities pass reads back over, since matching an old chunk again costs nothing. */
+export const WEEK_MS = 7 * LOOKBACK_MS;
+
+/** About one model call's worth of space content, which is what a digest is written from. */
 export const MAX_INPUT_CHUNKS = 120;
 
 export const NOTHING: DreamOutcome = {
@@ -60,26 +64,28 @@ export const NOTHING: DreamOutcome = {
   produced: 0,
 };
 
-export function sinceIso(deps: JobDeps): string {
-  return new Date(deps.http.now().getTime() - LOOKBACK_MS).toISOString();
+export function sinceIso(deps: JobDeps, windowMs: number = LOOKBACK_MS): string {
+  return new Date(deps.http.now().getTime() - windowMs).toISOString();
 }
 
-/** Every completion a dream makes is one purpose, so the purpose is not a parameter. */
-export function ask(
-  pass: Pass,
-  system: string,
-  user: string,
-  maxOutputTokens: number,
-  json = false,
-): Promise<string> {
+/** What one completion in a dream needs. `purpose` picks the model and bills the call. */
+export interface Asked {
+  system: string;
+  user: string;
+  maxOutputTokens: number;
+  json?: boolean;
+  purpose?: CompletionPurpose;
+}
+
+export function ask(pass: Pass, asked: Asked): Promise<string> {
   const { deps, run } = pass;
   return deps.models.complete({
     orgId: run.org_id,
-    purpose: 'dream',
-    system,
-    user,
-    maxOutputTokens,
-    json,
+    purpose: asked.purpose ?? 'dream',
+    system: asked.system,
+    user: asked.user,
+    maxOutputTokens: asked.maxOutputTokens,
+    json: asked.json ?? false,
   });
 }
 

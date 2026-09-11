@@ -411,7 +411,9 @@ one line for line, so the transport is spelled out.
 - **Error.** Query error text plus retry.
 - **Content.** People, projects, customers and decisions, each with the
   documents it was mentioned in. Tapping a mention opens the document at the
-  cited chunk.
+  cited chunk. `entities.summary` is null for most rows and the row renders
+  without it: a sentence is only written once something has been mentioned three
+  times, so a name seen once shows its mentions and no description.
 - **Navigation.** Subtab under Dreams, second after Runs. Subtabs sit outside
   cards and the strip stays put through every content state.
 - **Components.** Web `components/dreams/entity-groups.tsx`. iOS `List` with a

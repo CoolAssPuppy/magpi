@@ -550,3 +550,21 @@ red." That was written in good faith and it was wrong. What had been broken was
 the set difference, not the database filter, and the difference between those two
 is the entire finding. Saying a thing was verified is a claim about method. State
 which mutation was applied, not that a mutation was applied.
+
+## F014: An output cap is a number you have to derive
+
+Four connections runs failed with "the model ran out of room mid-answer" an hour
+after `MAX_LINKS` went from 20 to 30. The cap on that call was 800 tokens, chosen
+when the list was twenty items long and never revisited. The schema allows a
+400-character rationale, so thirty of them cannot fit in 800 tokens and never
+could; twenty only fit because the model wrote shorter ones than it was allowed
+to.
+
+The same pairing was already in the repository. `docs/build-log.md` Phase 18
+records two entity passes failing on a 2,000 token cap, diagnosed there as
+malformed JSON, which is how a truncated answer presents.
+
+**The rule.** A cap on a model's output is a function of the count it must hold
+and the length each entry may be, both of which are already written down in the
+schema. Write `MAX_LINKS * 120`, not `800`. A round number next to a list cap is
+a bug with a date on it.

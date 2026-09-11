@@ -368,3 +368,51 @@ long enough question.
 **Notes.** pg-delta omitted the revoke on the new function for the second time
 tonight, leaving it executable by PUBLIC. `60_functions.test.sql` caught it,
 which is the first time that tripwire has earned its keep in this log.
+
+## Phase 19: The dream in 38 seconds, and mostly for free
+
+**Shipped.** The nightly dream took 185 seconds of wall clock to get through 21
+runs. It now takes 38, doing more work than it did then, and one night of the
+demo corpus costs 60 cents of model time instead of a dollar and a half.
+
+Three things were waiting, and none of them were computation.
+
+The connections pass embedded twenty documents in one call and then searched for
+their neighbours one at a time, twenty round trips in a row, each one waiting on
+Postgres and on nothing the next one needed. They run together now. Average run
+time fell from 8.8 seconds to 7.4 on its own.
+
+`dream-worker` claimed one run, ran it to completion, and only then looked at the
+next. Runs are independent: different spaces, or different kinds within one
+space, writing different rows. `runDreamBatch` claims and runs a page of them
+together, which is where most of the 185 seconds went. The batch is eight, and
+the cron now fires every five minutes through the 02:00 hour rather than once, so
+a fleet with more spaces than one batch drains inside the hour instead of waiting
+nights. It had been draining five runs a night against a queue of twenty-one.
+
+The entities pass no longer asks a model where a name appears. Every name the
+space knows is matched against the night's text with an Aho-Corasick automaton:
+one pass over the text however many thousand names are known, exact, and free. The
+model is asked for one thing, a list of the names in the text, and a name it
+answers with is filed only if the matcher can find it in what people actually
+wrote. That call is on the smaller model now, because listing names is not work
+for the larger one. Entity mentions went from 98 to 1,076 and the pass reads 400
+chunks over a week instead of 120 over a night.
+
+Summaries are tiered, which is GBrain's idea: a thing mentioned once is a name, a
+thing mentioned three times is a subject worth a sentence. Twenty-five a night at
+most, and never one that already has a sentence.
+
+**Numbers.** 21 of 21 runs succeed. 108 entities, 1,076 mentions, 120 links,
+$0.60 of models for seven spaces, 38 seconds.
+
+**Did not ship.** The dream still reads by date, so a document older than the
+lookback window is never considered at all. A week is better than a night and it
+is not the same as knowing what it has already read.
+
+**Notes.** Two output caps were set as round numbers and both were wrong: 800
+tokens for thirty rationales, 2,000 for twenty-five summaries. An answer that
+runs out of room arrives as broken JSON, and four runs failed that way. Both caps
+are now derived from the count they have to hold. A model's list is also read one
+entry at a time, so one row it shaped oddly costs that row rather than the answer
+and the run.

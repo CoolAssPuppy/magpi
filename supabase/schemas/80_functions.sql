@@ -554,6 +554,29 @@ $$;
 revoke all on function public.org_usage_totals(uuid, timestamptz) from public, anon;
 grant execute on function public.org_usage_totals(uuid, timestamptz) to authenticated, service_role;
 
+-- How often each entity has been mentioned, so the dream only enriches what keeps coming up.
+-- The dream worker is the only caller, so no client role holds execute on it.
+create or replace function public.entity_mention_counts(
+  p_space_id uuid,
+  p_entity_ids uuid[]
+)
+returns table (entity_id uuid, mentions bigint)
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  select m.entity_id, count(*)
+  from public.entity_mentions m
+  where m.space_id = p_space_id
+    and m.entity_id = any(p_entity_ids)
+  group by m.entity_id;
+$$;
+
+revoke all on function public.entity_mention_counts(uuid, uuid[])
+  from public, anon, authenticated;
+grant execute on function public.entity_mention_counts(uuid, uuid[]) to service_role;
+
 -- Every new user gets an organization and a personal space, so there is always somewhere to write.
 create or replace function public.handle_new_user()
 returns trigger

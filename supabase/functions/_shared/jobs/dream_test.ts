@@ -36,17 +36,24 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 interface RecordingModels extends ModelRunner {
   /** The texts of each embed call, so a test can count the round trips. */
   embedCalls: string[][];
+  /** Every completion asked for, so a test can prove one was not. */
+  completeCalls: CompleteInput[];
 }
 
 function fakeModels(complete: (input: CompleteInput) => string): RecordingModels {
   const embedCalls: string[][] = [];
+  const completeCalls: CompleteInput[] = [];
   return {
     embedCalls,
+    completeCalls,
     embed: ({ texts }) => {
       embedCalls.push(texts);
       return Promise.resolve(texts.map((_text, index) => [index, 0.5]));
     },
-    complete: (input) => Promise.resolve(complete(input)),
+    complete: (input) => {
+      completeCalls.push(input);
+      return Promise.resolve(complete(input));
+    },
   };
 }
 
@@ -198,6 +205,10 @@ function replies(
     connectionB?: string | null;
     /** How many documents the connections pass is given to compare. */
     compared?: number;
+    /** Entities the space already knew, as the entities table holds them. */
+    known?: Record<string, unknown>[];
+    /** What entity_mention_counts answers, which is what decides who gets a summary. */
+    counts?: { entity_id: string; mentions: number }[];
   } = {},
 ): (request: StubRequest) => StubReply | undefined {
   const foreign = overrides.foreign === true;
@@ -223,6 +234,10 @@ function replies(
     if (request.table === 'documents' && request.method === 'POST') {
       return { body: { id: DREAM_DOC } };
     }
+    if (request.table === 'entities' && request.method === 'GET') {
+      // What the space knew before tonight. Empty unless a test says otherwise.
+      return { body: overrides.known ?? [] };
+    }
     if (request.table === 'entities') {
       // The upsert answers with the rows it wrote, so the caller learns each id.
       const rows = Array.isArray(request.body) ? request.body : [request.body];
@@ -237,6 +252,9 @@ function replies(
             : []
         ),
       };
+    }
+    if (request.table === 'rpc/entity_mention_counts') {
+      return { body: overrides.counts ?? [] };
     }
     if (request.table === 'rpc/search') {
       // The rpc takes its scope in the body.
@@ -254,18 +272,9 @@ function replies(
 }
 
 // JSON mode answers with an object, so every fixture here is shaped the way the provider replies.
-function entityAnswer(chunkIds: string[]): string {
-  return JSON.stringify({
-    entities: [
-      {
-        kind: 'person',
-        name: 'Ada',
-        canonicalName: 'ada',
-        summary: 'Owns the billing page.',
-        chunkIds,
-      },
-    ],
-  });
+// The model is asked for names and nothing else; where each name appears is the matcher's job.
+function entityAnswer(names: string[] = ['Ada']): string {
+  return JSON.stringify({ entities: names.map((name) => ({ kind: 'person', name })) });
 }
 
 const RATIONALE_ANSWER = JSON.stringify({
@@ -274,7 +283,12 @@ const RATIONALE_ANSWER = JSON.stringify({
 
 function answerFor(input: CompleteInput): string {
   if (input.user.includes('CANDIDATE PAIRS')) return RATIONALE_ANSWER;
-  if (input.system.includes('entities')) return entityAnswer([CHUNK_A, CHUNK_B]);
+  if (input.system.includes('people, projects')) return entityAnswer();
+  if (input.system.includes('one sentence about each')) {
+    return JSON.stringify({
+      summaries: [{ name: 'Northwind', summary: 'Northwind buys the enterprise plan.' }],
+    });
+  }
   return 'What changed: the billing page shipped.';
 }
 
@@ -406,7 +420,7 @@ Deno.test('the run row goes to running and then succeeded', async () => {
   }
 });
 
-Deno.test('entities upserts what the model found and mentions the chunks it came from', async () => {
+Deno.test('entities files what the model named and mentions every chunk that says it', async () => {
   const stub = stubDb(replies());
   try {
     const result = await runDreamJob(dreamRun('entities'), jobDeps(stub, fakeModels(answerFor)));
@@ -424,10 +438,11 @@ Deno.test('entities upserts what the model found and mentions the chunks it came
     assertEquals(entities[0][0].canonical_name, 'ada');
     assertEquals(entities[0][0].org_id, ORG);
 
+    // Ada is written in the Monday notes and nowhere else, and no model said so.
     const mentions = writtenBodies(stub, 'entity_mentions');
     assertEquals(mentions.length, 1);
     assert(Array.isArray(mentions[0]));
-    assertEquals(mentions[0].length, 2);
+    assertEquals(mentions[0].length, 1);
     assert(isRecord(mentions[0][0]));
     assertEquals(mentions[0][0].chunk_id, CHUNK_A);
     assertEquals(mentions[0][0].document_id, DOC_A);
@@ -436,22 +451,172 @@ Deno.test('entities upserts what the model found and mentions the chunks it came
   }
 });
 
-Deno.test('a hundred entities cost two statements, not two hundred', async () => {
-  // A round trip per entity would spend the whole budget on network waits.
-  const many = JSON.stringify({
-    entities: Array.from({ length: 100 }, (_, index) => ({
-      kind: 'person',
-      name: `Person ${index}`,
-      canonicalName: `person ${index}`,
-      summary: null,
-      chunkIds: [CHUNK_A],
-    })),
+// The whole point of the matcher: a name filed on an earlier night is linked tonight for nothing.
+Deno.test('a name the space already knew is mentioned again without being asked for', async () => {
+  const stub = stubDb(replies({
+    known: [{
+      id: 'ee000000-0000-4000-8000-0000000000aa',
+      kind: 'customer',
+      name: 'Northwind',
+      canonical_name: 'northwind',
+      summary: 'A customer.',
+      space_id: SPACE,
+    }],
+  }));
+  try {
+    const result = await runDreamJob(dreamRun('entities'), jobDeps(stub, fakeModels(answerFor)));
+
+    assert(result.kind === 'succeeded');
+    const mentions = writtenBodies(stub, 'entity_mentions');
+    assert(Array.isArray(mentions[0]));
+    const pairs = mentions[0].flatMap((row) =>
+      isRecord(row) ? [`${String(row.entity_id)}:${String(row.chunk_id)}`] : []
+    );
+    // Ada from tonight's answer, and Northwind from a name the space already held.
+    assertEquals(pairs.length, 2);
+    assert(pairs.includes(`ee000000-0000-4000-8000-0000000000aa:${CHUNK_B}`));
+  } finally {
+    await stub.close();
+  }
+});
+
+// A model that answers with a name nobody wrote is answering about something that is not there.
+Deno.test('a name that appears in none of the text is not filed at all', async () => {
+  const stub = stubDb(replies());
+  const invented = entityAnswer(['Zebulon Holdings']);
+  try {
+    const result = await runDreamJob(
+      dreamRun('entities'),
+      jobDeps(stub, fakeModels(() => invented)),
+    );
+
+    assert(result.kind === 'succeeded');
+    assertEquals(result.produced, 0);
+    assertEquals(writtenBodies(stub, 'entities').length, 0);
+    assertEquals(writtenBodies(stub, 'entity_mentions').length, 0);
+  } finally {
+    await stub.close();
+  }
+});
+
+const NORTHWIND = 'ee000000-0000-4000-8000-0000000000aa';
+
+/** Northwind as the entities table holds it, with no summary written yet. */
+function knownNorthwind(summary: string | null = null): Record<string, unknown>[] {
+  return [{
+    id: NORTHWIND,
+    kind: 'customer',
+    name: 'Northwind',
+    canonical_name: 'northwind',
+    summary,
+    space_id: SPACE,
+  }];
+}
+
+function summariesWritten(stub: StubDb): Record<string, unknown>[] {
+  return requestsFor(stub, 'entities')
+    .filter((request) => request.method === 'PATCH')
+    .flatMap((request) => (isRecord(request.body) ? [request.body] : []));
+}
+
+// The tiering. A thing mentioned once is a name; a thing mentioned again and again is a subject.
+Deno.test('a name that keeps coming up is worth a sentence about it', async () => {
+  const stub = stubDb(replies({
+    known: knownNorthwind(),
+    counts: [{ entity_id: NORTHWIND, mentions: 4 }],
+  }));
+  const models = fakeModels(answerFor);
+  try {
+    const result = await runDreamJob(dreamRun('entities'), jobDeps(stub, models));
+
+    assert(result.kind === 'succeeded');
+    const written = summariesWritten(stub);
+    assertEquals(written.length, 1);
+    assertEquals(written[0].summary, 'Northwind buys the enterprise plan.');
+  } finally {
+    await stub.close();
+  }
+});
+
+Deno.test('a name mentioned once costs no second model call', async () => {
+  const stub = stubDb(replies({
+    known: knownNorthwind(),
+    counts: [{ entity_id: NORTHWIND, mentions: 1 }],
+  }));
+  const models = fakeModels(answerFor);
+  try {
+    const result = await runDreamJob(dreamRun('entities'), jobDeps(stub, models));
+
+    assert(result.kind === 'succeeded');
+    assertEquals(models.completeCalls.length, 1, 'the summary call was made anyway');
+    assertEquals(summariesWritten(stub).length, 0);
+  } finally {
+    await stub.close();
+  }
+});
+
+Deno.test('a sentence already written is not paid for twice', async () => {
+  const stub = stubDb(replies({
+    known: knownNorthwind('A customer, written about last night.'),
+    counts: [{ entity_id: NORTHWIND, mentions: 9 }],
+  }));
+  const models = fakeModels(answerFor);
+  try {
+    const result = await runDreamJob(dreamRun('entities'), jobDeps(stub, models));
+
+    assert(result.kind === 'succeeded');
+    assertEquals(models.completeCalls.length, 1);
+    assertEquals(summariesWritten(stub).length, 0);
+  } finally {
+    await stub.close();
+  }
+});
+
+// One odd row used to lose the other ninety-nine, and the run with them.
+Deno.test('a row the model shaped wrongly costs that row and nothing else', async () => {
+  const mixed = JSON.stringify({
+    entities: [
+      { kind: 'person', name: 'Ada' },
+      { kind: 'spaceship', name: 'Ada' },
+      { name: 'Northwind' },
+      'Northwind',
+      { kind: 'customer', name: 'Northwind' },
+    ],
   });
   const stub = stubDb(replies());
   try {
-    const result = await runDreamJob(dreamRun('entities'), jobDeps(stub, fakeModels(() => many)));
+    const result = await runDreamJob(dreamRun('entities'), jobDeps(stub, fakeModels(() => mixed)));
 
     assert(result.kind === 'succeeded');
+    const entities = writtenBodies(stub, 'entities');
+    assert(Array.isArray(entities[0]));
+    assertEquals(entities[0].length, 2);
+    assertEquals(result.produced, 2);
+  } finally {
+    await stub.close();
+  }
+});
+
+Deno.test('a hundred names cost two statements, not two hundred', async () => {
+  // A round trip per entity would spend the whole budget on network waits.
+  const names = Array.from({ length: 100 }, (_, index) => `Person ${index}`);
+  const roster = {
+    id: CHUNK_A,
+    document_id: DOC_A,
+    ordinal: 0,
+    content: `Present: ${names.join(', ')}.`,
+    created_at: '2026-09-09T09:00:00.000Z',
+    space_id: SPACE,
+  };
+  const stub = stubDb(replies({ chunks: [roster] }));
+  try {
+    const answer = JSON.stringify({
+      entities: names.map((name) => ({ kind: 'person', name })),
+    });
+    const result = await runDreamJob(dreamRun('entities'), jobDeps(stub, fakeModels(() => answer)));
+
+    assert(result.kind === 'succeeded');
+    // Person 1 sits inside Person 10 and is not counted there, so a hundred names are a hundred.
     assertEquals(result.produced, 100);
     assertEquals(writtenBodies(stub, 'entities').length, 1);
     assertEquals(writtenBodies(stub, 'entity_mentions').length, 1);
@@ -460,15 +625,30 @@ Deno.test('a hundred entities cost two statements, not two hundred', async () =>
   }
 });
 
-Deno.test('an entity the model named twice is one row, mentioned from both', async () => {
+Deno.test('one name in two spellings is one row, mentioned from both chunks', async () => {
   // One statement may not write the same row twice.
   const twice = JSON.stringify({
-    entities: [
-      { kind: 'person', name: 'Ada', canonicalName: 'ada', summary: null, chunkIds: [CHUNK_A] },
-      { kind: 'person', name: 'Ada L', canonicalName: 'ada', summary: null, chunkIds: [CHUNK_B] },
-    ],
+    entities: [{ kind: 'person', name: 'Ada' }, { kind: 'person', name: 'Ada.' }],
   });
-  const stub = stubDb(replies());
+  const both = [
+    {
+      id: CHUNK_A,
+      document_id: DOC_A,
+      ordinal: 0,
+      content: 'Ada agreed to ship the billing page on Friday.',
+      created_at: '2026-09-09T09:00:00.000Z',
+      space_id: SPACE,
+    },
+    {
+      id: CHUNK_B,
+      document_id: DOC_B,
+      ordinal: 0,
+      content: 'Ada. also picked up the Northwind renewal.',
+      created_at: '2026-09-09T10:00:00.000Z',
+      space_id: SPACE,
+    },
+  ];
+  const stub = stubDb(replies({ chunks: both }));
   try {
     const result = await runDreamJob(dreamRun('entities'), jobDeps(stub, fakeModels(() => twice)));
 
@@ -533,32 +713,12 @@ Deno.test('a model answer that is not JSON fails the run and writes no entities'
 Deno.test('a JSON answer wrapped in a markdown code fence still parses', async () => {
   const stub = stubDb(replies());
   try {
-    const fenced = '```json\n' + entityAnswer([CHUNK_A]) + '\n```';
+    const fenced = '```json\n' + entityAnswer() + '\n```';
     const result = await runDreamJob(dreamRun('entities'), jobDeps(stub, fakeModels(() => fenced)));
 
     assert(result.kind === 'succeeded');
     assertEquals(result.produced, 1);
     assertEquals(writtenBodies(stub, 'entities').length, 1);
-  } finally {
-    await stub.close();
-  }
-});
-
-Deno.test('a mention naming a chunk the model was never given is dropped', async () => {
-  const stub = stubDb(replies());
-  try {
-    const invented = entityAnswer([CHUNK_A, FOREIGN_CHUNK, 'not-a-chunk-we-sent']);
-    const result = await runDreamJob(
-      dreamRun('entities'),
-      jobDeps(stub, fakeModels(() => invented)),
-    );
-
-    assert(result.kind === 'succeeded');
-    const mentions = writtenBodies(stub, 'entity_mentions');
-    assert(Array.isArray(mentions[0]));
-    assertEquals(mentions[0].length, 1);
-    assert(isRecord(mentions[0][0]));
-    assertEquals(mentions[0][0].chunk_id, CHUNK_A);
   } finally {
     await stub.close();
   }
