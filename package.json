@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "pnpm --dir web dev",
     "dev:doppler": "doppler run -- pnpm --dir web dev",
-    "env:pull": "doppler secrets download --no-file --format env | grep -v '^DOPPLER_' > web/.env.local",
+    "env:pull": "node scripts/pull-env.mjs",
     "build": "pnpm --dir web build",
     "format": "prettier --write . && deno fmt --config supabase/functions/deno.json supabase/functions",
     "format:check": "prettier --check .",
@@ -40,7 +40,8 @@
     "check:colors": "node scripts/check-raw-color.mjs",
     "check:cron": "node scripts/check-scheduled-workers.mjs",
     "check:upload-types": "node scripts/check-upload-types.mjs",
-    "check:compat-tokens": "node scripts/check-compat-tokens.mjs"
+    "check:compat-tokens": "node scripts/check-compat-tokens.mjs",
+    "check:secrets": "node scripts/check-secrets.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",

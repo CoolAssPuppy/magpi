@@ -568,3 +568,28 @@ malformed JSON, which is how a truncated answer presents.
 and the length each entry may be, both of which are already written down in the
 schema. Write `MAX_LINKS * 120`, not `800`. A round number next to a list cap is
 a bug with a date on it.
+
+## F015: A secrets writer must never drop a key it cannot replace
+
+`local-function-secrets.mjs` built `supabase/.env.local` from scratch every run:
+local defaults, then whatever Doppler returned. When Doppler could not be
+reached it warned "writing local defaults only" and wrote seven keys over a file
+that held twenty-one, taking the OpenAI key and four sets of OAuth credentials
+with it. The warning was there. The file was gone either way.
+
+It happened because the Doppler project had been renamed, so the CLI answered
+"could not find requested project" for a config that had worked ten minutes
+earlier. Nothing about that is rare: an expired login, a network blip and a
+renamed project all look the same to a script.
+
+**The rule.** A script that rewrites a file of credentials starts from what the
+file already holds and layers over it. A source it could not read contributes
+nothing rather than an empty set. Say how many keys were kept, so a run with a
+dead source reads as a run that did nothing rather than a run that worked.
+
+The same shape applies to the pull on the other side. `pnpm env:pull` used to be
+a shell redirect that replaced `web/.env.local` wholesale, which cost you every
+local-only setting and taught people to hand-edit the file instead. That is how
+a key from an unrelated repository ended up in it. Both writers now update in
+place, and `check-secrets.mjs` fails the gate when the two copies disagree with
+each other or with Doppler.

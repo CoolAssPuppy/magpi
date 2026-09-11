@@ -7,6 +7,9 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// Local facts beat shared secrets: Doppler's copies of these belong to the hosted project.
+import { fromLocalStack, isSameToken } from './lib/local-stack.mjs';
+
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = resolve(ROOT, 'supabase/.env.local');
 
@@ -25,27 +28,6 @@ function localEncryptionKey() {
   return randomBytes(32).toString('base64');
 }
 
-/**
- * The running stack's own keys. Since the project signs JWTs with an asymmetric key, these are
- * regenerated whenever the key is, and the ones in Doppler are for a hosted project rather than
- * this machine. Local facts beat shared secrets here, so these are applied last.
- */
-function fromLocalStack() {
-  const child = spawnSync('supabase', ['status', '-o', 'json'], { cwd: ROOT, encoding: 'utf8' });
-  if (child.status !== 0) return null;
-  try {
-    const status = JSON.parse(child.stdout);
-    return {
-      SB_SUPABASE_URL: status.API_URL,
-      SB_SERVICE_ROLE_KEY: status.SERVICE_ROLE_KEY,
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: status.ANON_KEY,
-      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: status.PUBLISHABLE_KEY,
-    };
-  } catch {
-    return null;
-  }
-}
-
 function fromDoppler() {
   const child = spawnSync('doppler', ['secrets', 'download', '--no-file', '--format', 'json'], {
     cwd: ROOT,
@@ -59,29 +41,51 @@ function fromDoppler() {
   }
 }
 
-function main() {
-  const doppler = fromDoppler();
-  if (!doppler) {
-    console.warn('doppler unavailable, writing local defaults only');
-    console.warn('the token encryption key is generated for this machine, not shared with anyone');
+/** What the file already holds, which is the floor: this script never drops a key. */
+function existing() {
+  if (!existsSync(OUT)) return {};
+
+  const values = {};
+  for (const line of readFileSync(OUT, 'utf8').split('\n')) {
+    const match = /^([A-Z0-9_]+)=(.*)$/.exec(line.trim());
+    if (match) values[match[1]] = match[2];
   }
+  return values;
+}
 
-  const local = fromLocalStack();
-  if (!local) console.warn('the local stack is not running, keeping whatever keys were there');
+function main() {
+  const was = existing();
+  const doppler = fromDoppler();
+  const local = fromLocalStack(ROOT);
 
+  // Start from what is there. An unreachable Doppler leaves every secret it authored in place
+  // rather than replacing the file with defaults, which is how a run with no network used to
+  // take the OpenAI key and four sets of OAuth credentials out with it.
   const merged = {
     ...LOCAL_DEFAULTS,
+    ...was,
     SB_TOKEN_ENC_KEY: localEncryptionKey(),
     ...(doppler ?? {}),
     ...(local ?? {}),
   };
+
+  // Keep a token that still does its job rather than minting a second one that says the same
+  // thing: ES256 signatures differ every time, and rewriting them churns both env files.
+  for (const key of Object.keys(local ?? {})) {
+    if (was[key] && isSameToken(was[key], merged[key])) merged[key] = was[key];
+  }
+
   const lines = Object.entries(merged)
     .filter(([key]) => !key.startsWith('DOPPLER_'))
     .map(([key, value]) => `${key}=${String(value).replace(/\n/g, '\\n')}`)
     .sort();
 
   writeFileSync(OUT, `${lines.join('\n')}\n`, { mode: 0o600 });
-  console.log(`wrote ${OUT} (${lines.length} keys)${doppler ? '' : ', defaults only'}`);
+
+  const kept = Object.keys(was).length;
+  console.log(`wrote ${OUT} (${lines.length} keys)`);
+  if (!doppler) console.log(`  doppler is unreachable, so ${kept} key(s) already there were kept`);
+  if (!local) console.log('  the local stack is not running, so its own keys were left alone');
 }
 
 main();

@@ -35,6 +35,7 @@ const LIGHT_STEPS = [
   { name: 'raw color', cmd: 'node', argv: ['scripts/check-raw-color.mjs'] },
   { name: 'scheduled workers', cmd: 'node', argv: ['scripts/check-scheduled-workers.mjs'] },
   { name: 'upload types', cmd: 'node', argv: ['scripts/check-upload-types.mjs'] },
+  { name: 'secrets agree', cmd: 'node', argv: ['scripts/check-secrets.mjs'] },
   { name: 'compat tokens', cmd: 'node', argv: ['scripts/check-compat-tokens.mjs'] },
   { name: 'corpus', cmd: 'node', argv: ['scripts/check-corpus.mjs'] },
   { name: 'web build', cmd: 'pnpm', argv: ['build'] },
