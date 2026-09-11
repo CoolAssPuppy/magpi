@@ -90,12 +90,15 @@ night whatever arrives. Importing a 4,295 file repository costs about 18 cents
 in embeddings and then roughly 92 nights before the brain has considered it. The
 caps are right for a daily trickle and wrong for an import.
 
-**`public.search` raises on a long enough question.** Read, then reproduced
-earlier in the session against a dense upload. `websearch_to_tsquery` raises
-`tsquery stack too small` once the text has enough terms. The dream no longer
-sends a whole document, which is what was hitting it, but a person pasting a
-wall of text into chat still can. The fix is a guard inside the function, which
-means a migration and a change to the live query path.
+~~**`public.search` raises on a long enough question.**~~ Fixed, and the cause
+was not length. Bisecting the chunk that failed found the trigger is a run of
+forty or more hyphens: a table rule, an underline, the separator in any pasted
+table. Four of 299 corpus chunks hit it. `text_search_query()` returns null
+instead of raising, and the lexical arm is skipped for that query. Nothing is
+lost, because websearch_to_tsquery ANDs every term and at that size it matched
+almost nothing anyway. Verified by searching with all 299 chunks as the question,
+0 failures against 4 before, and by removing the handler and watching the suite
+die.
 
 **A Drive file in two routed folders lands in whichever parent Drive lists
 first.** Read. Arbitrary, and it wants a rule.

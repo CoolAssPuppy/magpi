@@ -125,6 +125,36 @@ $$;
 revoke all on function public.create_team_space(uuid, text, text) from public, anon;
 grant execute on function public.create_team_space(uuid, text, text) to authenticated, service_role;
 
+/**
+ * websearch_to_tsquery raises 'tsquery stack too small' once the text has enough operands. A
+ * pasted table or a long question reaches that, and it took the whole search down with it rather
+ * than the half that could not be built.
+ *
+ * Null means no lexical arm for this query. Nothing is lost: websearch_to_tsquery ANDs every term,
+ * so at that size it matches almost nothing anyway, and the semantic arm answers on its own.
+ */
+create or replace function public.text_search_query(p_text text)
+returns tsquery
+language plpgsql
+stable
+parallel safe
+set search_path = ''
+as $$
+begin
+  if p_text is null or btrim(p_text) = '' then
+    return null;
+  end if;
+  return websearch_to_tsquery('english', p_text);
+exception
+  -- The stack overflow arrives as internal_error. Anything else is not ours to swallow.
+  when sqlstate 'XX000' then
+    return null;
+end;
+$$;
+
+revoke all on function public.text_search_query(text) from public, anon;
+grant execute on function public.text_search_query(text) to authenticated, service_role;
+
 -- Hybrid retrieval: pgvector and full text search merged with RRF. security invoker, so RLS holds.
 create or replace function public.search(
   query_embedding extensions.vector(1536),
@@ -160,21 +190,20 @@ as $$
       order by c.embedding <=> query_embedding
       limit (select n from candidate_depth)
     ),
+    -- Built once. A query that cannot be built is null, and the lexical arm returns nothing.
+    asked as (select public.text_search_query(query_text) as tsq),
     lexical as (
       select
         c.id,
         c.document_id,
         c.space_id,
         c.content,
-        row_number() over (
-          order by ts_rank_cd(c.tsv, websearch_to_tsquery('english', query_text)) desc
-        ) as rank
-      from public.chunks c
-      where query_text is not null
-        and query_text <> ''
-        and c.tsv @@ websearch_to_tsquery('english', query_text)
+        row_number() over (order by ts_rank_cd(c.tsv, a.tsq) desc) as rank
+      from public.chunks c, asked a
+      where a.tsq is not null
+        and c.tsv @@ a.tsq
         and (space_filter is null or c.space_id = any (space_filter))
-      order by ts_rank_cd(c.tsv, websearch_to_tsquery('english', query_text)) desc
+      order by ts_rank_cd(c.tsv, a.tsq) desc
       limit (select n from candidate_depth)
     ),
     fused as (

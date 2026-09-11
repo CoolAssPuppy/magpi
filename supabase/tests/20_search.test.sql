@@ -4,7 +4,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(12);
+select plan(16);
 
 insert into auth.users (id, email, instance_id, aud, role)
 values
@@ -211,6 +211,37 @@ select ok(
        join pg_namespace n on n.oid = p.pronamespace
        where n.nspname = 'public' and p.proname = 'search'),
   'public.search is security invoker, so RLS applies to whoever called it'
+);
+
+-- A question long or dense enough breaks websearch_to_tsquery, and that used to take the whole
+-- search down rather than the one arm that could not be built.
+select is(
+  public.text_search_query('what is Meniscus made of') is not null,
+  true,
+  'an ordinary question builds a lexical arm'
+);
+
+select is(
+  public.text_search_query('') is null,
+  true,
+  'an empty question builds no lexical arm, rather than one matching everything'
+);
+
+-- Forty hyphens in a row. A table rule, an underline, the separator in any pasted table. The
+-- parser raises on it, and the length of the rest of the question has nothing to do with it.
+select is(
+  public.text_search_query('Totals by region ' || repeat('-', 40) || ' Ink 1,470 42.0%') is null,
+  true,
+  'text the parser refuses builds no lexical arm, rather than raising'
+);
+
+-- The point of the whole change: the search still answers.
+select lives_ok(
+  $$ select * from public.search(
+       (select embedding from public.chunks where embedding is not null limit 1),
+       'Totals by region ' || repeat('-', 40) || ' Ink 1,470 42.0%',
+       null, 12) $$,
+  'a question the parser refuses still returns an answer from the semantic arm'
 );
 
 select * from finish();

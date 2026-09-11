@@ -294,11 +294,11 @@ select set_eq(
        and (has_function_privilege('authenticated', p.oid, 'EXECUTE')
             or has_function_privilege('anon', p.oid, 'EXECUTE')) $$,
   array['visible_space_ids', 'is_org_member', 'is_org_admin', 'is_space_member',
-        'routes_into_visible_space',
+        'routes_into_visible_space', 'text_search_query',
         'search', 'plan_document_limit', 'plan_monthly_query_limit',
         'check_ingest_allowed', 'check_query_allowed', 'record_retrieval',
         'org_member_emails', 'org_usage_totals', 'create_team_space'],
-  'the only functions a client role may execute are the fourteen meant to be callable'
+  'the only functions a client role may execute are the fifteen meant to be callable'
 );
 
 -- Grants. A policy is only reachable if the role also holds the table privilege.
@@ -400,7 +400,7 @@ select set_eq(
     -- anon and PUBLIC are absent on purpose. A row for either is itself the failure.
     select 'authenticated ' || f
     from (values
-      ('visible_space_ids'), ('routes_into_visible_space'),
+      ('visible_space_ids'), ('routes_into_visible_space'), ('text_search_query'),
       ('is_org_member'), ('is_org_admin'), ('is_space_member'),
       ('search'), ('plan_document_limit'), ('plan_monthly_query_limit'),
       ('check_ingest_allowed'), ('check_query_allowed'), ('record_retrieval'),
