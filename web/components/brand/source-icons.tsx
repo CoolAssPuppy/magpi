@@ -45,18 +45,3 @@ export const SOURCE_PATHS: Partial<Record<SourceSlug, string>> = {
 export const SOURCE_FILES: Partial<Record<SourceSlug, string>> = {
   slack: '/brand/slack.svg',
 };
-
-export const SOURCE_SLUGS: readonly SourceSlug[] = [
-  'notion',
-  'linear',
-  'slack',
-  'google_drive',
-  'hubspot',
-  'salesforce',
-  'jira',
-  'confluence',
-  'github',
-  'zendesk',
-  'upload',
-  'source',
-];

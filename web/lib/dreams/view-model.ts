@@ -138,7 +138,3 @@ export function buildLinkCandidates({
     ];
   });
 }
-
-export function countPendingLinks(candidates: readonly LinkCandidate[]): number {
-  return candidates.filter((candidate) => candidate.state === 'pending').length;
-}

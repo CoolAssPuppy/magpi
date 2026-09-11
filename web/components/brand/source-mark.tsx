@@ -35,7 +35,7 @@ const HOSTS: readonly (readonly [RegExp, SourceSlug])[] = [
   [/(^|\.)google\.com$/, 'google_drive'],
 ];
 
-export function toSourceSlug(value: string | null | undefined): SourceSlug | null {
+function toSourceSlug(value: string | null | undefined): SourceSlug | null {
   if (!value) return null;
 
   if (value.startsWith('http')) {

@@ -23,8 +23,6 @@ export type SearchDeps = {
   readonly embed?: (texts: readonly string[], orgId: string) => Promise<readonly Embedding[]>;
 };
 
-export const DEFAULT_MATCH_COUNT = 12;
-
 /** pgvector reads a bracketed list. postgrest sends the parameter as text. */
 export function serializeEmbedding(vector: Embedding): string {
   return `[${vector.join(',')}]`;

@@ -7,7 +7,7 @@ import { buildAnswerMessages } from './prompt';
 import type { ChatEvent, Citation } from './protocol';
 import type { ConversationStore } from './store';
 
-export const ANSWER_FAILED = 'Something went wrong answering that. Ask again.';
+const ANSWER_FAILED = 'Something went wrong answering that. Ask again.';
 
 export type AnswerTurnInput = {
   readonly conversationId: string;

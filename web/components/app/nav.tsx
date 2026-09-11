@@ -11,7 +11,7 @@ const covers = (pathname: string, href: string): boolean =>
   pathname === href || pathname.startsWith(`${href}/`);
 
 /** The longest match wins, so /admin does not stay lit on /admin/members. */
-export function currentHref(pathname: string, items: readonly NavItem[]): string | null {
+function currentHref(pathname: string, items: readonly NavItem[]): string | null {
   const matches = items.filter((item) => covers(pathname, item.href));
   if (matches.length === 0) return null;
 
