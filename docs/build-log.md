@@ -509,10 +509,18 @@ schemas and annotations. `whoami`, `list_spaces`, `get_document` and `add_note`
 all answer correctly, and the note's 28 bytes landed in the bucket under the
 space with the document row pointing at them.
 
-**Did not ship.** `search` is written and unit tested, and its happy path is
-unproven against the real thing: the OpenAI account ran out of credits partway
-through the evening, so every embedding call answers 429 and the tool reports a
-model failure. It is a billing state, not a code path. The failure is clean.
+`search` was the one tool left unproven, because the OpenAI account ran out of
+credits and every embedding call answers 429. Proven since, by standing a fake
+embeddings endpoint in front of the model client for as long as it took to
+ingest the corpus and run one search: three passages came back with their titles
+and urls, the query meter wrote one row, three documents were marked read. The
+ranking is meaningless with stand-in vectors and the path is not. The same
+question asked by somebody who is only in Engineering came back with five
+passages, all of them from Engineering, and none of the Marketing ones the first
+caller saw. Row level security narrowed it and said nothing.
+
+**Did not ship.** Nothing. The account needs credits before a real answer is
+worth anything, which is a billing state rather than a code path.
 
 **Notes.** The MCP spec deprecated Dynamic Client Registration in July in favour
 of Client ID Metadata Documents, and Anthropic and OpenAI are moving their
