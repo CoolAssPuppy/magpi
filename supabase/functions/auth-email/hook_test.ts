@@ -5,6 +5,9 @@ import { compose, isSigned, payloadSchema } from './hook.ts';
 const SECRET_BYTES = new Uint8Array(32).fill(7);
 const SECRET = `v1,whsec_${btoa(String.fromCharCode(...SECRET_BYTES))}`;
 const SITE = 'https://magpi.test';
+const SENT_AT = '1757620000';
+/** The instant those calls were signed at, so a fresh call is fresh. */
+const NOW = Number(SENT_AT) * 1000;
 
 function payload(overrides: Record<string, unknown> = {}) {
   const { user = {}, email_data = {} } = overrides as {
@@ -112,16 +115,17 @@ Deno.test('an action nobody wrote a template for is an error, not a blank email'
 Deno.test('a correctly signed call is accepted', async () => {
   Deno.env.set('SB_AUTH_HOOK_SECRET', SECRET);
   const body = '{"hello":"world"}';
-  const signature = await sign('msg_1', '1757620000', body);
+  const signature = await sign('msg_1', SENT_AT, body);
 
   assertEquals(
     await isSigned(
       headers({
         'webhook-id': 'msg_1',
-        'webhook-timestamp': '1757620000',
+        'webhook-timestamp': SENT_AT,
         'webhook-signature': `v1,${signature}`,
       }),
       body,
+      NOW,
     ),
     true,
   );
@@ -129,16 +133,17 @@ Deno.test('a correctly signed call is accepted', async () => {
 
 Deno.test('a body that was tampered with after signing is refused', async () => {
   Deno.env.set('SB_AUTH_HOOK_SECRET', SECRET);
-  const signature = await sign('msg_1', '1757620000', '{"hello":"world"}');
+  const signature = await sign('msg_1', SENT_AT, '{"hello":"world"}');
 
   assertEquals(
     await isSigned(
       headers({
         'webhook-id': 'msg_1',
-        'webhook-timestamp': '1757620000',
+        'webhook-timestamp': SENT_AT,
         'webhook-signature': `v1,${signature}`,
       }),
       '{"hello":"elsewhere"}',
+      NOW,
     ),
     false,
   );
@@ -146,23 +151,24 @@ Deno.test('a body that was tampered with after signing is refused', async () => 
 
 Deno.test('a call carrying no signature at all is refused', async () => {
   Deno.env.set('SB_AUTH_HOOK_SECRET', SECRET);
-  assertEquals(await isSigned(headers({}), '{}'), false);
+  assertEquals(await isSigned(headers({}), '{}', NOW), false);
 });
 
 // A rotation offers the old and the new signature at once, space separated.
 Deno.test('one matching signature among several is enough', async () => {
   Deno.env.set('SB_AUTH_HOOK_SECRET', SECRET);
   const body = '{"hello":"world"}';
-  const signature = await sign('msg_1', '1757620000', body);
+  const signature = await sign('msg_1', SENT_AT, body);
 
   assertEquals(
     await isSigned(
       headers({
         'webhook-id': 'msg_1',
-        'webhook-timestamp': '1757620000',
+        'webhook-timestamp': SENT_AT,
         'webhook-signature': `v1,AAAA v1,${signature}`,
       }),
       body,
+      NOW,
     ),
     true,
   );
@@ -171,16 +177,74 @@ Deno.test('one matching signature among several is enough', async () => {
 // Failing open here would turn the hook into an open relay for password reset links.
 Deno.test('no configured secret refuses everything rather than trusting it', async () => {
   Deno.env.delete('SB_AUTH_HOOK_SECRET');
-  const signature = await sign('msg_1', '1757620000', '{}');
+  const signature = await sign('msg_1', SENT_AT, '{}');
 
   assertEquals(
     await isSigned(
       headers({
         'webhook-id': 'msg_1',
-        'webhook-timestamp': '1757620000',
+        'webhook-timestamp': SENT_AT,
         'webhook-signature': `v1,${signature}`,
       }),
       '{}',
+      NOW,
+    ),
+    false,
+  );
+});
+
+// A signature does not expire on its own. Without a window, a call captured once could be
+// replayed for as long as the secret lives: the same reset email again and again, or an email
+// change re-offered after the person decided against it.
+Deno.test('a call signed long ago is refused however good the signature is', async () => {
+  Deno.env.set('SB_AUTH_HOOK_SECRET', SECRET);
+  const body = '{"hello":"world"}';
+  const signature = await sign('msg_1', SENT_AT, body);
+  const headersSent = headers({
+    'webhook-id': 'msg_1',
+    'webhook-timestamp': SENT_AT,
+    'webhook-signature': `v1,${signature}`,
+  });
+
+  // Six minutes later, against a five minute window.
+  assertEquals(await isSigned(headersSent, body, NOW + 360_000), false);
+  // Still fine a minute later, because clocks are not perfectly aligned.
+  assertEquals(await isSigned(headersSent, body, NOW + 60_000), true);
+});
+
+Deno.test('a call dated far in the future is refused too', async () => {
+  Deno.env.set('SB_AUTH_HOOK_SECRET', SECRET);
+  const body = '{"hello":"world"}';
+  const signature = await sign('msg_1', SENT_AT, body);
+
+  assertEquals(
+    await isSigned(
+      headers({
+        'webhook-id': 'msg_1',
+        'webhook-timestamp': SENT_AT,
+        'webhook-signature': `v1,${signature}`,
+      }),
+      body,
+      NOW - 360_000,
+    ),
+    false,
+  );
+});
+
+Deno.test('a timestamp that is not a number is refused rather than read as zero', async () => {
+  Deno.env.set('SB_AUTH_HOOK_SECRET', SECRET);
+  const body = '{"hello":"world"}';
+  const signature = await sign('msg_1', 'not-a-time', body);
+
+  assertEquals(
+    await isSigned(
+      headers({
+        'webhook-id': 'msg_1',
+        'webhook-timestamp': 'not-a-time',
+        'webhook-signature': `v1,${signature}`,
+      }),
+      body,
+      NOW,
     ),
     false,
   );

@@ -87,3 +87,11 @@ The hook secret is the whole security boundary. This endpoint takes a token and
 an address and would happily mail one to the other, so an unsigned call is
 refused before anything is rendered, and a missing secret refuses everything
 rather than trusting the caller.
+
+Verifying a signature is three checks, not one. The signature has to match, it
+has to match in constant time, and the call has to be recent. A signature does
+not expire on its own, so without the five minute window a call captured once
+could be replayed for as long as the secret lives: the same reset email sent
+again and again, or an email change re-offered after the person decided against
+it. The window is checked in both directions, because a timestamp far in the
+future is a replay too.

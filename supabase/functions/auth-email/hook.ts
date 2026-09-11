@@ -10,6 +10,8 @@
 
 import { z } from 'zod';
 
+import { timingSafeEqual } from '../_shared/crypto.ts';
+
 import {
   changeEmail,
   confirmSignup,
@@ -97,8 +99,27 @@ export function compose(payload: Payload): { to: string; rendered: Rendered } {
   }
 }
 
+/**
+ * How far out of date a call may be. A signature does not expire on its own, so without this a
+ * captured call could be replayed for as long as the secret lives: the same reset email sent over
+ * and over, or an email change re-offered after the person decided against it.
+ */
+const TOLERANCE_SECONDS = 300;
+
+/** True when the timestamp is close enough to now, in either direction, to be this call. */
+function isRecent(timestamp: string, now: number): boolean {
+  const sent = Number(timestamp);
+  if (!Number.isFinite(sent)) return false;
+  // Ahead as well as behind: a clock that runs fast is skew, but far ahead is a replay too.
+  return Math.abs(now / 1000 - sent) <= TOLERANCE_SECONDS;
+}
+
 /** The signature covers the id, the timestamp and the body, exactly as sent. */
-export async function isSigned(headers: Headers, body: string): Promise<boolean> {
+export async function isSigned(
+  headers: Headers,
+  body: string,
+  now: number = Date.now(),
+): Promise<boolean> {
   const secret = Deno.env.get('SB_AUTH_HOOK_SECRET');
   if (!secret) {
     console.error('SB_AUTH_HOOK_SECRET is not set, so nothing can be verified');
@@ -109,6 +130,7 @@ export async function isSigned(headers: Headers, body: string): Promise<boolean>
   const timestamp = headers.get('webhook-timestamp');
   const signatures = headers.get('webhook-signature');
   if (!id || !timestamp || !signatures) return false;
+  if (!isRecent(timestamp, now)) return false;
 
   // The configured secret is base64 behind a `v1,whsec_` label, depending on who wrote it.
   const raw = secret.replace(/^v1,whsec_/, '').replace(/^whsec_/, '');
@@ -128,8 +150,9 @@ export async function isSigned(headers: Headers, body: string): Promise<boolean>
   const expected = btoa(String.fromCharCode(...new Uint8Array(signed)));
 
   // Several signatures may be offered during a secret rotation; any one matching is enough.
+  // Compared in constant time, so the answer cannot be built up one byte at a time.
   return signatures
     .split(' ')
-    .map((entry) => entry.split(',').at(-1))
-    .some((candidate) => candidate === expected);
+    .map((entry) => entry.split(',').at(-1) ?? '')
+    .some((candidate) => timingSafeEqual(candidate, expected));
 }
