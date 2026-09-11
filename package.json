@@ -41,7 +41,8 @@
     "check:cron": "node scripts/check-scheduled-workers.mjs",
     "check:upload-types": "node scripts/check-upload-types.mjs",
     "check:compat-tokens": "node scripts/check-compat-tokens.mjs",
-    "check:secrets": "node scripts/check-secrets.mjs"
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "spend": "node scripts/spend.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",

@@ -19,6 +19,36 @@ the codebase, so a model change is a one-file change plus a line in this table.
 | Question condensing   | `gpt-4.1-mini-2025-04-14` | 2026-09-09  | 1,047,576 tokens         | 32,768 tokens   | $0.40             | $1.60              |
 | Conversation titling  | `gpt-4.1-mini-2025-04-14` | 2026-09-09  | 1,047,576 tokens         | 32,768 tokens   | $0.40             | $1.60              |
 | Dreaming              | `gpt-4.1-2025-04-14`      | 2026-09-09  | 1,047,576 tokens         | 32,768 tokens   | $2.00             | $8.00              |
+| Name extraction       | `gpt-4.1-mini-2025-04-14` | 2026-09-11  | 1,047,576 tokens         | 32,768 tokens   | $0.40             | $1.60              |
+
+`scripts/spend.mjs` parses the prices out of the table above rather than keeping
+a second copy, so a price corrected here is corrected everywhere.
+
+## Measuring costs money
+
+A full nightly dream over the seven demo spaces is 21 runs and about 60 cents.
+Measuring one is fine. Measuring it six times in an evening to watch a number
+move, which is what produced the Phase 19 timings, is four to eight dollars.
+
+Two things follow.
+
+**Measure one space, not the fleet.** The ratio between a before and an after is
+the same on one space as on seven, and costs a fourteenth as much. There is no
+flag for this because the queue takes whatever is queued, so queue one:
+
+```sql
+insert into public.dream_runs (org_id, space_id, kind, status)
+select org_id, id, 'entities', 'queued' from public.spaces limit 1;
+```
+
+Then drain it with one `dream-worker` call and time that.
+
+**Read the meter.** Every model call writes a `model_calls` row with its purpose,
+model and token counts, so the spend is already recorded. `pnpm spend` prints it
+by purpose for the last day, `--all` for everything, `--hours N` for a window.
+`supabase db reset` drops that table, so a reset is also the destruction of the
+only itemised record of what the work cost. Run `pnpm spend` before one if the
+history matters.
 
 Prices are OpenAI's published standard-tier list prices, read from
 `developers.openai.com/api/docs/pricing` on 2026-09-09. Cached input and batch

@@ -593,3 +593,32 @@ local-only setting and taught people to hand-edit the file instead. That is how
 a key from an unrelated repository ended up in it. Both writers now update in
 place, and `check-secrets.mjs` fails the gate when the two copies disagree with
 each other or with Doppler.
+
+## F016: The meter existed the whole time and nobody read it
+
+An evening of benchmarking the nightly dream emptied an OpenAI account. The
+dream is about 60 cents a pass over the demo spaces, it ran six or more times to
+produce a before-and-after timing, and the early passes were dearer because the
+entity extraction had not moved to the smaller model yet. Four to eight dollars,
+to watch one number fall from 185 seconds to 38.
+
+Two things made it invisible rather than obvious.
+
+`model_calls` records every call with its purpose, model and token counts, which
+is everything needed to price it. Nothing read that table. Not a script, not a
+page, not a line of output at the end of a run. The number was in the database
+the whole time.
+
+And `supabase db reset`, which the same evening ran repeatedly, drops it. So the
+record of what the resets cost was destroyed by the resets.
+
+**The rule.** A number the system already records is not visible until something
+prints it. If work spends money, the tooling that runs it says how much, and the
+record survives the thing that clears the database. `pnpm spend` reads the meter
+now, and `docs/limits.md` says to run it before a reset.
+
+**The second rule, about measurement.** A benchmark repeats by nature, so the
+cost of one run is the cost of one run times however many times the number needs
+checking. Measure the smallest thing that shows the ratio. One space would have
+answered the same question for a fourteenth of the money, and nobody asked for
+the whole fleet.
