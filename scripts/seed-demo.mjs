@@ -90,14 +90,57 @@ async function findByEmail(client, email) {
   return null;
 }
 
-/** Everyone joins the first person's organization. Their own auto-created ones are left alone. */
+/**
+ * Everyone joins the first person's organization, which means leaving their own. A person belongs
+ * to exactly one organization, so the membership the signup trigger made is moved rather than
+ * added to. The organization it leaves behind has nobody in it and is deleted with its spaces.
+ */
 async function joinOrganization(client, orgId, person) {
-  await client
+  const { data: current, error: readError } = await client
     .from('org_members')
-    .upsert(
-      { org_id: orgId, user_id: person.id, role: person.role },
-      { onConflict: 'org_id,user_id' },
-    );
+    .select('org_id')
+    .eq('user_id', person.id)
+    .maybeSingle();
+  if (readError) throw new Error(`reading ${person.email} membership: ${readError.message}`);
+  if (current?.org_id === orgId) return;
+
+  const { error } = current
+    ? await client
+        .from('org_members')
+        .update({ org_id: orgId, role: person.role })
+        .eq('user_id', person.id)
+    : await client
+        .from('org_members')
+        .insert({ org_id: orgId, user_id: person.id, role: person.role });
+  if (error) throw new Error(`moving ${person.email} into the org: ${error.message}`);
+
+  // Nobody is left in it, so it is unreachable. Its personal space goes with it, and the corpus
+  // makes a fresh one in the organization the person actually belongs to.
+  if (current?.org_id) {
+    const { error: cleanup } = await client.from('organizations').delete().eq('id', current.org_id);
+    if (cleanup) throw new Error(`removing ${person.email} old org: ${cleanup.message}`);
+  }
+}
+
+/**
+ * The trigger enrolled each person in the org space of their own organization, and that went with
+ * it. Everyone belongs to the org space of the organization they are now in.
+ */
+async function joinOrgSpace(client, orgId, people) {
+  const { data: orgSpace, error: readError } = await client
+    .from('spaces')
+    .select('id')
+    .eq('org_id', orgId)
+    .eq('kind', 'org')
+    .maybeSingle();
+  if (readError) throw new Error(`reading the org space: ${readError.message}`);
+  if (!orgSpace) throw new Error('the organization has no org space');
+
+  const { error } = await client.from('space_members').upsert(
+    people.map((person) => ({ space_id: orgSpace.id, user_id: person.id })),
+    { onConflict: 'space_id,user_id' },
+  );
+  if (error) throw new Error(`enrolling everyone in the org space: ${error.message}`);
 }
 
 /** The org space is created by the trigger as Everyone. The corpus calls it Company. */
@@ -271,6 +314,7 @@ async function main() {
   if (!org) throw new Error('the organization the trigger made has gone missing');
 
   for (const person of people) await joinOrganization(client, org.id, person);
+  await joinOrgSpace(client, org.id, people);
   await renameOrgSpace(client, org.id);
   await ensureTeamSpaces(client, org.id, people);
 

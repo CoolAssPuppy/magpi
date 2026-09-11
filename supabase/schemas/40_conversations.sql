@@ -24,6 +24,10 @@ create table public.conversation_folders (
 create unique index conversation_folders_user_name_idx
   on public.conversation_folders (user_id, lower(btrim(name)));
 
+-- The target of the composite key below, so a conversation can only name its owner's folder.
+alter table public.conversation_folders
+  add constraint conversation_folders_id_user_key unique (id, user_id);
+
 create index conversation_folders_user_position_idx
   on public.conversation_folders (user_id, position, name);
 
@@ -36,11 +40,21 @@ create table public.conversations (
   user_id uuid not null references auth.users (id) on delete cascade,
   space_filter uuid[],
   -- Null is the top level of the sidebar, not an error. Deleting a folder unfiles its chats.
-  folder_id uuid references public.conversation_folders (id) on delete set null,
+  folder_id uuid,
   title text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Composite, so filing a chat into somebody else's folder is refused by the key rather than by a
+-- policy somebody has to remember to write. RLS hides another person's folder; this makes naming
+-- one impossible even when the id is known.
+-- Naming the column matters: a plain `set null` on a composite key nulls user_id too, which is
+-- not null, so deleting a folder would fail instead of unfiling its chats.
+alter table public.conversations
+  add constraint conversations_folder_of_owner
+  foreign key (folder_id, user_id) references public.conversation_folders (id, user_id)
+  on delete set null (folder_id);
 
 create index conversations_user_created_idx on public.conversations (user_id, created_at desc);
 

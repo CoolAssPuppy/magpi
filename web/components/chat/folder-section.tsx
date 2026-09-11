@@ -1,0 +1,39 @@
+'use client';
+
+import type { ConversationFolder } from '@/hooks/use-conversation-folders';
+import { swatchFor } from '@/lib/chat/folder-colors';
+
+import { ConversationList, type SidebarConversation } from './conversation-list';
+import { FolderMenu } from './folder-menu';
+
+type FolderSectionProps = {
+  readonly folder: ConversationFolder;
+  readonly folders: readonly ConversationFolder[];
+  readonly conversations: readonly SidebarConversation[];
+  readonly onChanged: () => void;
+};
+
+/** One folder and what is filed in it. An empty one still shows, because someone made it. */
+export function FolderSection({ folder, folders, conversations, onChanged }: FolderSectionProps) {
+  return (
+    <section aria-label={folder.name} className="flex flex-col">
+      <div className="group flex items-center gap-2 px-2 py-1">
+        <span
+          className="size-2 shrink-0 rounded-full"
+          style={{ backgroundColor: swatchFor(folder.color) }}
+          aria-hidden="true"
+        />
+        <h3 className="min-w-0 flex-1 truncate text-xs font-medium text-tertiary-foreground">
+          {folder.name}
+        </h3>
+        <FolderMenu folder={folder} onChanged={onChanged} />
+      </div>
+
+      {conversations.length === 0 ? (
+        <p className="px-2 pb-1 text-xs text-tertiary-foreground">Nothing filed here yet.</p>
+      ) : (
+        <ConversationList conversations={conversations} folders={folders} onMoved={onChanged} />
+      )}
+    </section>
+  );
+}

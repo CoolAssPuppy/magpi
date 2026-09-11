@@ -1,17 +1,21 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useCallback, useState } from 'react';
 
+import { useConversationFolders } from '@/hooks/use-conversation-folders';
 import { useInfiniteQuery, type SupabaseTableData } from '@/hooks/use-infinite-query';
-import { cn } from '@/lib/utils';
 
-import { ConversationMenu } from './conversation-menu';
+import { ConversationList } from './conversation-list';
+import { FolderSection } from './folder-section';
+import { NewFolderButton } from './new-folder-button';
 
 type ConversationRow = SupabaseTableData<'conversations'>;
 
 export function HistorySidebar() {
-  const pathname = usePathname();
+  const [reloadKey, setReloadKey] = useState(0);
+  const refresh = useCallback(() => setReloadKey((key) => key + 1), []);
+
+  const { folders, error: folderError } = useConversationFolders(reloadKey);
   const { data, isLoading, error, hasMore, fetchNextPage } = useInfiniteQuery<
     ConversationRow,
     'conversations'
@@ -19,41 +23,34 @@ export function HistorySidebar() {
     tableName: 'conversations',
     pageSize: 20,
     trailingQuery: (query) => query.order('updated_at', { ascending: false }),
+    trailingQueryKey: reloadKey,
   });
 
   if (isLoading) return <SidebarNote>Loading your conversations...</SidebarNote>;
   if (error) return <SidebarNote>Your conversations could not be loaded.</SidebarNote>;
-  if (data.length === 0) return <SidebarNote>Nothing asked yet.</SidebarNote>;
+
+  const filed = groupByFolder(data, folders);
 
   return (
     <div className="flex min-h-0 flex-col gap-2 overflow-y-auto">
-      <ul className="flex flex-col">
-        {data.map((conversation) => {
-          const href = `/chat/${conversation.id}`;
-          const isOpen = pathname === href;
+      <NewFolderButton onCreated={refresh} />
 
-          return (
-            <li key={conversation.id} className="group flex items-center gap-1">
-              <Link
-                href={href}
-                aria-current={isOpen ? 'page' : undefined}
-                className={cn(
-                  'min-w-0 flex-1 truncate rounded-[var(--radius-panel)] px-2 py-1.5 text-sm transition-colors motion-reduce:transition-none',
-                  isOpen
-                    ? 'bg-muted text-foreground'
-                    : 'text-muted-foreground hover:bg-card hover:text-foreground',
-                )}
-              >
-                {conversation.title ?? 'Untitled conversation'}
-              </Link>
-              <ConversationMenu
-                conversationId={conversation.id}
-                title={conversation.title ?? 'Untitled conversation'}
-              />
-            </li>
-          );
-        })}
-      </ul>
+      {folderError ? <SidebarNote>Your folders could not be loaded.</SidebarNote> : null}
+      {data.length === 0 && folders.length === 0 ? (
+        <SidebarNote>Nothing asked yet.</SidebarNote>
+      ) : null}
+
+      {folders.map((folder) => (
+        <FolderSection
+          key={folder.id}
+          folder={folder}
+          folders={folders}
+          conversations={filed.byFolder.get(folder.id) ?? []}
+          onChanged={refresh}
+        />
+      ))}
+
+      <ConversationList conversations={filed.unfiled} folders={folders} onMoved={refresh} />
 
       {hasMore ? (
         <button
@@ -66,6 +63,24 @@ export function HistorySidebar() {
       ) : null}
     </div>
   );
+}
+
+// A conversation filed in a folder this person can no longer see sits at the top level instead.
+function groupByFolder(
+  conversations: readonly ConversationRow[],
+  folders: readonly { readonly id: string }[],
+) {
+  const byFolder = new Map<string, ConversationRow[]>(folders.map((folder) => [folder.id, []]));
+  const unfiled: ConversationRow[] = [];
+
+  for (const conversation of conversations) {
+    const bucket =
+      conversation.folder_id === null ? undefined : byFolder.get(conversation.folder_id);
+    if (bucket) bucket.push(conversation);
+    else unfiled.push(conversation);
+  }
+
+  return { byFolder, unfiled };
 }
 
 function SidebarNote({ children }: { children: string }) {
