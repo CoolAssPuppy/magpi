@@ -277,3 +277,56 @@ its grants anyway, so the revoke no longer names it.
 `test/setup.ts` gained the pointer-capture and `scrollIntoView` stubs Radix needs
 under jsdom. Without them any component using `Select` throws before it opens,
 which is why the picker had been a bare `<select>`.
+
+## Phase 17: One organization, folders for chats, and an audit that found real things
+
+**Shipped.** An address has one account and that account has one organization.
+`org_members_user_id_idx` is unique on the user alone. That broke the seed
+immediately, which is the useful part: the signup trigger gives every account
+its own organization, so joining another one was adding a second membership, and
+the upsert doing it had no error check and failed silently. Joining now moves the
+membership and deletes the organization nobody is left in. It also fixed
+something that predates this, where everyone carried a stray Everyone space from
+their old organization and three people had two Personal spaces each.
+
+Chat folders. `conversation_folders` is a person's own filing for their own
+chats, unique per person case-insensitively, with a colour from an enum and a
+position. `conversations.folder_id` is null for the top level, which is a
+destination and not a missing value. The sidebar groups conversations under their
+folders with a colour dot, and keeps an empty folder visible because somebody
+made it deliberately. Colours are stored as names and resolved through
+`lib/chat/folder-colors.ts`, so the raw-colour check stays satisfied and a folder
+keeps its meaning when the theme changes.
+
+An unrouted Linear connection used to read the whole workspace, drop every issue
+for having nowhere to land, and advance its cursor past them. It now answers with
+its cursor untouched and asks Linear nothing, which is what Slack already did.
+
+Two audits ran over the connection model. What they found and what happened to it
+is in `docs/tech-debt-audit-2026-09-11.md`. The two that matter: a member of one
+destination space could re-point a channel the owner had deliberately sent
+somewhere else into a space only they could open, and `anon` and `authenticated`
+held TRUNCATE on every table in `public`, which ignores row level security
+entirely.
+
+**Did not ship.** The nightly dream is still never enqueued. `dream-worker` runs
+at 02:00 UTC and drains queued runs, and nothing queues any, so only the manual
+button on a space page ever dreams.
+
+**Needs a human.** `public.search` still raises `tsquery stack too small` for a
+long enough question. The coverage gate is red at 94.31 percent against 95, and
+two components with no tests at all are 59 of the 143 uncovered statements.
+
+**Notes.** The folder key repeated `docs/lessons.md:146` exactly. A composite
+`on delete set null` nulls every column in the key, `user_id` is not null, and
+deleting a folder raised. The entry was written after the same mistake on
+`dream_runs.space_id` and was available to read. It was not read.
+
+The guards added the night before had tests that could not fail. `stubDb` ignores
+the query and answers with whatever its closure returns, so every filter in both
+guards could be deleted with all eleven tests green. The commit message said the
+opposite had been verified, and what had actually been verified was the set
+difference rather than the database filter. The stub now applies the request's
+filters, and each filter has a test that dies without it. This is the second
+entry in this log about an assertion that cannot fail, and the first one is the
+most useful thing in the repository.

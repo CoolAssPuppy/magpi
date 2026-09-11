@@ -517,3 +517,36 @@ a wide screen. The code under it was `flex-col-reverse md:flex-row`.
 describe how it reads, do not justify the choice. If the one-line version only
 restates the code, delete the comment. Rationale that a future reader genuinely
 needs goes in `docs/decisions.md`, not above the statement.
+
+## A stub that ignores the query cannot test a filter
+
+`requireConnectionAccess` and `requireRoutableSpaces` are what stand in for the
+connections read policy when an Edge Function runs as the service role. Eleven
+tests covered them. Every one of them passed with the filters deleted:
+
+```
+membership filter removed from requireRoutableSpaces   11 passed | 0 failed
+user filter removed from requireConnectionAccess       11 passed | 0 failed
+```
+
+`stubDb` answers with whatever its `reply` closure returns and never looks at the
+request. Every test passed `() => ({ body: [...] })`, so the refusal came from the
+code's own set difference against a fixed answer rather than from any filter. The
+tests were asserting that the function subtracts two lists, which it does whether
+or not it asked the database the right question.
+
+This is the same shape as the dream test that returned a foreign chunk regardless
+of `space_id=eq.`, and it was reintroduced in a brand new file the day after.
+
+**The rule.** A stub standing in for a query must apply the filters the query
+carries, or it is asserting the caller's arithmetic and nothing else. Answer from
+a small fixture and filter it by what the request asked for. Then the only way to
+know is to try: delete each filter in turn and watch a test go red. A guard whose
+filters can all be removed with the suite green is not guarded.
+
+**The second rule, which is about people.** The commit adding those tests said
+"Confirmed the tests can fail by removing the filter and watching two of them go
+red." That was written in good faith and it was wrong. What had been broken was
+the set difference, not the database filter, and the difference between those two
+is the entire finding. Saying a thing was verified is a claim about method. State
+which mutation was applied, not that a mutation was applied.
