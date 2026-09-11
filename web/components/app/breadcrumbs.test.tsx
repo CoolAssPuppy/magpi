@@ -7,6 +7,8 @@ vi.mock('next/navigation', () => ({ usePathname: () => route.pathname }));
 
 const { Breadcrumbs, crumbsFor } = await import('./breadcrumbs');
 
+const SPACE_ID = '8f14e45f-ceea-467a-9c1e-1b0b5f0f4c3d';
+
 const trail = (pathname: string) => crumbsFor(pathname).map((crumb) => crumb.label);
 
 describe('the breadcrumb trail', () => {
@@ -38,5 +40,20 @@ describe('the breadcrumb trail', () => {
     expect(screen.getByRole('link', { name: 'Admin' })).toHaveAttribute('href', '/admin');
     expect(screen.queryByRole('link', { name: 'Members' })).not.toBeInTheDocument();
     expect(screen.getByText('Members')).toHaveAttribute('aria-current', 'page');
+  });
+});
+
+describe('a record crumb', () => {
+  it('says what the record is called once the page has said so', () => {
+    expect(crumbsFor(`/spaces/${SPACE_ID}`, 'Engineering').at(-1)?.label).toBe('Engineering');
+  });
+
+  // Before the page registers a title, and for a page that never does, the kind of thing it is.
+  it('falls back to the kind of record when nothing named it', () => {
+    expect(crumbsFor(`/spaces/${SPACE_ID}`).at(-1)?.label).toBe('Space');
+  });
+
+  it('does not rename a section that merely follows a record', () => {
+    expect(crumbsFor('/dreams/entities', 'Some document').at(-1)?.label).toBe('Entities');
   });
 });

@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Fragment } from 'react';
 
+import { useCrumbRecord } from './crumb-title';
+
 /** Labels for the segments the routes actually use. */
 const SECTION_LABELS: Readonly<Record<string, string>> = {
   chat: 'Chat',
@@ -44,18 +46,25 @@ function labelFor(segment: string, parent: string | undefined): string {
 
 export type Crumb = { readonly href: string; readonly label: string };
 
-export function crumbsFor(pathname: string): readonly Crumb[] {
+export function crumbsFor(pathname: string, recordTitle: string | null = null): readonly Crumb[] {
   const segments = pathname.split('/').filter(Boolean);
 
-  return segments.map((segment, index) => ({
-    href: `/${segments.slice(0, index + 1).join('/')}`,
-    label: labelFor(segment, segments[index - 1]),
-  }));
+  return segments.map((segment, index) => {
+    const isLast = index === segments.length - 1;
+    // The page knows the record's name; the path only ever knew its id.
+    const named = isLast && recordTitle && isRecordId(segment) ? recordTitle : null;
+
+    return {
+      href: `/${segments.slice(0, index + 1).join('/')}`,
+      label: named ?? labelFor(segment, segments[index - 1]),
+    };
+  });
 }
 
 export function Breadcrumbs() {
   const pathname = usePathname();
-  const crumbs = crumbsFor(pathname);
+  const record = useCrumbRecord();
+  const crumbs = crumbsFor(pathname, record?.title ?? null);
 
   if (crumbs.length === 0) return null;
 
@@ -72,7 +81,10 @@ export function Breadcrumbs() {
                   /
                 </li>
               ) : null}
-              <li className="min-w-0">
+              <li className="flex min-w-0 items-center gap-1.5">
+                {/* The mark sits beside the name rather than around it, so the name stays the
+                    element carrying aria-current. */}
+                {isLast ? record?.icon : null}
                 {isLast ? (
                   <span aria-current="page" className="block truncate text-foreground">
                     {crumb.label}

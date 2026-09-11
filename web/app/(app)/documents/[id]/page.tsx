@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation';
 
+import { CrumbTitle } from '@/components/app/crumb-title';
 import { PageHeader } from '@/components/app/page-header';
+import { SourceMark } from '@/components/brand/source-mark';
 import { describeIngest, describeOrigin } from '@/lib/documents/documents';
 import { createClient } from '@/lib/supabase/server';
 
@@ -10,7 +12,7 @@ export default async function DocumentPage({ params }: { params: Promise<{ id: s
 
   const { data: document } = await supabase
     .from('documents')
-    .select('id, title, url, origin, updated_at, space_id, spaces(name)')
+    .select('id, title, url, origin, updated_at, space_id, spaces(name), connections(provider)')
     .eq('id', id)
     .maybeSingle();
 
@@ -32,6 +34,12 @@ export default async function DocumentPage({ params }: { params: Promise<{ id: s
 
   return (
     <>
+      <CrumbTitle
+        title={document.title}
+        // The provider it synced from, or the host it was linked from, the way a citation marks it.
+        icon={<SourceMark source={document.connections?.provider ?? document.url} fallback />}
+      />
+
       <PageHeader
         title={document.title}
         description={`${describeOrigin(document.origin)} into ${document.spaces?.name ?? 'a space'}.`}

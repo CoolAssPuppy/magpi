@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 
+import { CrumbTitle } from '@/components/app/crumb-title';
 import { PageHeader } from '@/components/app/page-header';
 import { DreamingToggle } from '@/components/spaces/dreaming-toggle';
 import { SpaceMembers } from '@/components/spaces/space-members';
@@ -32,6 +33,8 @@ export default async function SpacePage({ params }: { params: Promise<{ id: stri
 
   return (
     <>
+      <CrumbTitle title={space.name} />
+
       <PageHeader
         title={space.name}
         description={`${describeKind(space.kind)}. ${documentCount ?? 0} ${
