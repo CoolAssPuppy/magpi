@@ -19,6 +19,8 @@ export interface CompleteInput {
   system: string;
   user: string;
   maxOutputTokens?: number;
+  /** Ask the provider to guarantee a JSON object back. The prompt has to name JSON as well. */
+  json?: boolean;
 }
 
 export interface ModelRunner {
@@ -136,6 +138,16 @@ function readCompletion(payload: Record<string, unknown>): string {
   if (typeof content !== 'string') {
     throw new ApiError(502, 'model_error', 'the model returned no content');
   }
+
+  // A truncated answer is still well-formed text and never well-formed JSON, so without this the
+  // caller reports an unreadable model rather than an output cap that is too low.
+  const reason = typeof first === 'object' && first !== null
+    ? (first as Record<string, unknown>).finish_reason
+    : null;
+  if (reason === 'length') {
+    throw new ApiError(502, 'model_answer_truncated', 'the model ran out of room mid-answer');
+  }
+
   return content;
 }
 
@@ -190,7 +202,7 @@ export function createModelRunner(deps: ModelRunnerDeps): ModelRunner {
       );
     },
 
-    complete({ orgId, purpose, system, user, maxOutputTokens }) {
+    complete({ orgId, purpose, system, user, maxOutputTokens, json }) {
       const model = MODELS[purpose];
       return run(
         orgId,
@@ -204,6 +216,7 @@ export function createModelRunner(deps: ModelRunnerDeps): ModelRunner {
               { role: 'user', content: user },
             ],
             ...(maxOutputTokens ? { max_completion_tokens: maxOutputTokens } : {}),
+            ...(json ? { response_format: { type: 'json_object' } } : {}),
           }),
         readCompletion,
       );

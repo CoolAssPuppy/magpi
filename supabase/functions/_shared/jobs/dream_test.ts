@@ -253,22 +253,24 @@ function replies(
   };
 }
 
+// JSON mode answers with an object, so every fixture here is shaped the way the provider replies.
 function entityAnswer(chunkIds: string[]): string {
-  return JSON.stringify([
-    {
-      kind: 'person',
-      name: 'Ada',
-      canonicalName: 'ada',
-      summary: 'Owns the billing page.',
-      chunkIds,
-    },
-  ]);
+  return JSON.stringify({
+    entities: [
+      {
+        kind: 'person',
+        name: 'Ada',
+        canonicalName: 'ada',
+        summary: 'Owns the billing page.',
+        chunkIds,
+      },
+    ],
+  });
 }
 
-const RATIONALE_ANSWER = JSON.stringify([{
-  pair: 0,
-  rationale: 'Both cover the Northwind renewal.',
-}]);
+const RATIONALE_ANSWER = JSON.stringify({
+  rationales: [{ pair: 0, rationale: 'Both cover the Northwind renewal.' }],
+});
 
 function answerFor(input: CompleteInput): string {
   if (input.user.includes('CANDIDATE PAIRS')) return RATIONALE_ANSWER;
@@ -436,15 +438,15 @@ Deno.test('entities upserts what the model found and mentions the chunks it came
 
 Deno.test('a hundred entities cost two statements, not two hundred', async () => {
   // A round trip per entity would spend the whole budget on network waits.
-  const many = JSON.stringify(
-    Array.from({ length: 100 }, (_, index) => ({
+  const many = JSON.stringify({
+    entities: Array.from({ length: 100 }, (_, index) => ({
       kind: 'person',
       name: `Person ${index}`,
       canonicalName: `person ${index}`,
       summary: null,
       chunkIds: [CHUNK_A],
     })),
-  );
+  });
   const stub = stubDb(replies());
   try {
     const result = await runDreamJob(dreamRun('entities'), jobDeps(stub, fakeModels(() => many)));
@@ -460,10 +462,12 @@ Deno.test('a hundred entities cost two statements, not two hundred', async () =>
 
 Deno.test('an entity the model named twice is one row, mentioned from both', async () => {
   // One statement may not write the same row twice.
-  const twice = JSON.stringify([
-    { kind: 'person', name: 'Ada', canonicalName: 'ada', summary: null, chunkIds: [CHUNK_A] },
-    { kind: 'person', name: 'Ada L', canonicalName: 'ada', summary: null, chunkIds: [CHUNK_B] },
-  ]);
+  const twice = JSON.stringify({
+    entities: [
+      { kind: 'person', name: 'Ada', canonicalName: 'ada', summary: null, chunkIds: [CHUNK_A] },
+      { kind: 'person', name: 'Ada L', canonicalName: 'ada', summary: null, chunkIds: [CHUNK_B] },
+    ],
+  });
   const stub = stubDb(replies());
   try {
     const result = await runDreamJob(dreamRun('entities'), jobDeps(stub, fakeModels(() => twice)));

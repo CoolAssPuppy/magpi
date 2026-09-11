@@ -70,12 +70,19 @@ fixtures were leaning on that behaviour.
 
 ## Open
 
-**The nightly dream is never enqueued.** Read. `schedule_workers()` runs
-`dream-worker` at 02:00 UTC, and that worker drains `dream_runs` where `status =
-'queued'`. The only thing that creates a run is `dream-run`, the manual button
-on a space page. So the cron fires nightly into an empty queue. Nothing dreams
-unless a person presses the button. This matters twice over: it is why real use
-would never dream, and the keynote says the brain dreams every night.
+~~**The nightly dream is never enqueued.**~~ Fixed. `queue_nightly_dreams()`
+runs at 01:55 UTC and queues one run per space per kind, skipping any space whose
+run of that kind is still queued or running so a second call in a night does not
+double the bill. Verified end to end: 21 runs queued across seven spaces and
+three kinds, all 21 succeeded, 98 entities and 80 links written.
+
+Two things surfaced only because the nightly dream had never actually run.
+Five of seven entity passes failed on unparseable model output, and the entity
+and connections prompts now ask for a JSON object with `response_format`
+set, which the provider guarantees. The remaining two failures were the answer
+being truncated at the 2000 token cap, which reads as malformed JSON and is not:
+`readCompletion` now raises `model_answer_truncated` when `finish_reason` is
+`length`, and the entity cap is 6000. Twenty-one of twenty-one now succeed.
 
 **The dream cannot digest a backfill.** Read, with arithmetic. `MAX_INPUT_CHUNKS`
 is 120 and the lookback is 24 hours, so a dream covers 120 chunks per space per
@@ -110,10 +117,20 @@ known to be open and they are not known to be closed.
 
 ## Coverage
 
-118 test files, 1079 tests, all passing. Statements 94.31 percent against a 95
-threshold, branches 89.97 against 90, lines 94.99 against 95. The full gate is
-red on that step alone.
+Statements 96.86 percent against a 95 threshold, branches 92.72 against 90, lines
+97.52 against 95. The full gate passes all twenty steps.
 
 `components/documents/upload-dialog.tsx` and
-`components/spaces/create-space-dialog.tsx` have no tests at all and are 59 of
-the 143 uncovered statements between them. Both predate this session.
+`components/spaces/create-space-dialog.tsx` had no tests at all and were 59 of
+the 143 uncovered statements between them, which is what held the gate red. Both
+are covered now, mutation-tested rather than written to a number.
+
+Writing them turned up one real bug: the create-space form used uncontrolled
+inputs with a form action, and React empties those once the action settles, so a
+refusal threw away the name and the description at the moment a person needs them
+back. The fields are controlled now.
+
+The Deno tier still carries no coverage floor at all. `test:functions` runs
+without `--coverage`, and that tier holds the routing, the sync path and the four
+drivers. It is why the unrouted-Linear branch and the unrouted-unit drop in
+`sync.ts` had no test and nothing said so.

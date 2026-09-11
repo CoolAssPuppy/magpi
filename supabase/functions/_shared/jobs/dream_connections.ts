@@ -29,10 +29,13 @@ const rationalesSchema = z.array(
 
 const searchHitsSchema = z.array(z.object({ document_id: z.string(), score: z.number() }));
 
+// JSON mode answers with an object, so the array arrives under a key rather than on its own.
+const rationaleAnswerSchema = z.object({ rationales: rationalesSchema });
+
 const RATIONALE_SYSTEM =
-  'You say in one line why two documents look like they are about the same thing. Answer with ' +
-  'STRICT JSON and nothing else: an array of objects with the keys pair (the number given) and ' +
-  'rationale (one sentence).';
+  'You say in one line why two documents look like they are about the same thing. Answer with a ' +
+  'JSON object and nothing else, of the form {"rationales": [...]}, where each entry has the ' +
+  'keys pair (the number given) and rationale (one sentence).';
 
 /** Two documents from one connection are one source talking to itself. */
 function sourceOf(document: SpaceDocumentRow): string {
@@ -129,9 +132,11 @@ export async function dreamConnections(pass: Pass): Promise<DreamOutcome> {
 
   enter(pass, 'synthesize');
   const prompt = pairs.map((pair, index) => `${index}: ${pair.title}`).join('\n');
-  const answer = await ask(pass, RATIONALE_SYSTEM, `CANDIDATE PAIRS\n${prompt}`, 800);
+  const answer = await ask(pass, RATIONALE_SYSTEM, `CANDIDATE PAIRS\n${prompt}`, 800, true);
   const rationales = new Map(
-    readAnswer(rationalesSchema, answer, 'link rationales').map((row) => [row.pair, row.rationale]),
+    readAnswer(rationaleAnswerSchema, answer, 'link rationales').rationales.map((
+      row,
+    ) => [row.pair, row.rationale]),
   );
 
   // Only links the model explained are written.

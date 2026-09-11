@@ -39,6 +39,41 @@ $$;
 revoke all on function public.invoke_worker(text, integer)
   from public, anon, authenticated, service_role;
 
+/**
+ * Queues tonight's dreams. dream-worker only drains what is already queued, so without this the
+ * cron fired into an empty queue every night and nothing dreamed unless somebody pressed the
+ * button on a space page.
+ *
+ * One run per space per kind. A space whose last run of that kind is still queued or running is
+ * skipped, so running this twice in a night does not double the bill. Every pass returns early
+ * when nothing arrived in its window, so a quiet space costs a row and no model call.
+ */
+create or replace function public.queue_nightly_dreams()
+returns integer
+language sql
+security definer
+set search_path = ''
+as $$
+  with queued as (
+    insert into public.dream_runs (org_id, space_id, kind)
+    select s.org_id, s.id, k.kind
+    from public.spaces s
+    cross join unnest(enum_range(null::public.dream_kind)) as k(kind)
+    where s.dreaming_enabled
+      and not exists (
+        select 1 from public.dream_runs r
+        where r.space_id = s.id
+          and r.kind = k.kind
+          and r.status in ('queued', 'running')
+      )
+    returning 1
+  )
+  select count(*)::integer from queued;
+$$;
+
+revoke all on function public.queue_nightly_dreams()
+  from public, anon, authenticated, service_role;
+
 -- The whole schedule in one function; cron.schedule upserts on the job name.
 create or replace function public.schedule_workers()
 returns void
@@ -56,6 +91,12 @@ begin
   perform cron.schedule(
     'sync-worker', '0 * * * *',
     $job$select public.invoke_worker('sync-worker', 10)$job$
+  );
+
+  -- 01:55 UTC, so the queue is full before the worker looks at it.
+  perform cron.schedule(
+    'queue-nightly-dreams', '55 1 * * *',
+    $job$select public.queue_nightly_dreams()$job$
   );
 
   -- 02:00 UTC. The dream job staggers by organization id itself.

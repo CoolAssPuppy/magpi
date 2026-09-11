@@ -70,6 +70,7 @@ export function ask(
   system: string,
   user: string,
   maxOutputTokens: number,
+  json = false,
 ): Promise<string> {
   const { deps, run } = pass;
   return deps.models.complete({
@@ -78,6 +79,7 @@ export function ask(
     system,
     user,
     maxOutputTokens,
+    json,
   });
 }
 

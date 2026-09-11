@@ -330,3 +330,41 @@ difference rather than the database filter. The stub now applies the request's
 filters, and each filter has a test that dies without it. This is the second
 entry in this log about an assertion that cannot fail, and the first one is the
 most useful thing in the repository.
+
+## Phase 18: The nightly dream actually runs
+
+**Shipped.** `queue_nightly_dreams()` at 01:55 UTC, five minutes before the
+worker that drains it. One run per space per kind, skipping a space whose run of
+that kind is still queued or running, so a second call in one night does not
+double the bill. Every pass returns early when nothing arrived in its window, so
+a quiet space costs a row and no model call.
+
+`dream-worker` had been scheduled at 02:00 since it was written and drains
+`dream_runs` where `status = 'queued'`. Nothing ever created one except the
+manual button on a space page, so the cron fired into an empty queue every night.
+The worker, the schedule and three passes all existed; the queue filler did not.
+
+Running it for the first time turned up two things nothing had exercised. Five of
+seven entity passes failed on model output that would not parse, so the entity
+and connections prompts now ask for a JSON object and set `response_format`,
+which the provider guarantees. That left two, which turned out to be the answer
+truncated at its 2000 token cap: valid text, invalid JSON, reported as an
+unreadable model. `readCompletion` raises `model_answer_truncated` when
+`finish_reason` is `length`, and the entity cap is 6000. Twenty-one of twenty-one
+runs now succeed, writing 98 entities and 80 links.
+
+`check-scheduled-workers.mjs` read a job's target from its name, so a job called
+`dream-worker` that invoked a mistyped one would have passed. It now reads what
+each job actually calls and checks an Edge Function or a SQL function
+accordingly. Confirmed it fails on both.
+
+**Did not ship.** The dream still covers 120 chunks per space per night, so a
+large import is understood over months rather than nights. That is the right
+shape for a daily trickle and the wrong one for a backfill.
+
+**Needs a human.** `public.search` still raises `tsquery stack too small` for a
+long enough question.
+
+**Notes.** pg-delta omitted the revoke on the new function for the second time
+tonight, leaving it executable by PUBLIC. `60_functions.test.sql` caught it,
+which is the first time that tripwire has earned its keep in this log.
