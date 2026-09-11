@@ -40,7 +40,7 @@ serveFunction('connections-scopes', async (core) => {
   const routes = input.routes ?? stored?.routes ?? {};
 
   // Only the routes the caller sent are checked. A stored route was checked when it was stored.
-  if (input.routes) await requireRoutableSpaces(db, user.id, connection.org_id, input.routes);
+  if (input.routes) await requireRoutableSpaces(db, user.id, connection, input.routes);
 
   const http = { fetch: liveHttp.fetch, now: () => new Date() };
   const credentials = await resolveCredentials(connection, { db, http });

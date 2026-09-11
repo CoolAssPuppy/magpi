@@ -145,16 +145,32 @@ export async function requireConnectionAccess(
 export async function requireRoutableSpaces(
   db: SupabaseClient,
   userId: string,
-  orgId: string,
+  connection: ConnectionRow,
   routes: Record<string, string>,
 ): Promise<void> {
   const wanted = [...new Set(Object.values(routes))];
   if (wanted.length === 0) return;
 
+  // Only the person who authorized the account may send it somewhere new. Anyone else may move a
+  // unit between destinations the connection already has, or stop routing it, and nothing else.
+  // Without this a member of one destination can create a space only they can open and re-point a
+  // channel into it, on a connection they do not own, invisibly to the owner.
+  if (userId !== connection.user_id) {
+    const already = new Set(Object.values(routesOf(connection)));
+    const added = wanted.filter((id) => !already.has(id));
+    if (added.length > 0) {
+      throw new ApiError(
+        403,
+        'not_your_connection',
+        'only the person who connected this account can send it to a new space',
+      );
+    }
+  }
+
   const { data, error } = await db
     .from('spaces')
     .select('id, space_members!inner(user_id)')
-    .eq('org_id', orgId)
+    .eq('org_id', connection.org_id)
     .eq('space_members.user_id', userId)
     .in('id', wanted)
     .returns<{ id: string }[]>();

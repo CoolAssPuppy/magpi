@@ -163,7 +163,7 @@ export async function renameFolderAction(
   }, CHAT_PATH);
 }
 
-/** Deleting a folder keeps its conversations. The column is on delete set null. */
+/** Deleting a folder keeps its conversations. The key nulls folder_id and nothing else. */
 export async function deleteFolderAction(
   input: z.input<typeof folderSchema>,
 ): Promise<ActionState<string>> {

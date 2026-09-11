@@ -305,7 +305,9 @@ select set_eq(
      from information_schema.role_table_grants
      where table_schema = 'public'
        and grantee in ('anon', 'authenticated', 'service_role')
-       and privilege_type in ('SELECT', 'INSERT', 'UPDATE', 'DELETE') $$,
+       -- Every privilege, not the four PostgREST uses. TRUNCATE ignores RLS, and the stock roles
+       -- arrive holding it, so a check that filtered it out could not see the thing worth catching.
+       $$,
   $$
     -- anon is absent on purpose. A row for it on the left is itself the failure.
     select 'authenticated ' || t || ' ' || p

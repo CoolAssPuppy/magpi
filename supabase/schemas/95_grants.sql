@@ -1,6 +1,12 @@
 -- Table privileges, declared here because the stock default privileges grant none of them.
 
 -- anon gets nothing. There is no unauthenticated surface in this product.
+--
+-- The stock Supabase roles arrive holding TRUNCATE, REFERENCES, TRIGGER and MAINTAIN on every
+-- table in public, which no policy can restrain: TRUNCATE ignores row level security entirely.
+-- Nothing in this product needs them, and PostgREST never emits any of them, so they go before
+-- anything is granted back.
+revoke truncate, references, trigger, maintain on all tables in schema public from anon, authenticated;
 
 -- authenticated reads what its policies allow. The privilege is the outer gate.
 grant select on public.organizations to authenticated;

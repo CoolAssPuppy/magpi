@@ -22,11 +22,20 @@ stable
 security definer
 set search_path = ''
 as $$
+  -- Every guard below is about a malformed column rather than a hostile one. jsonb_each_text
+  -- raises on a non-object, and the uuid cast raises on anything that is not one, and either
+  -- would turn one bad row into an error for every reader of the connections page except its
+  -- owner, whose own policy branch short-circuits before this runs.
   select exists (
     select 1
-    from jsonb_each_text(coalesce(p_scope_selection -> 'routes', '{}'::jsonb)) as route(unit, space)
-    where route.space is not null
-      and route.space <> ''
+    from jsonb_each_text(
+      case
+        when jsonb_typeof(p_scope_selection -> 'routes') = 'object'
+        then p_scope_selection -> 'routes'
+        else '{}'::jsonb
+      end
+    ) as route(unit, space)
+    where route.space ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
       and route.space::uuid in (select public.visible_space_ids())
   )
 $$;

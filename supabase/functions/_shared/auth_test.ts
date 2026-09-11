@@ -21,8 +21,9 @@ Deno.test('the caller org is read from their membership', async () => {
   }
 });
 
-Deno.test('a user in two orgs gets the oldest one every time', async () => {
-  // Nothing in the connect flow names an org, so the answer has to be stable.
+Deno.test('the membership is read as the one it is, not the first of several', async () => {
+  // org_members_user_id_idx is unique on the user, so there is nothing to order or limit. Asking
+  // for one of many would hide a second membership that should be impossible.
   const stub = stubDb((request: StubRequest) =>
     request.table === 'org_members' ? { body: { org_id: ORG } } : undefined
   );
@@ -30,8 +31,24 @@ Deno.test('a user in two orgs gets the oldest one every time', async () => {
   try {
     await requireOrgMembership(stub.db, USER);
     const query = stub.requests[0].query;
-    assertEquals(query.includes('order=created_at.asc,org_id.asc'), true);
-    assertEquals(query.includes('limit=1'), true);
+    assertEquals(query.includes('order='), false);
+    assertEquals(query.includes('limit='), false);
+  } finally {
+    await stub.close();
+  }
+});
+
+Deno.test('a second membership is a fault rather than a choice to make', async () => {
+  // maybeSingle raises on more than one row, which is what the unique index promises cannot happen.
+  const stub = stubDb((request: StubRequest) =>
+    request.table === 'org_members'
+      ? { body: { message: 'multiple rows returned', code: 'PGRST116' }, status: 406 }
+      : undefined
+  );
+
+  try {
+    const err = await asyncApiErrorFrom(() => requireOrgMembership(stub.db, USER));
+    assertEquals(err.status, 500);
   } finally {
     await stub.close();
   }
