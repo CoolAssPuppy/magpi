@@ -135,7 +135,3 @@ export function buildProviderListings({
       }))
   );
 }
-
-export function countConnections(listings: readonly ProviderListing[]): number {
-  return listings.reduce((total, listing) => total + listing.connections.length, 0);
-}

@@ -101,12 +101,6 @@ export function routesOf(connection: ConnectionRow): Record<string, string> {
   }
   return out;
 }
-
-/** The units a driver is allowed to read, which is exactly the ones with somewhere to land. */
-export function routedUnitIds(connection: ConnectionRow): string[] {
-  return Object.keys(routesOf(connection));
-}
-
 /**
  * The service role bypasses RLS, so an edge function has to re-state the read rule itself. This
  * mirrors `connections_select_visible`: your own connection, or one that routes into a space you

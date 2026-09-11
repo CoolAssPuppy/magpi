@@ -20,7 +20,7 @@ export const connectionsClaimSchema = z.strictObject({
   ticket: z.string().min(1).max(256),
 });
 
-/** The picker, both halves in one call. `selected` present saves a choice, absent refreshes. */
+/** The picker, both halves in one call. `routes` present saves where each unit lands, absent refreshes the list only. */
 export const connectionsScopesSchema = z.strictObject({
   connection_id: z.uuid(),
   routes: z.record(z.string().min(1).max(200), z.uuid()).optional(),

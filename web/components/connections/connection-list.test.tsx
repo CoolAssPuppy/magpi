@@ -147,7 +147,8 @@ describe('the connections list', () => {
     expect(screen.getByText('not routed anywhere')).toBeInTheDocument();
   });
 
-  it('gives a revoked connection a real reason and a way to reconnect', () => {
+  it('gives a revoked connection a real reason and a way to reconnect', async () => {
+    const actions = getActions();
     render(
       <ConnectionList
         listings={[
@@ -165,15 +166,15 @@ describe('the connections list', () => {
             ],
           }),
         ]}
-        {...getActions()}
+        {...actions}
       />,
     );
 
     expect(screen.getByText('The workspace owner removed Magpi.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /reconnect/i })).toHaveAttribute(
-      'href',
-      '/connections/notion',
-    );
+
+    // Reconnecting authorizes the account again. There is no per-provider page to send them to.
+    await userEvent.click(screen.getByRole('button', { name: /reconnect/i }));
+    expect(actions.onBegin).toHaveBeenCalledWith('notion');
   });
 
   it('offers no sync button while a sync is already running', () => {

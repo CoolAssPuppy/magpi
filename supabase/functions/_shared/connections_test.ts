@@ -5,7 +5,6 @@ import {
   type ConnectionRow,
   requireConnectionAccess,
   requireRoutableSpaces,
-  routedUnitIds,
   routesOf,
 } from './connections.ts';
 import { stubDb, type StubRequest } from './testing/stub_db.ts';
@@ -90,7 +89,6 @@ function spaceReply(request: StubRequest): { body: unknown } | undefined {
 
 Deno.test('a column the picker never populated routes nothing anywhere', () => {
   assertEquals(routesOf(connection({ scope_selection: {} })), {});
-  assertEquals(routedUnitIds(connection({ scope_selection: {} })), []);
 });
 
 Deno.test('a route with no destination is dropped rather than read as a space', () => {
@@ -102,7 +100,7 @@ Deno.test('a route with no destination is dropped rather than read as a space', 
 
 Deno.test('one account can send two units to two spaces', () => {
   const row = connection({ scope_selection: { routes: { C1: ENGINEERING, C2: FINANCE } } });
-  assertEquals(routedUnitIds(row).sort(), ['C1', 'C2']);
+  assertEquals(Object.keys(routesOf(row)).sort(), ['C1', 'C2']);
   assertEquals(routesOf(row).C2, FINANCE);
 });
 

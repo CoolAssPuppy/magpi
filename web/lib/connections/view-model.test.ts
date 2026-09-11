@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildProviderListings, countConnections } from './view-model';
+import { buildProviderListings } from './view-model';
 import type { ConnectionRecord, ProviderRecord, SpaceRecord } from './view-model';
 
 const ENGINEERING = '33333333-3333-4333-8333-333333333333';
@@ -242,22 +242,5 @@ describe('provider listings', () => {
     expect(listings[0].connections[0].selection).toEqual({ kind: 'unset' });
     expect(listings[0].connections[0].destinations).toEqual([]);
     expect(listings[0].connections[0].scope).toBe('Nothing chosen yet');
-  });
-});
-
-describe('counting connections', () => {
-  it('counts across every provider, which is what decides the empty state', () => {
-    const listings = buildProviderListings({
-      providers: [getProvider(), getProvider({ slug: 'slack', position: 2 })],
-      connections: [getConnection(), getConnection({ id: 'conn-2', provider: 'slack' })],
-      spaces: [getSpace()],
-      now: NOW,
-    });
-
-    expect(countConnections(listings)).toBe(2);
-  });
-
-  it('counts nothing on day one', () => {
-    expect(countConnections([])).toBe(0);
   });
 });

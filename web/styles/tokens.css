@@ -18,12 +18,10 @@
   --font-weight-normal: 450;
 
   /* Named depth. A stacking bug is then a scale question, not a bidding war. */
-  --z-base: 0;
   --z-sticky: 10;
   --z-dropdown: 20;
   --z-overlay: 30;
   --z-modal: 40;
-  --z-toast: 50;
 
   /* Prose measure. Section 4 caps body copy at 65-75ch. */
   --measure-prose: 68ch;

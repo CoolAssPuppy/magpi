@@ -10,7 +10,11 @@ revoke truncate, references, trigger, maintain on all tables in schema public fr
 
 -- authenticated reads what its policies allow. The privilege is the outer gate.
 grant select on public.organizations to authenticated;
-grant update on public.organizations to authenticated;
+-- A column list, not a table grant. plan and seats decide what the customer may do and what they
+-- pay, and check_query_allowed reads plan straight off this row, so a table grant behind a policy
+-- that tests only is_org_admin puts every limit in the gift of any admin. Stripe's two ids are the
+-- link to the billing record. The webhook and applyCheckout own all four under the service role.
+grant update (name) on public.organizations to authenticated;
 
 grant select on public.org_members to authenticated;
 grant delete on public.org_members to authenticated;
@@ -41,7 +45,10 @@ grant select on public.dream_links to authenticated;
 grant update (confirmed_at, dismissed_at) on public.dream_links to authenticated;
 grant select on public.ingest_jobs to authenticated;
 
-grant select, insert, update, delete on public.conversation_folders to authenticated;
+-- Same reasoning: the policy tests user_id, so a table grant would let somebody move their own
+-- folder into another organization by rewriting org_id.
+grant select, insert, delete on public.conversation_folders to authenticated;
+grant update (name, color, position) on public.conversation_folders to authenticated;
 grant select, insert, update, delete on public.conversations to authenticated;
 grant select, insert on public.messages to authenticated;
 

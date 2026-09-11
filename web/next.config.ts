@@ -57,8 +57,9 @@ function contentSecurityPolicy(): string {
 /**
  * typedRoutes is deliberately off. It derives its route union from `.next/types`,
  * which does not exist until a build has run, so it turns `tsc --noEmit` on a
- * cold checkout into a wall of errors on every dynamic href. Broken links are
- * caught by the Playwright journeys instead.
+ * cold checkout into a wall of errors on every dynamic href. Nothing checks a
+ * link on its own: the journeys cover auth, chrome and permissions only, so a
+ * broken internal href is caught by that component's own test or not at all.
  */
 const nextConfig: NextConfig = {
   /**

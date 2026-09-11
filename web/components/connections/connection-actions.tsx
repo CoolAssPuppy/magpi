@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useState, useTransition } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -22,10 +21,12 @@ export function ConnectionActions({
   connection,
   onResync,
   onDisconnect,
+  onBegin,
 }: {
   connection: ConnectionSummary;
   onResync: ConnectionAction;
   onDisconnect: ConnectionAction;
+  onBegin: (providerSlug: string) => Promise<ActionState<undefined>>;
 }) {
   const [isPending, startTransition] = useTransition();
   const [failure, setFailure] = useState<string | null>(null);
@@ -40,14 +41,23 @@ export function ConnectionActions({
     });
   };
 
+  // Reconnecting is authorizing the account again, which is the same flow as connecting it.
+  const reconnect = () => {
+    setFailure(null);
+    startTransition(async () => {
+      const result = await onBegin(connection.provider);
+      if (result.status === 'error') setFailure(result.message);
+    });
+  };
+
   const { recovery } = connection.status;
 
   return (
     <div className="flex flex-col items-end gap-1.5">
       <div className="flex items-center gap-2">
         {recovery.kind === 'reconnect' ? (
-          <Button asChild variant="outline" size="sm">
-            <Link href={`/connections/${connection.provider}`}>{recovery.label}</Link>
+          <Button variant="outline" size="sm" disabled={isPending} onClick={() => reconnect()}>
+            {recovery.label}
           </Button>
         ) : null}
 

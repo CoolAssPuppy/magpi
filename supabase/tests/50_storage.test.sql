@@ -15,9 +15,30 @@ values
   ('d0000000-0000-4000-8000-000000000004', 'dave@magpi.test',
    '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated');
 
-insert into public.org_members (org_id, user_id, role)
-select org_id, 'd0000000-0000-4000-8000-000000000004', 'member'
-from public.org_members where user_id = 'c0000000-0000-4000-8000-000000000003';
+-- Joining an organization means leaving your own: org_members_user_id_idx is unique on the
+-- user, so the membership the signup trigger made is moved rather than added to.
+update public.org_members
+set org_id = (select org_id from public.org_members where user_id = 'c0000000-0000-4000-8000-000000000003'),
+    role = 'member'
+where user_id = 'd0000000-0000-4000-8000-000000000004';
+
+-- Moving an organization leaves the org space of the old one behind, so enrol them in the new one
+-- the way the signup trigger would have.
+insert into public.space_members (space_id, user_id)
+select s.id, m.user_id
+from public.org_members m
+join public.spaces s on s.org_id = m.org_id and s.kind = 'org'
+on conflict (space_id, user_id) do nothing;
+
+delete from public.space_members sm
+using public.spaces s
+where sm.space_id = s.id
+  and s.kind = 'org'
+  and not exists (
+    select 1 from public.org_members m
+    where m.user_id = sm.user_id and m.org_id = s.org_id
+  );
+
 
 insert into public.spaces (id, org_id, kind, name)
 values

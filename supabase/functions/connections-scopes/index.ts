@@ -60,7 +60,7 @@ serveFunction('connections-scopes', async (core) => {
 
   const scopeSelection = buildScopeSelection(
     driver.scopeSelectionKind,
-    available.map((option) => ({ ...option, kind: driver.scopeSelectionKind ?? 'workspace' })),
+    available,
     routes,
   );
 

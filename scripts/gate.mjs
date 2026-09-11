@@ -44,8 +44,13 @@ const FULL_STEPS = [
   { name: 'mobile-spec contract', cmd: 'node', argv: ['scripts/mobile-spec-check.mjs'] },
   { name: 'coverage thresholds', cmd: 'pnpm', argv: ['test:coverage'] },
   { name: 'pgTAP', cmd: 'node', argv: ['scripts/db-test.mjs'], needs: 'supabase' },
-  { name: 'integration', cmd: 'node', argv: ['scripts/integration-test.mjs'], needs: 'supabase' },
-  { name: 'e2e and lifecycle', cmd: 'pnpm', argv: ['test:e2e'], needs: 'playwright' },
+  {
+    name: 'integration',
+    cmd: 'node',
+    argv: ['scripts/integration-test.mjs'],
+    needs: 'supabase-keys',
+  },
+  { name: 'e2e and lifecycle', cmd: 'pnpm', argv: ['test:e2e'], needs: 'playwright-keys' },
 ];
 
 /** Redrawing needs a terminal. A log file or CI gets plain lines in the same order. */
@@ -75,7 +80,18 @@ function isAvailable(need) {
   if (!need) return true;
   if (need === 'deno') return hasBinary('deno');
   if (need === 'supabase') return hasBinary('supabase');
+  // The service role key never lives in the repo. Without it the step cannot sign anybody in, so
+  // it is missing a prerequisite rather than failing, the same as a missing binary.
+  if (need === 'supabase-keys') {
+    return hasBinary('supabase') && Boolean(process.env.SB_SERVICE_ROLE_KEY);
+  }
   if (need === 'playwright') return existsSync(resolve(ROOT, 'playwright.config.ts'));
+  // Its fixtures create accounts, so it needs the same key the integration step does.
+  if (need === 'playwright-keys') {
+    return (
+      existsSync(resolve(ROOT, 'playwright.config.ts')) && Boolean(process.env.SB_SERVICE_ROLE_KEY)
+    );
+  }
   return true;
 }
 

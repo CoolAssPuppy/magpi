@@ -16,10 +16,30 @@ values
    '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated');
 
 -- Carol is a plain member of Alice's org, so is_org_admin has a real negative case.
-insert into public.org_members (org_id, user_id, role)
-select org_id, 'c0000000-0000-4000-8000-000000000003', 'member'
-from public.org_members
-where user_id = 'a0000000-0000-4000-8000-000000000001' and role = 'owner';
+-- Joining an organization means leaving your own: org_members_user_id_idx is unique on the
+-- user, so the membership the signup trigger made is moved rather than added to.
+update public.org_members
+set org_id = (select org_id from public.org_members where user_id = 'a0000000-0000-4000-8000-000000000001' and role = 'owner'),
+    role = 'member'
+where user_id = 'c0000000-0000-4000-8000-000000000003';
+
+-- Moving an organization leaves the org space of the old one behind, so enrol them in the new one
+-- the way the signup trigger would have.
+insert into public.space_members (space_id, user_id)
+select s.id, m.user_id
+from public.org_members m
+join public.spaces s on s.org_id = m.org_id and s.kind = 'org'
+on conflict (space_id, user_id) do nothing;
+
+delete from public.space_members sm
+using public.spaces s
+where sm.space_id = s.id
+  and s.kind = 'org'
+  and not exists (
+    select 1 from public.org_members m
+    where m.user_id = sm.user_id and m.org_id = s.org_id
+  );
+
 
 insert into public.spaces (id, org_id, kind, name)
 values
@@ -115,17 +135,18 @@ values ('notion', 'Notion', 'api_key', true)
 on conflict (slug) do nothing;
 
 -- Fixed far-future and far-past expiries, so the clock comparison is decided by the fixture.
-insert into public.oauth_states (state, user_id, provider, code_verifier, space_id, expires_at, created_at)
+-- No space is chosen before the redirect any more, so neither row carries one.
+insert into public.oauth_states (state, user_id, provider, code_verifier, expires_at, created_at)
 values
   ('state-live', 'a0000000-0000-4000-8000-000000000001', 'notion', 'verifier-live',
-   '50000000-0000-4000-8000-00000000000a', '2099-01-01 00:00:00+00', '2026-01-02 00:00:00+00'),
+   '2099-01-01 00:00:00+00', '2026-01-02 00:00:00+00'),
   ('state-stale', 'a0000000-0000-4000-8000-000000000001', 'notion', 'verifier-stale',
-   '50000000-0000-4000-8000-00000000000a', '2020-01-01 00:00:00+00', '2019-12-31 00:00:00+00');
+   '2020-01-01 00:00:00+00', '2019-12-31 00:00:00+00');
 
-insert into public.pending_connections (ticket_hash, user_id, provider, space_id,
+insert into public.pending_connections (ticket_hash, user_id, provider,
                                         access_token_enc, expires_at, created_at)
 values ('ticket-live', 'a0000000-0000-4000-8000-000000000001', 'notion',
-        '50000000-0000-4000-8000-00000000000a', '\xdeadbeef',
+        '\xdeadbeef',
         '2099-01-01 00:00:00+00', '2026-01-02 00:00:00+00');
 
 set local role service_role;
@@ -273,10 +294,11 @@ select set_eq(
        and (has_function_privilege('authenticated', p.oid, 'EXECUTE')
             or has_function_privilege('anon', p.oid, 'EXECUTE')) $$,
   array['visible_space_ids', 'is_org_member', 'is_org_admin', 'is_space_member',
+        'routes_into_visible_space',
         'search', 'plan_document_limit', 'plan_monthly_query_limit',
         'check_ingest_allowed', 'check_query_allowed', 'record_retrieval',
         'org_member_emails', 'org_usage_totals', 'create_team_space'],
-  'the only functions a client role may execute are the thirteen meant to be callable'
+  'the only functions a client role may execute are the fourteen meant to be callable'
 );
 
 -- Grants. A policy is only reachable if the role also holds the table privilege.
@@ -304,15 +326,20 @@ select set_eq(
   $$ select grantee::text || ' ' || table_name::text || ' ' || privilege_type::text
      from information_schema.role_table_grants
      where table_schema = 'public'
-       and grantee in ('anon', 'authenticated', 'service_role')
-       -- Every privilege, not the four PostgREST uses. TRUNCATE ignores RLS, and the stock roles
-       -- arrive holding it, so a check that filtered it out could not see the thing worth catching.
-       $$,
+       -- Every privilege for the two client roles, not the four PostgREST uses: TRUNCATE ignores
+       -- RLS and the stock roles arrive holding it, so filtering it out hid the thing worth
+       -- catching. service_role is the trusted backend role and is expected to hold everything, so
+       -- it is compared on the four that say what the product does with it.
+       and (
+         grantee in ('anon', 'authenticated')
+         or (grantee = 'service_role'
+             and privilege_type in ('SELECT', 'INSERT', 'UPDATE', 'DELETE'))
+       ) $$,
   $$
     -- anon is absent on purpose. A row for it on the left is itself the failure.
     select 'authenticated ' || t || ' ' || p
     from (values
-      ('organizations', 'SELECT'), ('organizations', 'UPDATE'),
+      ('organizations', 'SELECT'),
       ('org_members', 'SELECT'), ('org_members', 'DELETE'),
       ('org_invites', 'SELECT'), ('org_invites', 'INSERT'), ('org_invites', 'DELETE'),
       -- No UPDATE. spaces is granted by column list, to keep org_id and kind out.
@@ -331,6 +358,9 @@ select set_eq(
       ('ingest_jobs', 'SELECT'),
       ('conversations', 'SELECT'), ('conversations', 'INSERT'),
       ('conversations', 'UPDATE'), ('conversations', 'DELETE'),
+      -- UPDATE is a column grant, so it is absent here on purpose.
+      ('conversation_folders', 'SELECT'), ('conversation_folders', 'INSERT'),
+      ('conversation_folders', 'DELETE'),
       ('messages', 'SELECT'), ('messages', 'INSERT'),
       ('usage_events', 'SELECT'),
       ('model_calls', 'SELECT')
@@ -342,7 +372,8 @@ select set_eq(
       ('organizations'), ('org_members'), ('org_invites'), ('spaces'),
       ('space_members'), ('providers'), ('connections'), ('documents'),
       ('chunks'), ('entities'), ('entity_mentions'), ('dream_runs'),
-      ('dream_links'), ('ingest_jobs'), ('conversations'), ('messages'),
+      ('dream_links'), ('ingest_jobs'), ('conversations'), ('conversation_folders'),
+      ('messages'),
       ('usage_events'), ('model_calls'),
       -- Granted in their own schema files, and reachable by no other role.
       ('oauth_states'), ('pending_connections'), ('rate_limits'), ('stripe_events')
@@ -369,7 +400,8 @@ select set_eq(
     -- anon and PUBLIC are absent on purpose. A row for either is itself the failure.
     select 'authenticated ' || f
     from (values
-      ('visible_space_ids'), ('is_org_member'), ('is_org_admin'), ('is_space_member'),
+      ('visible_space_ids'), ('routes_into_visible_space'),
+      ('is_org_member'), ('is_org_admin'), ('is_space_member'),
       ('search'), ('plan_document_limit'), ('plan_monthly_query_limit'),
       ('check_ingest_allowed'), ('check_query_allowed'), ('record_retrieval'),
       ('org_member_emails'), ('org_usage_totals'), ('create_team_space')

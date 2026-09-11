@@ -13,18 +13,40 @@ values
   ('b0000000-0000-4000-8000-000000000002', 'bob@magpi.test',
    '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated'),
   ('c0000000-0000-4000-8000-000000000003', 'carol@magpi.test',
+   '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated'),
+  ('d0000000-0000-4000-8000-000000000004', 'dana@magpi.test',
    '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated');
 
--- Alice owns her org. Bob is an admin in it and an owner of his own. Carol is a plain member.
-insert into public.org_members (org_id, user_id, role)
-select org_id, 'b0000000-0000-4000-8000-000000000002', 'admin'
-from public.org_members
-where user_id = 'a0000000-0000-4000-8000-000000000001' and role = 'owner';
+-- Alice owns her org, Bob is an admin in it and Carol a plain member of it. Dana keeps the
+-- organization the signup trigger gave her, which is the one everything here has to stay out of.
+-- Joining an organization means leaving your own: org_members_user_id_idx is unique on the
+-- user, so the membership the signup trigger made is moved rather than added to.
+update public.org_members
+set org_id = (select org_id from public.org_members where user_id = 'a0000000-0000-4000-8000-000000000001' and role = 'owner'),
+    role = 'admin'
+where user_id = 'b0000000-0000-4000-8000-000000000002';
 
-insert into public.org_members (org_id, user_id, role)
-select org_id, 'c0000000-0000-4000-8000-000000000003', 'member'
-from public.org_members
-where user_id = 'a0000000-0000-4000-8000-000000000001' and role = 'owner';
+update public.org_members
+set org_id = (select org_id from public.org_members where user_id = 'a0000000-0000-4000-8000-000000000001' and role = 'owner'),
+    role = 'member'
+where user_id = 'c0000000-0000-4000-8000-000000000003';
+
+-- Moving an organization leaves the org space of the old one behind, so enrol them in the new one
+-- the way the signup trigger would have.
+insert into public.space_members (space_id, user_id)
+select s.id, m.user_id
+from public.org_members m
+join public.spaces s on s.org_id = m.org_id and s.kind = 'org'
+on conflict (space_id, user_id) do nothing;
+
+delete from public.space_members sm
+using public.spaces s
+where sm.space_id = s.id
+  and s.kind = 'org'
+  and not exists (
+    select 1 from public.org_members m
+    where m.user_id = sm.user_id and m.org_id = s.org_id
+  );
 
 select set_config(
   'recall.org_a',
@@ -36,7 +58,7 @@ select set_config(
 select set_config(
   'recall.org_b',
   (select org_id::text from public.org_members
-   where user_id = 'b0000000-0000-4000-8000-000000000002' and role = 'owner'),
+   where user_id = 'd0000000-0000-4000-8000-000000000004' and role = 'owner'),
   true
 );
 
@@ -189,7 +211,7 @@ values
    'a0000000-0000-4000-8000-000000000001', '2099-01-01 00:00:00+00', '2026-02-01 00:00:00+00'),
   ('5e000000-0000-4000-8000-00000000000b', current_setting('recall.org_b')::uuid,
    'elsewhere@magpi.test', 'member', 'hash-b1',
-   'b0000000-0000-4000-8000-000000000002', '2099-01-01 00:00:00+00', '2026-02-01 00:00:00+00');
+   'd0000000-0000-4000-8000-000000000004', '2099-01-01 00:00:00+00', '2026-02-01 00:00:00+00');
 
 set local role authenticated;
 set local request.jwt.claims to '{"sub":"a0000000-0000-4000-8000-000000000001","role":"authenticated"}';
@@ -208,10 +230,11 @@ select is(
   2, 'and so does an admin'
 );
 
+-- Bob is an admin of org A and belongs to nothing else, so org B's invite is not his to read.
 select is(
   (select count(*)::int from public.org_invites
    where org_id = current_setting('recall.org_b')::uuid),
-  1, 'each org sees its own'
+  0, 'an admin sees no invite belonging to another organization'
 );
 
 set local request.jwt.claims to '{"sub":"c0000000-0000-4000-8000-000000000003","role":"authenticated"}';
@@ -293,6 +316,8 @@ select ok(
    where user_id = 'c0000000-0000-4000-8000-000000000003') = 'carol@magpi.test',
   'and it is the address on the account, not a placeholder'
 );
+
+
 
 set local request.jwt.claims to '{"sub":"b0000000-0000-4000-8000-000000000002","role":"authenticated"}';
 

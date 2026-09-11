@@ -19,9 +19,30 @@ values
    '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated');
 
 -- Dave joins Carol's organization. The trigger puts him in its org space.
-insert into public.org_members (org_id, user_id, role)
-select org_id, 'd0000000-0000-4000-8000-000000000004', 'member'
-from public.org_members where user_id = 'c0000000-0000-4000-8000-000000000003';
+-- Joining an organization means leaving your own: org_members_user_id_idx is unique on the
+-- user, so the membership the signup trigger made is moved rather than added to.
+update public.org_members
+set org_id = (select org_id from public.org_members where user_id = 'c0000000-0000-4000-8000-000000000003'),
+    role = 'member'
+where user_id = 'd0000000-0000-4000-8000-000000000004';
+
+-- Moving an organization leaves the org space of the old one behind, so enrol them in the new one
+-- the way the signup trigger would have.
+insert into public.space_members (space_id, user_id)
+select s.id, m.user_id
+from public.org_members m
+join public.spaces s on s.org_id = m.org_id and s.kind = 'org'
+on conflict (space_id, user_id) do nothing;
+
+delete from public.space_members sm
+using public.spaces s
+where sm.space_id = s.id
+  and s.kind = 'org'
+  and not exists (
+    select 1 from public.org_members m
+    where m.user_id = sm.user_id and m.org_id = s.org_id
+  );
+
 
 -- One team space per owner, with fixed ids the assertions below name.
 insert into public.spaces (id, org_id, kind, name)
@@ -47,16 +68,20 @@ insert into public.providers (slug, display_name, kind, enabled)
 values ('notion', 'Notion', 'api_key', true)
 on conflict (slug) do nothing;
 
-insert into public.connections (id, org_id, space_id, user_id, provider, external_account_id)
+-- A connection is an account now, and scope_selection.routes is what sends it into a space.
+insert into public.connections
+  (id, org_id, user_id, provider, external_account_id, scope_selection)
 values
   ('53000000-0000-4000-8000-00000000000a',
    (select org_id from public.spaces where id = '50000000-0000-4000-8000-00000000000a'),
-   '50000000-0000-4000-8000-00000000000a', 'a0000000-0000-4000-8000-000000000001',
-   'notion', 'alice-workspace'),
+   'a0000000-0000-4000-8000-000000000001', 'notion', 'alice-workspace',
+   jsonb_build_object('kind', 'workspace', 'available', '[]'::jsonb,
+     'routes', jsonb_build_object('w1', '50000000-0000-4000-8000-00000000000a'))),
   ('53000000-0000-4000-8000-00000000000c',
    (select org_id from public.spaces where id = '50000000-0000-4000-8000-00000000000c'),
-   '50000000-0000-4000-8000-00000000000c', 'c0000000-0000-4000-8000-000000000003',
-   'notion', 'carol-workspace');
+   'c0000000-0000-4000-8000-000000000003', 'notion', 'carol-workspace',
+   jsonb_build_object('kind', 'workspace', 'available', '[]'::jsonb,
+     'routes', jsonb_build_object('w1', '50000000-0000-4000-8000-00000000000c')));
 
 insert into public.documents (id, org_id, space_id, title, origin, created_at, updated_at)
 values
@@ -292,8 +317,8 @@ select throws_ok(
 );
 
 select throws_ok(
-  $$ insert into public.connections (org_id, space_id, user_id, provider)
-     values ('00000000-0000-4000-8000-000000000000', '50000000-0000-4000-8000-00000000000b',
+  $$ insert into public.connections (org_id, user_id, provider)
+     values ('00000000-0000-4000-8000-000000000000',
              'b0000000-0000-4000-8000-000000000002', 'notion') $$,
   '42501', null, 'connections: a client role cannot insert'
 );
@@ -470,30 +495,30 @@ select isnt(
   null, 'and the panel now has a date to read'
 );
 
--- One connection per account per provider per space, including the account with no label.
+-- One connection per account per provider per organization, including the account with no label.
 select throws_ok(
-  $$ insert into public.connections (org_id, space_id, user_id, provider, external_account_id)
+  $$ insert into public.connections (org_id, user_id, provider, external_account_id)
      values (
        (select org_id from public.spaces where id = '50000000-0000-4000-8000-00000000000a'),
-       '50000000-0000-4000-8000-00000000000a', 'a0000000-0000-4000-8000-000000000001',
+       'a0000000-0000-4000-8000-000000000001',
        'notion', 'alice-workspace') $$,
   '23505',
   null,
-  'the same provider account cannot be connected twice in one space'
+  'the same provider account cannot be connected twice in one organization'
 );
 
-insert into public.connections (org_id, space_id, user_id, provider, external_account_id)
+insert into public.connections (org_id, user_id, provider, external_account_id)
 values (
   (select org_id from public.spaces where id = '50000000-0000-4000-8000-00000000000a'),
-  '50000000-0000-4000-8000-00000000000a', 'a0000000-0000-4000-8000-000000000001',
+  'a0000000-0000-4000-8000-000000000001',
   'notion', null);
 
 -- A unique index counts every null as distinct, so the no-label case needs its own index.
 select throws_ok(
-  $$ insert into public.connections (org_id, space_id, user_id, provider, external_account_id)
+  $$ insert into public.connections (org_id, user_id, provider, external_account_id)
      values (
        (select org_id from public.spaces where id = '50000000-0000-4000-8000-00000000000a'),
-       '50000000-0000-4000-8000-00000000000a', 'a0000000-0000-4000-8000-000000000001',
+       'a0000000-0000-4000-8000-000000000001',
        'notion', null) $$,
   '23505',
   null,

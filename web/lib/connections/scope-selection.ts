@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { err, ok, type Result } from '@/lib/result';
 
-/** Which channels, folders or workspaces a connection reads. Only connections-scopes writes it. */
+/** Where each channel, folder or workspace lands. connections-scopes and connections-claim write it. */
 const scopeItemSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),

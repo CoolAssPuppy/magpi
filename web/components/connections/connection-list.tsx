@@ -13,12 +13,14 @@ function ConnectionRow({
   spaces,
   onResync,
   onDisconnect,
+  onBegin,
   onSaveScope,
 }: {
   connection: ConnectionSummary;
   spaces: readonly SpaceChoice[];
   onResync: ConnectionAction;
   onDisconnect: ConnectionAction;
+  onBegin: (providerSlug: string) => Promise<ActionState<undefined>>;
   onSaveScope: SaveScope;
 }) {
   return (
@@ -46,6 +48,7 @@ function ConnectionRow({
           connection={connection}
           onResync={onResync}
           onDisconnect={onDisconnect}
+          onBegin={onBegin}
         />
       </div>
 
@@ -106,6 +109,7 @@ export function ConnectionList({
                   connection={connection}
                   spaces={spaces}
                   onResync={onResync}
+                  onBegin={onBegin}
                   onDisconnect={onDisconnect}
                   onSaveScope={onSaveScope}
                 />

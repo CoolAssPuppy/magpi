@@ -5,16 +5,11 @@ import { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import type { ActionState } from '@/lib/actions/state';
 import type { ScopeRoutes, ScopeSelection } from '@/lib/connections/scope-selection';
-import type { ConnectionStatusView } from '@/lib/connections/status';
+import type { ConnectionSummary } from '@/lib/connections/view-model';
 
 import { ScopePicker, type RoutableSpace } from './scope-picker';
 
-export type ConnectionScope = {
-  readonly id: string;
-  readonly account: string;
-  readonly status: ConnectionStatusView;
-  readonly selection: ScopeSelection;
-};
+type ConnectionScope = Pick<ConnectionSummary, 'id' | 'selection'>;
 
 export type SaveScope = (
   connectionId: string,
