@@ -9,7 +9,7 @@ const scopeItemSchema = z.object({
 });
 
 const populatedSchema = z.object({
-  kind: z.enum(['channel', 'folder', 'workspace']),
+  kind: z.enum(['channel', 'folder', 'workspace', 'repository']),
   available: z.array(scopeItemSchema),
   /** Unit id to space id. A unit that is absent is read by nobody. */
   routes: z.record(z.string(), z.string().uuid()),
@@ -52,6 +52,7 @@ const NOUNS: Record<ScopeSelectionKind, string> = {
   channel: 'channels',
   folder: 'folders',
   workspace: 'workspaces',
+  repository: 'repositories',
 };
 
 export function describeScopeSelection(selection: ScopeSelection): string {
@@ -75,6 +76,8 @@ export function describeEmptySelection(kind: ScopeSelectionKind): string | null 
       return 'Send a folder to a space and Magpi starts reading it.';
     case 'workspace':
       return 'Send this workspace to a space and Magpi starts reading it.';
+    case 'repository':
+      return 'Send a repository to a space and Magpi starts reading its markdown.';
     default: {
       const unhandled: never = kind;
       throw new Error(`Unhandled scope selection kind: ${String(unhandled)}`);

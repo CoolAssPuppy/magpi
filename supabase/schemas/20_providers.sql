@@ -10,8 +10,10 @@ create table public.providers (
   docs_url text,
   enabled boolean not null default false,
   position integer not null default 0,
-  -- 'channel' for Slack, 'folder' for Drive, null where the whole account is the scope.
-  scope_selection_kind text check (scope_selection_kind in ('channel', 'folder', 'workspace'))
+  -- 'channel' for Slack, 'folder' for Drive, 'repository' for GitHub, null where the whole
+  -- account is the scope.
+  scope_selection_kind text
+    check (scope_selection_kind in ('channel', 'folder', 'workspace', 'repository'))
 );
 
 -- An oauth provider is unusable without its endpoints, and an api_key provider has none.

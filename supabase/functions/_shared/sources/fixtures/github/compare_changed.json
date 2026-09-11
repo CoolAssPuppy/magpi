@@ -1,0 +1,11 @@
+{
+  "status": "ahead",
+  "ahead_by": 2,
+  "total_commits": 2,
+  "files": [
+    { "filename": "docs/positioning.md", "status": "modified", "changes": 22 },
+    { "filename": "docs/launch-plan.md", "status": "added", "changes": 140 },
+    { "filename": "docs/retired.md", "status": "removed", "changes": 60 },
+    { "filename": "src/index.ts", "status": "modified", "changes": 4 }
+  ]
+}

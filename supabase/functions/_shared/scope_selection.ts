@@ -11,7 +11,7 @@ export const scopeOptionSchema = z.object({
 });
 
 export const storedScopeSelectionSchema = z.object({
-  kind: z.enum(['channel', 'folder', 'workspace']),
+  kind: z.enum(['channel', 'folder', 'workspace', 'repository']),
   available: z.array(scopeOptionSchema).max(1000),
   /** Unit id to space id. A unit with no entry is read by nobody. */
   routes: z.record(z.string().min(1).max(200), z.uuid()),

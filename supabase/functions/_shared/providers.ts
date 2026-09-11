@@ -7,7 +7,7 @@ import { ApiError } from './errors.ts';
 export type ProviderKind = 'oauth' | 'api_key';
 
 /** What the connections screen asks the user to pick after the redirect. */
-export type ScopeSelectionKind = 'channel' | 'folder' | 'workspace';
+export type ScopeSelectionKind = 'channel' | 'folder' | 'workspace' | 'repository';
 
 export interface ProviderRecord {
   slug: string;

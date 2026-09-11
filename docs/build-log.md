@@ -416,3 +416,44 @@ runs out of room arrives as broken JSON, and four runs failed that way. Both cap
 are now derived from the count they have to hold. A model's list is also read one
 entry at a time, so one row it shaped oddly costs that row rather than the answer
 and the run.
+
+## Phase 20: GitHub is a source
+
+**Shipped.** A GitHub connector, which is the fifth driver and the first that
+reads files rather than records. A repository is a unit, so one account can send
+one repository to one space and another to another, the same as a Slack channel
+or a Drive folder. `repository` is a fourth scope selection kind and the picker
+names the units by it.
+
+What it reads is prose: `.md`, `.markdown`, `.mdx`, `.txt` and `.rst`, skipping
+vendored trees, dot directories, lockfiles and anything over a megabyte, because
+the contents endpoint refuses those anyway. Code is not read. A repository of
+4,795 files is 34 MB of text and 19 cents of embeddings.
+
+A first read walks the tree at one commit, three hundred files at a time, and
+carries that commit through the walk so a push part way does not shuffle the
+pages. After that each pass asks for the newest commit, which is one request, and
+stops there when nothing has moved. When something has, one compare says what
+changed. A change larger than a compare reports, which is three hundred files,
+drops back to a walk rather than losing the rest quietly.
+
+The cursor holds a commit per repository rather than one stamp, because a
+connection reads several and they move independently. A repository that stops
+being routed is dropped from it. A repository with no commits is marked read so
+it is not asked for again every hour.
+
+Verified against the real API as well as the fixtures: a walk of
+`octocat/Spoon-Knife`, a second pass that read nothing, a compare across thirty
+commits of `supabase/supabase-js` that picked out the six markdown files and left
+the code, and a file fetched and decoded.
+
+**Did not ship.** A deleted file stays filed. Nothing in the driver contract
+removes a document that has been written, so a file deleted upstream keeps
+answering questions until somebody deletes it by hand. A renamed file arrives as
+a new document and the old one stays too, for the same reason.
+
+**Notes.** The limiter tests had been failing about twice in a hundred runs.
+enforceRateLimits prunes on one call in two hundred and does not wait for it, so
+a run where that fired ended with a request in flight and Deno's leak sanitizer
+failed the test. It has nothing to do with rate limiting and took a forced prune
+to see.

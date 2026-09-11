@@ -161,6 +161,17 @@ const QUIRKS: Record<string, DriverQuirks> = {
     },
   },
 
+  github: {
+    async accountFromExchange(deps, _payload, accessToken) {
+      const info = await fetchJson(deps, 'https://api.github.com/user', {
+        authorization: `Bearer ${accessToken}`,
+        // GitHub answers 403 to a request with no user agent, including this one.
+        'user-agent': 'magpi',
+      });
+      return readString(info, 'login');
+    },
+  },
+
   linear: {
     scopeSeparator: ',',
     async accountFromExchange(deps, _payload, accessToken) {

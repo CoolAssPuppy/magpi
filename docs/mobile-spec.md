@@ -339,10 +339,12 @@ one line for line, so the transport is spelled out.
   change on any platform. A connection is one authorized account and does not
   belong to a space. `scope_selection` holds `{kind, available, routes}`, where
   `routes` maps a unit id to a space id, so one account can send one channel to
-  Engineering and another to Finance.
+  Engineering and another to Finance. `kind` is one of channel, folder,
+  workspace or repository, and is what the picker names the units by.
 - **Loading.** Provider list skeleton.
-- **Empty.** No connections yet, with the four providers listed and one action
-  each.
+- **Empty.** No connections yet, with the five wired providers listed and one
+  action each: Notion, Linear, Slack, Google Drive and GitHub. The rest of the
+  registry renders as coming soon.
 - **Error.** A `revoked` or `expired` connection shows `status_detail` and a
   reconnect action. It never shows a spinner that does not resolve.
 - **Content.** Provider rows. Under each, one row per connected account showing

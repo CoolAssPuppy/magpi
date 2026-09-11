@@ -60,6 +60,19 @@ insert into public.providers (
     40,
     'folder'
   ),
+  (
+    'github',
+    'GitHub',
+    'Markdown and text files from the repositories you pick.',
+    'oauth',
+    'https://github.com/login/oauth/authorize',
+    'https://github.com/login/oauth/access_token',
+    array['repo', 'read:user'],
+    'https://docs.github.com/en/apps/oauth-apps',
+    true,
+    50,
+    'repository'
+  ),
   -- Not wired up. They are here so the connections page shows what this is for, and the page
   -- renders them as coming soon rather than offering a button that would fail.
   (
@@ -86,12 +99,7 @@ insert into public.providers (
     'https://auth.atlassian.com/oauth/token', array[]::text[],
     'https://developer.atlassian.com/cloud/confluence/oauth-2-3lo-apps/', false, 80, null
   ),
-  (
-    'github', 'GitHub', 'Issues, pull requests and repository markdown.',
-    'oauth', 'https://github.com/login/oauth/authorize',
-    'https://github.com/login/oauth/access_token', array[]::text[],
-    'https://docs.github.com/en/apps/oauth-apps', false, 90, null
-  ),
+
   (
     'zendesk', 'Zendesk', 'Tickets and help centre articles from a Zendesk account.',
     'oauth', 'https://example.zendesk.com/oauth/authorizations/new',

@@ -2,12 +2,19 @@
 
 import { ApiError } from '../errors.ts';
 import type { SourceDriver } from './contract.ts';
+import { githubDriver } from './github.ts';
 import { googleDriver } from './google.ts';
 import { linearDriver } from './linear.ts';
 import { notionDriver } from './notion.ts';
 import { slackDriver } from './slack.ts';
 
-const DRIVERS: readonly SourceDriver[] = [notionDriver, linearDriver, slackDriver, googleDriver];
+const DRIVERS: readonly SourceDriver[] = [
+  notionDriver,
+  linearDriver,
+  slackDriver,
+  googleDriver,
+  githubDriver,
+];
 
 const BY_SLUG = new Map(DRIVERS.map((driver) => [driver.provider, driver]));
 
