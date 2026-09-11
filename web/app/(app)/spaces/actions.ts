@@ -18,6 +18,47 @@ const addMemberSchema = spaceIdSchema.extend({ userId: z.uuid() });
 
 const dreamingSchema = spaceIdSchema.extend({ enabled: z.boolean() });
 
+const detailsSchema = z.object({
+  spaceId: z.uuid(),
+  name: z.string().trim().min(1).max(120),
+  description: z.string().trim().max(400),
+});
+
+/**
+ * Renames one space and rewrites what it is for. Any member may: the policy admits a space the
+ * caller can see and the column grant stops org_id and kind moving with it.
+ */
+export async function updateSpaceDetails(
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  return withSession(
+    async ({ supabase }) => {
+      const parsed = detailsSchema.safeParse({
+        spaceId: formData.get('spaceId'),
+        name: formData.get('name'),
+        description: formData.get('description') ?? '',
+      });
+      if (!parsed.success) {
+        return errorState('A name is between 1 and 120 characters, a description up to 400.');
+      }
+
+      const { error } = await supabase
+        .from('spaces')
+        .update({
+          name: parsed.data.name,
+          // An emptied box means no description, rather than an empty one.
+          description: parsed.data.description.length > 0 ? parsed.data.description : null,
+        })
+        .eq('id', parsed.data.spaceId);
+
+      if (error) return errorState('That space could not be saved.');
+      return successState(undefined);
+    },
+    `/spaces/${String(formData.get('spaceId') ?? '')}`,
+  );
+}
+
 export async function createTeamSpace(formData: FormData): Promise<ActionState<{ id: string }>> {
   return withSession(async ({ supabase, orgId }) => {
     const parsed = createSpaceSchema.safeParse({

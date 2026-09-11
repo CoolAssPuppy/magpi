@@ -9,7 +9,6 @@ import { withSession } from '@/lib/actions/with-session';
 const SETTINGS_PATH = '/settings';
 
 const displayNameSchema = z.object({ displayName: z.string().trim().min(1).max(80) });
-const spaceNameSchema = z.object({ name: z.string().trim().min(1).max(120) });
 
 // Parsing happens inside withSession, so a signed-out caller is told to sign in.
 
@@ -26,26 +25,6 @@ export async function updateDisplayName(
     });
 
     if (error) return errorState('Your display name could not be saved.');
-    return successState(undefined);
-  }, SETTINGS_PATH);
-}
-
-export async function renamePersonalSpace(
-  _previous: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  return withSession(async ({ supabase, userId, orgId }) => {
-    const parsed = spaceNameSchema.safeParse({ name: formData.get('name') });
-    if (!parsed.success) return errorState('A space name is between 1 and 120 characters.');
-
-    const { error } = await supabase
-      .from('spaces')
-      .update({ name: parsed.data.name })
-      .eq('org_id', orgId)
-      .eq('kind', 'personal')
-      .eq('owner_user_id', userId);
-
-    if (error) return errorState('That space could not be renamed.');
     return successState(undefined);
   }, SETTINGS_PATH);
 }

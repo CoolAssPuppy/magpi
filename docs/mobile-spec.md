@@ -261,7 +261,11 @@ one line for line, so the transport is spelled out.
   someone.
 - **Error.** A space the caller cannot see returns not found, deliberately.
   "Not found" and "not allowed" are the same answer.
-- **Content.** Name, who can see it, the dreaming switch, and the member list.
+- **Content.** A form for the name and the description, the dreaming switch, and
+  the member list. Any member may edit both fields: `spaces_update_member`
+  admits a space the caller can see and the column grant stops `org_id` and
+  `kind` moving with it. This is where a personal space is renamed too, which
+  used to be the one space you could rename and only from Settings.
 - **Navigation.** Pushed from Spaces.
 - **Components.** Web `components/spaces/dreaming-toggle.tsx` and
   `space-members.tsx`. iOS `Form` with a `Toggle`. Android
@@ -591,14 +595,63 @@ one line for line, so the transport is spelled out.
 - **Loading.** Form skeleton.
 - **Empty.** Not reachable.
 - **Error.** The auth error text.
-- **Content.** Profile, the personal space, theme, and sign out.
-- **Navigation.** Not a tab. Header on web, profile row on native.
+- **Content.** Profile: the display name, the address signed in with, and sign
+  out everywhere. Renaming a space left this screen; every space is edited on
+  its own detail screen now, including the personal one.
+- **Navigation.** Not a tab. Header on web, profile row on native. A side nav
+  lists the sections, the same shape as Admin: Profile, Embeddings, MCP and API.
+  On native it is a grouped list that pushes, not a rail.
 - **Components.** Web form. iOS `Form`. Android `PreferenceScreen`.
 - **Proposed string keys.** `settings.theme.system`, `settings.theme.light`,
   `settings.theme.dark`, `settings.signOut`, `settings.signOutAll`.
 - **Permissions.** None.
 - **Offline and refresh.** Readable offline. Changes need a network.
 - **Proposed analytics events.** `theme_changed`, `signed_out`.
+
+### Settings, embeddings
+
+- **Screen name.** Embeddings
+- **Web route.** `/settings/embeddings`
+- **Deep link.** `magpi://settings/embeddings`
+- **Data contract.** None yet. The model id is a constant in `web/lib/models.ts`,
+  not a row, because nothing about it is per account.
+- **Loading.** None. Nothing is fetched.
+- **Empty.** The whole screen is the empty state until bringing your own key
+  exists.
+- **Error.** None reachable.
+- **Content.** Which model reads your documents, and whose account pays for it.
+  A sentence saying a key of your own is not built yet, and that the model a
+  document was read with will be recorded against it when it is, because
+  changing the model means reading everything again.
+- **Navigation.** Second in the Settings nav.
+- **Components.** Web `components/admin/panel.tsx`. iOS `Form`. Android
+  `PreferenceScreen`.
+- **Proposed string keys.** `embeddings.model.title`, `embeddings.byok.pending`.
+- **Permissions.** None.
+- **Offline and refresh.** Static, so it reads offline.
+- **Proposed analytics events.** None.
+
+### Settings, MCP and API
+
+- **Screen name.** MCP and API
+- **Web route.** `/settings/mcp`
+- **Deep link.** `magpi://settings/mcp`
+- **Data contract.** The server address is built from
+  `NEXT_PUBLIC_SUPABASE_URL`, so it is configuration rather than a query.
+- **Loading.** None for the address.
+- **Empty.** Not reachable: the address always exists.
+- **Error.** None for the address.
+- **Content.** The MCP server address with a copy button, what happens the first
+  time an agent connects, and the five tools it exposes with one line each.
+- **Navigation.** Third in the Settings nav.
+- **Components.** Web `components/app/copy-button.tsx` and
+  `components/admin/panel.tsx`. iOS `Form` with a copy row. Android
+  `PreferenceScreen` with a copy affordance.
+- **Proposed string keys.** `mcp.connect.title`, `mcp.connect.body`,
+  `mcp.tools.title`, `mcp.copy`, `mcp.copied`.
+- **Permissions.** Clipboard write on native.
+- **Offline and refresh.** The address reads offline.
+- **Proposed analytics events.** `mcp_address_copied`.
 
 ## Parity rules
 

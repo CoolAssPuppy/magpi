@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { NOT_SIGNED_IN, type ActionState } from '@/lib/actions/state';
+import { idleState, NOT_SIGNED_IN, type ActionState } from '@/lib/actions/state';
 import type { SessionContext } from '@/lib/supabase/context';
 
 const SPACE_ID = '33333333-3333-4333-8333-333333333333';
@@ -100,7 +100,7 @@ vi.mock('@/lib/actions/with-session', () => ({
   },
 }));
 
-const { addSpaceMember, createTeamSpace, removeSpaceMember, setDreaming } =
+const { addSpaceMember, createTeamSpace, removeSpaceMember, setDreaming, updateSpaceDetails } =
   await import('./actions');
 
 const form = (fields: Record<string, string>): FormData => {
@@ -315,5 +315,67 @@ describe('dreaming over a space', () => {
       message: 'Dreaming could not be changed for that space.',
     });
     expect(dbState.revalidated).toEqual([]);
+  });
+});
+
+describe('editing what a space is called and what it is for', () => {
+  const details = (overrides: Record<string, string> = {}) =>
+    form({
+      spaceId: SPACE_ID,
+      name: 'Field marketing',
+      description: 'Events and launches.',
+      ...overrides,
+    });
+
+  it('saves the name and the description against that space', async () => {
+    const state = await updateSpaceDetails(idleState, details());
+
+    expect(state).toEqual({ status: 'success', data: undefined });
+    expect(dbState.writes).toEqual([
+      {
+        table: 'spaces',
+        operation: 'update',
+        values: { name: 'Field marketing', description: 'Events and launches.' },
+        match: [['id', SPACE_ID]],
+      },
+    ]);
+  });
+
+  // Emptying the box means the space has no description, not that it has an empty one.
+  it('clears a description that was rubbed out', async () => {
+    await updateSpaceDetails(idleState, details({ description: '   ' }));
+
+    expect(dbState.writes[0].values).toEqual({ name: 'Field marketing', description: null });
+  });
+
+  it('refuses a space with no name, and writes nothing', async () => {
+    const state = await updateSpaceDetails(idleState, details({ name: '  ' }));
+
+    expect(state.status).toBe('error');
+    expect(dbState.writes).toEqual([]);
+  });
+
+  it('refuses a description longer than the column allows', async () => {
+    const state = await updateSpaceDetails(idleState, details({ description: 'x'.repeat(401) }));
+
+    expect(state.status).toBe('error');
+    expect(dbState.writes).toEqual([]);
+  });
+
+  // Row level security is what decides this, so a refusal has to read as a refusal.
+  it('says so when the database refused the change', async () => {
+    dbState.failures['spaces:update'] = 'new row violates row-level security';
+
+    const state = await updateSpaceDetails(idleState, details());
+
+    expect(state).toEqual({ status: 'error', message: 'That space could not be saved.' });
+    expect(dbState.revalidated).toEqual([]);
+  });
+
+  it('refuses an id that is not a space id at all', async () => {
+    const state = await updateSpaceDetails(idleState, details({ spaceId: 'not-a-uuid' }));
+
+    expect(state.status).toBe('error');
+    expect(dbState.writes).toEqual([]);
   });
 });

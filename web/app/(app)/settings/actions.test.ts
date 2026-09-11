@@ -79,7 +79,7 @@ vi.mock('@/lib/actions/with-session', () => ({
   },
 }));
 
-const { renamePersonalSpace, signOutEverywhere, updateDisplayName } = await import('./actions');
+const { signOutEverywhere, updateDisplayName } = await import('./actions');
 
 function form(fields: Record<string, string>): FormData {
   const data = new FormData();
@@ -163,52 +163,6 @@ describe('changing a display name', () => {
 
     expect(state).toEqual({ status: 'error', message: 'You need to sign in to do that.' });
     expect(account.writes).toEqual([]);
-  });
-});
-
-describe('renaming a personal space', () => {
-  it('renames the space belonging to the caller, in their organization', async () => {
-    const state = await renamePersonalSpace(idleState, form({ name: 'Reading pile' }));
-
-    expect(state).toEqual({ status: 'success', data: undefined });
-    expect(account.writes).toEqual([
-      {
-        table: 'spaces',
-        operation: 'update',
-        values: { name: 'Reading pile' },
-        match: [
-          ['org_id', ORG_ID],
-          ['kind', 'personal'],
-          ['owner_user_id', USER_ID],
-        ],
-      },
-    ]);
-  });
-
-  it('refuses an empty space name, and changes nothing', async () => {
-    const state = await renamePersonalSpace(idleState, form({ name: '  ' }));
-
-    expect(state).toEqual({
-      status: 'error',
-      message: 'A space name is between 1 and 120 characters.',
-    });
-    expect(account.writes).toEqual([]);
-  });
-
-  it('refuses a space name longer than 120 characters', async () => {
-    const state = await renamePersonalSpace(idleState, form({ name: 'a'.repeat(121) }));
-
-    expect(state.status).toBe('error');
-    expect(account.writes).toEqual([]);
-  });
-
-  it('says the rename failed rather than pretending it worked', async () => {
-    account.error = { message: 'new row violates row-level security' };
-
-    const state = await renamePersonalSpace(idleState, form({ name: 'Reading pile' }));
-
-    expect(state).toEqual({ status: 'error', message: 'That space could not be renamed.' });
-    expect(account.revalidated).toEqual([]);
   });
 });
 

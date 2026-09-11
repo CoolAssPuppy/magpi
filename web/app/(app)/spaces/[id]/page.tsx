@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { CrumbTitle } from '@/components/app/crumb-title';
 import { PageHeader } from '@/components/app/page-header';
 import { DreamingToggle } from '@/components/spaces/dreaming-toggle';
+import { SpaceDetailsForm } from '@/components/spaces/space-details-form';
 import { SpaceMembers } from '@/components/spaces/space-members';
 import { describeKind } from '@/lib/spaces/spaces';
 import { createClient } from '@/lib/supabase/server';
@@ -13,7 +14,7 @@ export default async function SpacePage({ params }: { params: Promise<{ id: stri
 
   const { data: space } = await supabase
     .from('spaces')
-    .select('id, name, kind, dreaming_enabled')
+    .select('id, name, description, kind, dreaming_enabled')
     .eq('id', id)
     .maybeSingle();
 
@@ -41,6 +42,8 @@ export default async function SpacePage({ params }: { params: Promise<{ id: stri
           documentCount === 1 ? 'document' : 'documents'
         }.`}
       />
+
+      <SpaceDetailsForm spaceId={space.id} name={space.name} description={space.description} />
 
       <DreamingToggle spaceId={space.id} enabled={space.dreaming_enabled} />
 
