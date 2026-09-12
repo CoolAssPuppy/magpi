@@ -29,6 +29,7 @@ const JOB: IngestJobRecord = {
   space_id: SPACE,
   document_id: 'document-1',
   connection_id: null,
+  attempts: 1,
 };
 
 function uploadDocument(overrides: Record<string, unknown> = {}) {

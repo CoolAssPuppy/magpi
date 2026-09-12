@@ -568,3 +568,35 @@ one wrong token would collapse it to one.
 invites are Magpi's own table rather than a GoTrue flow, so that one does not
 come through the hook and still needs wiring to the members screen, which today
 hands the raw token back to the browser and emails nobody.
+
+## Phase 23: The ingest queue was waiting on itself
+
+**Shipped.** The ingest worker ran its batch in a loop, each job awaiting the one
+before it. A job is a fetch, an embed and a write, which is almost entirely
+waiting, so a batch of twenty-five cost the sum of twenty-five waits. This is
+the same shape as the dream worker in Phase 19, in a second place, found by
+being asked whether the rate was real or self-imposed.
+
+Measured on the demo corpus, 196 documents and 299 chunks, before and after:
+**55 seconds to 8**. One invocation of a hundred jobs takes 2.8 seconds, so the
+batch of twenty-five was never a considered limit either: it was what fitted in
+the budget when the jobs ran in sequence. The schedule now claims a hundred.
+
+It is a bounded pool of eight rather than everything at once, and the bound is
+the point. A source that allows a few thousand requests an hour does not want
+twenty-five at a time, and going faster is what makes that matter.
+
+**The bug the speed uncovered.** GitHub answers a spent hourly allowance with
+403, which is the same status it uses for a refused token, and `requestJson`
+read every 403 as a credential to reconnect. A fast import would have marked a
+perfectly good connection expired and asked the person to reauthorize, when all
+they had to do was wait. A throttle is now told apart by the remaining count and
+the retry headers, and it is not an attempt at the work: the claim that spent
+one gives it back, because three retries inside six minutes would otherwise
+throw a document away over an hourly limit. The first throttled job stops the
+batch, since the next would be told the same thing.
+
+**Notes.** 196 documents in 8 seconds is 24 a second, but the corpus is uploads
+read from local storage. Against a real source the ceiling is the source: 4,795
+files from GitHub is an hour at their five thousand an hour, whatever this
+worker does.

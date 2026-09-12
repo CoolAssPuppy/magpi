@@ -99,11 +99,28 @@ export class SourceError extends Error {
   readonly provider: string;
   /** True when reconnecting is the fix, which the connections page shows. */
   readonly needsReconnect: boolean;
+  /**
+   * Set when the provider asked us to slow down rather than refusing us. The work is still ours
+   * to do, so it goes back on the queue without counting as an attempt: three retries inside six
+   * minutes would otherwise throw a document away over an hourly limit.
+   */
+  readonly retryAfterSeconds?: number;
 
-  constructor(provider: string, message: string, needsReconnect = false) {
+  constructor(
+    provider: string,
+    message: string,
+    needsReconnect = false,
+    retryAfterSeconds?: number,
+  ) {
     super(message);
     this.name = 'SourceError';
     this.provider = provider;
     this.needsReconnect = needsReconnect;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
+}
+
+/** True when the provider is throttling us rather than refusing us. */
+export function isRateLimited(error: unknown): error is SourceError {
+  return error instanceof SourceError && error.retryAfterSeconds !== undefined;
 }

@@ -7,7 +7,7 @@ import { loadConnection } from '../connections.ts';
 import { chunkText } from '../chunking.ts';
 import { extractText } from '../extract.ts';
 import { ApiError } from '../errors.ts';
-import { SourceError } from '../sources/contract.ts';
+import { isRateLimited, SourceError } from '../sources/contract.ts';
 import { driverFor } from '../sources/index.ts';
 import { resolveCredentials } from '../token_refresh.ts';
 import { type Budget, DEFAULT_BUDGET_MS, StageTimeout, startBudget } from './budget.ts';
@@ -22,13 +22,16 @@ export interface IngestJobRecord {
   space_id: string;
   document_id: string;
   connection_id: string | null;
+  /** Counted up by the claim. A job gives one back when it was only ever throttled. */
+  attempts: number;
 }
 
 export type IngestResult =
   | { kind: 'succeeded'; chunkCount: number }
   | { kind: 'unchanged' }
   | { kind: 'timeout'; stage: IngestStage }
-  | { kind: 'retrying'; stage: IngestStage; detail: string }
+  // `rateLimited` says the provider asked us to wait, which is a reason to stop claiming more.
+  | { kind: 'retrying'; stage: IngestStage; detail: string; rateLimited?: true }
   | { kind: 'failed'; stage: IngestStage; detail: string };
 
 interface DocumentRow {
@@ -177,7 +180,7 @@ async function storeChunks(
 async function finish(
   deps: JobDeps,
   job: IngestJobRecord,
-  patch: { status: string; stage: IngestStage; error: string | null },
+  patch: { status: string; stage: IngestStage; error: string | null; attempts?: number },
 ): Promise<void> {
   const { error } = await deps.db.from('ingest_jobs').update(patch).eq('id', job.id);
   if (error) {
@@ -266,6 +269,18 @@ export async function runIngestJob(job: IngestJobRecord, deps: JobDeps): Promise
     }
 
     const detail = detailOf(err);
+
+    // Being throttled is not an attempt at the work, so the claim that spent one gives it back.
+    // Three retries inside six minutes would otherwise discard a document over an hourly limit.
+    if (isRateLimited(err)) {
+      await finish(deps, job, {
+        status: 'queued',
+        stage,
+        error: detail,
+        attempts: Math.max(job.attempts - 1, 0),
+      });
+      return { kind: 'retrying', stage, detail, rateLimited: true };
+    }
 
     // A momentary provider failure goes back on the queue; a refused credential is terminal.
     if (err instanceof SourceError && !err.needsReconnect) {

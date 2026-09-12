@@ -48,6 +48,26 @@ export interface RequestOptions {
   failureMessage: string;
 }
 
+/**
+ * How long a provider wants us to wait, or null when it is not throttling. GitHub answers a
+ * spent hourly allowance with 403 and a remaining count of zero, which is the same status it
+ * uses for a refused token: read the wrong way, a fast import reads as a revoked connection.
+ */
+export function retryAfterOf(response: Response): number | null {
+  const spent = response.headers.get('x-ratelimit-remaining') === '0';
+  if (response.status !== 429 && !(response.status === 403 && spent)) return null;
+
+  const after = Number(response.headers.get('retry-after'));
+  if (Number.isFinite(after) && after > 0) return after;
+
+  // GitHub gives the instant the allowance returns rather than a duration.
+  const resets = Number(response.headers.get('x-ratelimit-reset'));
+  if (Number.isFinite(resets) && resets > 0) {
+    return Math.max(Math.round(resets - Date.now() / 1000), 1);
+  }
+  return 60;
+}
+
 /** One request, one parsed body, and no upstream text in any error. */
 export async function requestJson(
   provider: string,
@@ -65,6 +85,16 @@ export async function requestJson(
   } catch {
     // A fetch rejection carries the request URL in its cause.
     throw new SourceError(provider, options.failureMessage);
+  }
+
+  const throttle = retryAfterOf(response);
+  if (throttle !== null) {
+    throw new SourceError(
+      provider,
+      `${provider} asked us to slow down. The next pass will pick this up.`,
+      false,
+      throttle,
+    );
   }
 
   if (response.status === 401 || response.status === 403) {

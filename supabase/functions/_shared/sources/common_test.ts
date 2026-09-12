@@ -3,7 +3,13 @@ import { assert, assertEquals } from '@std/assert';
 import { fixedClock } from '../deps.ts';
 import type { SourceDeps } from './contract.ts';
 import { SourceError } from './contract.ts';
-import { asRecord, isoStamp, refreshWithTokenEndpoint, requestJson } from './common.ts';
+import {
+  asRecord,
+  isoStamp,
+  refreshWithTokenEndpoint,
+  requestJson,
+  retryAfterOf,
+} from './common.ts';
 
 const NOW = new Date('2026-09-09T12:00:00.000Z');
 
@@ -199,4 +205,42 @@ Deno.test('the log names a provider by its slug and the user by its display name
   if (outcome.kind !== 'failed') return;
   assert(outcome.detail.includes('Google Drive'));
   assert(!outcome.detail.includes('google_drive'));
+});
+
+/** A response carrying only the headers a rate limit is recognised by. */
+function throttled(status: number, headers: Record<string, string>): Response {
+  return new Response('{}', { status, headers });
+}
+
+Deno.test('a spent allowance is a throttle, not a refused credential', () => {
+  // GitHub answers both with 403. Read the wrong way, a fast import marks the connection dead.
+  assertEquals(
+    retryAfterOf(throttled(403, { 'x-ratelimit-remaining': '0', 'retry-after': '90' })),
+    90,
+  );
+  assertEquals(retryAfterOf(throttled(429, { 'retry-after': '30' })), 30);
+});
+
+Deno.test('a 403 with allowance left is a refused credential, not a throttle', () => {
+  assertEquals(retryAfterOf(throttled(403, { 'x-ratelimit-remaining': '17' })), null);
+  assertEquals(retryAfterOf(throttled(403, {})), null);
+  assertEquals(retryAfterOf(throttled(401, {})), null);
+});
+
+Deno.test('an ordinary answer is not a throttle', () => {
+  assertEquals(retryAfterOf(throttled(200, {})), null);
+  assertEquals(retryAfterOf(throttled(500, {})), null);
+});
+
+Deno.test('a reset instant is turned into a wait, since that is what the caller needs', () => {
+  const inTwoMinutes = Math.floor(Date.now() / 1000) + 120;
+  const wait = retryAfterOf(
+    throttled(403, { 'x-ratelimit-remaining': '0', 'x-ratelimit-reset': String(inTwoMinutes) }),
+  );
+
+  assert(wait !== null && wait > 110 && wait <= 120, `expected about two minutes, got ${wait}`);
+});
+
+Deno.test('a throttle with nothing to go on still waits rather than hammering', () => {
+  assertEquals(retryAfterOf(throttled(429, {})), 60);
 });

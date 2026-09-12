@@ -71,13 +71,15 @@ export async function claimQueuedRow(
   return data !== null;
 }
 
-// The rpc returns whole ingest_jobs rows; the job body reads five of the columns.
+// The rpc returns whole ingest_jobs rows; the job body reads six of the columns. `attempts` is
+// the count this claim just raised, which a job that was only throttled gives back.
 const claimedJobsSchema = z.array(z.object({
   id: z.uuid(),
   org_id: z.uuid(),
   space_id: z.uuid(),
   document_id: z.uuid(),
   connection_id: z.uuid().nullable(),
+  attempts: z.number().int(),
 }));
 
 /** Takes a batch of queued ingest jobs, marking them running in the statement that selects them. */
