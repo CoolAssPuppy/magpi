@@ -72,3 +72,14 @@ Schema, decided:
 - `folder_color` is an enum of names mapping to Supabase semantic tokens. No hex
   column, because `scripts/check-raw-color.mjs` fails the gate on a raw colour
   and an exemption for one column would be the first hole in that rule.
+
+## 5. First deploy to the hosted project (vvfegdrzrzjyekvrfyoj)
+
+- [x] Link the repo to the project
+- [x] Copy non-Supabase secrets from Doppler dev to stg and prd, delete unused dev keys
+- [x] Fix the gate: pnpm version pinned twice, every run failed in 12s
+- [x] Add deploy.yml: db push and functions deploy on push to main (needs SUPABASE_ACCESS_TOKEN and SUPABASE_DB_PASSWORD repo secrets)
+- [x] db push --include-seed, seed buckets. db diff found pg_net missing on hosted; migration added and pushed
+- [x] Function secrets from Doppler prd, 14 functions deployed, cron Vault secrets set
+- [ ] Email hook in the dashboard (Authentication, Hooks, Send Email)
+- [ ] Web on Vercel and the domain-dependent auth URLs (deferred)
