@@ -84,5 +84,7 @@ Schema, decided:
 - [x] Email hook in the dashboard, secret from Doppler prd pushed to functions
 - [x] CI: Doppler service tokens as DOPPLER_TOKEN_DEV / DOPPLER_TOKEN_PRD, deploy runs under Doppler prd
 - [x] Vercel: root directory web, build overrides cleared, root vercel.json removed, production Ready
-- [ ] Commit and push: deploy.yml, contract script, doppler.yaml, .gitignore, vercel.json removal
+- [x] CI gate: five vendored CSS files under web/styles/supabase/packages/ui/build were hidden by the build/ ignore rule; un-ignored and added. .agents excluded from prettier
+- [ ] Deploy: functions deploy gets 403, the SUPABASE_ACCESS_TOKEN in GitHub cannot write functions. Needs a new token
+- [ ] Commit and push the working tree
 - [ ] Web on Vercel and the domain-dependent auth URLs (deferred)

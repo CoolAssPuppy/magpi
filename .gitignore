@@ -3,6 +3,9 @@ node_modules/
 out/
 dist/
 build/
+# Vendored by scripts/sync-tokens.mjs, and imported by the tailwind config it also vendors.
+# The rule above hid these five CSS files from every checkout but this one.
+!web/styles/supabase/packages/ui/build/
 coverage/
 .turbo/
 

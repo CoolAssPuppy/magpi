@@ -5,6 +5,8 @@ pnpm-lock.yaml
 supabase/migrations
 web/lib/database.types.ts
 web/styles/supabase
+# Vendored agent skills, not ours to format.
+.agents
 test-results
 playwright-report
 supabase/functions
