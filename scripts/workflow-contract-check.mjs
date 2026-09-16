@@ -26,8 +26,12 @@ const HEAVY_COMMANDS = [
   'emulator',
 ];
 
-/** The one heavy invocation the hosted gate is allowed to make. */
-const LIGHT_GATE = 'scripts/gate.mjs --light';
+/**
+ * Invocations an automatic workflow may make despite matching the list above. The light gate
+ * is the one heavy suite hosted CI runs. `supabase db push` reaches the linked project over the
+ * network and starts no database of its own, so it is a deploy, and the deploy runs on push.
+ */
+const ALLOWED_INVOCATIONS = ['scripts/gate.mjs --light', 'supabase db push'];
 
 const HOSTED_RUNNERS_ALLOWED = ['ubuntu-latest', 'ubuntu-24.04', 'ubuntu-22.04'];
 const NATIVE_RUNNER_PREFIXES = ['macos', 'windows'];
@@ -65,11 +69,11 @@ function main() {
     const automatic = automaticTriggers(text);
     if (automatic.length === 0) continue;
 
-    // Strip the light gate's own invocation before matching heavy commands.
-    const withoutLightGate = text.split(LIGHT_GATE).join('');
+    // Strip the allowed invocations before matching heavy commands.
+    const remaining = ALLOWED_INVOCATIONS.reduce((t, allowed) => t.split(allowed).join(''), text);
 
     for (const command of HEAVY_COMMANDS) {
-      if (withoutLightGate.includes(command)) {
+      if (remaining.includes(command)) {
         failures.push(`${file}: runs \`${command}\` on ${automatic.join(', ')}`);
       }
     }
