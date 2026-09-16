@@ -35,9 +35,8 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - uses: dopplerhq/cli-action@v3
-
+      # No secrets: every light step runs on the checkout alone. The web build
+      # validates env at request time, not at build time, and the secrets check
+      # skips itself when neither env file is present.
       - name: light gate
-        run: doppler run -- node scripts/gate.mjs --light --strict
-        env:
-          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN_DEV }}
+        run: node scripts/gate.mjs --light --strict

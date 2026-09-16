@@ -81,5 +81,8 @@ Schema, decided:
 - [x] Add deploy.yml: db push and functions deploy on push to main (needs SUPABASE_ACCESS_TOKEN and SUPABASE_DB_PASSWORD repo secrets)
 - [x] db push --include-seed, seed buckets. db diff found pg_net missing on hosted; migration added and pushed
 - [x] Function secrets from Doppler prd, 14 functions deployed, cron Vault secrets set
-- [ ] Email hook in the dashboard (Authentication, Hooks, Send Email)
+- [x] Email hook in the dashboard, secret from Doppler prd pushed to functions
+- [x] CI: Doppler service tokens as DOPPLER_TOKEN_DEV / DOPPLER_TOKEN_PRD, deploy runs under Doppler prd
+- [x] Vercel: root directory web, build overrides cleared, root vercel.json removed, production Ready
+- [ ] Commit and push: deploy.yml, contract script, doppler.yaml, .gitignore, vercel.json removal
 - [ ] Web on Vercel and the domain-dependent auth URLs (deferred)

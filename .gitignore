@@ -35,3 +35,4 @@ supabase/.stack-lock
 
 # Browser automation artifacts
 .playwright-mcp/
+.vercel

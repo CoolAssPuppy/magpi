@@ -82,8 +82,10 @@ function main() {
     process.exit(1);
   }
 
-  // A cron here would run the workers a second time alongside the database schedule.
-  const vercel = JSON.parse(readFileSync(resolve(ROOT, VERCEL), 'utf8'));
+  // A cron here would run the workers a second time alongside the database schedule. No file
+  // means no crons: the Vercel project's root is web/, so this file only exists if someone adds it.
+  const vercelPath = resolve(ROOT, VERCEL);
+  const vercel = existsSync(vercelPath) ? JSON.parse(readFileSync(vercelPath, 'utf8')) : {};
   if ((vercel.crons ?? []).length > 0) {
     console.error(`scheduled workers FAILED: ${VERCEL} declares crons as well`);
     console.error('Two schedulers for the same workers means every job runs twice.');
