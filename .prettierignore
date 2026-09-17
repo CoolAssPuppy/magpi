@@ -16,3 +16,6 @@ web/next-env.d.ts
 # people at a fictional company, and rewrapping their prose would flatten the
 # formatting differences that make a Slack thread read unlike a Notion page.
 supabase/corpus
+
+# Vendored from supabase/compute-agent-starter. Kept as upstream wrote it.
+.claude/skills/supabase-compute/
