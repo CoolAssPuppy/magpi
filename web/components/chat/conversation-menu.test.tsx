@@ -40,7 +40,7 @@ const { ConversationMenu } = await import('./conversation-menu');
 /** Typing key by key at the default delay times the suite out under load. */
 const user = userEvent.setup({ delay: null });
 
-const onMoved = vi.fn();
+const onChanged = vi.fn();
 
 const getFolders = (): ConversationFolder[] => [{ id: FOLDER_ID, name: 'Pricing', color: 'gray' }];
 
@@ -51,7 +51,7 @@ function renderMenu(folderId: string | null = null) {
       title="SSO blockers"
       folderId={folderId}
       folders={getFolders()}
-      onMoved={onMoved}
+      onChanged={onChanged}
     />,
   );
 }
@@ -77,7 +77,7 @@ async function openFolderChoices(folderId: string | null = null) {
 beforeEach(() => {
   router.push.mockClear();
   router.refresh.mockClear();
-  onMoved.mockClear();
+  onChanged.mockClear();
   actions.rename = { status: 'success', data: 'Renamed' };
   actions.remove = { status: 'success', data: CONVERSATION_ID };
   actions.move = { status: 'success', data: FOLDER_ID };
@@ -100,6 +100,28 @@ describe('ConversationMenu', () => {
       title: 'SSO rollout',
     });
     expect(router.refresh).toHaveBeenCalled();
+  });
+
+  // The sidebar list is read on the client, so a server refresh alone leaves the old name up.
+  it('tells the list to read again once the rename is saved', async () => {
+    await openMenuItem('Rename');
+
+    const field = screen.getByLabelText('Name');
+    await user.clear(field);
+    await user.type(field, 'SSO rollout');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await vi.waitFor(() => expect(onChanged).toHaveBeenCalled());
+  });
+
+  it('leaves the list alone when the rename was refused', async () => {
+    actions.rename = { status: 'error', message: 'You need to sign in to do that.' };
+    await openMenuItem('Rename');
+
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await screen.findByRole('alert');
+    expect(onChanged).not.toHaveBeenCalled();
   });
 
   it('says why a rename was refused, and keeps the dialog open', async () => {
@@ -155,6 +177,7 @@ describe('ConversationMenu', () => {
 
     expect(actions.removeInput).toEqual({ conversationId: CONVERSATION_ID });
     expect(router.push).toHaveBeenCalledWith('/chat');
+    expect(onChanged).toHaveBeenCalled();
   });
 
   it('offers every folder alongside the top level', async () => {
@@ -181,7 +204,7 @@ describe('ConversationMenu', () => {
       conversationId: CONVERSATION_ID,
       folderId: FOLDER_ID,
     });
-    expect(onMoved).toHaveBeenCalled();
+    expect(onChanged).toHaveBeenCalled();
   });
 
   it('takes the conversation back to the top level with no folder', async () => {
@@ -194,7 +217,7 @@ describe('ConversationMenu', () => {
       conversationId: CONVERSATION_ID,
       folderId: null,
     });
-    expect(onMoved).toHaveBeenCalled();
+    expect(onChanged).toHaveBeenCalled();
   });
 
   it('moves nothing until the move is confirmed', async () => {
@@ -216,6 +239,6 @@ describe('ConversationMenu', () => {
       'That conversation could not be moved.',
     );
     expect(screen.getByRole('combobox', { name: 'Folder' })).toBeInTheDocument();
-    expect(onMoved).not.toHaveBeenCalled();
+    expect(onChanged).not.toHaveBeenCalled();
   });
 });

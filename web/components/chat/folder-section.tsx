@@ -43,7 +43,7 @@ export function FolderSection({ folder, folders, conversations, onChanged }: Fol
       {conversations.length === 0 ? (
         <p className="px-2 pb-1 text-xs text-tertiary-foreground">Nothing filed here yet.</p>
       ) : (
-        <ConversationList conversations={conversations} folders={folders} onMoved={onChanged} />
+        <ConversationList conversations={conversations} folders={folders} onChanged={onChanged} />
       )}
     </section>
   );

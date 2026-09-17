@@ -64,7 +64,7 @@ export function HistorySidebar() {
           />
         ))}
 
-        <ConversationList conversations={unfiled} folders={folders} onMoved={refresh} />
+        <ConversationList conversations={unfiled} folders={folders} onChanged={refresh} />
 
         {hasMore ? (
           <button

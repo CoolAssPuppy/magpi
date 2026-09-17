@@ -64,8 +64,11 @@ vi.mock('@/app/(app)/chat/actions', () => ({
   },
 }));
 
+// The real menu is covered on its own. Here it is one button standing in for a saved rename.
 vi.mock('./conversation-menu', () => ({
-  ConversationMenu: ({ title }: { title: string }) => <span>{`menu for ${title}`}</span>,
+  ConversationMenu: ({ title, onChanged }: { title: string; onChanged: () => void }) => (
+    <button type="button" onClick={onChanged}>{`menu for ${title}`}</button>
+  ),
 }));
 
 const { HistorySidebar } = await import('./history-sidebar');
@@ -229,6 +232,14 @@ describe('HistorySidebar', () => {
 
     expect(screen.getByText('Your folders could not be loaded.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'SSO blockers' })).toBeInTheDocument();
+  });
+
+  it('reads the conversations again after one is renamed, so the new name shows', async () => {
+    render(<HistorySidebar />);
+
+    await user.click(screen.getByRole('button', { name: 'menu for SSO blockers' }));
+
+    expect(queryKeys.at(-1)).toBe(1);
   });
 
   it('reads the folders and the conversations again after a folder is made', async () => {

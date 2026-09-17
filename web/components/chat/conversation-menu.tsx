@@ -45,7 +45,8 @@ type ConversationMenuProps = {
   readonly title: string;
   readonly folderId: string | null;
   readonly folders: readonly ConversationFolder[];
-  readonly onMoved: () => void;
+  /** The sidebar reads its list on the client, so it is told when a row changed. */
+  readonly onChanged: () => void;
 };
 
 export function ConversationMenu({
@@ -53,7 +54,7 @@ export function ConversationMenu({
   title,
   folderId,
   folders,
-  onMoved,
+  onChanged,
 }: ConversationMenuProps) {
   const router = useRouter();
   const [dialog, setDialog] = useState<MenuDialog>('closed');
@@ -68,6 +69,8 @@ export function ConversationMenu({
       if (state.status === 'error') return setFailure(state.message);
 
       setDialog('closed');
+      onChanged();
+      // The open conversation's heading is rendered on the server.
       router.refresh();
     });
   }
@@ -78,6 +81,7 @@ export function ConversationMenu({
       if (state.status === 'error') return setFailure(state.message);
 
       setDialog('closed');
+      onChanged();
       router.push('/chat');
       router.refresh();
     });
@@ -92,7 +96,7 @@ export function ConversationMenu({
       if (state.status === 'error') return setFailure(state.message);
 
       setDialog('closed');
-      onMoved();
+      onChanged();
     });
   }
 

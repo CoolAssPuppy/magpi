@@ -15,11 +15,11 @@ export type SidebarConversation = Pick<Tables<'conversations'>, 'id' | 'title' |
 type ConversationListProps = {
   readonly conversations: readonly SidebarConversation[];
   readonly folders: readonly ConversationFolder[];
-  readonly onMoved: () => void;
+  readonly onChanged: () => void;
 };
 
 /** The links themselves, shown inside a folder and at the top level alike. */
-export function ConversationList({ conversations, folders, onMoved }: ConversationListProps) {
+export function ConversationList({ conversations, folders, onChanged }: ConversationListProps) {
   const pathname = usePathname();
 
   return (
@@ -60,7 +60,7 @@ export function ConversationList({ conversations, folders, onMoved }: Conversati
               title={title}
               folderId={conversation.folder_id}
               folders={folders}
-              onMoved={onMoved}
+              onChanged={onChanged}
             />
           </li>
         );
